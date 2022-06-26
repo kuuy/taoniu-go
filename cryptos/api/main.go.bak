@@ -1,0 +1,71 @@
+package main
+
+import (
+	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"fmt"
+	"log"
+	"net/http"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/lestrrat-go/jwx/v2/jwa"
+	"github.com/lestrrat-go/jwx/v2/jwe"
+
+	"taoniu.local/cryptos/api/routers"
+)
+
+func main() {
+  privkey, err := rsa.GenerateKey(rand.Reader, 2048)
+  if err != nil {
+    return
+  }
+
+  payload := "hello world"
+
+  protected := jwe.NewHeaders()
+  protected.Set(`jwx-hints`, `taoniu`)
+  encrypted, err := jwe.Encrypt(
+    []byte(payload),
+    jwe.WithKey(jwa.RSA_OAEP, privkey.PublicKey),
+    jwe.WithProtectedHeaders(protected),
+  )
+  if err != nil {
+    return
+  }
+
+  kp := func(
+    ctx context.Context,
+    sink jwe.KeySink,
+    _ jwe.Recipient,
+    msg *jwe.Message,
+  ) error {
+    rawhint, _ := msg.ProtectedHeaders().Get(`jwx-hints`)
+    hint, ok := rawhint.(string)
+    if ok && hint == `taoniu` {
+      sink.Key(jwa.RSA_OAEP, privkey)
+      return nil
+    }
+
+    return fmt.Errorf(`invalid value for jwx-hints: %s`, rawhint)
+  }
+
+  decrypted, err := jwe.Decrypt(encrypted, jwe.WithKeyProvider(jwe.KeyProviderFunc(kp)))
+  if err != nil {
+    log.Printf("failed to decrypt message: %s\n", err)
+    return
+  }
+
+  if string(decrypted) != payload {
+    log.Printf("wrong decrypted payload: %s\n", decrypted)
+    return
+  }
+
+  log.Println("jwe:", string(encrypted), string(decrypted))
+
+  log.Println("start api service")
+  r := chi.NewRouter()
+  r.Mount("/orders", routers.NewOrderRouter())
+  http.ListenAndServe(":3000", r)
+}
+
