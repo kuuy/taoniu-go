@@ -27,8 +27,8 @@ func FlushAccount() error {
   }
   defer mutex.Unlock()
 
-  apiKey := "xxx"
-  secretKey := "xxx"
+  apiKey := "YDqXQSPkjrhwPeHwxUNt10aaT0NrWevhZMhG826TswB78i9mFRmA7qsNhY8gxvac"
+  secretKey := "qbymjie8fSBYg3wlabaekhplxa8uMnThARhcbjA8uP4649OSTZVN5N57IyyRawCx"
 
   client := binance.NewFuturesClient(apiKey, secretKey)
 

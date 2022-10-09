@@ -101,8 +101,8 @@ func TakeProfit() error {
     return err
   }
 
-  apiKey := "xxx"
-  secretKey := "xxx"
+  apiKey := "1ezcGDyXqV6fHPqockPILt5KMiXzUr4feoPMNmmqsmWakKJyK32GOvnL9LNoBg8n"
+  secretKey := "AXHKOh04ndgWkQlwc8Ro4m6ZSBFudNno8b2zlLKtSwzy9B6cZbvsTyyWynzNMvCw"
   client := binance.NewFuturesClient(apiKey, secretKey)
 
   for field,value := range items {

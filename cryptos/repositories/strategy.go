@@ -1,46 +1,52 @@
 package repositories
 
 import (
-  "gorm.io/gorm"
+	"gorm.io/gorm"
 
-  . "taoniu.local/cryptos/models"
+	. "taoniu.local/cryptos/models"
 )
 
 type StrategyRepository struct {
-  db *gorm.DB
+	db *gorm.DB
 }
 
 func NewStrategyRepository(db *gorm.DB) *StrategyRepository {
-  return &StrategyRepository{
-    db: db,
-  }
+	return &StrategyRepository{
+		db: db,
+	}
 }
 
-func (r *StrategyRepository) Listings() ([]Strategy, error) {
-  offset := 0
-  limit := 25
+func (r *StrategyRepository) Count() (int64, error) {
+	var count int64
+	r.db.Model(&Strategy{}).Count(&count)
 
-  var strategies []Strategy
-  r.db.Select(
-    "id",
-    "symbol",
-    "indicator",
-    "price",
-    "signal",
-  ).Order(
-    "created_at desc",
-  ).Offset(
-    offset,
-  ).Limit(
-    limit,
-  ).Find(
-    &strategies,
-  )
+	return count, nil
+}
 
-  return strategies, nil
+func (r *StrategyRepository) Listings(current int, pageSize int) ([]Strategy, error) {
+	offset := (current - 1) * pageSize
+
+	var strategies []Strategy
+	r.db.Select(
+		"id",
+		"symbol",
+		"indicator",
+		"price",
+		"signal",
+		"created_at",
+	).Order(
+		"created_at desc",
+	).Offset(
+		offset,
+	).Limit(
+		pageSize,
+	).Find(
+		&strategies,
+	)
+
+	return strategies, nil
 }
 
 func (r *StrategyRepository) Get(id string) (interface{}, error) {
-  return nil, nil
+	return nil, nil
 }
-

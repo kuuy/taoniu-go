@@ -85,8 +85,8 @@ func FlushOrders() error {
   }
   defer mutex.Unlock()
 
-  apiKey := "xxx"
-  secretKey := "xxx"
+  apiKey := "HWRmhMZsd1JYEDgmrXfRYlMIgli6jA2g40Kk3kRAzmb35oPO713IcRFxSTvFwJ2u"
+  secretKey := "jbeKzWMT66ovrD14BzZGH48Q9vER4gi7c5Hg4iPzgl78GpgVgIVV19abin9XNj6b"
 
   client := binance.NewFuturesClient(apiKey, secretKey)
   
