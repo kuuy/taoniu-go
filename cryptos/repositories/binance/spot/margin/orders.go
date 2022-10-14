@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/rs/xid"
+	"log"
 	"strconv"
 	models "taoniu.local/cryptos/models/binance/spot/margin"
+	"time"
 
 	"gorm.io/gorm"
 
@@ -42,6 +44,51 @@ func (r *OrdersRepository) Flush(symbol string, orderId int64, isIsolated bool) 
 		fmt.Sprintf("%s,%d,%d", symbol, orderId, isolated),
 	).Result()
 
+	return nil
+}
+
+func (r *OrdersRepository) Sync(symbol string, isIsolated bool, limit int) error {
+	yestoday := time.Now().Unix() - 86400
+	client := binance.NewClient(config.ACCOUNT_API_KEY, config.ACCOUNT_SECRET_KEY)
+	orders, err := client.NewListMarginOrdersService().Symbol(
+		symbol,
+	).IsIsolated(
+		isIsolated,
+	).StartTime(
+		yestoday * 1000,
+	).Limit(
+		limit,
+	).Do(r.Ctx)
+	if err != nil {
+		return err
+	}
+	for _, order := range orders {
+		log.Println("order", order)
+	}
+	return nil
+}
+
+func (r *OrdersRepository) Fix(time time.Time, limit int) error {
+	var orders []*models.Order
+	r.Db.Select([]string{
+		"symbol",
+		"order_id",
+		"is_isolated",
+	}).Where(
+		"updated_at < ? AND status IN ?",
+		time,
+		[]string{
+			"NEW",
+			"PARTIALLY_FILLED",
+		},
+	).Order(
+		"updated_at asc",
+	).Limit(
+		limit,
+	).Find(&orders)
+	for _, order := range orders {
+		r.Flush(order.Symbol, order.OrderID, order.IsIsolated)
+	}
 	return nil
 }
 

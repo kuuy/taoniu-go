@@ -43,3 +43,15 @@ func (t *IsolatedTask) Orders() *tasks.OrdersTask {
 		},
 	}
 }
+
+func (t *IsolatedTask) Grids() *tasks.GridsTask {
+	return &tasks.GridsTask{
+		Rdb: t.Rdb,
+		Ctx: t.Ctx,
+		Repository: &repositories.GridsRepository{
+			Db:  t.Db,
+			Rdb: t.Rdb,
+			Ctx: t.Ctx,
+		},
+	}
+}

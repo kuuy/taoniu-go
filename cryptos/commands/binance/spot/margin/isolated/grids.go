@@ -1,25 +1,27 @@
-package profits
+package isolated
 
 import (
 	"context"
 	"github.com/go-redis/redis/v8"
-	"github.com/urfave/cli/v2"
 	"log"
+
+	"github.com/urfave/cli/v2"
+
 	pool "taoniu.local/cryptos/common"
-	repositories "taoniu.local/cryptos/repositories/binance/spot/analysis/margin/isolated/profits"
+	repositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated"
 )
 
-type DailyHandler struct {
+type GridsHandler struct {
 	Rdb        *redis.Client
 	Ctx        context.Context
-	Repository *repositories.DailyRepository
+	Repository *repositories.GridsRepository
 }
 
-func NewDailyCommand() *cli.Command {
-	h := DailyHandler{
+func NewGridsCommand() *cli.Command {
+	h := GridsHandler{
 		Rdb: pool.NewRedis(),
 		Ctx: context.Background(),
-		Repository: &repositories.DailyRepository{
+		Repository: &repositories.GridsRepository{
 			Db:  pool.NewDB(),
 			Rdb: pool.NewRedis(),
 			Ctx: context.Background(),
@@ -27,7 +29,7 @@ func NewDailyCommand() *cli.Command {
 	}
 
 	return &cli.Command{
-		Name:  "daily",
+		Name:  "grids",
 		Usage: "",
 		Subcommands: []*cli.Command{
 			{
@@ -44,8 +46,8 @@ func NewDailyCommand() *cli.Command {
 	}
 }
 
-func (h *DailyHandler) flush() error {
-	log.Println("analysis margin isolated daily...")
+func (h *GridsHandler) flush() error {
+	log.Println("margin isolated grids flush...")
 	symbols, _ := h.Rdb.SMembers(h.Ctx, "binance:spot:margin:isolated:symbols").Result()
 	for _, symbol := range symbols {
 		h.Repository.Flush(symbol)

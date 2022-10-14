@@ -13,8 +13,8 @@ type BinanceTask struct {
 	Ctx context.Context
 }
 
-func (t *BinanceTask) Spot() *binance.SportTask {
-	return &binance.SportTask{
+func (t *BinanceTask) Spot() *binance.SpotTask {
+	return &binance.SpotTask{
 		Db:  t.Db,
 		Rdb: t.Rdb,
 		Ctx: t.Ctx,

@@ -66,7 +66,7 @@ func (r *DailyRepository) Pivot(symbol string) error {
 }
 
 func (r *DailyRepository) Atr(symbol string, period int, limit int) error {
-	var klines []models.Kline1d
+	var klines []*models.Kline1d
 	r.Db.Select([]string{"close", "high", "low", "timestamp"}).Where("symbol", symbol).Order("timestamp desc").Limit(limit).Find(&klines)
 	day := time.Unix(klines[0].Timestamp/1000, 0).Format("0102")
 	if day != time.Now().Format("0102") {

@@ -51,3 +51,12 @@ func (t *DailyTask) BBands() error {
 	}
 	return nil
 }
+
+func (t *DailyTask) Flush() error {
+	t.Atr()
+	t.Zlema()
+	t.HaZlema()
+	t.Kdj()
+	t.BBands()
+	return nil
+}

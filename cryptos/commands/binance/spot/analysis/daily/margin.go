@@ -1,8 +1,8 @@
-package analysis
+package daily
 
 import (
 	"github.com/urfave/cli/v2"
-	"taoniu.local/cryptos/commands/binance/spot/analysis/margin"
+	"taoniu.local/cryptos/commands/binance/spot/analysis/daily/margin"
 )
 
 func NewMarginCommand() *cli.Command {

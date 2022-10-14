@@ -7,4 +7,6 @@ const (
 	STREAMS_SECRET_KEY = ""
 	ACCOUNT_API_KEY    = ""
 	ACCOUNT_SECRET_KEY = ""
+	TRADE_API_KEY      = ""
+	TRADE_SECRET_KEY   = ""
 )

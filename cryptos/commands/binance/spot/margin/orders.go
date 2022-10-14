@@ -5,6 +5,7 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/urfave/cli/v2"
@@ -44,6 +45,16 @@ func NewOrdersCommand() *cli.Command {
 					return nil
 				},
 			},
+			{
+				Name:  "fix",
+				Usage: "",
+				Action: func(c *cli.Context) error {
+					if err := h.fix(); err != nil {
+						return cli.Exit(err.Error(), 1)
+					}
+					return nil
+				},
+			},
 		},
 	}
 }
@@ -61,6 +72,10 @@ func (h *OrdersHandler) flush() error {
 		isIsolated, _ := strconv.ParseBool(data[2])
 		h.Repository.Flush(symbol, orderID, isIsolated)
 	}
-
 	return nil
+}
+
+func (h *OrdersHandler) fix() error {
+	log.Println("margin orders fix...")
+	return h.Repository.Fix(time.Now(), 20)
 }

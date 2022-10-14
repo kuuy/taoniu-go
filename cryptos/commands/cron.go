@@ -52,27 +52,23 @@ func (h *CronHandler) run() error {
 
 	c := cron.New()
 	c.AddFunc("@every 30s", func() {
-		binance.Spot().Account().Flush()
-		binance.Spot().Margin().Isolated().Account().Flush()
-		binance.Spot().Margin().Isolated().Orders().Open()
-		binance.Spot().Margin().Isolated().Symbols().Flush()
+		binance.Spot().Flush()
+	})
+	c.AddFunc("@every 3m", func() {
+		binance.Spot().Margin().Orders().Fix()
 	})
 	c.AddFunc("@every 5m", func() {
-		binance.Spot().Klines().FlushDaily(2)
-		binance.Spot().Indicators().Daily().Pivot()
-		binance.Spot().Indicators().Daily().Atr(14, 100)
-		binance.Spot().Indicators().Daily().Zlema(14, 100)
-		binance.Spot().Indicators().Daily().HaZlema(14, 100)
-		binance.Spot().Indicators().Daily().Kdj(9, 3, 100)
-		binance.Spot().Indicators().Daily().BBands(14, 100)
-		binance.Spot().Strategies().Daily().Atr()
-		binance.Spot().Strategies().Daily().Zlema()
-		binance.Spot().Strategies().Daily().HaZlema()
-		binance.Spot().Strategies().Daily().Kdj()
-		binance.Spot().Strategies().Daily().BBands()
+		binance.Spot().Klines().Daily().Flush(1)
+		binance.Spot().Indicators().Daily().Flush()
+		binance.Spot().Strategies().Daily().Flush()
+	})
+	c.AddFunc("@hourly", func() {
+		binance.Spot().Margin().Sync()
+		binance.Spot().Analysis().Daily().Flush()
 	})
 	c.AddFunc("0 30 * * * *", func() {
-		binance.Spot().Klines().FlushDaily(50)
+		binance.Spot().Symbols().Flush()
+		binance.Spot().Klines().Daily().Flush(2)
 	})
 	c.Start()
 

@@ -1,4 +1,4 @@
-package spot
+package klines
 
 import (
 	"context"
@@ -15,13 +15,13 @@ import (
 	models "taoniu.local/cryptos/models/binance/spot"
 )
 
-type KlinesRepository struct {
+type DailyRepository struct {
 	Db  *gorm.DB
 	Rdb *redis.Client
 	Ctx context.Context
 }
 
-func (r *KlinesRepository) FlushDaily(symbol string, limit int) error {
+func (r *DailyRepository) Flush(symbol string, limit int) error {
 	client := binance.NewClient(config.REST_API_KEY, config.REST_SECRET_KEY)
 	klines, err := client.NewKlinesService().Symbol(
 		symbol,

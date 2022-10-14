@@ -40,15 +40,35 @@ func NewOrdersCommand() *cli.Command {
 					return nil
 				},
 			},
+			{
+				Name:  "sync",
+				Usage: "",
+				Action: func(c *cli.Context) error {
+					if err := h.sync(); err != nil {
+						return cli.Exit(err.Error(), 1)
+					}
+					return nil
+				},
+			},
 		},
 	}
 }
 
 func (h *OrdersHandler) open() error {
+	log.Println("margin isolated open orders...")
 	symbols, _ := h.Rdb.SMembers(h.Ctx, "binance:spot:websocket:symbols").Result()
 	for _, symbol := range symbols {
 		log.Println("symbol:", symbol)
 		h.Repository.Open(symbol)
+	}
+	return nil
+}
+
+func (h *OrdersHandler) sync() error {
+	log.Println("margin isolated sync orders...")
+	symbols, _ := h.Rdb.SMembers(h.Ctx, "binance:spot:margin:isolated:symbols").Result()
+	for _, symbol := range symbols {
+		h.Repository.Sync(symbol, 100)
 	}
 	return nil
 }

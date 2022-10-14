@@ -8,25 +8,30 @@ import (
 	tasks "taoniu.local/cryptos/tasks/binance/spot"
 )
 
-type SportTask struct {
+type SpotTask struct {
 	Db  *gorm.DB
 	Rdb *redis.Client
 	Ctx context.Context
 }
 
-func (t *SportTask) Klines() *tasks.KlinesTask {
-	return &tasks.KlinesTask{
-		Rdb: t.Rdb,
-		Ctx: t.Ctx,
-		Repository: &repositories.KlinesRepository{
-			Db:  t.Db,
+func (t *SpotTask) Symbols() *tasks.SymbolsTask {
+	return &tasks.SymbolsTask{
+		Repository: &repositories.SymbolsRepository{
 			Rdb: t.Rdb,
 			Ctx: t.Ctx,
 		},
 	}
 }
 
-func (t *SportTask) Indicators() *tasks.IndicatorsTask {
+func (t *SpotTask) Klines() *tasks.KlinesTask {
+	return &tasks.KlinesTask{
+		Db:  t.Db,
+		Rdb: t.Rdb,
+		Ctx: t.Ctx,
+	}
+}
+
+func (t *SpotTask) Indicators() *tasks.IndicatorsTask {
 	return &tasks.IndicatorsTask{
 		Db:  t.Db,
 		Rdb: t.Rdb,
@@ -34,7 +39,7 @@ func (t *SportTask) Indicators() *tasks.IndicatorsTask {
 	}
 }
 
-func (t *SportTask) Strategies() *tasks.StrategiesTask {
+func (t *SpotTask) Strategies() *tasks.StrategiesTask {
 	return &tasks.StrategiesTask{
 		Db:  t.Db,
 		Rdb: t.Rdb,
@@ -42,7 +47,7 @@ func (t *SportTask) Strategies() *tasks.StrategiesTask {
 	}
 }
 
-func (t *SportTask) Account() *tasks.AccountTask {
+func (t *SpotTask) Account() *tasks.AccountTask {
 	return &tasks.AccountTask{
 		Repository: &repositories.AccountRepository{
 			Rdb: t.Rdb,
@@ -51,10 +56,23 @@ func (t *SportTask) Account() *tasks.AccountTask {
 	}
 }
 
-func (t *SportTask) Margin() *tasks.MarginTask {
+func (t *SpotTask) Margin() *tasks.MarginTask {
 	return &tasks.MarginTask{
 		Db:  t.Db,
 		Rdb: t.Rdb,
 		Ctx: t.Ctx,
 	}
+}
+
+func (t *SpotTask) Analysis() *tasks.AnalysisTask {
+	return &tasks.AnalysisTask{
+		Db:  t.Db,
+		Rdb: t.Rdb,
+		Ctx: t.Ctx,
+	}
+}
+
+func (t *SpotTask) Flush() {
+	t.Account().Flush()
+	t.Margin().Flush()
 }

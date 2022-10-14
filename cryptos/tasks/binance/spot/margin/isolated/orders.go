@@ -19,3 +19,11 @@ func (t *OrdersTask) Open() error {
 	}
 	return nil
 }
+
+func (t *OrdersTask) Sync() error {
+	symbols, _ := t.Rdb.SMembers(t.Ctx, "binance:spot:margin:isolated:symbols").Result()
+	for _, symbol := range symbols {
+		t.Repository.Sync(symbol, 20)
+	}
+	return nil
+}

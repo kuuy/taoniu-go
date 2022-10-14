@@ -34,3 +34,14 @@ func (r *OrdersRepository) Open(symbol string) error {
 
 	return nil
 }
+
+func (r *OrdersRepository) Sync(symbol string, limit int) error {
+	repository := repositories.OrdersRepository{
+		Db:  r.Db,
+		Rdb: r.Rdb,
+		Ctx: r.Ctx,
+	}
+	repository.Sync(symbol, true, limit)
+
+	return nil
+}

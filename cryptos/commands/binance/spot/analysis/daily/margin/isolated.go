@@ -2,7 +2,7 @@ package margin
 
 import (
 	"github.com/urfave/cli/v2"
-	"taoniu.local/cryptos/commands/binance/spot/analysis/margin/isolated"
+	"taoniu.local/cryptos/commands/binance/spot/analysis/daily/margin/isolated"
 )
 
 func NewIsolatedCommand() *cli.Command {

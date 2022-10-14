@@ -274,16 +274,16 @@ func (r *DailyRepository) BBands(symbol string) error {
 	price, _ := strconv.ParseFloat(data[6], 64)
 	timestamp, _ := strconv.ParseInt(data[7], 10, 64)
 	var signal int64
-	if b1 < 50 && b2 < 50 && b3 > 50 {
+	if b1 < 0.5 && b2 < 0.5 && b3 > 0.5 {
 		signal = 1
 	}
-	if b1 > 50 && b2 < 50 && b3 < 50 {
+	if b1 > 0.5 && b2 < 0.5 && b3 < 0.5 {
 		signal = 2
 	}
-	if b1 > 80 && b2 > 80 && b3 > 80 {
+	if b1 > 0.8 && b2 > 0.8 && b3 > 0.8 {
 		signal = 1
 	}
-	if b1 > 80 && b2 > 80 && b3 < 80 {
+	if b1 > 0.8 && b2 > 0.8 && b3 < 0.8 {
 		signal = 2
 	}
 	if w1 < 0.1 && w2 < 0.1 && w3 < 0.1 {

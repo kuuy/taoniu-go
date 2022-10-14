@@ -15,5 +15,6 @@ func (m *Margin) AutoMigrate(db *gorm.DB) error {
 	db.AutoMigrate(
 		&models.Order{},
 	)
+	models.NewIsolated().AutoMigrate(db)
 	return nil
 }

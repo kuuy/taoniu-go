@@ -2,7 +2,7 @@ package isolated
 
 import (
 	"github.com/urfave/cli/v2"
-	"taoniu.local/cryptos/commands/binance/spot/analysis/margin/isolated/profits"
+	"taoniu.local/cryptos/commands/binance/spot/analysis/daily/margin/isolated/profits"
 )
 
 func NewProfitsCommand() *cli.Command {

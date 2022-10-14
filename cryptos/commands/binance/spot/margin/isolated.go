@@ -13,6 +13,8 @@ func NewIsoLatedCommand() *cli.Command {
 			isolated.NewSymbolsCommand(),
 			isolated.NewAccountCommand(),
 			isolated.NewOrdersCommand(),
+			isolated.NewGridsCommand(),
+			isolated.NewTradingsCommand(),
 			isolated.NewWebsocketCommand(),
 		},
 	}

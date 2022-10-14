@@ -59,3 +59,13 @@ func (t *DailyTask) BBands(period int, limit int) error {
 	}
 	return nil
 }
+
+func (t *DailyTask) Flush() error {
+	t.Pivot()
+	t.Atr(14, 100)
+	t.Zlema(14, 100)
+	t.HaZlema(14, 100)
+	t.Kdj(9, 3, 100)
+	t.BBands(14, 100)
+	return nil
+}
