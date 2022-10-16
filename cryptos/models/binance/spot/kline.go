@@ -1,8 +1,6 @@
 package spot
 
-import (
-	"time"
-)
+import "time"
 
 type Kline1d struct {
 	ID        string    `gorm:"size:20;primaryKey"`

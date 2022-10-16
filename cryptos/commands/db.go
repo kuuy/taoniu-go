@@ -38,5 +38,6 @@ func NewDbCommand() *cli.Command {
 func (h *DbHandler) migrate() error {
 	log.Println("process migrator")
 	models.NewBinance().AutoMigrate(h.db)
+	models.NewTradingView().AutoMigrate(h.db)
 	return nil
 }

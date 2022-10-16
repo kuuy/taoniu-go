@@ -12,6 +12,9 @@ func NewBinance() *Binance {
 }
 
 func (m *Binance) AutoMigrate(db *gorm.DB) error {
+	db.AutoMigrate(
+		&binance.Symbol{},
+	)
 	binance.NewSpot().AutoMigrate(db)
 	return nil
 }

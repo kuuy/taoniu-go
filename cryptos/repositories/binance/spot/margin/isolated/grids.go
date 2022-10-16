@@ -20,13 +20,7 @@ type GridsRepository struct {
 
 func (r *GridsRepository) Flush(symbol string) error {
 	day := time.Now().Format("0102")
-	data, err := r.Rdb.HMGet(
-		r.Ctx,
-		fmt.Sprintf(
-			"binance:spot:indicators:%s:%s",
-			symbol,
-			day,
-		),
+	fields := []string{
 		"r3",
 		"r2",
 		"r1",
@@ -36,9 +30,20 @@ func (r *GridsRepository) Flush(symbol string) error {
 		"profit_target",
 		"stop_loss_point",
 		"take_profit_price",
+	}
+	data, _ := r.Rdb.HMGet(
+		r.Ctx,
+		fmt.Sprintf(
+			"binance:spot:indicators:%s:%s",
+			symbol,
+			day,
+		),
+		fields...,
 	).Result()
-	if err != nil {
-		return err
+	for i := 0; i < len(fields); i++ {
+		if data[i] == nil {
+			return nil
+		}
 	}
 	r3, _ := strconv.ParseFloat(data[0].(string), 64)
 	r2, _ := strconv.ParseFloat(data[1].(string), 64)

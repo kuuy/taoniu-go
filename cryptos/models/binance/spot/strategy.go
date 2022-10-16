@@ -1,8 +1,6 @@
 package spot
 
-import (
-	"time"
-)
+import "time"
 
 type Strategy struct {
 	ID        string    `gorm:"size:20;primaryKey"`
