@@ -10,3 +10,6 @@
 |BBANDS  |布林带（布林极值、布林带宽）|
 |ZLEMA   |零延迟指数平均数          |
 |HAZLEMA |平滑零延迟指数平均数       |
+
+# TradingView分析
+https://github.com/kuuy/taoniu-py
