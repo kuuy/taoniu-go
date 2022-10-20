@@ -2,52 +2,72 @@ package strategies
 
 import (
 	"context"
+	"github.com/gammazero/workerpool"
 	"github.com/go-redis/redis/v8"
+	"gorm.io/gorm"
+	models "taoniu.local/cryptos/models/binance"
 	repositories "taoniu.local/cryptos/repositories/binance/spot/strategies"
 )
 
 type DailyTask struct {
+	Db         *gorm.DB
 	Rdb        *redis.Client
 	Ctx        context.Context
+	Wp         *workerpool.WorkerPool
 	Repository *repositories.DailyRepository
 }
 
 func (t *DailyTask) Atr() error {
-	symbols, _ := t.Rdb.SMembers(t.Ctx, "binance:spot:websocket:symbols").Result()
+	var symbols []string
+	t.Db.Model(models.Symbol{}).Select("symbol").Where("status", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
-		t.Repository.Atr(symbol)
+		t.Wp.Submit(func() {
+			t.Repository.Atr(symbol)
+		})
 	}
 	return nil
 }
 
 func (t *DailyTask) Zlema() error {
-	symbols, _ := t.Rdb.SMembers(t.Ctx, "binance:spot:websocket:symbols").Result()
+	var symbols []string
+	t.Db.Model(models.Symbol{}).Select("symbol").Where("status", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
-		t.Repository.Zlema(symbol)
+		t.Wp.Submit(func() {
+			t.Repository.Zlema(symbol)
+		})
 	}
 	return nil
 }
 
 func (t *DailyTask) HaZlema() error {
-	symbols, _ := t.Rdb.SMembers(t.Ctx, "binance:spot:websocket:symbols").Result()
+	var symbols []string
+	t.Db.Model(models.Symbol{}).Select("symbol").Where("status", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
-		t.Repository.HaZlema(symbol)
+		t.Wp.Submit(func() {
+			t.Repository.HaZlema(symbol)
+		})
 	}
 	return nil
 }
 
 func (t *DailyTask) Kdj() error {
-	symbols, _ := t.Rdb.SMembers(t.Ctx, "binance:spot:websocket:symbols").Result()
+	var symbols []string
+	t.Db.Model(models.Symbol{}).Select("symbol").Where("status", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
-		t.Repository.Kdj(symbol)
+		t.Wp.Submit(func() {
+			t.Repository.Kdj(symbol)
+		})
 	}
 	return nil
 }
 
 func (t *DailyTask) BBands() error {
-	symbols, _ := t.Rdb.SMembers(t.Ctx, "binance:spot:websocket:symbols").Result()
+	var symbols []string
+	t.Db.Model(models.Symbol{}).Select("symbol").Where("status", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
-		t.Repository.BBands(symbol)
+		t.Wp.Submit(func() {
+			t.Repository.BBands(symbol)
+		})
 	}
 	return nil
 }

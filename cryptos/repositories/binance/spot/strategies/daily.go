@@ -114,8 +114,13 @@ func (r *DailyRepository) Zlema(symbol string) error {
 	).Order(
 		"timestamp DESC",
 	).First(&entity)
-	if !errors.Is(result.Error, gorm.ErrRecordNotFound) && entity.Signal == signal {
-		return result.Error
+	if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		if entity.Signal == signal {
+			return result.Error
+		}
+		if entity.Timestamp > timestamp {
+			return result.Error
+		}
 	}
 	entity = models.Strategy{
 		ID:        xid.New().String(),
@@ -171,8 +176,13 @@ func (r *DailyRepository) HaZlema(symbol string) error {
 	).Order(
 		"timestamp DESC",
 	).First(&entity)
-	if !errors.Is(result.Error, gorm.ErrRecordNotFound) && entity.Signal == signal {
-		return result.Error
+	if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		if entity.Signal == signal {
+			return result.Error
+		}
+		if entity.Timestamp > timestamp {
+			return result.Error
+		}
 	}
 	entity = models.Strategy{
 		ID:        xid.New().String(),
@@ -230,8 +240,13 @@ func (r *DailyRepository) Kdj(symbol string) error {
 	).Order(
 		"timestamp DESC",
 	).First(&entity)
-	if !errors.Is(result.Error, gorm.ErrRecordNotFound) && entity.Signal == signal {
-		return result.Error
+	if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		if entity.Signal == signal {
+			return result.Error
+		}
+		if entity.Timestamp > timestamp {
+			return result.Error
+		}
 	}
 	entity = models.Strategy{
 		ID:        xid.New().String(),
@@ -303,8 +318,13 @@ func (r *DailyRepository) BBands(symbol string) error {
 	).Order(
 		"timestamp DESC",
 	).First(&entity)
-	if !errors.Is(result.Error, gorm.ErrRecordNotFound) && entity.Signal == signal {
-		return result.Error
+	if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		if entity.Signal == signal {
+			return result.Error
+		}
+		if entity.Timestamp > timestamp {
+			return result.Error
+		}
 	}
 	entity = models.Strategy{
 		ID:        xid.New().String(),

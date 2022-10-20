@@ -2,7 +2,9 @@ package klines
 
 import (
 	"context"
+	"gorm.io/gorm"
 	"log"
+	models "taoniu.local/cryptos/models/binance"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/urfave/cli/v2"
@@ -12,6 +14,7 @@ import (
 )
 
 type DailyHandler struct {
+	Db         *gorm.DB
 	Rdb        *redis.Client
 	Ctx        context.Context
 	Repository *repositories.DailyRepository
@@ -19,6 +22,7 @@ type DailyHandler struct {
 
 func NewDailyCommand() *cli.Command {
 	h := DailyHandler{
+		Db:  pool.NewDB(),
 		Rdb: pool.NewRedis(),
 		Ctx: context.Background(),
 		Repository: &repositories.DailyRepository{
@@ -48,7 +52,8 @@ func NewDailyCommand() *cli.Command {
 
 func (h *DailyHandler) flush() error {
 	log.Println("klines daily processing...")
-	symbols, _ := h.Rdb.SMembers(h.Ctx, "binance:spot:websocket:symbols").Result()
+	var symbols []string
+	h.Db.Model(models.Symbol{}).Select("symbol").Where("status", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
 		h.Repository.Flush(symbol, 100)
 	}

@@ -68,10 +68,6 @@ func (r *DailyRepository) Pivot(symbol string) error {
 func (r *DailyRepository) Atr(symbol string, period int, limit int) error {
 	var klines []*models.Kline1d
 	r.Db.Select([]string{"close", "high", "low", "timestamp"}).Where("symbol", symbol).Order("timestamp desc").Limit(limit).Find(&klines)
-	day := time.Unix(klines[0].Timestamp/1000, 0).Format("0102")
-	if day != time.Now().Format("0102") {
-		return nil
-	}
 	var highs []float64
 	var lows []float64
 	var prices []float64
@@ -86,6 +82,10 @@ func (r *DailyRepository) Atr(symbol string, period int, limit int) error {
 		timestamp = item.Timestamp
 	}
 	if len(prices) < limit {
+		return nil
+	}
+	day := time.Unix(klines[0].Timestamp/1000, 0).Format("0102")
+	if day != time.Now().Format("0102") {
 		return nil
 	}
 	result := talib.Atr(
@@ -115,15 +115,11 @@ func (r *DailyRepository) Atr(symbol string, period int, limit int) error {
 
 func (r *DailyRepository) Zlema(symbol string, period int, limit int) error {
 	var klines []models.Kline1d
-	lag := int((period - 1) / 2)
 	r.Db.Select([]string{"close", "timestamp"}).Where("symbol", symbol).Order("timestamp desc").Limit(limit).Find(&klines)
-	day := time.Unix(klines[0].Timestamp/1000, 0).Format("0102")
-	if day != time.Now().Format("0102") {
-		return nil
-	}
 	var data []float64
 	var temp []float64
 	var timestamp int64
+	var lag = int((period - 1) / 2)
 	for _, item := range klines {
 		if len(temp) < lag {
 			temp = append([]float64{item.Close}, temp...)
@@ -137,6 +133,10 @@ func (r *DailyRepository) Zlema(symbol string, period int, limit int) error {
 		timestamp = item.Timestamp
 	}
 	if len(data) < limit-lag {
+		return nil
+	}
+	day := time.Unix(klines[0].Timestamp/1000, 0).Format("0102")
+	if day != time.Now().Format("0102") {
 		return nil
 	}
 	result := talib.Ema(data, period)
@@ -168,14 +168,10 @@ func (r *DailyRepository) Zlema(symbol string, period int, limit int) error {
 func (r *DailyRepository) HaZlema(symbol string, period int, limit int) error {
 	var klines []models.Kline1d
 	r.Db.Select([]string{"open", "close", "high", "low", "timestamp"}).Where("symbol", symbol).Order("timestamp desc").Limit(limit).Find(&klines)
-	day := time.Unix(klines[0].Timestamp/1000, 0).Format("0102")
-	if day != time.Now().Format("0102") {
-		return nil
-	}
 	var data []float64
 	var temp []float64
 	var timestamp int64
-	lag := int((period - 1) / 2)
+	var lag = int((period - 1) / 2)
 	for _, item := range klines {
 		var avgPrice = (item.Open + item.Close + item.High + item.Low) / 4
 		if len(temp) < lag {
@@ -190,6 +186,10 @@ func (r *DailyRepository) HaZlema(symbol string, period int, limit int) error {
 		timestamp = item.Timestamp
 	}
 	if len(data) < limit-lag {
+		return nil
+	}
+	day := time.Unix(klines[0].Timestamp/1000, 0).Format("0102")
+	if day != time.Now().Format("0102") {
 		return nil
 	}
 	result := talib.Ema(data, period)
@@ -221,10 +221,6 @@ func (r *DailyRepository) HaZlema(symbol string, period int, limit int) error {
 func (r *DailyRepository) Kdj(symbol string, longPeriod int, shortPeriod int, limit int) error {
 	var klines []models.Kline1d
 	r.Db.Select([]string{"close", "high", "low", "timestamp"}).Where("symbol", symbol).Order("timestamp desc").Limit(limit).Find(&klines)
-	day := time.Unix(klines[0].Timestamp/1000, 0).Format("0102")
-	if day != time.Now().Format("0102") {
-		return nil
-	}
 	var highs []float64
 	var lows []float64
 	var prices []float64
@@ -240,6 +236,10 @@ func (r *DailyRepository) Kdj(symbol string, longPeriod int, shortPeriod int, li
 		timestamp = item.Timestamp
 	}
 	if len(prices) < limit {
+		return nil
+	}
+	day := time.Unix(klines[0].Timestamp/1000, 0).Format("0102")
+	if day != time.Now().Format("0102") {
 		return nil
 	}
 	slowk, slowd := talib.Stoch(highs, lows, prices, longPeriod, shortPeriod, 0, shortPeriod, 0)
@@ -271,10 +271,6 @@ func (r *DailyRepository) Kdj(symbol string, longPeriod int, shortPeriod int, li
 func (r *DailyRepository) BBands(symbol string, period int, limit int) error {
 	var klines []models.Kline1d
 	r.Db.Select([]string{"close", "high", "low", "timestamp"}).Where("symbol", symbol).Order("timestamp desc").Limit(limit).Find(&klines)
-	day := time.Unix(klines[0].Timestamp/1000, 0).Format("0102")
-	if day != time.Now().Format("0102") {
-		return nil
-	}
 	var prices []float64
 	var timestamp int64
 	for _, item := range klines {
@@ -286,6 +282,10 @@ func (r *DailyRepository) BBands(symbol string, period int, limit int) error {
 		timestamp = item.Timestamp
 	}
 	if len(prices) < limit {
+		return nil
+	}
+	day := time.Unix(klines[0].Timestamp/1000, 0).Format("0102")
+	if day != time.Now().Format("0102") {
 		return nil
 	}
 	uBands, mBands, lBands := talib.BBands(prices, period, 2, 2, 0)
