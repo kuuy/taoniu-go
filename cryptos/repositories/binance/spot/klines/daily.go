@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strconv"
+	"time"
 
 	"gorm.io/gorm"
 
@@ -71,6 +72,13 @@ func (r *DailyRepository) Flush(symbol string, limit int) error {
 			r.Db.Model(&models.Kline1d{ID: entity.ID}).Updates(entity)
 		}
 	}
+
+	return nil
+}
+
+func (r *DailyRepository) Clean() error {
+	timestamp := time.Now().AddDate(0, 0, -100).Unix()
+	r.Db.Where("timestamp < ?", timestamp).Delete(&models.Kline1d{})
 
 	return nil
 }

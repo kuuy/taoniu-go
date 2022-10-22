@@ -72,6 +72,9 @@ func (h *CronHandler) run() error {
 		binance.Spot().Margin().Sync()
 		binance.Spot().Analysis().Daily().Flush()
 	})
+	c.AddFunc("0 30 * * * *", func() {
+		binance.Spot().Clean()
+	})
 	c.Start()
 
 	<-h.wait(wg)

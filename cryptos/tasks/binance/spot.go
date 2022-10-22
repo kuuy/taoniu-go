@@ -89,3 +89,7 @@ func (t *SpotTask) Flush() {
 	t.Margin().Flush()
 	t.Plans().Daily().Flush()
 }
+
+func (t *SpotTask) Clean() {
+	t.Klines().Daily().Clean()
+}

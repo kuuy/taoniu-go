@@ -19,3 +19,8 @@ func (t *DailyTask) Flush(limit int) error {
 	}
 	return nil
 }
+
+func (t *DailyTask) Clean() error {
+	t.Repository.Clean()
+	return nil
+}

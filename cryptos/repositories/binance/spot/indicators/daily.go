@@ -23,7 +23,7 @@ type DailyRepository struct {
 
 func (r *DailyRepository) Pivot(symbol string) error {
 	var kline models.Kline1d
-	result := r.Db.Select([]string{"close", "high", "low", "timestamp"}).Where("symbol", symbol).Order("timestamp desc").First(&kline)
+	result := r.Db.Select([]string{"close", "high", "low", "timestamp"}).Where("symbol", symbol).Order("timestamp desc").Take(&kline)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return result.Error
 	}

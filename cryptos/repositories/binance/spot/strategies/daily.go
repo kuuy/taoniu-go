@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/rs/xid"
-	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -248,7 +247,6 @@ func (r *DailyRepository) Kdj(symbol string) error {
 		if entity.Timestamp >= timestamp {
 			return nil
 		}
-		log.Println("diff:", entity.Timestamp, timestamp)
 	}
 	entity = models.Strategy{
 		ID:        xid.New().String(),

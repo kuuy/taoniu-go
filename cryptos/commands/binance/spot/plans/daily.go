@@ -2,10 +2,8 @@ package plans
 
 import (
 	"context"
-	"log"
-
 	"github.com/urfave/cli/v2"
-
+	"log"
 	pool "taoniu.local/cryptos/common"
 	repositories "taoniu.local/cryptos/repositories/binance/spot/plans"
 )
@@ -24,7 +22,7 @@ func NewDailyCommand() *cli.Command {
 	}
 
 	return &cli.Command{
-		Name:  "daily",
+		Name:  "tradings",
 		Usage: "",
 		Subcommands: []*cli.Command{
 			{

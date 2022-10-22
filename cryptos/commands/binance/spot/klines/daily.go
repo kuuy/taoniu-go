@@ -46,17 +46,33 @@ func NewDailyCommand() *cli.Command {
 					return nil
 				},
 			},
+			{
+				Name:  "clean",
+				Usage: "",
+				Action: func(c *cli.Context) error {
+					if err := h.clean(); err != nil {
+						return cli.Exit(err.Error(), 1)
+					}
+					return nil
+				},
+			},
 		},
 	}
 }
 
 func (h *DailyHandler) flush() error {
-	log.Println("klines daily processing...")
+	log.Println("binance spot klines daily flush...")
 	var symbols []string
 	h.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
 		h.Repository.Flush(symbol, 100)
 	}
 
+	return nil
+}
+
+func (h *DailyHandler) clean() error {
+	log.Println("binance spot klines daily clean...")
+	h.Repository.Clean()
 	return nil
 }
