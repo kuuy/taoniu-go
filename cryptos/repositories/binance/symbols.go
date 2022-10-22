@@ -9,7 +9,9 @@ import (
 	"github.com/rs/xid"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
+	"math"
 	"strconv"
+	"strings"
 	config "taoniu.local/cryptos/config/binance"
 	models "taoniu.local/cryptos/models/binance"
 )
@@ -103,4 +105,40 @@ func (r *SymbolsRepository) Flush() error {
 	}
 
 	return nil
+}
+
+func (r *SymbolsRepository) Filter(symbol string, price float64, amount float64) (float64, float64) {
+	var entity models.Symbol
+	result := r.Db.Select("filters").Where("symbol", symbol).First(&entity)
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return 0, 0
+	}
+	var data []string
+	data = strings.Split(entity.Filters["price"].(string), ",")
+	maxPrice, _ := strconv.ParseFloat(data[0], 64)
+	minPrice, _ := strconv.ParseFloat(data[1], 64)
+	tickSize, _ := strconv.ParseFloat(data[2], 64)
+
+	if price > maxPrice {
+		return 0, 0
+	}
+	if price < minPrice {
+		price = minPrice
+	}
+	price = math.Ceil(price/tickSize) / math.Ceil(1/tickSize)
+
+	data = strings.Split(entity.Filters["quote"].(string), ",")
+	maxQty, _ := strconv.ParseFloat(data[0], 64)
+	minQty, _ := strconv.ParseFloat(data[1], 64)
+	stepSize, _ := strconv.ParseFloat(data[2], 64)
+
+	quantity := math.Ceil(amount/(price*stepSize)) / math.Ceil(1/stepSize)
+	if quantity > maxQty {
+		return 0, 0
+	}
+	if quantity < minQty {
+		quantity = minQty
+	}
+
+	return price, quantity
 }

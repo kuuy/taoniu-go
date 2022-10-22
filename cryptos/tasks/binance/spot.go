@@ -76,7 +76,16 @@ func (t *SpotTask) Analysis() *tasks.AnalysisTask {
 	}
 }
 
+func (t *SpotTask) Plans() *tasks.PlansTask {
+	return &tasks.PlansTask{
+		Db:  t.Db,
+		Rdb: t.Rdb,
+		Ctx: t.Ctx,
+	}
+}
+
 func (t *SpotTask) Flush() {
 	t.Account().Flush()
 	t.Margin().Flush()
+	t.Plans().Daily().Flush()
 }

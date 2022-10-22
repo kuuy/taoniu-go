@@ -2,6 +2,7 @@ package isolated
 
 import (
 	"context"
+	"github.com/adshao/go-binance/v2"
 	"github.com/go-redis/redis/v8"
 	"github.com/urfave/cli/v2"
 	"log"
@@ -63,7 +64,7 @@ func (h *TradingsHandler) scalping() error {
 func (h *TradingsHandler) buy() error {
 	symbol := "AVAXBUSD"
 	price := 15.427547306193494
-	orderId, err := h.Repository.Buy(symbol, price, 10)
+	orderId, err := h.Repository.Trade(symbol, binance.SideTypeBuy, price, 10)
 	if err != nil {
 		return err
 	}
