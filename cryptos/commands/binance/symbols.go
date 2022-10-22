@@ -40,6 +40,16 @@ func NewSymbolsCommand() *cli.Command {
 					return nil
 				},
 			},
+			{
+				Name:  "count",
+				Usage: "",
+				Action: func(c *cli.Context) error {
+					if err := h.count(); err != nil {
+						return cli.Exit(err.Error(), 1)
+					}
+					return nil
+				},
+			},
 		},
 	}
 }
@@ -47,4 +57,9 @@ func NewSymbolsCommand() *cli.Command {
 func (h *SymbolsHandler) flush() error {
 	log.Println("symbols flush...")
 	return h.Repository.Flush()
+}
+
+func (h *SymbolsHandler) count() error {
+	log.Println("symbols count...")
+	return h.Repository.Count()
 }

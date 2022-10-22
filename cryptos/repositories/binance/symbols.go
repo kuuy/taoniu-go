@@ -107,6 +107,20 @@ func (r *SymbolsRepository) Flush() error {
 	return nil
 }
 
+func (r *SymbolsRepository) Count() error {
+	var count int64
+	r.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Count(&count)
+	r.Rdb.HMSet(
+		r.Ctx,
+		fmt.Sprintf("binance:symbols:count"),
+		map[string]interface{}{
+			"spot": count,
+		},
+	)
+
+	return nil
+}
+
 func (r *SymbolsRepository) Filter(symbol string, price float64, amount float64) (float64, float64) {
 	var entity models.Symbol
 	result := r.Db.Select("filters").Where("symbol", symbol).First(&entity)
