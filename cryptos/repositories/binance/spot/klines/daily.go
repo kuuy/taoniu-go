@@ -47,7 +47,7 @@ func (r *DailyRepository) Flush(symbol string, limit int) error {
 			"symbol=? AND timestamp=?",
 			symbol,
 			timestamp,
-		).First(&entity)
+		).Take(&entity)
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			entity = models.Kline1d{
 				ID:        xid.New().String(),

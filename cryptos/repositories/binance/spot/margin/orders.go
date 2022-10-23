@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/rs/xid"
-	"log"
 	"strconv"
 	models "taoniu.local/cryptos/models/binance/spot/margin"
 	"time"
@@ -63,8 +62,9 @@ func (r *OrdersRepository) Sync(symbol string, isIsolated bool, limit int) error
 		return err
 	}
 	for _, order := range orders {
-		log.Println("order", order)
+		r.Save(order)
 	}
+
 	return nil
 }
 

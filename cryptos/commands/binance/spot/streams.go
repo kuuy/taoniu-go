@@ -44,7 +44,7 @@ func NewStreamCommand() *cli.Command {
 			if err == nil {
 				h.ID = id
 			}
-			if id < 1 {
+			if h.ID < 1 {
 				return nil
 			}
 			if err := h.start(); err != nil {

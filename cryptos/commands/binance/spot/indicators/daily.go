@@ -2,23 +2,22 @@ package indicators
 
 import (
 	"context"
-	"github.com/go-redis/redis/v8"
 	"github.com/urfave/cli/v2"
+	"gorm.io/gorm"
 	"log"
 	pool "taoniu.local/cryptos/common"
+	models "taoniu.local/cryptos/models/binance"
 	repositories "taoniu.local/cryptos/repositories/binance/spot/indicators"
 )
 
 type DailyHandler struct {
-	rdb        *redis.Client
-	ctx        context.Context
+	Db         *gorm.DB
 	repository *repositories.DailyRepository
 }
 
 func NewDailyCommand() *cli.Command {
 	h := DailyHandler{
-		rdb: pool.NewRedis(),
-		ctx: context.Background(),
+		Db: pool.NewDB(),
 		repository: &repositories.DailyRepository{
 			Db:  pool.NewDB(),
 			Rdb: pool.NewRedis(),
@@ -96,7 +95,8 @@ func NewDailyCommand() *cli.Command {
 
 func (h *DailyHandler) atr() error {
 	log.Println("daily atr processing...")
-	symbols, _ := h.rdb.SMembers(h.ctx, "binance:spot:websocket:symbols").Result()
+	var symbols []string
+	h.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
 		h.repository.Atr(symbol, 14, 100)
 	}
@@ -105,7 +105,8 @@ func (h *DailyHandler) atr() error {
 
 func (h *DailyHandler) zlema() error {
 	log.Println("daily zlema processing...")
-	symbols, _ := h.rdb.SMembers(h.ctx, "binance:spot:websocket:symbols").Result()
+	var symbols []string
+	h.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
 		h.repository.Zlema(symbol, 14, 100)
 	}
@@ -114,7 +115,8 @@ func (h *DailyHandler) zlema() error {
 
 func (h *DailyHandler) haZlema() error {
 	log.Println("daily ha_zlema processing...")
-	symbols, _ := h.rdb.SMembers(h.ctx, "binance:spot:websocket:symbols").Result()
+	var symbols []string
+	h.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
 		h.repository.HaZlema(symbol, 14, 100)
 	}
@@ -123,7 +125,8 @@ func (h *DailyHandler) haZlema() error {
 
 func (h *DailyHandler) kdj() error {
 	log.Println("daily kdj indicator...")
-	symbols, _ := h.rdb.SMembers(h.ctx, "binance:spot:websocket:symbols").Result()
+	var symbols []string
+	h.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
 		h.repository.Kdj(symbol, 9, 3, 100)
 	}
@@ -132,7 +135,8 @@ func (h *DailyHandler) kdj() error {
 
 func (h *DailyHandler) bBands() error {
 	log.Println("daily boll bands indicator...")
-	symbols, _ := h.rdb.SMembers(h.ctx, "binance:spot:websocket:symbols").Result()
+	var symbols []string
+	h.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
 		h.repository.BBands(symbol, 14, 100)
 	}
@@ -141,7 +145,8 @@ func (h *DailyHandler) bBands() error {
 
 func (h *DailyHandler) pivot() error {
 	log.Println("daily pivot indicator...")
-	symbols, _ := h.rdb.SMembers(h.ctx, "binance:spot:websocket:symbols").Result()
+	var symbols []string
+	h.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
 		h.repository.Pivot(symbol)
 	}

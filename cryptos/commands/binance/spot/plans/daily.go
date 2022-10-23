@@ -22,7 +22,7 @@ func NewDailyCommand() *cli.Command {
 	}
 
 	return &cli.Command{
-		Name:  "tradings",
+		Name:  "daily",
 		Usage: "",
 		Subcommands: []*cli.Command{
 			{

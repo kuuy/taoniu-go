@@ -64,6 +64,17 @@ func (r *DailyRepository) Plans(signals map[string]interface{}, side int64) erro
 			timestamp,
 		).First(&entity)
 		if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			context := r.Context(symbol)
+			isUpdate := false
+			for key, val := range entity.Context {
+				if val == nil {
+					entity.Context[key] = context[key]
+					isUpdate = true
+				}
+			}
+			if isUpdate {
+				r.Db.Model(&models.Plans{ID: entity.ID}).Updates(entity)
+			}
 			continue
 		}
 		entity = models.Plans{

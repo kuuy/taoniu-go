@@ -7,7 +7,6 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/gammazero/workerpool"
 	"github.com/go-redis/redis/v8"
 	"github.com/robfig/cron/v3"
 	"github.com/urfave/cli/v2"
@@ -46,13 +45,10 @@ func (h *CronHandler) run() error {
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 
-	wp := workerpool.New(100)
-	defer wp.StopWait()
 	binance := tasks.BinanceTask{
 		Db:  h.db,
 		Rdb: h.rdb,
 		Ctx: h.ctx,
-		Wp:  wp,
 	}
 
 	c := cron.New()

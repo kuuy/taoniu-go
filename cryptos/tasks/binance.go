@@ -31,6 +31,5 @@ func (t *BinanceTask) Spot() *binance.SpotTask {
 		Db:  t.Db,
 		Rdb: t.Rdb,
 		Ctx: t.Ctx,
-		Wp:  t.Wp,
 	}
 }
