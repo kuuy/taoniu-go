@@ -106,7 +106,7 @@ func (r *OrdersRepository) Save(order *binance.Order) error {
 		"symbol=? AND order_id=?",
 		symbol,
 		orderID,
-	).First(&entity)
+	).Take(&entity)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		entity = models.Order{
 			ID:               xid.New().String(),

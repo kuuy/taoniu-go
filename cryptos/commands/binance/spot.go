@@ -10,7 +10,6 @@ func NewSpotCommand() *cli.Command {
 		Name:  "spot",
 		Usage: "",
 		Subcommands: []*cli.Command{
-			spot.NewSymbolsCommand(),
 			spot.NewStreamCommand(),
 			spot.NewWebsocketCommand(),
 			spot.NewKlinesCommand(),
@@ -21,6 +20,7 @@ func NewSpotCommand() *cli.Command {
 			spot.NewMarginCommand(),
 			spot.NewAnalysisCommand(),
 			spot.NewPlansCommand(),
+			spot.NewGridsCommand(),
 		},
 	}
 }

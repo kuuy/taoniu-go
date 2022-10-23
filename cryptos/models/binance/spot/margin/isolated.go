@@ -13,7 +13,7 @@ func NewIsolated() *Isolated {
 
 func (m *Isolated) AutoMigrate(db *gorm.DB) error {
 	db.AutoMigrate(
-		&isolated.Grids{},
+		&isolated.TradingGrid{},
 	)
 	return nil
 }

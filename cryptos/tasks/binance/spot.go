@@ -14,15 +14,6 @@ type SpotTask struct {
 	Ctx context.Context
 }
 
-func (t *SpotTask) Symbols() *tasks.SymbolsTask {
-	return &tasks.SymbolsTask{
-		Repository: &repositories.SymbolsRepository{
-			Rdb: t.Rdb,
-			Ctx: t.Ctx,
-		},
-	}
-}
-
 func (t *SpotTask) Klines() *tasks.KlinesTask {
 	return &tasks.KlinesTask{
 		Db:  t.Db,

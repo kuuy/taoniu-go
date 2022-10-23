@@ -57,7 +57,7 @@ func (r *ProfitsRepository) Flush(symbol string) error {
 		"symbol=? AND day=?",
 		symbol,
 		today,
-	).First(&entity)
+	).Take(&entity)
 	if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 		entity = models.Daily{
 			ID:          xid.New().String(),

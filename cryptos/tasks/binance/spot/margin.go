@@ -38,7 +38,6 @@ func (t *MarginTask) Flush() {
 	t.Isolated().Account().Flush()
 	t.Isolated().Orders().Open()
 	t.Isolated().Symbols().Flush()
-	t.Isolated().Grids().Flush()
 	t.Orders().Flush()
 }
 

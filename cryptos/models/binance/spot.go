@@ -17,6 +17,7 @@ func (m *Spot) AutoMigrate(db *gorm.DB) error {
 		&spot.Kline1d{},
 		&spot.Strategy{},
 		&spot.Plans{},
+		&spot.Grids{},
 	)
 	spot.NewMargin().AutoMigrate(db)
 	spot.NewAnalysis().AutoMigrate(db)

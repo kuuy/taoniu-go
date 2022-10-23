@@ -42,6 +42,16 @@ func NewTradingsCommand() *cli.Command {
 				},
 			},
 			{
+				Name:  "grids",
+				Usage: "",
+				Action: func(c *cli.Context) error {
+					if err := h.grids(); err != nil {
+						return cli.Exit(err.Error(), 1)
+					}
+					return nil
+				},
+			},
+			{
 				Name:  "buy",
 				Usage: "",
 				Action: func(c *cli.Context) error {
@@ -58,6 +68,16 @@ func NewTradingsCommand() *cli.Command {
 func (h *TradingsHandler) scalping() error {
 	log.Println("spot margin isolated tradings scalping...")
 	h.Repository.Scalping()
+	return nil
+}
+
+func (h *TradingsHandler) grids() error {
+	log.Println("spot margin isolated tradings grids...")
+	symbols, _ := h.Rdb.SMembers(h.Ctx, "binance:spot:margin:isolated:symbols").Result()
+	for _, symbol := range symbols {
+		h.Repository.Grids(symbol)
+	}
+
 	return nil
 }
 

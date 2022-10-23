@@ -14,6 +14,14 @@ type AccountRepository struct {
 	Ctx context.Context
 }
 
+type AccountError struct {
+	Message string
+}
+
+func (m *AccountError) Error() string {
+	return m.Message
+}
+
 func (r *AccountRepository) Flush() error {
 	client := binance.NewClient(config.ACCOUNT_API_KEY, config.ACCOUNT_SECRET_KEY)
 	account, err := client.NewGetIsolatedMarginAccountService().Do(r.Ctx)
@@ -50,4 +58,28 @@ func (r *AccountRepository) Flush() error {
 	}
 
 	return nil
+}
+
+func (r *AccountRepository) Balance(symbol string) (float64, float64, error) {
+	fields := []string{
+		"quote_free",
+		"base_free",
+	}
+	data, _ := r.Rdb.HMGet(
+		r.Ctx,
+		fmt.Sprintf(
+			"binance:spot:margin:isolated:balances:%s",
+			symbol,
+		),
+		fields...,
+	).Result()
+	for i := 0; i < len(fields); i++ {
+		if data[i] == nil {
+			return 0, 0, &AccountError{"price not exists"}
+		}
+	}
+	balance, _ := strconv.ParseFloat(data[0].(string), 64)
+	quantity, _ := strconv.ParseFloat(data[1].(string), 64)
+
+	return balance, quantity, nil
 }

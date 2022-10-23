@@ -44,11 +44,11 @@ func (t *IsolatedTask) Orders() *tasks.OrdersTask {
 	}
 }
 
-func (t *IsolatedTask) Grids() *tasks.GridsTask {
-	return &tasks.GridsTask{
+func (t *IsolatedTask) Tradings() *tasks.TradingsTask {
+	return &tasks.TradingsTask{
 		Rdb: t.Rdb,
 		Ctx: t.Ctx,
-		Repository: &repositories.GridsRepository{
+		Repository: &repositories.TradingsRepository{
 			Db:  t.Db,
 			Rdb: t.Rdb,
 			Ctx: t.Ctx,

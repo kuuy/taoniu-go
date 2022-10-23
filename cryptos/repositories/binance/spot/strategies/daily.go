@@ -113,7 +113,7 @@ func (r *DailyRepository) Zlema(symbol string) error {
 		duration,
 	).Order(
 		"timestamp DESC",
-	).First(&entity)
+	).Take(&entity)
 	if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		if entity.Signal == signal {
 			return nil
@@ -175,7 +175,7 @@ func (r *DailyRepository) HaZlema(symbol string) error {
 		duration,
 	).Order(
 		"timestamp DESC",
-	).First(&entity)
+	).Take(&entity)
 	if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		if entity.Signal == signal {
 			return nil
@@ -239,7 +239,7 @@ func (r *DailyRepository) Kdj(symbol string) error {
 		duration,
 	).Order(
 		"timestamp DESC",
-	).First(&entity)
+	).Take(&entity)
 	if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		if entity.Signal == signal {
 			return nil
@@ -317,7 +317,7 @@ func (r *DailyRepository) BBands(symbol string) error {
 		duration,
 	).Order(
 		"timestamp DESC",
-	).First(&entity)
+	).Take(&entity)
 	if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		if entity.Signal == signal {
 			return nil

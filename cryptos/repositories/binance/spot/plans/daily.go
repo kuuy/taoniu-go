@@ -62,7 +62,7 @@ func (r *DailyRepository) Plans(signals map[string]interface{}, side int64) erro
 			"symbol=? AND timestamp=?",
 			symbol,
 			timestamp,
-		).First(&entity)
+		).Take(&entity)
 		if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			context := r.Context(symbol)
 			isUpdate := false

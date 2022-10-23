@@ -14,12 +14,21 @@ import (
 	"strings"
 	config "taoniu.local/cryptos/config/binance"
 	models "taoniu.local/cryptos/models/binance"
+	"time"
 )
 
 type SymbolsRepository struct {
 	Db  *gorm.DB
 	Rdb *redis.Client
 	Ctx context.Context
+}
+
+type SymbolsError struct {
+	Message string
+}
+
+func (m *SymbolsError) Error() string {
+	return m.Message
 }
 
 func (r *SymbolsRepository) Flush() error {
@@ -82,7 +91,7 @@ func (r *SymbolsRepository) Flush() error {
 			continue
 		}
 		var entity models.Symbol
-		result := r.Db.Where("symbol", item.Symbol).First(&entity)
+		result := r.Db.Where("symbol", item.Symbol).Take(&entity)
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			entity = models.Symbol{
 				ID:         xid.New().String(),
@@ -121,9 +130,38 @@ func (r *SymbolsRepository) Count() error {
 	return nil
 }
 
+func (r *SymbolsRepository) Price(symbol string) (float64, error) {
+	fields := []string{
+		"price",
+		"timestamp",
+	}
+	data, _ := r.Rdb.HMGet(
+		r.Ctx,
+		fmt.Sprintf(
+			"binance:spot:realtime:%s",
+			symbol,
+		),
+		fields...,
+	).Result()
+	for i := 0; i < len(fields); i++ {
+		if data[i] == nil {
+			return 0, &SymbolsError{"price not exists"}
+		}
+	}
+
+	timestamp := time.Now().Unix()
+	price, _ := strconv.ParseFloat(data[0].(string), 64)
+	lasttime, _ := strconv.ParseInt(data[1].(string), 10, 64)
+	if lasttime > timestamp-300 {
+		return 0, &SymbolsError{"price long time not freshed"}
+	}
+
+	return price, nil
+}
+
 func (r *SymbolsRepository) Filter(symbol string, price float64, amount float64) (float64, float64) {
 	var entity models.Symbol
-	result := r.Db.Select("filters").Where("symbol", symbol).First(&entity)
+	result := r.Db.Select("filters").Where("symbol", symbol).Take(&entity)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return 0, 0
 	}
