@@ -82,7 +82,7 @@ func (r *TradingsRepository) Grids(symbol string) error {
 	if err != nil {
 		return err
 	}
-	sellItems, err := r.FilterGrid(grid.ID, price, signal)
+	sellItems, err := r.FilterGrid(grid, price, signal)
 	if err != nil {
 		return err
 	}
@@ -147,19 +147,22 @@ func (r *TradingsRepository) SellGrid(entities []*models.TradingGrid) error {
 	return nil
 }
 
-func (r *TradingsRepository) FilterGrid(gid string, price float64, signal int64) ([]*models.TradingGrid, error) {
+func (r *TradingsRepository) FilterGrid(grid *spotModels.Grids, price float64, signal int64) ([]*models.TradingGrid, error) {
 	var entryPrice float64
 	var takePrice float64
 	var entities []*models.TradingGrid
 	var sellItems []*models.TradingGrid
 	r.Db.Where(
 		"grid_id=? AND status IN ?",
-		gid,
+		grid.ID,
 		[]int64{0, 1},
 	).Find(&entities)
 	for _, entity := range entities {
 		if entryPrice == 0 || entryPrice > entity.BuyPrice {
 			entryPrice = entity.BuyPrice
+		}
+		if entryPrice == 0 || (entity.Status == 0 && entryPrice > entity.BuyPrice*(1-grid.TakeProfitPercent)) {
+			entryPrice = entity.BuyPrice / (1 + grid.TakeProfitPercent)
 		}
 		if takePrice == 0 || (entity.Status == 1 && takePrice < entity.SellPrice) {
 			takePrice = entity.SellPrice

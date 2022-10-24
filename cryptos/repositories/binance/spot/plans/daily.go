@@ -3,13 +3,16 @@ package plans
 import (
 	"context"
 	"errors"
-	"fmt"
+	"time"
+
+	"gorm.io/gorm"
+
 	"github.com/go-redis/redis/v8"
 	"github.com/rs/xid"
-	"gorm.io/gorm"
+
 	models "taoniu.local/cryptos/models/binance/spot"
-	"taoniu.local/cryptos/repositories/binance"
-	"time"
+	binanceRepositories "taoniu.local/cryptos/repositories/binance"
+	spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
 type DailyRepository struct {
@@ -26,6 +29,22 @@ func (r *DailyRepository) Flush() error {
 	return nil
 }
 
+func (r *DailyRepository) SymbolsRepository() *binanceRepositories.SymbolsRepository {
+	return &binanceRepositories.SymbolsRepository{
+		Db:  r.Db,
+		Rdb: r.Rdb,
+		Ctx: r.Ctx,
+	}
+}
+
+func (r *DailyRepository) GridsRepository() *spotRepositories.GridsRepository {
+	return &spotRepositories.GridsRepository{
+		Db:  r.Db,
+		Rdb: r.Rdb,
+		Ctx: r.Ctx,
+	}
+}
+
 func (r *DailyRepository) Plans(signals map[string]interface{}, side int64) error {
 	if _, ok := signals["kdj"]; !ok {
 		return nil
@@ -33,11 +52,6 @@ func (r *DailyRepository) Plans(signals map[string]interface{}, side int64) erro
 	now := time.Now()
 	duration := time.Hour*time.Duration(8-now.Hour()) - time.Minute*time.Duration(now.Minute()) - time.Second*time.Duration(now.Second())
 	timestamp := now.Add(duration).Unix()
-	repository := binance.SymbolsRepository{
-		Db:  r.Db,
-		Rdb: r.Rdb,
-		Ctx: r.Ctx,
-	}
 	for symbol, price := range signals["kdj"].(map[string]float64) {
 		amount := 10.0
 		if _, ok := signals["bbands"]; ok {
@@ -56,7 +70,7 @@ func (r *DailyRepository) Plans(signals map[string]interface{}, side int64) erro
 				amount += 5
 			}
 		}
-		price, quantity := repository.Filter(symbol, price, amount)
+		price, quantity := r.SymbolsRepository().Filter(symbol, price, amount)
 		var entity models.Plans
 		result := r.Db.Where(
 			"symbol=? AND timestamp=?",
@@ -64,7 +78,7 @@ func (r *DailyRepository) Plans(signals map[string]interface{}, side int64) erro
 			timestamp,
 		).Take(&entity)
 		if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			context := r.Context(symbol)
+			context := r.SymbolsRepository().Context(symbol)
 			isUpdate := false
 			for key, val := range entity.Context {
 				if val == nil {
@@ -85,9 +99,11 @@ func (r *DailyRepository) Plans(signals map[string]interface{}, side int64) erro
 			Quantity:  quantity,
 			Amount:    amount,
 			Timestamp: timestamp,
-			Context:   r.Context(symbol),
+			Context:   r.SymbolsRepository().Context(symbol),
 		}
 		r.Db.Create(&entity)
+
+		r.GridsRepository().Flush(symbol)
 	}
 
 	return nil
@@ -131,34 +147,4 @@ func (r *DailyRepository) Signals() (map[string]interface{}, map[string]interfac
 	}
 
 	return buys, sells
-}
-
-func (r *DailyRepository) Context(symbol string) map[string]interface{} {
-	day := time.Now().Format("0102")
-	fields := []string{
-		"r3",
-		"r2",
-		"r1",
-		"s1",
-		"s2",
-		"s3",
-		"profit_target",
-		"stop_loss_point",
-		"take_profit_price",
-	}
-	data, _ := r.Rdb.HMGet(
-		r.Ctx,
-		fmt.Sprintf(
-			"binance:spot:indicators:%s:%s",
-			symbol,
-			day,
-		),
-		fields...,
-	).Result()
-	var context = make(map[string]interface{})
-	for i := 0; i < len(fields); i++ {
-		context[fields[i]] = data[i]
-	}
-
-	return context
 }

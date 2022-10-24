@@ -194,3 +194,33 @@ func (r *SymbolsRepository) Filter(symbol string, price float64, amount float64)
 
 	return price, quantity
 }
+
+func (r *SymbolsRepository) Context(symbol string) map[string]interface{} {
+	day := time.Now().Format("0102")
+	fields := []string{
+		"r3",
+		"r2",
+		"r1",
+		"s1",
+		"s2",
+		"s3",
+		"profit_target",
+		"stop_loss_point",
+		"take_profit_price",
+	}
+	data, _ := r.Rdb.HMGet(
+		r.Ctx,
+		fmt.Sprintf(
+			"binance:spot:indicators:%s:%s",
+			symbol,
+			day,
+		),
+		fields...,
+	).Result()
+	var context = make(map[string]interface{})
+	for i := 0; i < len(fields); i++ {
+		context[fields[i]] = data[i]
+	}
+
+	return context
+}

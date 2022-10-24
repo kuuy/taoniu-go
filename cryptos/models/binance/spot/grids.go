@@ -9,6 +9,7 @@ type Grids struct {
 	Symbol            string    `gorm:"size:20;not null;index:idx_binance_spot_grids_symbol_status"`
 	Step              int64     `gorm:"not null;index:idx_binance_spot_grids_symbol_status"`
 	Balance           float64   `gorm:"not null"`
+	Amount            float64   `gorm:"not null"`
 	Quantity          float64   `gorm:"not null"`
 	ProfitTarget      float64   `gorm:"not null"`
 	StopLossPoint     float64   `gorm:"not null"`

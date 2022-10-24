@@ -6,10 +6,10 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/rs/xid"
 	"gorm.io/gorm"
-	"log"
+	"math"
 	"strconv"
 	models "taoniu.local/cryptos/models/binance/spot"
-	"taoniu.local/cryptos/repositories/binance/spot/plans"
+	binanceRepositories "taoniu.local/cryptos/repositories/binance"
 )
 
 type GridsRepository struct {
@@ -26,7 +26,50 @@ func (m *GridsError) Error() string {
 	return m.Message
 }
 
-func (r *GridsRepository) Open(symbol string, balance float64) error {
+func (r *GridsRepository) SymbolsRepository() *binanceRepositories.SymbolsRepository {
+	return &binanceRepositories.SymbolsRepository{
+		Db:  r.Db,
+		Rdb: r.Rdb,
+		Ctx: r.Ctx,
+	}
+}
+
+func (r *GridsRepository) Flush(symbol string) error {
+	var entity models.Grids
+	result := r.Db.Where(
+		"symbol=? AND status=1",
+		symbol,
+	).Order("step desc").Take(&entity)
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return result.Error
+	}
+	context := r.SymbolsRepository().Context(symbol)
+	profitTarget, _ := strconv.ParseFloat(context["profit_target"].(string), 64)
+	takeProfitPrice, _ := strconv.ParseFloat(context["take_profit_price"].(string), 64)
+	stopLossPoint, _ := strconv.ParseFloat(context["stop_loss_point"].(string), 64)
+	if profitTarget > entity.StopLossPoint {
+		return nil
+	}
+	amount := entity.Amount * math.Pow(2, float64(entity.Step-1))
+	entity = models.Grids{
+		ID:                xid.New().String(),
+		Symbol:            symbol,
+		Step:              entity.Step + 1,
+		Balance:           amount,
+		Amount:            amount,
+		ProfitTarget:      profitTarget,
+		StopLossPoint:     stopLossPoint,
+		TakeProfitPrice:   takeProfitPrice,
+		TriggerPercent:    entity.TriggerPercent * 0.8,
+		TakeProfitPercent: 0.05,
+		Status:            1,
+	}
+	r.Db.Create(&entity)
+
+	return nil
+}
+
+func (r *GridsRepository) Open(symbol string, amount float64) error {
 	var entity models.Grids
 	result := r.Db.Where(
 		"symbol=? AND status=1",
@@ -35,12 +78,7 @@ func (r *GridsRepository) Open(symbol string, balance float64) error {
 	if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return &GridsError{"grid already opened"}
 	}
-	repository := plans.DailyRepository{
-		Db:  r.Db,
-		Rdb: r.Rdb,
-		Ctx: r.Ctx,
-	}
-	context := repository.Context(symbol)
+	context := r.SymbolsRepository().Context(symbol)
 	profitTarget, _ := strconv.ParseFloat(context["profit_target"].(string), 64)
 	takeProfitPrice, _ := strconv.ParseFloat(context["take_profit_price"].(string), 64)
 	stopLossPoint, _ := strconv.ParseFloat(context["stop_loss_point"].(string), 64)
@@ -48,7 +86,8 @@ func (r *GridsRepository) Open(symbol string, balance float64) error {
 		ID:                xid.New().String(),
 		Symbol:            symbol,
 		Step:              1,
-		Balance:           balance,
+		Balance:           amount,
+		Amount:            amount,
 		ProfitTarget:      profitTarget,
 		StopLossPoint:     stopLossPoint,
 		TakeProfitPrice:   takeProfitPrice,
@@ -62,7 +101,10 @@ func (r *GridsRepository) Open(symbol string, balance float64) error {
 }
 
 func (r *GridsRepository) Close(symbol string) error {
-	log.Println("open", symbol)
+	r.Db.Model(&models.Grids{}).Where(
+		"symbol=? AND status=1",
+		symbol,
+	).Update("status", 2)
 	return nil
 }
 
