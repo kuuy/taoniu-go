@@ -17,6 +17,7 @@ type IsolatedTask struct {
 func (t *IsolatedTask) Symbols() *tasks.SymbolsTask {
 	return &tasks.SymbolsTask{
 		Repository: &repositories.SymbolsRepository{
+			Db:  t.Db,
 			Rdb: t.Rdb,
 			Ctx: t.Ctx,
 		},

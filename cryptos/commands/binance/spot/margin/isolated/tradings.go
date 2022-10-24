@@ -75,7 +75,10 @@ func (h *TradingsHandler) grids() error {
 	log.Println("spot margin isolated tradings grids...")
 	symbols, _ := h.Rdb.SMembers(h.Ctx, "binance:spot:margin:isolated:symbols").Result()
 	for _, symbol := range symbols {
-		h.Repository.Grids(symbol)
+		err := h.Repository.Grids(symbol)
+		if err != nil {
+			log.Println("error", err)
+		}
 	}
 
 	return nil

@@ -29,9 +29,9 @@ func (r *AccountRepository) Flush() error {
 		return err
 	}
 	for _, coin := range account.Assets {
-		baseBorrowed, _ := strconv.ParseFloat(coin.BaseAsset.Borrowed, 64)
-		quoteBorrowed, _ := strconv.ParseFloat(coin.QuoteAsset.Borrowed, 64)
-		if baseBorrowed <= 0.0 && quoteBorrowed <= 0.0 {
+		baseTotalAsset, _ := strconv.ParseFloat(coin.BaseAsset.TotalAsset, 64)
+		quoteTotalAsset, _ := strconv.ParseFloat(coin.QuoteAsset.TotalAsset, 64)
+		if baseTotalAsset <= 0.0 && quoteTotalAsset <= 0.0 {
 			r.Rdb.Del(r.Ctx, fmt.Sprintf("binance:spot:margin:isolated:balances:%s", coin.Symbol))
 			continue
 		}

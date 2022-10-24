@@ -15,6 +15,7 @@ type SymbolsHandler struct {
 func NewSymbolsCommand() *cli.Command {
 	h := SymbolsHandler{
 		Repository: &repositories.SymbolsRepository{
+			Db:  pool.NewDB(),
 			Rdb: pool.NewRedis(),
 			Ctx: context.Background(),
 		},

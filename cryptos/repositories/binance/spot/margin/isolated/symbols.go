@@ -4,16 +4,20 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-redis/redis/v8"
+	"gorm.io/gorm"
+	models "taoniu.local/cryptos/models/binance"
 )
 
 type SymbolsRepository struct {
+	Db  *gorm.DB
 	Rdb *redis.Client
 	Ctx context.Context
 }
 
 func (r *SymbolsRepository) Flush() error {
-	symbols, _ := r.Rdb.SMembers(r.Ctx, "binance:spot:websocket:symbols").Result()
-	oldMargins, _ := r.Rdb.SMembers(r.Ctx, "binance:spot:margin:isolated:symbols").Result()
+	var symbols []string
+	r.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Find(&symbols)
+	temp, _ := r.Rdb.SMembers(r.Ctx, "binance:spot:margin:isolated:symbols").Result()
 	var margins []string
 	for _, symbol := range symbols {
 		exists, _ := r.Rdb.Exists(
@@ -23,7 +27,7 @@ func (r *SymbolsRepository) Flush() error {
 		if exists == 0 {
 			continue
 		}
-		if !r.contains(oldMargins, symbol) {
+		if !r.contains(temp, symbol) {
 			r.Rdb.SAdd(
 				r.Ctx,
 				"binance:spot:margin:isolated:symbols",
@@ -32,7 +36,7 @@ func (r *SymbolsRepository) Flush() error {
 		}
 		margins = append(margins, symbol)
 	}
-	for _, symbol := range oldMargins {
+	for _, symbol := range temp {
 		if !r.contains(margins, symbol) {
 			r.Rdb.SRem(
 				r.Ctx,
