@@ -12,8 +12,15 @@ import (
 
 	models "taoniu.local/cryptos/models/binance/spot"
 	binanceRepositories "taoniu.local/cryptos/repositories/binance"
-	spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
 )
+
+type DailyError struct {
+	Message string
+}
+
+func (m *DailyError) Error() string {
+	return m.Message
+}
 
 type DailyRepository struct {
 	Db  *gorm.DB
@@ -23,8 +30,8 @@ type DailyRepository struct {
 
 func (r *DailyRepository) Flush() error {
 	buys, sells := r.Signals()
-	r.Plans(buys, 1)
-	r.Plans(sells, 2)
+	r.Create(buys, 1)
+	r.Create(sells, 2)
 
 	return nil
 }
@@ -61,15 +68,7 @@ func (r *DailyRepository) SymbolsRepository() *binanceRepositories.SymbolsReposi
 	}
 }
 
-func (r *DailyRepository) GridsRepository() *spotRepositories.GridsRepository {
-	return &spotRepositories.GridsRepository{
-		Db:  r.Db,
-		Rdb: r.Rdb,
-		Ctx: r.Ctx,
-	}
-}
-
-func (r *DailyRepository) Plans(signals map[string]interface{}, side int64) error {
+func (r *DailyRepository) Create(signals map[string]interface{}, side int64) error {
 	if _, ok := signals["kdj"]; !ok {
 		return nil
 	}
@@ -115,8 +114,6 @@ func (r *DailyRepository) Plans(signals map[string]interface{}, side int64) erro
 			Context:   r.SymbolsRepository().Context(symbol),
 		}
 		r.Db.Create(&entity)
-
-		r.GridsRepository().Flush(symbol)
 	}
 
 	return nil
@@ -160,4 +157,21 @@ func (r *DailyRepository) Signals() (map[string]interface{}, map[string]interfac
 	}
 
 	return buys, sells
+}
+
+func (r *DailyRepository) Filter() (*models.Plans, error) {
+	now := time.Now()
+	duration := time.Hour*time.Duration(8-now.Hour()) - time.Minute*time.Duration(now.Minute()) - time.Second*time.Duration(now.Second())
+	timestamp := now.Add(duration).Unix()
+
+	var entities []*models.Plans
+	r.Db.Where(
+		"timestamp=? AND status=0",
+		timestamp,
+	).Find(&entities)
+	for _, entity := range entities {
+		return entity, nil
+	}
+
+	return nil, &DailyError{"no valid plan"}
 }

@@ -32,16 +32,6 @@ func NewTradingsCommand() *cli.Command {
 		Usage: "",
 		Subcommands: []*cli.Command{
 			{
-				Name:  "scalping",
-				Usage: "",
-				Action: func(c *cli.Context) error {
-					if err := h.scalping(); err != nil {
-						return cli.Exit(err.Error(), 1)
-					}
-					return nil
-				},
-			},
-			{
 				Name:  "grids",
 				Usage: "",
 				Action: func(c *cli.Context) error {
@@ -63,12 +53,6 @@ func NewTradingsCommand() *cli.Command {
 			},
 		},
 	}
-}
-
-func (h *TradingsHandler) scalping() error {
-	log.Println("spot margin isolated tradings scalping...")
-	h.Repository.Scalping()
-	return nil
 }
 
 func (h *TradingsHandler) grids() error {

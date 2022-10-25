@@ -7,12 +7,12 @@ import (
 	"gorm.io/gorm"
 	"math"
 	"strconv"
-	spotModels "taoniu.local/cryptos/models/binance/spot"
 
 	"github.com/adshao/go-binance/v2"
 	"github.com/go-redis/redis/v8"
 
 	config "taoniu.local/cryptos/config/binance"
+	spotModels "taoniu.local/cryptos/models/binance/spot"
 	marginModels "taoniu.local/cryptos/models/binance/spot/margin"
 	models "taoniu.local/cryptos/models/binance/spot/margin/isolated"
 	binanceRepositories "taoniu.local/cryptos/repositories/binance"
@@ -70,10 +70,6 @@ func (r *TradingsRepository) AccountRepository() *AccountRepository {
 		Rdb: r.Rdb,
 		Ctx: r.Ctx,
 	}
-}
-
-func (r *TradingsRepository) Scalping() error {
-	return nil
 }
 
 func (r *TradingsRepository) Grids(symbol string) error {
@@ -149,6 +145,33 @@ func (r *TradingsRepository) BuyGrid(grid *spotModels.Grids, price float64, amou
 	return nil
 }
 
+func (r *TradingsRepository) SellGrid(grid *spotModels.Grids, entities []*models.TradingGrid) error {
+	for _, entity := range entities {
+		var sellOrderId int64 = 0
+		var err error
+		var status int64 = 2
+		var remark = entity.Remark
+		if entity.BuyOrderId == 0 {
+			status = 3
+		} else {
+			sellOrderId, err = r.Order(entity.Symbol, binance.SideTypeSell, entity.SellPrice, entity.SellQuantity)
+			if err != nil {
+				remark = err.Error()
+			} else {
+				grid.Balance = grid.Balance + entity.SellPrice*entity.SellQuantity
+				r.Db.Model(&models.TradingGrid{ID: grid.ID}).Updates(grid)
+			}
+		}
+
+		entity.SellOrderId = sellOrderId
+		entity.Status = status
+		entity.Remark = remark
+		r.Db.Model(&models.TradingGrid{ID: entity.ID}).Updates(entity)
+	}
+
+	return nil
+}
+
 func (r *TradingsRepository) UpdateGrids() error {
 	var entities []*models.TradingGrid
 	r.Db.Where(
@@ -189,33 +212,6 @@ func (r *TradingsRepository) UpdateGrids() error {
 		}
 		entity.Status = status
 		r.Db.Model(&marginModels.Order{ID: entity.ID}).Updates(entity)
-	}
-
-	return nil
-}
-
-func (r *TradingsRepository) SellGrid(grid *spotModels.Grids, entities []*models.TradingGrid) error {
-	for _, entity := range entities {
-		var sellOrderId int64 = 0
-		var err error
-		var status int64 = 2
-		var remark = entity.Remark
-		if entity.BuyOrderId == 0 {
-			status = 3
-		} else {
-			sellOrderId, err = r.Order(entity.Symbol, binance.SideTypeSell, entity.SellPrice, entity.SellQuantity)
-			if err != nil {
-				remark = err.Error()
-			} else {
-				grid.Balance = grid.Balance + entity.SellPrice*entity.SellQuantity
-				r.Db.Model(&models.TradingGrid{ID: grid.ID}).Updates(grid)
-			}
-		}
-
-		entity.SellOrderId = sellOrderId
-		entity.Status = status
-		entity.Remark = remark
-		r.Db.Model(&models.TradingGrid{ID: entity.ID}).Updates(entity)
 	}
 
 	return nil
