@@ -14,6 +14,16 @@ type SpotTask struct {
 	Ctx context.Context
 }
 
+func (t *SpotTask) Tickers() *tasks.TickersTask {
+	return &tasks.TickersTask{
+		Db: t.Db,
+		Repository: &repositories.TickersRepository{
+			Rdb: t.Rdb,
+			Ctx: t.Ctx,
+		},
+	}
+}
+
 func (t *SpotTask) Klines() *tasks.KlinesTask {
 	return &tasks.KlinesTask{
 		Db:  t.Db,

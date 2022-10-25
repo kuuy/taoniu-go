@@ -75,5 +75,6 @@ func (r *SymbolsRepository) Flush() error {
 		}
 		r.Rdb.HMSet(r.Ctx, fmt.Sprintf("binance:spot:symbols:filters:%s", item.Symbol), filters)
 	}
+
 	return nil
 }

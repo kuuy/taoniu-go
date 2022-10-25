@@ -44,7 +44,7 @@ func NewGridsCommand() *cli.Command {
 						return nil
 					}
 					if h.Amount < 50 {
-						log.Fatal("grid balance less than 50")
+						log.Fatal("grid amount less than 50")
 						return nil
 					}
 					if err := h.open(); err != nil {

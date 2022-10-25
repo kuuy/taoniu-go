@@ -17,7 +17,17 @@ select symbol,summary->>'RECOMMENDATION'
 from tradingview_cryptos_analysis
 where summary->>'RECOMMENDATION' = 'STRONG_BUY'
 ```
+
+# taoniu-py
+淘牛服务端（python）
 https://github.com/kuuy/taoniu-py
+
+相关功能（Features）
+|名称     |说明                    |
+|--------|----                    |
+|Tradingview     |刷新每分钟技术相关指标，推荐买卖信号     |
+|Binance Spot Tickers     |刷新24hr行情数据           |
+|Binance Spot Klines     |刷新当天K线数据              |
 
 # Quick Start
 ```bash
