@@ -35,12 +35,26 @@ func NewDailyCommand() *cli.Command {
 					return nil
 				},
 			},
+			{
+				Name:  "fix",
+				Usage: "",
+				Action: func(c *cli.Context) error {
+					if err := h.fix(); err != nil {
+						return cli.Exit(err.Error(), 1)
+					}
+					return nil
+				},
+			},
 		},
 	}
 }
 
 func (h *DailyHandler) flush() error {
 	log.Println("spot plans daily flush...")
-	h.Repository.Flush()
-	return nil
+	return h.Repository.Flush()
+}
+
+func (h *DailyHandler) fix() error {
+	log.Println("spot plans daily fix...")
+	return h.Repository.Fix(7 * 86400)
 }

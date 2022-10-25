@@ -29,6 +29,30 @@ func (r *DailyRepository) Flush() error {
 	return nil
 }
 
+func (r *DailyRepository) Fix(duration int64) error {
+	var entities []*models.Plans
+	timestamp := time.Now().Unix() - duration
+	r.Db.Where(
+		"timestamp>?",
+		timestamp,
+	).Find(&entities)
+	for _, entity := range entities {
+		context := r.SymbolsRepository().Context(entity.Symbol)
+		isUpdate := false
+		for key, val := range entity.Context {
+			if val == nil {
+				entity.Context[key] = context[key]
+				isUpdate = true
+			}
+		}
+		if isUpdate {
+			r.Db.Model(&models.Plans{ID: entity.ID}).Updates(entity)
+		}
+	}
+
+	return nil
+}
+
 func (r *DailyRepository) SymbolsRepository() *binanceRepositories.SymbolsRepository {
 	return &binanceRepositories.SymbolsRepository{
 		Db:  r.Db,
@@ -78,17 +102,6 @@ func (r *DailyRepository) Plans(signals map[string]interface{}, side int64) erro
 			timestamp,
 		).Take(&entity)
 		if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			context := r.SymbolsRepository().Context(symbol)
-			isUpdate := false
-			for key, val := range entity.Context {
-				if val == nil {
-					entity.Context[key] = context[key]
-					isUpdate = true
-				}
-			}
-			if isUpdate {
-				r.Db.Model(&models.Plans{ID: entity.ID}).Updates(entity)
-			}
 			continue
 		}
 		entity = models.Plans{

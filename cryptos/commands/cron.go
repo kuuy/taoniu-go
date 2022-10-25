@@ -68,6 +68,7 @@ func (h *CronHandler) run() error {
 		binance.Symbols().Count()
 		binance.Spot().Margin().Sync()
 		binance.Spot().Analysis().Daily().Flush()
+		binance.Spot().Plans().Daily().Fix()
 	})
 	c.AddFunc("0 30 * * * *", func() {
 		binance.Spot().Clean()
