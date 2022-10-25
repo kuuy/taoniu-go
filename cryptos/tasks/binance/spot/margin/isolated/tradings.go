@@ -20,3 +20,7 @@ func (t *TradingsTask) Grids() error {
 
 	return nil
 }
+
+func (t *TradingsTask) UpdateGrids() error {
+	return t.Repository.UpdateGrids()
+}

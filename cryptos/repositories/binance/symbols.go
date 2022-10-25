@@ -152,7 +152,7 @@ func (r *SymbolsRepository) Price(symbol string) (float64, error) {
 	timestamp := time.Now().Unix()
 	price, _ := strconv.ParseFloat(data[0].(string), 64)
 	lasttime, _ := strconv.ParseInt(data[1].(string), 10, 64)
-	if lasttime > timestamp-300 {
+	if lasttime < timestamp-30 {
 		return 0, &SymbolsError{"price long time not freshed"}
 	}
 

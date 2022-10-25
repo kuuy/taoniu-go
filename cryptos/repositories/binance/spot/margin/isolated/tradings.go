@@ -2,8 +2,10 @@ package isolated
 
 import (
 	"context"
+	"errors"
 	"github.com/rs/xid"
 	"gorm.io/gorm"
+	"math"
 	"strconv"
 	spotModels "taoniu.local/cryptos/models/binance/spot"
 
@@ -11,6 +13,7 @@ import (
 	"github.com/go-redis/redis/v8"
 
 	config "taoniu.local/cryptos/config/binance"
+	marginModels "taoniu.local/cryptos/models/binance/spot/margin"
 	models "taoniu.local/cryptos/models/binance/spot/margin/isolated"
 	binanceRepositories "taoniu.local/cryptos/repositories/binance"
 	spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
@@ -54,6 +57,14 @@ func (r *TradingsRepository) TradingviewRepository() *tradingviewRepositories.An
 	}
 }
 
+func (r *TradingsRepository) OrdersRepository() *marginRepositories.OrdersRepository {
+	return &marginRepositories.OrdersRepository{
+		Db:  r.Db,
+		Rdb: r.Rdb,
+		Ctx: r.Ctx,
+	}
+}
+
 func (r *TradingsRepository) AccountRepository() *AccountRepository {
 	return &AccountRepository{
 		Rdb: r.Rdb,
@@ -90,7 +101,7 @@ func (r *TradingsRepository) Grids(symbol string) error {
 	if signal == 1 {
 		return r.BuyGrid(grid, price, 10)
 	} else {
-		return r.SellGrid(sellItems)
+		return r.SellGrid(grid, sellItems)
 	}
 
 	return nil
@@ -101,46 +112,109 @@ func (r *TradingsRepository) BuyGrid(grid *spotModels.Grids, price float64, amou
 	if err != nil {
 		return err
 	}
-
+	amount = amount * math.Pow(2, float64(grid.Step-1))
 	buyPrice, buyQuantity := r.SymbolsRepository().Filter(grid.Symbol, price, amount)
-	if balance < price*buyQuantity*1.005 {
-		//return &TradingsError{"balance not enough"}
-	}
 	sellPrice := buyPrice * (1 + grid.TakeProfitPercent)
 	sellQuantity := buyQuantity * grid.TriggerPercent
 	sellPrice, sellQuantity = r.SymbolsRepository().Filter(grid.Symbol, sellPrice, sellPrice*sellQuantity)
+	buyAmount := buyPrice * buyQuantity
 
 	var entity *models.TradingGrid
-	var buyOrderId int64 = 100
-	//buyOrderId, err := r.Trade(grid.Symbol, binance.SideTypeBuy, price, buyQuantity)
-	//if err != nil {
-	//	return err
-	//}
+	var buyOrderId int64 = 0
+	var status int64 = 0
+	var remark = ""
+	if balance > buyAmount && grid.Balance > buyAmount {
+		buyOrderId, err = r.Order(grid.Symbol, binance.SideTypeBuy, price, buyQuantity)
+		if err != nil {
+			remark = err.Error()
+		} else {
+			grid.Balance = grid.Balance - buyAmount
+			r.Db.Model(&models.TradingGrid{ID: grid.ID}).Updates(grid)
+		}
+	}
 	entity = &models.TradingGrid{
 		ID:           xid.New().String(),
 		Symbol:       grid.Symbol,
 		GridID:       grid.ID,
 		BuyOrderId:   buyOrderId,
 		BuyPrice:     buyPrice,
+		BuyQuantity:  buyQuantity,
 		SellPrice:    sellPrice,
 		SellQuantity: sellQuantity,
-		Status:       1,
+		Status:       status,
+		Remark:       remark,
 	}
 	r.Db.Create(entity)
 
 	return nil
 }
 
-func (r *TradingsRepository) SellGrid(entities []*models.TradingGrid) error {
-	var sellOrderId int64
+func (r *TradingsRepository) UpdateGrids() error {
+	var entities []*models.TradingGrid
+	r.Db.Where(
+		"status IN ?",
+		[]int64{0, 2},
+	).Find(&entities)
 	for _, entity := range entities {
-		sellOrderId = 200
-		//sellOrderId, err := r.Trade(entity.Symbol, binance.SideTypeSell, entity.SellPrice, entity.SellQuantity)
-		//if err != nil {
-		//	continue
-		//}
+		orderID := entity.BuyOrderId
+		if entity.Status == 2 {
+			orderID = entity.SellOrderId
+		}
+		var order *marginModels.Order
+		result := r.Db.Where(
+			"symbol=? AND order_id=?",
+			entity.Symbol,
+			orderID,
+		).Take(&order)
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			continue
+		}
+		if order.Status == "NEW" || order.Status == "PARTIALLY_FILLED" {
+			continue
+		}
+		var status int64
+		if entity.Status == 0 {
+			if order.Status != "FILLED" {
+				status = 4
+			} else {
+				status = 1
+			}
+		}
+		if entity.Status == 1 {
+			if order.Status != "FILLED" {
+				status = 5
+			} else {
+				status = 3
+			}
+		}
+		entity.Status = status
+		r.Db.Model(&marginModels.Order{ID: entity.ID}).Updates(entity)
+	}
+
+	return nil
+}
+
+func (r *TradingsRepository) SellGrid(grid *spotModels.Grids, entities []*models.TradingGrid) error {
+	for _, entity := range entities {
+		var sellOrderId int64 = 0
+		var err error
+		var status int64 = 2
+		var remark = entity.Remark
+		if entity.BuyOrderId == 0 {
+			status = 3
+		} else {
+			sellOrderId, err = r.Order(entity.Symbol, binance.SideTypeSell, entity.SellPrice, entity.SellQuantity)
+			if err != nil {
+				remark = err.Error()
+			} else {
+				grid.Balance = grid.Balance + entity.SellPrice*entity.SellQuantity
+				r.Db.Model(&models.TradingGrid{ID: grid.ID}).Updates(grid)
+			}
+		}
+
 		entity.SellOrderId = sellOrderId
-		entity.Status = 3
+		entity.Status = status
+		entity.Remark = remark
 		r.Db.Model(&models.TradingGrid{ID: entity.ID}).Updates(entity)
 	}
 
@@ -151,30 +225,27 @@ func (r *TradingsRepository) FilterGrid(grid *spotModels.Grids, price float64, s
 	var entryPrice float64
 	var takePrice float64
 	var entities []*models.TradingGrid
-	var sellItems []*models.TradingGrid
 	r.Db.Where(
 		"grid_id=? AND status IN ?",
 		grid.ID,
 		[]int64{0, 1},
 	).Find(&entities)
+	var sellItems []*models.TradingGrid
 	for _, entity := range entities {
-		if entryPrice == 0 || entryPrice > entity.BuyPrice {
-			entryPrice = entity.BuyPrice
-		}
-		if entryPrice == 0 || (entity.Status == 0 && entryPrice > entity.BuyPrice*(1-grid.TakeProfitPercent)) {
+		if entryPrice == 0 || entryPrice > entity.BuyPrice*(1-grid.TakeProfitPercent) {
 			entryPrice = entity.BuyPrice / (1 + grid.TakeProfitPercent)
 		}
 		if takePrice == 0 || (entity.Status == 1 && takePrice < entity.SellPrice) {
 			takePrice = entity.SellPrice
 		}
-		if entity.Status == 1 && price > entity.SellPrice*1.005 {
+		if entity.Status == 1 && price > entity.SellPrice {
 			sellItems = append(sellItems, entity)
 		}
 	}
-	if signal == 1 && entryPrice > 0 && price > entryPrice*0.995 {
+	if signal == 1 && entryPrice > 0 && price > entryPrice {
 		return nil, &TradingsError{"buy price too high"}
 	}
-	if signal == 2 && (takePrice == 0 || price < takePrice*1.005) {
+	if signal == 2 && (takePrice == 0 || price < takePrice) {
 		return nil, &TradingsError{"sell price too low"}
 	}
 	if signal == 2 && len(sellItems) == 0 {
@@ -184,12 +255,7 @@ func (r *TradingsRepository) FilterGrid(grid *spotModels.Grids, price float64, s
 	return sellItems, nil
 }
 
-func (r *TradingsRepository) Trade(symbol string, side binance.SideType, price float64, quantity float64) (int64, error) {
-	if quantity == 0 {
-		return 0, nil
-	} else {
-		return 0, nil
-	}
+func (r *TradingsRepository) Order(symbol string, side binance.SideType, price float64, quantity float64) (int64, error) {
 	client := binance.NewClient(config.TRADE_API_KEY, config.TRADE_SECRET_KEY)
 	result, err := client.NewCreateMarginOrderService().Symbol(
 		symbol,
@@ -211,12 +277,7 @@ func (r *TradingsRepository) Trade(symbol string, side binance.SideType, price f
 	if err != nil {
 		return 0, err
 	}
-	marginRepository := marginRepositories.OrdersRepository{
-		Db:  r.Db,
-		Rdb: r.Rdb,
-		Ctx: r.Ctx,
-	}
-	marginRepository.Flush(symbol, result.OrderID, true)
+	r.OrdersRepository().Flush(symbol, result.OrderID, true)
 
 	return result.OrderID, nil
 }

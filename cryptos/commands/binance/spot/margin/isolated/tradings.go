@@ -87,7 +87,7 @@ func (h *TradingsHandler) grids() error {
 func (h *TradingsHandler) buy() error {
 	symbol := "AVAXBUSD"
 	price := 15.427547306193494
-	orderId, err := h.Repository.Trade(symbol, binance.SideTypeBuy, price, 10)
+	orderId, err := h.Repository.Order(symbol, binance.SideTypeBuy, price, 10)
 	if err != nil {
 		return err
 	}
