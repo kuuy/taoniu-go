@@ -15,6 +15,14 @@ import (
 	models "taoniu.local/cryptos/models/binance/spot"
 )
 
+type DailyError struct {
+	Message string
+}
+
+func (m *DailyError) Error() string {
+	return m.Message
+}
+
 type DailyRepository struct {
 	Db  *gorm.DB
 	Rdb *redis.Client
@@ -27,10 +35,6 @@ func (r *DailyRepository) Pivot(symbol string) error {
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return result.Error
 	}
-	day := time.Unix(kline.Timestamp/1000, 0).Format("0102")
-	if day != time.Now().Format("0102") {
-		return nil
-	}
 
 	p := (kline.Close + kline.High + kline.Low) / 3
 	s1 := 2*p - kline.High
@@ -39,6 +43,11 @@ func (r *DailyRepository) Pivot(symbol string) error {
 	r2 := p + (r1 - s1)
 	s3 := kline.Low - 2*(kline.High-p)
 	r3 := kline.High + 2*(p-kline.Low)
+
+	day, err := r.Day(kline.Timestamp / 1000)
+	if err != nil {
+		return err
+	}
 
 	redisKey := fmt.Sprintf(
 		"binance:spot:indicators:%s:%s",
@@ -84,16 +93,19 @@ func (r *DailyRepository) Atr(symbol string, period int, limit int) error {
 	if len(prices) < limit {
 		return nil
 	}
-	day := time.Unix(klines[0].Timestamp/1000, 0).Format("0102")
-	if day != time.Now().Format("0102") {
-		return nil
-	}
+
 	result := talib.Atr(
 		highs,
 		lows,
 		prices,
 		period,
 	)
+
+	day, err := r.Day(klines[0].Timestamp / 1000)
+	if err != nil {
+		return err
+	}
+
 	redisKey := fmt.Sprintf(
 		"binance:spot:indicators:%s:%s",
 		symbol,
@@ -135,11 +147,14 @@ func (r *DailyRepository) Zlema(symbol string, period int, limit int) error {
 	if len(data) < limit-lag {
 		return nil
 	}
-	day := time.Unix(klines[0].Timestamp/1000, 0).Format("0102")
-	if day != time.Now().Format("0102") {
-		return nil
-	}
+
 	result := talib.Ema(data, period)
+
+	day, err := r.Day(klines[0].Timestamp / 1000)
+	if err != nil {
+		return err
+	}
+
 	redisKey := fmt.Sprintf(
 		"binance:spot:indicators:%s:%s",
 		symbol,
@@ -188,11 +203,14 @@ func (r *DailyRepository) HaZlema(symbol string, period int, limit int) error {
 	if len(data) < limit-lag {
 		return nil
 	}
-	day := time.Unix(klines[0].Timestamp/1000, 0).Format("0102")
-	if day != time.Now().Format("0102") {
-		return nil
-	}
+
 	result := talib.Ema(data, period)
+
+	day, err := r.Day(klines[0].Timestamp / 1000)
+	if err != nil {
+		return err
+	}
+
 	redisKey := fmt.Sprintf(
 		"binance:spot:indicators:%s:%s",
 		symbol,
@@ -238,15 +256,18 @@ func (r *DailyRepository) Kdj(symbol string, longPeriod int, shortPeriod int, li
 	if len(prices) < limit {
 		return nil
 	}
-	day := time.Unix(klines[0].Timestamp/1000, 0).Format("0102")
-	if day != time.Now().Format("0102") {
-		return nil
-	}
+
 	slowk, slowd := talib.Stoch(highs, lows, prices, longPeriod, shortPeriod, 0, shortPeriod, 0)
 	var slowj []float64
 	for i := 0; i < limit; i++ {
 		slowj = append(slowj, 3*slowk[i]-2*slowd[i])
 	}
+
+	day, err := r.Day(klines[0].Timestamp / 1000)
+	if err != nil {
+		return err
+	}
+
 	r.Rdb.HSet(
 		r.Ctx,
 		fmt.Sprintf(
@@ -284,10 +305,7 @@ func (r *DailyRepository) BBands(symbol string, period int, limit int) error {
 	if len(prices) < limit {
 		return nil
 	}
-	day := time.Unix(klines[0].Timestamp/1000, 0).Format("0102")
-	if day != time.Now().Format("0102") {
-		return nil
-	}
+
 	uBands, mBands, lBands := talib.BBands(prices, period, 2, 2, 0)
 	p1 := (klines[2].Close + klines[2].High + klines[2].Low) / 3
 	p2 := (klines[1].Close + klines[1].High + klines[1].Low) / 3
@@ -298,6 +316,12 @@ func (r *DailyRepository) BBands(symbol string, period int, limit int) error {
 	w1 := (uBands[limit-3] - lBands[limit-3]) / mBands[limit-3]
 	w2 := (uBands[limit-2] - lBands[limit-2]) / mBands[limit-2]
 	w3 := (uBands[limit-1] - lBands[limit-1]) / mBands[limit-1]
+
+	day, err := r.Day(klines[0].Timestamp / 1000)
+	if err != nil {
+		return err
+	}
+
 	r.Rdb.HSet(
 		r.Ctx,
 		fmt.Sprintf(
@@ -320,4 +344,15 @@ func (r *DailyRepository) BBands(symbol string, period int, limit int) error {
 	)
 
 	return nil
+}
+
+func (r *DailyRepository) Day(timestamp int64) (string, error) {
+	now := time.Now()
+	_, offset := now.Zone()
+	day := time.Unix(timestamp-int64(offset), 0).Format("0102")
+	if day != now.Format("0102") {
+		return "", &DailyError{"timestamp is not today"}
+	}
+
+	return day, nil
 }
