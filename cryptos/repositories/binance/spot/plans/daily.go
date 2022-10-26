@@ -12,6 +12,7 @@ import (
 
 	models "taoniu.local/cryptos/models/binance/spot"
 	binanceRepositories "taoniu.local/cryptos/repositories/binance"
+	tradingviewRepositories "taoniu.local/cryptos/repositories/tradingview"
 )
 
 type DailyError struct {
@@ -58,6 +59,12 @@ func (r *DailyRepository) Fix(duration int64) error {
 	}
 
 	return nil
+}
+
+func (r *DailyRepository) TradingviewRepository() *tradingviewRepositories.AnalysisRepository {
+	return &tradingviewRepositories.AnalysisRepository{
+		Db: r.Db,
+	}
 }
 
 func (r *DailyRepository) SymbolsRepository() *binanceRepositories.SymbolsRepository {
@@ -170,6 +177,31 @@ func (r *DailyRepository) Filter() (*models.Plans, error) {
 		timestamp,
 	).Find(&entities)
 	for _, entity := range entities {
+		if entity.Side == 1 && entity.Amount < 20 {
+			continue
+		}
+		signal, err := r.TradingviewRepository().Signal(entity.Symbol)
+		if err != nil {
+			continue
+		}
+		if entity.Side == 1 && signal != 1 {
+			continue
+		}
+		if entity.Side == 2 && signal != 2 {
+			continue
+		}
+
+		price, err := r.SymbolsRepository().Price(entity.Symbol)
+		if err != nil {
+			continue
+		}
+		if signal == 1 && price > entity.Price {
+			continue
+		}
+		if signal == 2 && price < entity.Price {
+			continue
+		}
+
 		return entity, nil
 	}
 

@@ -46,6 +46,6 @@ func NewTradingsCommand() *cli.Command {
 
 func (h *TradingsHandler) scalping() error {
 	log.Println("spot tradings scalping...")
-	//h.Repository.Scalping()
+	h.Repository.Scalping()
 	return nil
 }

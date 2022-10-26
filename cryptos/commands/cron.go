@@ -57,9 +57,12 @@ func (h *CronHandler) run() error {
 		binance.Spot().Flush()
 		binance.Spot().Margin().Isolated().Tradings().Grids()
 		binance.Spot().Margin().Isolated().Tradings().UpdateGrids()
+		binance.Spot().Tradings().Scalping()
+		binance.Spot().Tradings().UpdateScalping()
 	})
 	c.AddFunc("@every 3m", func() {
 		binance.Spot().Margin().Orders().Fix()
+		binance.Spot().Orders().Fix()
 	})
 	c.AddFunc("@every 5m", func() {
 		binance.Spot().Indicators().Daily().Flush()
@@ -68,6 +71,7 @@ func (h *CronHandler) run() error {
 	c.AddFunc("@hourly", func() {
 		binance.Symbols().Count()
 		binance.Spot().Margin().Sync()
+		binance.Spot().Sync()
 		binance.Spot().Analysis().Daily().Flush()
 	})
 	c.AddFunc("0 30 * * * *", func() {

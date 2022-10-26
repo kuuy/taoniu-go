@@ -76,8 +76,7 @@ func (h *OrdersHandler) flush() error {
 		data := strings.Split(order, ",")
 		symbol := data[0]
 		orderID, _ := strconv.ParseInt(data[1], 10, 64)
-		isIsolated, _ := strconv.ParseBool(data[2])
-		h.Repository.Flush(symbol, orderID, isIsolated)
+		h.Repository.Flush(symbol, orderID)
 	}
 
 	return nil

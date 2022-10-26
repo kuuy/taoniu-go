@@ -51,6 +51,20 @@ func (t *SpotTask) Strategies() *tasks.StrategiesTask {
 func (t *SpotTask) Account() *tasks.AccountTask {
 	return &tasks.AccountTask{
 		Repository: &repositories.AccountRepository{
+			Db:  t.Db,
+			Rdb: t.Rdb,
+			Ctx: t.Ctx,
+		},
+	}
+}
+
+func (t *SpotTask) Orders() *tasks.OrdersTask {
+	return &tasks.OrdersTask{
+		Db:  t.Db,
+		Rdb: t.Rdb,
+		Ctx: t.Ctx,
+		Repository: &repositories.OrdersRepository{
+			Db:  t.Db,
 			Rdb: t.Rdb,
 			Ctx: t.Ctx,
 		},
@@ -62,6 +76,16 @@ func (t *SpotTask) Margin() *tasks.MarginTask {
 		Db:  t.Db,
 		Rdb: t.Rdb,
 		Ctx: t.Ctx,
+	}
+}
+
+func (t *SpotTask) Tradings() *tasks.TradingsTask {
+	return &tasks.TradingsTask{
+		Repository: &repositories.TradingsRepository{
+			Db:  t.Db,
+			Rdb: t.Rdb,
+			Ctx: t.Ctx,
+		},
 	}
 }
 
@@ -83,10 +107,16 @@ func (t *SpotTask) Plans() *tasks.PlansTask {
 
 func (t *SpotTask) Flush() {
 	t.Account().Flush()
+	t.Orders().Open()
+	t.Orders().Flush()
 	t.Margin().Flush()
 	t.Plans().Daily().Flush()
 }
 
 func (t *SpotTask) Clean() {
 	t.Klines().Daily().Clean()
+}
+
+func (t *SpotTask) Sync() {
+	t.Orders().Sync()
 }
