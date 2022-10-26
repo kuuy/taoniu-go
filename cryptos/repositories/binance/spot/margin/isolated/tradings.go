@@ -35,6 +35,12 @@ func (m *TradingsError) Error() string {
 	return m.Message
 }
 
+func (r *TradingsRepository) TradingviewRepository() *tradingviewRepositories.AnalysisRepository {
+	return &tradingviewRepositories.AnalysisRepository{
+		Db: r.Db,
+	}
+}
+
 func (r *TradingsRepository) SymbolsRepository() *binanceRepositories.SymbolsRepository {
 	return &binanceRepositories.SymbolsRepository{
 		Db:  r.Db,
@@ -48,12 +54,6 @@ func (r *TradingsRepository) GridsRepository() *spotRepositories.GridsRepository
 		Db:  r.Db,
 		Rdb: r.Rdb,
 		Ctx: r.Ctx,
-	}
-}
-
-func (r *TradingsRepository) TradingviewRepository() *tradingviewRepositories.AnalysisRepository {
-	return &tradingviewRepositories.AnalysisRepository{
-		Db: r.Db,
 	}
 }
 
@@ -73,16 +73,17 @@ func (r *TradingsRepository) AccountRepository() *AccountRepository {
 }
 
 func (r *TradingsRepository) Grids(symbol string) error {
-	price, err := r.SymbolsRepository().Price(symbol)
-	if err != nil {
-		return err
-	}
 	signal, err := r.TradingviewRepository().Signal(symbol)
 	if err != nil {
 		return err
 	}
 	if signal == 0 {
 		return &TradingsError{"tradingview no trading signal"}
+	}
+
+	price, err := r.SymbolsRepository().Price(symbol)
+	if err != nil {
+		return err
 	}
 
 	grid, err := r.GridsRepository().Filter(symbol, price)
@@ -95,7 +96,8 @@ func (r *TradingsRepository) Grids(symbol string) error {
 	}
 
 	if signal == 1 {
-		return r.BuyGrid(grid, price, 10)
+		amount := 10 * math.Pow(2, float64(grid.Step-1))
+		return r.BuyGrid(grid, price, amount)
 	} else {
 		return r.SellGrid(grid, sellItems)
 	}
@@ -108,18 +110,20 @@ func (r *TradingsRepository) BuyGrid(grid *spotModels.Grids, price float64, amou
 	if err != nil {
 		return err
 	}
-	amount = amount * math.Pow(2, float64(grid.Step-1))
+
 	buyPrice, buyQuantity := r.SymbolsRepository().Filter(grid.Symbol, price, amount)
 	sellPrice := buyPrice * (1 + grid.TakeProfitPercent)
 	sellQuantity := buyQuantity * grid.TriggerPercent
 	sellPrice, sellQuantity = r.SymbolsRepository().Filter(grid.Symbol, sellPrice, sellPrice*sellQuantity)
+
 	buyAmount := buyPrice * buyQuantity
 
-	var entity *models.TradingGrid
 	var buyOrderId int64 = 0
 	var status int64 = 0
 	var remark = ""
-	if balance > buyAmount && grid.Balance > buyAmount {
+	if balance < buyAmount || grid.Balance < buyAmount {
+		status = 1
+	} else {
 		buyOrderId, err = r.Order(grid.Symbol, binance.SideTypeBuy, price, buyQuantity)
 		if err != nil {
 			remark = err.Error()
@@ -128,6 +132,8 @@ func (r *TradingsRepository) BuyGrid(grid *spotModels.Grids, price float64, amou
 			r.Db.Model(&models.TradingGrid{ID: grid.ID}).Updates(grid)
 		}
 	}
+
+	var entity *models.TradingGrid
 	entity = &models.TradingGrid{
 		ID:           xid.New().String(),
 		Symbol:       grid.Symbol,
@@ -140,6 +146,7 @@ func (r *TradingsRepository) BuyGrid(grid *spotModels.Grids, price float64, amou
 		Status:       status,
 		Remark:       remark,
 	}
+
 	r.Db.Create(entity)
 
 	return nil
@@ -166,6 +173,7 @@ func (r *TradingsRepository) SellGrid(grid *spotModels.Grids, entities []*models
 		entity.SellOrderId = sellOrderId
 		entity.Status = status
 		entity.Remark = remark
+
 		r.Db.Model(&models.TradingGrid{ID: entity.ID}).Updates(entity)
 	}
 
@@ -183,6 +191,7 @@ func (r *TradingsRepository) UpdateGrids() error {
 		if entity.Status == 2 {
 			orderID = entity.SellOrderId
 		}
+
 		var order *marginModels.Order
 		result := r.Db.Where(
 			"symbol=? AND order_id=?",
@@ -195,6 +204,7 @@ func (r *TradingsRepository) UpdateGrids() error {
 		if order.Status == "NEW" || order.Status == "PARTIALLY_FILLED" {
 			continue
 		}
+
 		var status int64
 		if entity.Status == 0 {
 			if order.Status != "FILLED" {
@@ -203,7 +213,7 @@ func (r *TradingsRepository) UpdateGrids() error {
 				status = 1
 			}
 		}
-		if entity.Status == 1 {
+		if entity.Status == 2 {
 			if order.Status != "FILLED" {
 				status = 5
 			} else {
@@ -211,6 +221,7 @@ func (r *TradingsRepository) UpdateGrids() error {
 			}
 		}
 		entity.Status = status
+
 		r.Db.Model(&marginModels.Order{ID: entity.ID}).Updates(entity)
 	}
 
