@@ -63,3 +63,6 @@ go run main.go binance spot klines daily flush
 go run main.go binance spot grids open AVAXBUSD 50
 go run main.go cron
 ```
+
+# 免责声明
+本项目仅为个人交易测试项目，风险意识安全靠自己把握，出现任何交易失误与本项目无关，请谨慎评估交易的合理性。
