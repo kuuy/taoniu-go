@@ -71,7 +71,7 @@ go run main.go cron
 TTpMqd3SGckaAmuh1v5VuzJEMegRpqkWWQ
 
 # 推荐链接
-[币安](https://www.binance.com/en/activity/referral-entry/CPA?fromActivityPage=true&ref=CPA_007BCNAZTA)
-[Vultr](https://www.vultr.com/?ref=9240160)
-[透明代理入门](https://xtls.github.io/document/level-2/transparent_proxy/transparent_proxy.html#%E9%A6%96%E5%85%88-%E6%88%91%E4%BB%AC%E5%85%88%E8%AF%95%E8%AF%95%E5%81%9A%E5%88%B0%E7%AC%AC%E4%B8%80%E9%98%B6%E6%AE%B5)
-[安全解析检查](https://dnssec.vs.uni-due.de/)
+[币安](https://www.binance.com/en/activity/referral-entry/CPA?fromActivityPage=true&ref=CPA_007BCNAZTA)  
+[Vultr](https://www.vultr.com/?ref=9240160)  
+[透明代理入门](https://xtls.github.io/document/level-2/transparent_proxy/transparent_proxy.html#%E9%A6%96%E5%85%88-%E6%88%91%E4%BB%AC%E5%85%88%E8%AF%95%E8%AF%95%E5%81%9A%E5%88%B0%E7%AC%AC%E4%B8%80%E9%98%B6%E6%AE%B5)  
+[安全解析检查](https://dnssec.vs.uni-due.de/)  
