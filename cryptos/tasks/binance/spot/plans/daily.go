@@ -11,5 +11,5 @@ func (t *DailyTask) Flush() error {
 }
 
 func (t *DailyTask) Fix() error {
-	return t.Repository.Fix(3600)
+	return t.Repository.Fix(1800)
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
+	repositories "taoniu.local/cryptos/repositories/binance/spot/analysis/daily/margin"
 	tasks "taoniu.local/cryptos/tasks/binance/spot/analysis/daily/margin"
 )
 
@@ -15,9 +16,11 @@ type MarginTask struct {
 
 func (t *MarginTask) Isolated() *tasks.IsolatedTask {
 	return &tasks.IsolatedTask{
-		Db:  t.Db,
-		Rdb: t.Rdb,
-		Ctx: t.Ctx,
+		Repository: &repositories.IsolatedRepository{
+			Db:  t.Db,
+			Rdb: t.Rdb,
+			Ctx: t.Ctx,
+		},
 	}
 }
 

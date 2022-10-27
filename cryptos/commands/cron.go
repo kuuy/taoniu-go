@@ -67,14 +67,15 @@ func (h *CronHandler) run() error {
 	c.AddFunc("@every 5m", func() {
 		binance.Spot().Indicators().Daily().Flush()
 		binance.Spot().Strategies().Daily().Flush()
+		binance.Spot().Analysis().Daily().Flush()
 	})
 	c.AddFunc("@hourly", func() {
 		binance.Symbols().Count()
 		binance.Spot().Margin().Sync()
 		binance.Spot().Sync()
-		binance.Spot().Analysis().Daily().Flush()
 	})
 	c.AddFunc("0 30 * * * *", func() {
+		binance.Spot().Plans().Daily().Fix()
 		binance.Spot().Clean()
 	})
 	c.Start()

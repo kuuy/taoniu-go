@@ -1,31 +1,14 @@
 package margin
 
 import (
-	"context"
-	"github.com/go-redis/redis/v8"
-	"gorm.io/gorm"
-	repositories "taoniu.local/cryptos/repositories/binance/spot/analysis/daily/margin/isolated"
-	tasks "taoniu.local/cryptos/tasks/binance/spot/analysis/daily/margin/isolated"
+	repositories "taoniu.local/cryptos/repositories/binance/spot/analysis/daily/margin"
 )
 
 type IsolatedTask struct {
-	Db  *gorm.DB
-	Rdb *redis.Client
-	Ctx context.Context
+	Repository *repositories.IsolatedRepository
 }
 
-func (t *IsolatedTask) Profits() *tasks.ProfitsTask {
-	return &tasks.ProfitsTask{
-		Rdb: t.Rdb,
-		Ctx: t.Ctx,
-		Repository: &repositories.ProfitsRepository{
-			Db:  t.Db,
-			Rdb: t.Rdb,
-			Ctx: t.Ctx,
-		},
-	}
-}
-
-func (t *IsolatedTask) Flush() {
-	t.Profits().Flush()
+func (t *IsolatedTask) Flush() error {
+	t.Repository.Grids()
+	return nil
 }

@@ -1,8 +1,8 @@
-package analysis
+package daily
 
 import (
 	"gorm.io/gorm"
-	"taoniu.local/cryptos/models/binance/spot/analysis/margin"
+	"taoniu.local/cryptos/models/binance/spot/analysis/daily/margin"
 )
 
 type Margin struct{}
@@ -12,6 +12,8 @@ func NewMargin() *Margin {
 }
 
 func (m *Margin) AutoMigrate(db *gorm.DB) error {
-	margin.NewIsolated().AutoMigrate(db)
+	db.AutoMigrate(
+		&margin.Isolated{},
+	)
 	return nil
 }
