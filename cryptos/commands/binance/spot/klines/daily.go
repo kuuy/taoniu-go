@@ -65,7 +65,7 @@ func (h *DailyHandler) flush() error {
 	var symbols []string
 	h.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
-		h.Repository.Flush(symbol, 100)
+		h.Repository.Flush(symbol, 1)
 	}
 
 	return nil

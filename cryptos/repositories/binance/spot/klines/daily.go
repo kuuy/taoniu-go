@@ -3,6 +3,7 @@ package klines
 import (
 	"context"
 	"errors"
+	"log"
 	"strconv"
 	"time"
 
@@ -32,6 +33,7 @@ func (r *DailyRepository) Flush(symbol string, limit int) error {
 		limit,
 	).Do(r.Ctx)
 	if err != nil {
+		log.Println("error", err)
 		return err
 	}
 	for _, kline := range klines {
@@ -42,6 +44,7 @@ func (r *DailyRepository) Flush(symbol string, limit int) error {
 		volume, _ := strconv.ParseFloat(kline.Volume, 64)
 		quota, _ := strconv.ParseFloat(kline.QuoteAssetVolume, 64)
 		timestamp := kline.OpenTime
+		log.Println("timestamp", timestamp)
 		var entity models.Kline1d
 		result := r.Db.Where(
 			"symbol=? AND timestamp=?",

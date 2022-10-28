@@ -81,7 +81,7 @@ func (h *StreamsHandler) handler(message []byte) {
 	value, err := h.Rdb.HGet(h.Ctx, redisKey, "price").Result()
 	if err != nil {
 		lasttime, _ := strconv.ParseInt(value, 10, 64)
-		if lasttime > timestamp {
+		if lasttime >= timestamp {
 			return
 		}
 	}
@@ -117,7 +117,7 @@ func (h *StreamsHandler) start() error {
 	}
 	endpoint := "wss://stream.binance.com/stream?streams=" + strings.Join(streams, "/")
 
-	wp := workerpool.New(30)
+	wp := workerpool.New(10)
 	defer wp.StopWait()
 
 	socket, _, err := websocket.Dial(h.Ctx, endpoint, nil)
@@ -169,7 +169,7 @@ func (h *StreamsHandler) online() error {
 			continue
 		}
 		h.append(symbol)
-		if len(h.Symbols) >= 30 {
+		if len(h.Symbols) >= 20 {
 			break
 		}
 	}
