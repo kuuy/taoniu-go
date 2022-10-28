@@ -3,6 +3,7 @@ module taoniu.local/cryptos
 go 1.16
 
 require (
+	github.com/PuerkitoBio/goquery v1.8.0
 	github.com/RichardKnop/machinery/v2 v2.0.11
 	github.com/adshao/go-binance/v2 v2.3.9
 	github.com/bitly/go-simplejson v0.5.0

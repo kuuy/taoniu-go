@@ -1,10 +1,9 @@
 package main
 
 import (
+	"github.com/urfave/cli/v2"
 	"log"
 	"os"
-
-	"github.com/urfave/cli/v2"
 
 	"taoniu.local/cryptos/commands"
 )
@@ -26,6 +25,7 @@ func main() {
 			commands.NewBinanceCommand(),
 			commands.NewCronCommand(),
 			commands.NewDbCommand(),
+			commands.NewProxiesCommand(),
 		},
 		Version: "0.0.0",
 	}

@@ -11,12 +11,6 @@ type AnalysisRepository struct {
 	Db *gorm.DB
 }
 
-func NewAnalysisRepository(db *gorm.DB) *AnalysisRepository {
-	return &AnalysisRepository{
-		Db: db,
-	}
-}
-
 func (r *AnalysisRepository) Signal(symbol string) (int64, error) {
 	var entity models.Analysis
 	result := r.Db.Where(
