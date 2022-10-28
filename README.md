@@ -64,6 +64,45 @@ go run main.go binance spot grids open AVAXBUSD 50
 go run main.go cron
 ```
 
+# taoniu-scripts
+淘牛脚本
+https://github.com/kuuy/taoniu-scripts
+
+相关功能（Features）
+|名称            |说明                    |
+|--------       |----                    |
+|行情实时更新     | websocket live update 24h tickers |
+
+crontab配置
+30 0 * * * /root/taoniu-scripts/cryptos/spot/streams.sh
+
+```shell
+/root/taoniu-scripts/cryptos/spot/streams.sh
+```
+
+# taoniu-config
+淘牛配置
+https://github.com/kuuy/taoniu-cofnig
+
+相关功能（Features）
+|名称         |说明                 |
+|--------    |----                 |
+|长驻进程守护  | supervisor.d        |
+|开机服务     | systemd             |
+
+# taoniu-android
+淘牛客户端（android）
+https://github.com/kuuy/taoniu-android
+
+相关功能（Features）
+|名称               |说明                                             |
+|--------          |----                                             | 
+|现货交易计划        | binance spot plans                              |
+|现货抢先交易        | binance spot tradings scalping                  |
+|杠杆网格交易        | binance margin isolated tradings grids          |
+|现货抢先交易日报     | binance spot tradings grids daily analysis      |                                               |
+|杠杆网格交易日报     | binance margin isolated tradings daily analysis |
+
 # 免责声明
 本项目仅为个人交易测试项目，风险意识完全靠自己把握，出现任何交易失误与本项目无关，请谨慎评估交易的合理性。
 
