@@ -162,7 +162,7 @@ func (r *TradingsRepository) UpdateScalping() error {
 			orderID = entity.SellOrderId
 		}
 
-		var order *models.Order
+		var order models.Order
 		result := r.Db.Where(
 			"symbol=? AND order_id=?",
 			entity.Symbol,

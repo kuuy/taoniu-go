@@ -192,7 +192,7 @@ func (r *TradingsRepository) UpdateGrids() error {
 			orderID = entity.SellOrderId
 		}
 
-		var order *marginModels.Order
+		var order marginModels.Order
 		result := r.Db.Where(
 			"symbol=? AND order_id=?",
 			entity.Symbol,
