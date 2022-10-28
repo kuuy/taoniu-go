@@ -33,7 +33,6 @@ func (r *DailyRepository) Flush(symbol string, limit int) error {
 		limit,
 	).Do(r.Ctx)
 	if err != nil {
-		log.Println("error", err)
 		return err
 	}
 	for _, kline := range klines {
