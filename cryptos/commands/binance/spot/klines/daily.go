@@ -4,12 +4,12 @@ import (
 	"context"
 	"gorm.io/gorm"
 	"log"
+	pool "taoniu.local/cryptos/common"
 	models "taoniu.local/cryptos/models/binance"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/urfave/cli/v2"
 
-	pool "taoniu.local/cryptos/common"
 	repositories "taoniu.local/cryptos/repositories/binance/spot/klines"
 )
 
@@ -21,20 +21,23 @@ type DailyHandler struct {
 }
 
 func NewDailyCommand() *cli.Command {
-	h := DailyHandler{
-		Db:  pool.NewDB(),
-		Rdb: pool.NewRedis(),
-		Ctx: context.Background(),
-		Repository: &repositories.DailyRepository{
-			Db:  pool.NewDB(),
-			Rdb: pool.NewRedis(),
-			Ctx: context.Background(),
-		},
-	}
-
+	var h DailyHandler
 	return &cli.Command{
 		Name:  "daily",
 		Usage: "",
+		Before: func(c *cli.Context) error {
+			h = DailyHandler{
+				Db:  pool.NewDB(),
+				Rdb: pool.NewRedis(),
+				Ctx: context.Background(),
+			}
+			h.Repository = &repositories.DailyRepository{
+				Db:  h.Db,
+				Rdb: h.Rdb,
+				Ctx: h.Ctx,
+			}
+			return nil
+		},
 		Subcommands: []*cli.Command{
 			{
 				Name:  "flush",

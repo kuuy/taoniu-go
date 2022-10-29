@@ -16,19 +16,22 @@ type IsolatedHandler struct {
 }
 
 func NewIsolatedCommand() *cli.Command {
-	h := IsolatedHandler{
-		Rdb: pool.NewRedis(),
-		Ctx: context.Background(),
-		Repository: &repositories.IsolatedRepository{
-			Db:  pool.NewDB(),
-			Rdb: pool.NewRedis(),
-			Ctx: context.Background(),
-		},
-	}
-
+	var h IsolatedHandler
 	return &cli.Command{
 		Name:  "isolated",
 		Usage: "",
+		Before: func(c *cli.Context) error {
+			h = IsolatedHandler{
+				Rdb: pool.NewRedis(),
+				Ctx: context.Background(),
+			}
+			h.Repository = &repositories.IsolatedRepository{
+				Db:  pool.NewDB(),
+				Rdb: h.Rdb,
+				Ctx: h.Ctx,
+			}
+			return nil
+		},
 		Subcommands: []*cli.Command{
 			{
 				Name:  "flush",

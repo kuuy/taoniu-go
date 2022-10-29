@@ -9,23 +9,26 @@ import (
 )
 
 type DbHandler struct {
-	db *gorm.DB
+	Db *gorm.DB
 }
 
 func NewDbCommand() *cli.Command {
-	handler := DbHandler{
-		db: pool.NewDB(),
-	}
-
+	var h DbHandler
 	return &cli.Command{
 		Name:  "db",
 		Usage: "",
+		Before: func(c *cli.Context) error {
+			h = DbHandler{
+				Db: pool.NewDB(),
+			}
+			return nil
+		},
 		Subcommands: []*cli.Command{
 			{
 				Name:  "migrate",
 				Usage: "",
 				Action: func(c *cli.Context) error {
-					if err := handler.migrate(); err != nil {
+					if err := h.migrate(); err != nil {
 						return cli.Exit(err.Error(), 1)
 					}
 					return nil
@@ -37,7 +40,7 @@ func NewDbCommand() *cli.Command {
 
 func (h *DbHandler) migrate() error {
 	log.Println("process migrator")
-	models.NewBinance().AutoMigrate(h.db)
-	models.NewTradingView().AutoMigrate(h.db)
+	models.NewBinance().AutoMigrate(h.Db)
+	models.NewTradingView().AutoMigrate(h.Db)
 	return nil
 }

@@ -10,6 +10,7 @@ func NewProxiesCommand() *cli.Command {
 		Name:  "proxies",
 		Usage: "",
 		Subcommands: []*cli.Command{
+			proxies.NewTorCommand(),
 			proxies.NewCrawlsCommand(),
 		},
 	}

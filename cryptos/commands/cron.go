@@ -16,20 +16,24 @@ import (
 )
 
 type CronHandler struct {
-	db  *gorm.DB
-	rdb *redis.Client
-	ctx context.Context
+	Db  *gorm.DB
+	Rdb *redis.Client
+	Ctx context.Context
 }
 
 func NewCronCommand() *cli.Command {
-	h := CronHandler{
-		db:  pool.NewDB(),
-		rdb: pool.NewRedis(),
-		ctx: context.Background(),
-	}
+	var h CronHandler
 	return &cli.Command{
 		Name:  "cron",
 		Usage: "",
+		Before: func(c *cli.Context) error {
+			h = CronHandler{
+				Db:  pool.NewDB(),
+				Rdb: pool.NewRedis(),
+				Ctx: context.Background(),
+			}
+			return nil
+		},
 		Action: func(c *cli.Context) error {
 			if err := h.run(); err != nil {
 				return cli.Exit(err.Error(), 1)
@@ -46,9 +50,9 @@ func (h *CronHandler) run() error {
 	wg.Add(1)
 
 	binance := tasks.BinanceTask{
-		Db:  h.db,
-		Rdb: h.rdb,
-		Ctx: h.ctx,
+		Db:  h.Db,
+		Rdb: h.Rdb,
+		Ctx: h.Ctx,
 	}
 
 	c := cron.New()

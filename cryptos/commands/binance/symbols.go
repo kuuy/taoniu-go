@@ -16,19 +16,22 @@ type SymbolsHandler struct {
 }
 
 func NewSymbolsCommand() *cli.Command {
-	h := SymbolsHandler{
-		Rdb: pool.NewRedis(),
-		Ctx: context.Background(),
-		Repository: &repositories.SymbolsRepository{
-			Db:  pool.NewDB(),
-			Rdb: pool.NewRedis(),
-			Ctx: context.Background(),
-		},
-	}
-
+	var h SymbolsHandler
 	return &cli.Command{
 		Name:  "symbols",
 		Usage: "",
+		Before: func(c *cli.Context) error {
+			h = SymbolsHandler{
+				Rdb: pool.NewRedis(),
+				Ctx: context.Background(),
+			}
+			h.Repository = &repositories.SymbolsRepository{
+				Db:  pool.NewDB(),
+				Rdb: h.Rdb,
+				Ctx: h.Ctx,
+			}
+			return nil
+		},
 		Subcommands: []*cli.Command{
 			{
 				Name:  "flush",

@@ -10,8 +10,8 @@ import (
 	"log"
 	"nhooyr.io/websocket"
 	"strconv"
-
 	pool "taoniu.local/cryptos/common"
+
 	config "taoniu.local/cryptos/config/binance"
 )
 
@@ -21,14 +21,17 @@ type WebsocketHandler struct {
 }
 
 func NewWebsocketCommand() *cli.Command {
-	h := WebsocketHandler{
-		Rdb: pool.NewRedis(),
-		Ctx: context.Background(),
-	}
-
+	var h WebsocketHandler
 	return &cli.Command{
 		Name:  "websocket",
 		Usage: "",
+		Before: func(c *cli.Context) error {
+			h = WebsocketHandler{
+				Rdb: pool.NewRedis(),
+				Ctx: context.Background(),
+			}
+			return nil
+		},
 		Action: func(c *cli.Context) error {
 			if c.NArg() < 1 {
 				return nil

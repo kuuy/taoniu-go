@@ -21,16 +21,19 @@ type WebsocketHandler struct {
 }
 
 func NewWebsocketCommand() *cli.Command {
-	handler := WebsocketHandler{
-		Rdb: pool.NewRedis(),
-		Ctx: context.Background(),
-	}
-
+	var h WebsocketHandler
 	return &cli.Command{
 		Name:  "websocket",
 		Usage: "",
+		Before: func(c *cli.Context) error {
+			h = WebsocketHandler{
+				Rdb: pool.NewRedis(),
+				Ctx: context.Background(),
+			}
+			return nil
+		},
 		Action: func(c *cli.Context) error {
-			if err := handler.start(); err != nil {
+			if err := h.start(); err != nil {
 				return cli.Exit(err.Error(), 1)
 			}
 			return nil

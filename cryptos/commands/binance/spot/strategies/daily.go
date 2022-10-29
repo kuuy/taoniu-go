@@ -16,19 +16,22 @@ type DailyHandler struct {
 }
 
 func NewDailyCommand() *cli.Command {
-	h := DailyHandler{
-		Rdb: pool.NewRedis(),
-		Ctx: context.Background(),
-		Repository: &repositories.DailyRepository{
-			Db:  pool.NewDB(),
-			Rdb: pool.NewRedis(),
-			Ctx: context.Background(),
-		},
-	}
-
+	var h DailyHandler
 	return &cli.Command{
 		Name:  "daily",
 		Usage: "",
+		Before: func(c *cli.Context) error {
+			h = DailyHandler{
+				Rdb: pool.NewRedis(),
+				Ctx: context.Background(),
+			}
+			h.Repository = &repositories.DailyRepository{
+				Db:  pool.NewDB(),
+				Rdb: h.Rdb,
+				Ctx: h.Ctx,
+			}
+			return nil
+		},
 		Subcommands: []*cli.Command{
 			{
 				Name:  "atr",

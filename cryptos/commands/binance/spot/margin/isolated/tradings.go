@@ -17,19 +17,22 @@ type TradingsHandler struct {
 }
 
 func NewTradingsCommand() *cli.Command {
-	h := TradingsHandler{
-		Rdb: pool.NewRedis(),
-		Ctx: context.Background(),
-		Repository: &repositories.TradingsRepository{
-			Db:  pool.NewDB(),
-			Rdb: pool.NewRedis(),
-			Ctx: context.Background(),
-		},
-	}
-
+	var h TradingsHandler
 	return &cli.Command{
 		Name:  "tradings",
 		Usage: "",
+		Before: func(c *cli.Context) error {
+			h = TradingsHandler{
+				Rdb: pool.NewRedis(),
+				Ctx: context.Background(),
+			}
+			h.Repository = &repositories.TradingsRepository{
+				Db:  pool.NewDB(),
+				Rdb: h.Rdb,
+				Ctx: h.Ctx,
+			}
+			return nil
+		},
 		Subcommands: []*cli.Command{
 			{
 				Name:  "grids",

@@ -19,16 +19,7 @@ type GridsHandler struct {
 }
 
 func NewGridsCommand() *cli.Command {
-	h := GridsHandler{
-		Rdb: pool.NewRedis(),
-		Ctx: context.Background(),
-		Repository: &repositories.GridsRepository{
-			Db:  pool.NewDB(),
-			Rdb: pool.NewRedis(),
-			Ctx: context.Background(),
-		},
-	}
-
+	var h GridsHandler
 	return &cli.Command{
 		Name:  "grids",
 		Usage: "",
@@ -36,6 +27,18 @@ func NewGridsCommand() *cli.Command {
 			{
 				Name:  "open",
 				Usage: "",
+				Before: func(c *cli.Context) error {
+					h = GridsHandler{
+						Rdb: pool.NewRedis(),
+						Ctx: context.Background(),
+					}
+					h.Repository = &repositories.GridsRepository{
+						Db:  pool.NewDB(),
+						Rdb: h.Rdb,
+						Ctx: h.Ctx,
+					}
+					return nil
+				},
 				Action: func(c *cli.Context) error {
 					h.Symbol = c.Args().Get(0)
 					h.Amount, _ = strconv.ParseFloat(c.Args().Get(1), 16)

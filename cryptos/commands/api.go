@@ -3,26 +3,23 @@ package commands
 import (
 	"github.com/go-chi/chi/v5"
 	"github.com/urfave/cli/v2"
-	"gorm.io/gorm"
 	"log"
 	"net/http"
 	"taoniu.local/cryptos/api"
 	"taoniu.local/cryptos/api/v1"
-	pool "taoniu.local/cryptos/common"
 )
 
-type ApiHandler struct {
-	db *gorm.DB
-}
+type ApiHandler struct{}
 
 func NewApiCommand() *cli.Command {
-	h := ApiHandler{
-		db: pool.NewDB(),
-	}
-
+	var h ApiHandler
 	return &cli.Command{
 		Name:  "api",
 		Usage: "",
+		Before: func(c *cli.Context) error {
+			h = ApiHandler{}
+			return nil
+		},
 		Action: func(c *cli.Context) error {
 			if err := h.run(); err != nil {
 				return cli.Exit(err.Error(), 1)

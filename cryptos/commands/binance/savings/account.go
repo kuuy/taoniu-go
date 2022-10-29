@@ -13,16 +13,18 @@ type AccountHandler struct {
 }
 
 func NewAccountCommand() *cli.Command {
-	h := AccountHandler{
-		Repository: &repositories.AccountRepository{
-			Rdb: pool.NewRedis(),
-			Ctx: context.Background(),
-		},
-	}
-
+	var h AccountHandler
 	return &cli.Command{
 		Name:  "account",
 		Usage: "",
+		Before: func(c *cli.Context) error {
+			h = AccountHandler{}
+			h.Repository = &repositories.AccountRepository{
+				Rdb: pool.NewRedis(),
+				Ctx: context.Background(),
+			}
+			return nil
+		},
 		Subcommands: []*cli.Command{
 			{
 				Name:  "flush",

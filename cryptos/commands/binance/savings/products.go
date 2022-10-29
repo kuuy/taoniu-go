@@ -13,16 +13,18 @@ type ProductsHandler struct {
 }
 
 func NewProductsCommand() *cli.Command {
-	h := ProductsHandler{
-		Repository: &repositories.ProductsRepository{
-			Rdb: pool.NewRedis(),
-			Ctx: context.Background(),
-		},
-	}
-
+	var h ProductsHandler
 	return &cli.Command{
 		Name:  "products",
 		Usage: "",
+		Before: func(c *cli.Context) error {
+			h = ProductsHandler{}
+			h.Repository = &repositories.ProductsRepository{
+				Rdb: pool.NewRedis(),
+				Ctx: context.Background(),
+			}
+			return nil
+		},
 		Subcommands: []*cli.Command{
 			{
 				Name:  "flush",

@@ -18,19 +18,22 @@ type OrdersHandler struct {
 }
 
 func NewOrdersCommand() *cli.Command {
-	h := OrdersHandler{
-		Rdb: pool.NewRedis(),
-		Ctx: context.Background(),
-		Repository: &repositories.OrdersRepository{
-			Db:  pool.NewDB(),
-			Rdb: pool.NewRedis(),
-			Ctx: context.Background(),
-		},
-	}
-
+	var h OrdersHandler
 	return &cli.Command{
 		Name:  "orders",
 		Usage: "",
+		Before: func(c *cli.Context) error {
+			h = OrdersHandler{
+				Rdb: pool.NewRedis(),
+				Ctx: context.Background(),
+			}
+			h.Repository = &repositories.OrdersRepository{
+				Db:  pool.NewDB(),
+				Rdb: h.Rdb,
+				Ctx: h.Ctx,
+			}
+			return nil
+		},
 		Subcommands: []*cli.Command{
 			{
 				Name:  "open",

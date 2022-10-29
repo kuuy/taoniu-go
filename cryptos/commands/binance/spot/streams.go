@@ -28,17 +28,20 @@ type StreamsHandler struct {
 }
 
 func NewStreamCommand() *cli.Command {
-	h := StreamsHandler{
-		ID:      1,
-		Db:      pool.NewDB(),
-		Rdb:     pool.NewRedis(),
-		Ctx:     context.Background(),
-		Symbols: []string{},
-	}
-
+	var h StreamsHandler
 	return &cli.Command{
 		Name:  "streams",
 		Usage: "",
+		Before: func(c *cli.Context) error {
+			h = StreamsHandler{
+				ID:      1,
+				Db:      pool.NewDB(),
+				Rdb:     pool.NewRedis(),
+				Ctx:     context.Background(),
+				Symbols: []string{},
+			}
+			return nil
+		},
 		Action: func(c *cli.Context) error {
 			id, err := strconv.ParseInt(c.Args().Get(0), 10, 64)
 			if err == nil {

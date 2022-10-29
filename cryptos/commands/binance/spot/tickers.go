@@ -16,17 +16,20 @@ type TickersHandler struct {
 }
 
 func NewTickersCommand() *cli.Command {
-	h := TickersHandler{
-		Db: pool.NewDB(),
-		Repository: &repositories.TickersRepository{
-			Rdb: pool.NewRedis(),
-			Ctx: context.Background(),
-		},
-	}
-
+	var h TickersHandler
 	return &cli.Command{
 		Name:  "tickers",
 		Usage: "",
+		Before: func(c *cli.Context) error {
+			h = TickersHandler{
+				Db: pool.NewDB(),
+			}
+			h.Repository = &repositories.TickersRepository{
+				Rdb: pool.NewRedis(),
+				Ctx: context.Background(),
+			}
+			return nil
+		},
 		Subcommands: []*cli.Command{
 			{
 				Name:  "flush",
