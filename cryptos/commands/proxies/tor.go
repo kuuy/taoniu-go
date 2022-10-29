@@ -60,7 +60,7 @@ func NewTorCommand() *cli.Command {
 				Action: func(c *cli.Context) error {
 					port, _ := strconv.Atoi(c.Args().Get(0))
 					if port < 1 || port > 65535 {
-						log.Fatal("port not in 0~65535")
+						log.Fatal("port not in 1~65535")
 						return nil
 					}
 					if err := h.failed(port); err != nil {

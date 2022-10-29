@@ -4,6 +4,7 @@ import (
 	"context"
 	"gorm.io/gorm"
 	"log"
+	"strconv"
 	pool "taoniu.local/cryptos/common"
 	models "taoniu.local/cryptos/models/binance"
 
@@ -43,7 +44,12 @@ func NewDailyCommand() *cli.Command {
 				Name:  "flush",
 				Usage: "",
 				Action: func(c *cli.Context) error {
-					if err := h.flush(); err != nil {
+					limit, _ := strconv.Atoi(c.Args().Get(0))
+					if limit < 1 || limit > 100 {
+						log.Fatal("limit not in 1~100")
+						return nil
+					}
+					if err := h.flush(limit); err != nil {
 						return cli.Exit(err.Error(), 1)
 					}
 					return nil
@@ -63,12 +69,15 @@ func NewDailyCommand() *cli.Command {
 	}
 }
 
-func (h *DailyHandler) flush() error {
+func (h *DailyHandler) flush(limit int) error {
 	log.Println("binance spot klines daily flush...")
 	var symbols []string
 	h.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
-		h.Repository.Flush(symbol, 1)
+		err := h.Repository.Flush(symbol, limit)
+		if err != nil {
+			log.Println("kline flush error", err)
+		}
 	}
 
 	return nil

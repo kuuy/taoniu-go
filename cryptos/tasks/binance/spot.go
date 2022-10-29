@@ -107,8 +107,8 @@ func (t *SpotTask) Plans() *tasks.PlansTask {
 
 func (t *SpotTask) Flush() {
 	t.Account().Flush()
-	t.Orders().Open()
-	t.Orders().Flush()
+	//t.Orders().Open()
+	//t.Orders().Flush()
 	t.Margin().Flush()
 	t.Plans().Daily().Flush()
 }
