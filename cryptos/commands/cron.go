@@ -54,8 +54,19 @@ func (h *CronHandler) run() error {
 		Rdb: h.Rdb,
 		Ctx: h.Ctx,
 	}
+	proxies := tasks.ProxiesTask{
+		Rdb: h.Rdb,
+		Ctx: h.Ctx,
+	}
 
 	c := cron.New()
+	c.AddFunc("@every 5s", func() {
+		proxies.Tor().Flush()
+		proxies.Tor().Offline()
+	})
+	c.AddFunc("@every 10s", func() {
+		proxies.Tor().Checker()
+	})
 	c.AddFunc("@every 30s", func() {
 		binance.Symbols().Flush()
 		binance.Spot().Flush()

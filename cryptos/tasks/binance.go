@@ -2,7 +2,6 @@ package tasks
 
 import (
 	"context"
-	"github.com/gammazero/workerpool"
 	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
 	repositories "taoniu.local/cryptos/repositories/binance"
@@ -13,7 +12,6 @@ type BinanceTask struct {
 	Db  *gorm.DB
 	Rdb *redis.Client
 	Ctx context.Context
-	Wp  *workerpool.WorkerPool
 }
 
 func (t *BinanceTask) Symbols() *binance.SymbolsTask {

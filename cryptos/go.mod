@@ -19,5 +19,6 @@ require (
 	gorm.io/datatypes v1.0.7
 	gorm.io/driver/postgres v1.3.5
 	gorm.io/gorm v1.23.6
+	h12.io/socks v1.0.3
 	nhooyr.io/websocket v1.8.7
 )
