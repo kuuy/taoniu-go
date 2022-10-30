@@ -2,8 +2,10 @@ package plans
 
 import (
 	"context"
-	"github.com/urfave/cli/v2"
 	"log"
+
+	"github.com/urfave/cli/v2"
+
 	pool "taoniu.local/cryptos/common"
 	repositories "taoniu.local/cryptos/repositories/binance/spot/plans"
 )
@@ -41,7 +43,7 @@ func NewDailyCommand() *cli.Command {
 				Name:  "fix",
 				Usage: "",
 				Action: func(c *cli.Context) error {
-					if err := h.fix(); err != nil {
+					if err := h.Fix(); err != nil {
 						return cli.Exit(err.Error(), 1)
 					}
 					return nil
@@ -56,7 +58,7 @@ func (h *DailyHandler) flush() error {
 	return h.Repository.Flush()
 }
 
-func (h *DailyHandler) fix() error {
+func (h *DailyHandler) Fix() error {
 	log.Println("spot plans daily fix...")
 	return h.Repository.Fix(7 * 86400)
 }

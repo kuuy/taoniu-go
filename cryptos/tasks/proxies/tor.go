@@ -3,11 +3,11 @@ package proxies
 import (
 	"context"
 	"strconv"
-	pool "taoniu.local/cryptos/common"
 	"time"
 
 	"github.com/go-redis/redis/v8"
 
+	pool "taoniu.local/cryptos/common"
 	repositories "taoniu.local/cryptos/repositories/proxies"
 )
 

@@ -9,17 +9,20 @@ import (
 )
 
 type PlansTask struct {
-	Db  *gorm.DB
-	Rdb *redis.Client
-	Ctx context.Context
+	Db        *gorm.DB
+	Rdb       *redis.Client
+	Ctx       context.Context
+	DailyTask *tasks.DailyTask
 }
 
 func (t *PlansTask) Daily() *tasks.DailyTask {
-	return &tasks.DailyTask{
-		Repository: &repositories.DailyRepository{
+	if t.DailyTask == nil {
+		t.DailyTask = &tasks.DailyTask{}
+		t.DailyTask.Repository = &repositories.DailyRepository{
 			Db:  t.Db,
 			Rdb: t.Rdb,
 			Ctx: t.Ctx,
-		},
+		}
 	}
+	return t.DailyTask
 }

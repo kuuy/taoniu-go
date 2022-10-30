@@ -3,15 +3,15 @@ package plans
 import (
 	"context"
 	"errors"
+	"github.com/rs/xid"
 	"time"
 
 	"gorm.io/gorm"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/rs/xid"
 
 	models "taoniu.local/cryptos/models/binance/spot"
-	binanceRepositories "taoniu.local/cryptos/repositories/binance"
+	spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
 	tradingviewRepositories "taoniu.local/cryptos/repositories/tradingview"
 )
 
@@ -24,16 +24,37 @@ func (m *DailyError) Error() string {
 }
 
 type DailyRepository struct {
-	Db  *gorm.DB
-	Rdb *redis.Client
-	Ctx context.Context
+	Db                    *gorm.DB
+	Rdb                   *redis.Client
+	Ctx                   context.Context
+	SymbolsRepository     *spotRepositories.SymbolsRepository
+	TradingviewRepository *tradingviewRepositories.AnalysisRepository
+}
+
+func (r *DailyRepository) Tradingview() *tradingviewRepositories.AnalysisRepository {
+	if r.TradingviewRepository == nil {
+		r.TradingviewRepository = &tradingviewRepositories.AnalysisRepository{
+			Db: r.Db,
+		}
+	}
+	return r.TradingviewRepository
+}
+
+func (r *DailyRepository) Symbols() *spotRepositories.SymbolsRepository {
+	if r.SymbolsRepository == nil {
+		r.SymbolsRepository = &spotRepositories.SymbolsRepository{
+			Db:  r.Db,
+			Rdb: r.Rdb,
+			Ctx: r.Ctx,
+		}
+	}
+	return r.SymbolsRepository
 }
 
 func (r *DailyRepository) Flush() error {
 	buys, sells := r.Signals()
 	r.Create(buys, 1)
 	r.Create(sells, 2)
-
 	return nil
 }
 
@@ -45,7 +66,7 @@ func (r *DailyRepository) Fix(duration int64) error {
 		timestamp,
 	).Find(&entities)
 	for _, entity := range entities {
-		context := r.SymbolsRepository().Context(entity.Symbol)
+		context := r.Symbols().Context(entity.Symbol)
 		isUpdate := false
 		for key, val := range entity.Context {
 			if val == nil {
@@ -59,20 +80,6 @@ func (r *DailyRepository) Fix(duration int64) error {
 	}
 
 	return nil
-}
-
-func (r *DailyRepository) TradingviewRepository() *tradingviewRepositories.AnalysisRepository {
-	return &tradingviewRepositories.AnalysisRepository{
-		Db: r.Db,
-	}
-}
-
-func (r *DailyRepository) SymbolsRepository() *binanceRepositories.SymbolsRepository {
-	return &binanceRepositories.SymbolsRepository{
-		Db:  r.Db,
-		Rdb: r.Rdb,
-		Ctx: r.Ctx,
-	}
 }
 
 func (r *DailyRepository) Create(signals map[string]interface{}, side int64) error {
@@ -100,7 +107,7 @@ func (r *DailyRepository) Create(signals map[string]interface{}, side int64) err
 				amount += 5
 			}
 		}
-		price, quantity := r.SymbolsRepository().Filter(symbol, price, amount)
+		price, quantity := r.Symbols().Filter(symbol, price, amount)
 		var entity models.Plans
 		result := r.Db.Where(
 			"symbol=? AND timestamp=?",
@@ -118,7 +125,7 @@ func (r *DailyRepository) Create(signals map[string]interface{}, side int64) err
 			Quantity:  quantity,
 			Amount:    amount,
 			Timestamp: timestamp,
-			Context:   r.SymbolsRepository().Context(symbol),
+			Context:   r.Symbols().Context(symbol),
 		}
 		r.Db.Create(&entity)
 	}
@@ -180,7 +187,7 @@ func (r *DailyRepository) Filter() (*models.Plans, error) {
 		if entity.Side == 1 && entity.Amount < 20 {
 			continue
 		}
-		signal, err := r.TradingviewRepository().Signal(entity.Symbol)
+		signal, _, err := r.Tradingview().Signal(entity.Symbol)
 		if err != nil {
 			continue
 		}
@@ -191,7 +198,7 @@ func (r *DailyRepository) Filter() (*models.Plans, error) {
 			continue
 		}
 
-		price, err := r.SymbolsRepository().Price(entity.Symbol)
+		price, err := r.Symbols().Price(entity.Symbol)
 		if err != nil {
 			continue
 		}

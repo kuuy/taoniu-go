@@ -70,10 +70,10 @@ func (h *CronHandler) run() error {
 	c.AddFunc("@every 30s", func() {
 		binance.Symbols().Flush()
 		binance.Spot().Flush()
-		binance.Spot().Margin().Isolated().Tradings().Grids()
-		binance.Spot().Margin().Isolated().Tradings().UpdateGrids()
-		binance.Spot().Tradings().Scalping()
-		binance.Spot().Tradings().UpdateScalping()
+		binance.Spot().Margin().Isolated().Tradings().Grids().Flush()
+		binance.Spot().Margin().Isolated().Tradings().Grids().Update()
+		binance.Spot().Tradings().Scalping().Flush()
+		binance.Spot().Tradings().Scalping().Update()
 	})
 	c.AddFunc("@every 3m", func() {
 		binance.Spot().Margin().Orders().Fix()

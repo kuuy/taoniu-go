@@ -9,13 +9,13 @@ import (
 	"math"
 	"strconv"
 	models "taoniu.local/cryptos/models/binance/spot"
-	binanceRepositories "taoniu.local/cryptos/repositories/binance"
 )
 
 type GridsRepository struct {
-	Db  *gorm.DB
-	Rdb *redis.Client
-	Ctx context.Context
+	Db                *gorm.DB
+	Rdb               *redis.Client
+	Ctx               context.Context
+	SymbolsRepository *SymbolsRepository
 }
 
 type GridsError struct {
@@ -26,12 +26,15 @@ func (m *GridsError) Error() string {
 	return m.Message
 }
 
-func (r *GridsRepository) SymbolsRepository() *binanceRepositories.SymbolsRepository {
-	return &binanceRepositories.SymbolsRepository{
-		Db:  r.Db,
-		Rdb: r.Rdb,
-		Ctx: r.Ctx,
+func (r *GridsRepository) Symbols() *SymbolsRepository {
+	if r.SymbolsRepository == nil {
+		r.SymbolsRepository = &SymbolsRepository{
+			Db:  r.Db,
+			Rdb: r.Rdb,
+			Ctx: r.Ctx,
+		}
 	}
+	return r.SymbolsRepository
 }
 
 func (r *GridsRepository) Flush(symbol string) error {
@@ -43,7 +46,7 @@ func (r *GridsRepository) Flush(symbol string) error {
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return result.Error
 	}
-	context := r.SymbolsRepository().Context(symbol)
+	context := r.Symbols().Context(symbol)
 	profitTarget, _ := strconv.ParseFloat(context["profit_target"].(string), 64)
 	takeProfitPrice, _ := strconv.ParseFloat(context["take_profit_price"].(string), 64)
 	stopLossPoint, _ := strconv.ParseFloat(context["stop_loss_point"].(string), 64)
@@ -78,7 +81,7 @@ func (r *GridsRepository) Open(symbol string, amount float64) error {
 	if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return &GridsError{"grid already opened"}
 	}
-	context := r.SymbolsRepository().Context(symbol)
+	context := r.Symbols().Context(symbol)
 	profitTarget, _ := strconv.ParseFloat(context["profit_target"].(string), 64)
 	takeProfitPrice, _ := strconv.ParseFloat(context["take_profit_price"].(string), 64)
 	stopLossPoint, _ := strconv.ParseFloat(context["stop_loss_point"].(string), 64)

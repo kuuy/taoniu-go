@@ -1,76 +1,97 @@
-package spot
+package tradings
 
 import (
 	"context"
 	"errors"
+	"strconv"
+
 	"github.com/adshao/go-binance/v2"
 	"github.com/go-redis/redis/v8"
 	"github.com/rs/xid"
 	"gorm.io/gorm"
-	"strconv"
+
 	config "taoniu.local/cryptos/config/binance"
 	models "taoniu.local/cryptos/models/binance/spot"
 	marginModels "taoniu.local/cryptos/models/binance/spot/margin"
-
-	binanceRepositories "taoniu.local/cryptos/repositories/binance"
-	plansRepository "taoniu.local/cryptos/repositories/binance/spot/plans"
+	spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
+	plansRepositories "taoniu.local/cryptos/repositories/binance/spot/plans"
 	tradingviewRepositories "taoniu.local/cryptos/repositories/tradingview"
 )
 
-type TradingsRepository struct {
-	Db  *gorm.DB
-	Rdb *redis.Client
-	Ctx context.Context
+type ScalpingRepository struct {
+	Db                    *gorm.DB
+	Rdb                   *redis.Client
+	Ctx                   context.Context
+	SymbolsRepository     *spotRepositories.SymbolsRepository
+	OrdersRepository      *spotRepositories.OrdersRepository
+	AccountRepository     *spotRepositories.AccountRepository
+	PlansRepository       *plansRepositories.DailyRepository
+	TradingviewRepository *tradingviewRepositories.AnalysisRepository
 }
 
-type TradingsError struct {
+type ScalpingError struct {
 	Message string
 }
 
-func (m *TradingsError) Error() string {
+func (m *ScalpingError) Error() string {
 	return m.Message
 }
 
-func (r *TradingsRepository) SymbolsRepository() *binanceRepositories.SymbolsRepository {
-	return &binanceRepositories.SymbolsRepository{
-		Db:  r.Db,
-		Rdb: r.Rdb,
-		Ctx: r.Ctx,
+func (r *ScalpingRepository) Symbols() *spotRepositories.SymbolsRepository {
+	if r.SymbolsRepository == nil {
+		r.SymbolsRepository = &spotRepositories.SymbolsRepository{
+			Db:  r.Db,
+			Rdb: r.Rdb,
+			Ctx: r.Ctx,
+		}
 	}
+	return r.SymbolsRepository
 }
 
-func (r *TradingsRepository) TradingviewRepository() *tradingviewRepositories.AnalysisRepository {
-	return &tradingviewRepositories.AnalysisRepository{
-		Db: r.Db,
+func (r *ScalpingRepository) Orders() *spotRepositories.OrdersRepository {
+	if r.OrdersRepository == nil {
+		r.OrdersRepository = &spotRepositories.OrdersRepository{
+			Db:  r.Db,
+			Rdb: r.Rdb,
+			Ctx: r.Ctx,
+		}
 	}
+	return r.OrdersRepository
 }
 
-func (r *TradingsRepository) PlansRepository() *plansRepository.DailyRepository {
-	return &plansRepository.DailyRepository{
-		Db:  r.Db,
-		Rdb: r.Rdb,
-		Ctx: r.Ctx,
+func (r *ScalpingRepository) Account() *spotRepositories.AccountRepository {
+	if r.AccountRepository == nil {
+		r.AccountRepository = &spotRepositories.AccountRepository{
+			Db:  r.Db,
+			Rdb: r.Rdb,
+			Ctx: r.Ctx,
+		}
 	}
+	return r.AccountRepository
 }
 
-func (r *TradingsRepository) OrdersRepository() *OrdersRepository {
-	return &OrdersRepository{
-		Db:  r.Db,
-		Rdb: r.Rdb,
-		Ctx: r.Ctx,
+func (r *ScalpingRepository) Plans() *plansRepositories.DailyRepository {
+	if r.PlansRepository == nil {
+		r.PlansRepository = &plansRepositories.DailyRepository{
+			Db:  r.Db,
+			Rdb: r.Rdb,
+			Ctx: r.Ctx,
+		}
 	}
+	return r.PlansRepository
 }
 
-func (r *TradingsRepository) AccountRepository() *AccountRepository {
-	return &AccountRepository{
-		Db:  r.Db,
-		Rdb: r.Rdb,
-		Ctx: r.Ctx,
+func (r *ScalpingRepository) Tradingview() *tradingviewRepositories.AnalysisRepository {
+	if r.TradingviewRepository == nil {
+		r.TradingviewRepository = &tradingviewRepositories.AnalysisRepository{
+			Db: r.Db,
+		}
 	}
+	return r.TradingviewRepository
 }
 
-func (r *TradingsRepository) Scalping() error {
-	plan, err := r.PlansRepository().Filter()
+func (r *ScalpingRepository) Flush() error {
+	plan, err := r.Plans().Filter()
 	if err != nil {
 		return err
 	}
@@ -80,7 +101,7 @@ func (r *TradingsRepository) Scalping() error {
 		return nil
 	}
 
-	balance, _, err := r.AccountRepository().Balance(plan.Symbol)
+	balance, _, err := r.Account().Balance(plan.Symbol)
 	if err != nil {
 		return err
 	}
@@ -112,10 +133,10 @@ func (r *TradingsRepository) Scalping() error {
 		return nil
 	}
 
-	buyPrice, buyQuantity := r.SymbolsRepository().Filter(plan.Symbol, plan.Price, 10)
+	buyPrice, buyQuantity := r.Symbols().Filter(plan.Symbol, plan.Price, 10)
 	sellPrice := buyPrice * (1 + 0.05)
 	sellQuantity := buyQuantity
-	sellPrice, sellQuantity = r.SymbolsRepository().Filter(plan.Symbol, sellPrice, sellPrice*sellQuantity)
+	sellPrice, sellQuantity = r.Symbols().Filter(plan.Symbol, sellPrice, sellPrice*sellQuantity)
 
 	buyAmount := buyPrice * buyQuantity
 
@@ -150,7 +171,7 @@ func (r *TradingsRepository) Scalping() error {
 	return nil
 }
 
-func (r *TradingsRepository) UpdateScalping() error {
+func (r *ScalpingRepository) Update() error {
 	var entities []*models.TradingScalping
 	r.Db.Where(
 		"status IN ?",
@@ -198,7 +219,7 @@ func (r *TradingsRepository) UpdateScalping() error {
 	return nil
 }
 
-func (r *TradingsRepository) Order(symbol string, side binance.SideType, price float64, quantity float64) (int64, error) {
+func (r *ScalpingRepository) Order(symbol string, side binance.SideType, price float64, quantity float64) (int64, error) {
 	client := binance.NewClient(config.TRADE_API_KEY, config.TRADE_SECRET_KEY)
 	result, err := client.NewCreateOrderService().Symbol(
 		symbol,
@@ -219,7 +240,7 @@ func (r *TradingsRepository) Order(symbol string, side binance.SideType, price f
 		return 0, err
 	}
 
-	r.OrdersRepository().Flush(symbol, result.OrderID)
+	r.Orders().Flush(symbol, result.OrderID)
 
 	return result.OrderID, nil
 }

@@ -1,92 +1,113 @@
-package isolated
+package tradings
 
 import (
 	"context"
 	"errors"
-	"github.com/rs/xid"
-	"gorm.io/gorm"
 	"math"
 	"strconv"
 
+	"gorm.io/gorm"
+
 	"github.com/adshao/go-binance/v2"
 	"github.com/go-redis/redis/v8"
+	"github.com/rs/xid"
 
 	config "taoniu.local/cryptos/config/binance"
 	spotModels "taoniu.local/cryptos/models/binance/spot"
 	marginModels "taoniu.local/cryptos/models/binance/spot/margin"
 	models "taoniu.local/cryptos/models/binance/spot/margin/isolated"
-	binanceRepositories "taoniu.local/cryptos/repositories/binance"
 	spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
 	marginRepositories "taoniu.local/cryptos/repositories/binance/spot/margin"
+	isolatedRepositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated"
 	tradingviewRepositories "taoniu.local/cryptos/repositories/tradingview"
 )
 
-type TradingsRepository struct {
-	Db  *gorm.DB
-	Rdb *redis.Client
-	Ctx context.Context
+type GridsRepository struct {
+	Db                    *gorm.DB
+	Rdb                   *redis.Client
+	Ctx                   context.Context
+	AccountRepository     *isolatedRepositories.AccountRepository
+	OrdersRepository      *marginRepositories.OrdersRepository
+	SymbolsRepository     *spotRepositories.SymbolsRepository
+	GridsRepository       *spotRepositories.GridsRepository
+	TradingviewRepository *tradingviewRepositories.AnalysisRepository
 }
 
-type TradingsError struct {
+type GridsError struct {
 	Message string
 }
 
-func (m *TradingsError) Error() string {
+func (m *GridsError) Error() string {
 	return m.Message
 }
 
-func (r *TradingsRepository) TradingviewRepository() *tradingviewRepositories.AnalysisRepository {
-	return &tradingviewRepositories.AnalysisRepository{
-		Db: r.Db,
+func (r *GridsRepository) Account() *isolatedRepositories.AccountRepository {
+	if r.AccountRepository == nil {
+		r.AccountRepository = &isolatedRepositories.AccountRepository{
+			Rdb: r.Rdb,
+			Ctx: r.Ctx,
+		}
 	}
+	return r.AccountRepository
 }
 
-func (r *TradingsRepository) SymbolsRepository() *binanceRepositories.SymbolsRepository {
-	return &binanceRepositories.SymbolsRepository{
-		Db:  r.Db,
-		Rdb: r.Rdb,
-		Ctx: r.Ctx,
+func (r *GridsRepository) Orders() *marginRepositories.OrdersRepository {
+	if r.OrdersRepository == nil {
+		r.OrdersRepository = &marginRepositories.OrdersRepository{
+			Db:  r.Db,
+			Rdb: r.Rdb,
+			Ctx: r.Ctx,
+		}
 	}
+	return r.OrdersRepository
 }
 
-func (r *TradingsRepository) GridsRepository() *spotRepositories.GridsRepository {
-	return &spotRepositories.GridsRepository{
-		Db:  r.Db,
-		Rdb: r.Rdb,
-		Ctx: r.Ctx,
+func (r *GridsRepository) Symbols() *spotRepositories.SymbolsRepository {
+	if r.SymbolsRepository == nil {
+		r.SymbolsRepository = &spotRepositories.SymbolsRepository{
+			Db:  r.Db,
+			Rdb: r.Rdb,
+			Ctx: r.Ctx,
+		}
 	}
+	return r.SymbolsRepository
 }
 
-func (r *TradingsRepository) OrdersRepository() *marginRepositories.OrdersRepository {
-	return &marginRepositories.OrdersRepository{
-		Db:  r.Db,
-		Rdb: r.Rdb,
-		Ctx: r.Ctx,
+func (r *GridsRepository) Grids() *spotRepositories.GridsRepository {
+	if r.GridsRepository == nil {
+		r.GridsRepository = &spotRepositories.GridsRepository{
+			Db:  r.Db,
+			Rdb: r.Rdb,
+			Ctx: r.Ctx,
+		}
 	}
+	return r.GridsRepository
 }
 
-func (r *TradingsRepository) AccountRepository() *AccountRepository {
-	return &AccountRepository{
-		Rdb: r.Rdb,
-		Ctx: r.Ctx,
+func (r *GridsRepository) Tradingview() *tradingviewRepositories.AnalysisRepository {
+	if r.TradingviewRepository == nil {
+		r.TradingviewRepository = &tradingviewRepositories.AnalysisRepository{
+			Db: r.Db,
+		}
 	}
+	return r.TradingviewRepository
 }
 
-func (r *TradingsRepository) Grids(symbol string) error {
-	signal, err := r.TradingviewRepository().Signal(symbol)
+func (r *GridsRepository) Flush(symbol string) error {
+	signal, _, err := r.Tradingview().Signal(symbol)
 	if err != nil {
 		return err
 	}
 	if signal == 0 {
-		return &TradingsError{"tradingview no trading signal"}
+		return &GridsError{"tradingview no trading signal"}
 	}
 
-	price, err := r.SymbolsRepository().Price(symbol)
+	price, err := r.Symbols().Price(symbol)
 	if err != nil {
 		return err
 	}
 
-	grid, err := r.GridsRepository().Filter(symbol, price)
+	grid, err := r.Grids().Filter(symbol, price)
 	if err != nil {
 		return err
 	}
@@ -97,24 +118,24 @@ func (r *TradingsRepository) Grids(symbol string) error {
 
 	if signal == 1 {
 		amount := 10 * math.Pow(2, float64(grid.Step-1))
-		return r.BuyGrid(grid, price, amount)
+		return r.Buy(grid, price, amount)
 	} else {
-		return r.SellGrid(grid, sellItems)
+		return r.Sell(grid, sellItems)
 	}
 
 	return nil
 }
 
-func (r *TradingsRepository) BuyGrid(grid *spotModels.Grids, price float64, amount float64) error {
-	balance, _, err := r.AccountRepository().Balance(grid.Symbol)
+func (r *GridsRepository) Buy(grid *spotModels.Grids, price float64, amount float64) error {
+	balance, _, err := r.Account().Balance(grid.Symbol)
 	if err != nil {
 		return err
 	}
 
-	buyPrice, buyQuantity := r.SymbolsRepository().Filter(grid.Symbol, price, amount)
+	buyPrice, buyQuantity := r.Symbols().Filter(grid.Symbol, price, amount)
 	sellPrice := buyPrice * (1 + grid.TakeProfitPercent)
 	sellQuantity := buyQuantity * grid.TriggerPercent
-	sellPrice, sellQuantity = r.SymbolsRepository().Filter(grid.Symbol, sellPrice, sellPrice*sellQuantity)
+	sellPrice, sellQuantity = r.Symbols().Filter(grid.Symbol, sellPrice, sellPrice*sellQuantity)
 
 	buyAmount := buyPrice * buyQuantity
 
@@ -152,7 +173,7 @@ func (r *TradingsRepository) BuyGrid(grid *spotModels.Grids, price float64, amou
 	return nil
 }
 
-func (r *TradingsRepository) SellGrid(grid *spotModels.Grids, entities []*models.TradingGrid) error {
+func (r *GridsRepository) Sell(grid *spotModels.Grids, entities []*models.TradingGrid) error {
 	for _, entity := range entities {
 		var sellOrderId int64 = 0
 		var err error
@@ -180,7 +201,7 @@ func (r *TradingsRepository) SellGrid(grid *spotModels.Grids, entities []*models
 	return nil
 }
 
-func (r *TradingsRepository) UpdateGrids() error {
+func (r *GridsRepository) Update() error {
 	var entities []*models.TradingGrid
 	r.Db.Where(
 		"status IN ?",
@@ -228,7 +249,7 @@ func (r *TradingsRepository) UpdateGrids() error {
 	return nil
 }
 
-func (r *TradingsRepository) FilterGrid(grid *spotModels.Grids, price float64, signal int64) ([]*models.TradingGrid, error) {
+func (r *GridsRepository) FilterGrid(grid *spotModels.Grids, price float64, signal int64) ([]*models.TradingGrid, error) {
 	var entryPrice float64
 	var takePrice float64
 	var entities []*models.TradingGrid
@@ -250,19 +271,19 @@ func (r *TradingsRepository) FilterGrid(grid *spotModels.Grids, price float64, s
 		}
 	}
 	if signal == 1 && entryPrice > 0 && price > entryPrice {
-		return nil, &TradingsError{"buy price too high"}
+		return nil, &GridsError{"buy price too high"}
 	}
 	if signal == 2 && (takePrice == 0 || price < takePrice) {
-		return nil, &TradingsError{"sell price too low"}
+		return nil, &GridsError{"sell price too low"}
 	}
 	if signal == 2 && len(sellItems) == 0 {
-		return nil, &TradingsError{"nothing sell"}
+		return nil, &GridsError{"nothing sell"}
 	}
 
 	return sellItems, nil
 }
 
-func (r *TradingsRepository) Order(symbol string, side binance.SideType, price float64, quantity float64) (int64, error) {
+func (r *GridsRepository) Order(symbol string, side binance.SideType, price float64, quantity float64) (int64, error) {
 	client := binance.NewClient(config.TRADE_API_KEY, config.TRADE_SECRET_KEY)
 	result, err := client.NewCreateMarginOrderService().Symbol(
 		symbol,
@@ -284,7 +305,7 @@ func (r *TradingsRepository) Order(symbol string, side binance.SideType, price f
 	if err != nil {
 		return 0, err
 	}
-	r.OrdersRepository().Flush(symbol, result.OrderID, true)
+	r.Orders().Flush(symbol, result.OrderID, true)
 
 	return result.OrderID, nil
 }

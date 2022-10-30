@@ -4,17 +4,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/adshao/go-binance/v2"
-	"github.com/go-redis/redis/v8"
-	"github.com/rs/xid"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 	"math"
 	"strconv"
 	"strings"
+
+	"github.com/adshao/go-binance/v2"
+	"github.com/go-redis/redis/v8"
+	"github.com/rs/xid"
+
 	config "taoniu.local/cryptos/config/binance"
 	models "taoniu.local/cryptos/models/binance"
-	"time"
 )
 
 type SymbolsRepository struct {
@@ -130,35 +131,6 @@ func (r *SymbolsRepository) Count() error {
 	return nil
 }
 
-func (r *SymbolsRepository) Price(symbol string) (float64, error) {
-	fields := []string{
-		"price",
-		"timestamp",
-	}
-	data, _ := r.Rdb.HMGet(
-		r.Ctx,
-		fmt.Sprintf(
-			"binance:spot:realtime:%s",
-			symbol,
-		),
-		fields...,
-	).Result()
-	for i := 0; i < len(fields); i++ {
-		if data[i] == nil {
-			return 0, &SymbolsError{"price not exists"}
-		}
-	}
-
-	timestamp := time.Now().Unix()
-	price, _ := strconv.ParseFloat(data[0].(string), 64)
-	lasttime, _ := strconv.ParseInt(data[1].(string), 10, 64)
-	if lasttime < timestamp-30 {
-		return 0, &SymbolsError{"price long time not freshed"}
-	}
-
-	return price, nil
-}
-
 func (r *SymbolsRepository) Filter(symbol string, price float64, amount float64) (float64, float64) {
 	var entity models.Symbol
 	result := r.Db.Select("filters").Where("symbol", symbol).Take(&entity)
@@ -193,34 +165,4 @@ func (r *SymbolsRepository) Filter(symbol string, price float64, amount float64)
 	}
 
 	return price, quantity
-}
-
-func (r *SymbolsRepository) Context(symbol string) map[string]interface{} {
-	day := time.Now().Format("0102")
-	fields := []string{
-		"r3",
-		"r2",
-		"r1",
-		"s1",
-		"s2",
-		"s3",
-		"profit_target",
-		"stop_loss_point",
-		"take_profit_price",
-	}
-	data, _ := r.Rdb.HMGet(
-		r.Ctx,
-		fmt.Sprintf(
-			"binance:spot:indicators:%s:%s",
-			symbol,
-			day,
-		),
-		fields...,
-	).Result()
-	var context = make(map[string]interface{})
-	for i := 0; i < len(fields); i++ {
-		context[fields[i]] = data[i]
-	}
-
-	return context
 }

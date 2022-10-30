@@ -1,33 +1,32 @@
-package spot
+package tradings
 
 import (
 	"context"
-	"log"
-
 	"github.com/go-redis/redis/v8"
 	"github.com/urfave/cli/v2"
-
+	"log"
 	pool "taoniu.local/cryptos/common"
-	repositories "taoniu.local/cryptos/repositories/binance/spot"
+	repositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
 )
 
-type SymbolsHandler struct {
+type ScalpingHandler struct {
 	Rdb        *redis.Client
 	Ctx        context.Context
-	Repository *repositories.SymbolsRepository
+	Repository *repositories.ScalpingRepository
 }
 
-func NewSymbolsCommand() *cli.Command {
-	var h SymbolsHandler
+func NewScalpingCommand() *cli.Command {
+	var h ScalpingHandler
 	return &cli.Command{
-		Name:  "symbols",
+		Name:  "scalping",
 		Usage: "",
 		Before: func(c *cli.Context) error {
-			h = SymbolsHandler{
+			h = ScalpingHandler{
 				Rdb: pool.NewRedis(),
 				Ctx: context.Background(),
 			}
-			h.Repository = &repositories.SymbolsRepository{
+			h.Repository = &repositories.ScalpingRepository{
+				Db:  pool.NewDB(),
 				Rdb: h.Rdb,
 				Ctx: h.Ctx,
 			}
@@ -48,7 +47,8 @@ func NewSymbolsCommand() *cli.Command {
 	}
 }
 
-func (h *SymbolsHandler) flush() error {
-	log.Println("symbols flush...")
-	return h.Repository.Flush()
+func (h *ScalpingHandler) flush() error {
+	log.Println("spot tradings scalping flush...")
+	h.Repository.Flush()
+	return nil
 }

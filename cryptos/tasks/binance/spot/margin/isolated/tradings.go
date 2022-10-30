@@ -3,24 +3,29 @@ package isolated
 import (
 	"context"
 	"github.com/go-redis/redis/v8"
-	repositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated"
+	"gorm.io/gorm"
+	repositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated/tradings"
+	tasks "taoniu.local/cryptos/tasks/binance/spot/margin/isolated/tradings"
 )
 
 type TradingsTask struct {
-	Rdb        *redis.Client
-	Ctx        context.Context
-	Repository *repositories.TradingsRepository
+	Db        *gorm.DB
+	Rdb       *redis.Client
+	Ctx       context.Context
+	GridsTask *tasks.GridsTask
 }
 
-func (t *TradingsTask) Grids() error {
-	symbols, _ := t.Rdb.SMembers(t.Ctx, "binance:spot:margin:isolated:symbols").Result()
-	for _, symbol := range symbols {
-		t.Repository.Grids(symbol)
+func (t *TradingsTask) Grids() *tasks.GridsTask {
+	if t.GridsTask == nil {
+		t.GridsTask = &tasks.GridsTask{
+			Rdb: t.Rdb,
+			Ctx: t.Ctx,
+		}
+		t.GridsTask.Repository = &repositories.GridsRepository{
+			Db:  t.Db,
+			Rdb: t.Rdb,
+			Ctx: t.Ctx,
+		}
 	}
-
-	return nil
-}
-
-func (t *TradingsTask) UpdateGrids() error {
-	return t.Repository.UpdateGrids()
+	return t.GridsTask
 }

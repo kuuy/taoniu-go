@@ -3,11 +3,13 @@ package spot
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"time"
+
 	"github.com/adshao/go-binance/v2"
 	"github.com/go-redis/redis/v8"
-	"strconv"
+
 	config "taoniu.local/cryptos/config/binance"
-	"time"
 )
 
 type TickersRepository struct {

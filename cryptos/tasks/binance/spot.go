@@ -9,100 +9,137 @@ import (
 )
 
 type SpotTask struct {
-	Db  *gorm.DB
-	Rdb *redis.Client
-	Ctx context.Context
+	Db             *gorm.DB
+	Rdb            *redis.Client
+	Ctx            context.Context
+	TickersTask    *tasks.TickersTask
+	KlinesTask     *tasks.KlinesTask
+	IndicatorsTask *tasks.IndicatorsTask
+	StrategiesTask *tasks.StrategiesTask
+	PlansTask      *tasks.PlansTask
+	TradingsTask   *tasks.TradingsTask
+	AccountTask    *tasks.AccountTask
+	OrdersTask     *tasks.OrdersTask
+	AnalysisTask   *tasks.AnalysisTask
+	MarginTask     *tasks.MarginTask
 }
 
 func (t *SpotTask) Tickers() *tasks.TickersTask {
-	return &tasks.TickersTask{
-		Db: t.Db,
-		Repository: &repositories.TickersRepository{
+	if t.TickersTask == nil {
+		t.TickersTask = &tasks.TickersTask{
+			Db: t.Db,
+		}
+		t.TickersTask.Repository = &repositories.TickersRepository{
 			Rdb: t.Rdb,
 			Ctx: t.Ctx,
-		},
+		}
 	}
+	return t.TickersTask
 }
 
 func (t *SpotTask) Klines() *tasks.KlinesTask {
-	return &tasks.KlinesTask{
-		Db:  t.Db,
-		Rdb: t.Rdb,
-		Ctx: t.Ctx,
+	if t.KlinesTask == nil {
+		t.KlinesTask = &tasks.KlinesTask{
+			Db:  t.Db,
+			Rdb: t.Rdb,
+			Ctx: t.Ctx,
+		}
 	}
+	return t.KlinesTask
 }
 
 func (t *SpotTask) Indicators() *tasks.IndicatorsTask {
-	return &tasks.IndicatorsTask{
-		Db:  t.Db,
-		Rdb: t.Rdb,
-		Ctx: t.Ctx,
+	if t.IndicatorsTask == nil {
+		t.IndicatorsTask = &tasks.IndicatorsTask{
+			Db:  t.Db,
+			Rdb: t.Rdb,
+			Ctx: t.Ctx,
+		}
 	}
+	return t.IndicatorsTask
 }
 
 func (t *SpotTask) Strategies() *tasks.StrategiesTask {
-	return &tasks.StrategiesTask{
-		Db:  t.Db,
-		Rdb: t.Rdb,
-		Ctx: t.Ctx,
-	}
-}
-
-func (t *SpotTask) Account() *tasks.AccountTask {
-	return &tasks.AccountTask{
-		Repository: &repositories.AccountRepository{
+	if t.StrategiesTask == nil {
+		t.StrategiesTask = &tasks.StrategiesTask{
 			Db:  t.Db,
 			Rdb: t.Rdb,
 			Ctx: t.Ctx,
-		},
+		}
 	}
-}
-
-func (t *SpotTask) Orders() *tasks.OrdersTask {
-	return &tasks.OrdersTask{
-		Db:  t.Db,
-		Rdb: t.Rdb,
-		Ctx: t.Ctx,
-		Repository: &repositories.OrdersRepository{
-			Db:  t.Db,
-			Rdb: t.Rdb,
-			Ctx: t.Ctx,
-		},
-	}
-}
-
-func (t *SpotTask) Margin() *tasks.MarginTask {
-	return &tasks.MarginTask{
-		Db:  t.Db,
-		Rdb: t.Rdb,
-		Ctx: t.Ctx,
-	}
-}
-
-func (t *SpotTask) Tradings() *tasks.TradingsTask {
-	return &tasks.TradingsTask{
-		Repository: &repositories.TradingsRepository{
-			Db:  t.Db,
-			Rdb: t.Rdb,
-			Ctx: t.Ctx,
-		},
-	}
-}
-
-func (t *SpotTask) Analysis() *tasks.AnalysisTask {
-	return &tasks.AnalysisTask{
-		Db:  t.Db,
-		Rdb: t.Rdb,
-		Ctx: t.Ctx,
-	}
+	return t.StrategiesTask
 }
 
 func (t *SpotTask) Plans() *tasks.PlansTask {
-	return &tasks.PlansTask{
-		Db:  t.Db,
-		Rdb: t.Rdb,
-		Ctx: t.Ctx,
+	if t.PlansTask == nil {
+		t.PlansTask = &tasks.PlansTask{
+			Db:  t.Db,
+			Rdb: t.Rdb,
+			Ctx: t.Ctx,
+		}
 	}
+	return t.PlansTask
+}
+
+func (t *SpotTask) Tradings() *tasks.TradingsTask {
+	if t.TradingsTask == nil {
+		t.TradingsTask = &tasks.TradingsTask{
+			Db:  t.Db,
+			Rdb: t.Rdb,
+			Ctx: t.Ctx,
+		}
+	}
+	return t.TradingsTask
+}
+
+func (t *SpotTask) Account() *tasks.AccountTask {
+	if t.AccountTask == nil {
+		t.AccountTask = &tasks.AccountTask{}
+		t.AccountTask.Repository = &repositories.AccountRepository{
+			Db:  t.Db,
+			Rdb: t.Rdb,
+			Ctx: t.Ctx,
+		}
+	}
+	return t.AccountTask
+}
+
+func (t *SpotTask) Orders() *tasks.OrdersTask {
+	if t.OrdersTask == nil {
+		t.OrdersTask = &tasks.OrdersTask{
+			Db:  t.Db,
+			Rdb: t.Rdb,
+			Ctx: t.Ctx,
+		}
+		t.OrdersTask.Repository = &repositories.OrdersRepository{
+			Db:  t.Db,
+			Rdb: t.Rdb,
+			Ctx: t.Ctx,
+		}
+	}
+	return t.OrdersTask
+}
+
+func (t *SpotTask) Analysis() *tasks.AnalysisTask {
+	if t.AnalysisTask == nil {
+		t.AnalysisTask = &tasks.AnalysisTask{
+			Db:  t.Db,
+			Rdb: t.Rdb,
+			Ctx: t.Ctx,
+		}
+	}
+	return t.AnalysisTask
+}
+
+func (t *SpotTask) Margin() *tasks.MarginTask {
+	if t.MarginTask == nil {
+		t.MarginTask = &tasks.MarginTask{
+			Db:  t.Db,
+			Rdb: t.Rdb,
+			Ctx: t.Ctx,
+		}
+	}
+	return t.MarginTask
 }
 
 func (t *SpotTask) Flush() {

@@ -47,12 +47,8 @@ func (t *IsolatedTask) Orders() *tasks.OrdersTask {
 
 func (t *IsolatedTask) Tradings() *tasks.TradingsTask {
 	return &tasks.TradingsTask{
+		Db:  t.Db,
 		Rdb: t.Rdb,
 		Ctx: t.Ctx,
-		Repository: &repositories.TradingsRepository{
-			Db:  t.Db,
-			Rdb: t.Rdb,
-			Ctx: t.Ctx,
-		},
 	}
 }
