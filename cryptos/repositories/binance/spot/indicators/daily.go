@@ -349,10 +349,14 @@ func (r *DailyRepository) BBands(symbol string, period int, limit int) error {
 func (r *DailyRepository) Day(timestamp int64) (string, error) {
 	now := time.Now()
 	_, offset := now.Zone()
-	day := time.Unix(timestamp+int64(offset), 0).Format("0102")
-	if day != now.Format("0102") {
+
+	utc := now.Add(time.Second * time.Duration(-offset))
+	duration := time.Hour*time.Duration(8-utc.Hour()) - time.Minute*time.Duration(utc.Minute()) - time.Second*time.Duration(utc.Second())
+	open := utc.Add(duration)
+	last := time.Unix(timestamp, 0)
+	if open.Format("0102") != last.Format("0102") {
 		return "", &DailyError{"timestamp is not today"}
 	}
 
-	return day, nil
+	return now.Format("0102"), nil
 }

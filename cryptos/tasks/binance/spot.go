@@ -147,6 +147,8 @@ func (t *SpotTask) Flush() {
 	//t.Orders().Open()
 	//t.Orders().Flush()
 	t.Margin().Flush()
+	t.Indicators().Daily().Pivot()
+	t.Indicators().Daily().Atr(14, 100)
 	t.Plans().Daily().Flush()
 }
 
