@@ -2,9 +2,10 @@ package strategies
 
 import (
 	"context"
+	"gorm.io/gorm"
 	"log"
+	models "taoniu.local/cryptos/models/binance/futures"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/urfave/cli/v2"
 
 	pool "taoniu.local/cryptos/common"
@@ -12,8 +13,7 @@ import (
 )
 
 type DailyHandler struct {
-	Rdb        *redis.Client
-	Ctx        context.Context
+	Db         *gorm.DB
 	Repository *repositories.DailyRepository
 }
 
@@ -24,13 +24,12 @@ func NewDailyCommand() *cli.Command {
 		Usage: "",
 		Before: func(c *cli.Context) error {
 			h = DailyHandler{
-				Rdb: pool.NewRedis(),
-				Ctx: context.Background(),
+				Db: pool.NewDB(),
 			}
 			h.Repository = &repositories.DailyRepository{
-				Db:  pool.NewDB(),
-				Rdb: h.Rdb,
-				Ctx: h.Ctx,
+				Db:  h.Db,
+				Rdb: pool.NewRedis(),
+				Ctx: context.Background(),
 			}
 			return nil
 		},
@@ -91,7 +90,8 @@ func NewDailyCommand() *cli.Command {
 
 func (h *DailyHandler) atr() error {
 	log.Println("daily atr processing...")
-	symbols, _ := h.Rdb.SMembers(h.Ctx, "binance:futures:websocket:symbols").Result()
+	var symbols []string
+	h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
 		h.Repository.Atr(symbol)
 	}
@@ -100,7 +100,8 @@ func (h *DailyHandler) atr() error {
 
 func (h *DailyHandler) zlema() error {
 	log.Println("daily zlema processing...")
-	symbols, _ := h.Rdb.SMembers(h.Ctx, "binance:futures:websocket:symbols").Result()
+	var symbols []string
+	h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
 		h.Repository.Zlema(symbol)
 	}
@@ -109,7 +110,8 @@ func (h *DailyHandler) zlema() error {
 
 func (h *DailyHandler) haZlema() error {
 	log.Println("daily haZlema strategy...")
-	symbols, _ := h.Rdb.SMembers(h.Ctx, "binance:futures:websocket:symbols").Result()
+	var symbols []string
+	h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
 		h.Repository.HaZlema(symbol)
 	}
@@ -118,7 +120,8 @@ func (h *DailyHandler) haZlema() error {
 
 func (h *DailyHandler) kdj() error {
 	log.Println("daily zlema strategy...")
-	symbols, _ := h.Rdb.SMembers(h.Ctx, "binance:futures:websocket:symbols").Result()
+	var symbols []string
+	h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
 		h.Repository.Kdj(symbol)
 	}
@@ -127,7 +130,8 @@ func (h *DailyHandler) kdj() error {
 
 func (h *DailyHandler) bBands() error {
 	log.Println("daily bbands strategy...")
-	symbols, _ := h.Rdb.SMembers(h.Ctx, "binance:futures:websocket:symbols").Result()
+	var symbols []string
+	h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
 		h.Repository.BBands(symbol)
 	}

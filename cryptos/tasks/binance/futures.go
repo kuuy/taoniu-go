@@ -19,6 +19,8 @@ type FuturesTask struct {
 	TickersTask    *tasks.TickersTask
 	KlinesTask     *tasks.KlinesTask
 	IndicatorsTask *tasks.IndicatorsTask
+	StrategiesTask *tasks.StrategiesTask
+	PlansTask      *tasks.PlansTask
 }
 
 func (t *FuturesTask) Cron() *tasks.CronTask {
@@ -83,9 +85,32 @@ func (t *FuturesTask) Indicators() *tasks.IndicatorsTask {
 	return t.IndicatorsTask
 }
 
+func (t *FuturesTask) Strategies() *tasks.StrategiesTask {
+	if t.StrategiesTask == nil {
+		t.StrategiesTask = &tasks.StrategiesTask{
+			Db:  t.Db,
+			Rdb: t.Rdb,
+			Ctx: t.Ctx,
+		}
+	}
+	return t.StrategiesTask
+}
+
+func (t *FuturesTask) Plans() *tasks.PlansTask {
+	if t.PlansTask == nil {
+		t.PlansTask = &tasks.PlansTask{
+			Db:  t.Db,
+			Rdb: t.Rdb,
+			Ctx: t.Ctx,
+		}
+	}
+	return t.PlansTask
+}
+
 func (t *FuturesTask) Flush() {
 	t.Indicators().Daily().Pivot()
 	t.Indicators().Daily().Atr(14, 100)
+	t.Plans().Daily().Flush()
 }
 
 func (t *FuturesTask) Clean() {
