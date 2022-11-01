@@ -3,6 +3,7 @@ package models
 import (
 	"gorm.io/gorm"
 	"taoniu.local/cryptos/models/binance"
+	"taoniu.local/cryptos/models/binance/spot"
 )
 
 type Binance struct{}
@@ -13,8 +14,9 @@ func NewBinance() *Binance {
 
 func (m *Binance) AutoMigrate(db *gorm.DB) error {
 	db.AutoMigrate(
-		&binance.Symbol{},
+		&spot.Symbol{},
 	)
 	binance.NewSpot().AutoMigrate(db)
+	binance.NewFutures().AutoMigrate(db)
 	return nil
 }

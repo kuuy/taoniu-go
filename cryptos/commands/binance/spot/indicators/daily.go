@@ -6,13 +6,13 @@ import (
 	"gorm.io/gorm"
 	"log"
 	pool "taoniu.local/cryptos/common"
-	models "taoniu.local/cryptos/models/binance"
+	models "taoniu.local/cryptos/models/binance/spot"
 	repositories "taoniu.local/cryptos/repositories/binance/spot/indicators"
 )
 
 type DailyHandler struct {
 	Db         *gorm.DB
-	repository *repositories.DailyRepository
+	Repository *repositories.DailyRepository
 }
 
 func NewDailyCommand() *cli.Command {
@@ -24,7 +24,7 @@ func NewDailyCommand() *cli.Command {
 			h = DailyHandler{
 				Db: pool.NewDB(),
 			}
-			h.repository = &repositories.DailyRepository{
+			h.Repository = &repositories.DailyRepository{
 				Db:  h.Db,
 				Rdb: pool.NewRedis(),
 				Ctx: context.Background(),
@@ -101,7 +101,7 @@ func (h *DailyHandler) atr() error {
 	var symbols []string
 	h.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
-		h.repository.Atr(symbol, 14, 100)
+		h.Repository.Atr(symbol, 14, 100)
 	}
 	return nil
 }
@@ -111,7 +111,7 @@ func (h *DailyHandler) zlema() error {
 	var symbols []string
 	h.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
-		h.repository.Zlema(symbol, 14, 100)
+		h.Repository.Zlema(symbol, 14, 100)
 	}
 	return nil
 }
@@ -121,7 +121,7 @@ func (h *DailyHandler) haZlema() error {
 	var symbols []string
 	h.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
-		h.repository.HaZlema(symbol, 14, 100)
+		h.Repository.HaZlema(symbol, 14, 100)
 	}
 	return nil
 }
@@ -131,7 +131,7 @@ func (h *DailyHandler) kdj() error {
 	var symbols []string
 	h.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
-		h.repository.Kdj(symbol, 9, 3, 100)
+		h.Repository.Kdj(symbol, 9, 3, 100)
 	}
 	return nil
 }
@@ -141,7 +141,7 @@ func (h *DailyHandler) bBands() error {
 	var symbols []string
 	h.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
-		h.repository.BBands(symbol, 14, 100)
+		h.Repository.BBands(symbol, 14, 100)
 	}
 	return nil
 }
@@ -151,7 +151,7 @@ func (h *DailyHandler) pivot() error {
 	var symbols []string
 	h.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
-		h.repository.Pivot(symbol)
+		h.Repository.Pivot(symbol)
 	}
 	return nil
 }

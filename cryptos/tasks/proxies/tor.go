@@ -21,7 +21,7 @@ func (t *TorTask) Flush() error {
 	mutex := pool.NewMutex(
 		t.Rdb,
 		t.Ctx,
-		"lock:proxies:tor:flush",
+		"locks:proxies:tor:flush",
 	)
 	if mutex.Lock(5 * time.Second) {
 		return nil
@@ -76,7 +76,7 @@ func (t *TorTask) Checker() error {
 	mutex := pool.NewMutex(
 		t.Rdb,
 		t.Ctx,
-		"lock:proxies:tor:flush",
+		"locks:proxies:tor:flush",
 	)
 	if mutex.Lock(30 * time.Second) {
 		return nil

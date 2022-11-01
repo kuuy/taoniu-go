@@ -4,12 +4,11 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	config "taoniu.local/cryptos/config/binance/spot"
 	"time"
 
 	"github.com/adshao/go-binance/v2"
 	"github.com/go-redis/redis/v8"
-
-	config "taoniu.local/cryptos/config/binance"
 )
 
 type TickersRepository struct {

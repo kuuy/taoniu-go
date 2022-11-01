@@ -7,7 +7,7 @@ import (
 	"gorm.io/gorm"
 	"strconv"
 	"strings"
-	models "taoniu.local/cryptos/models/binance"
+	models "taoniu.local/cryptos/models/binance/spot"
 	"time"
 
 	"nhooyr.io/websocket"

@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
-	models "taoniu.local/cryptos/models/binance"
+	models "taoniu.local/cryptos/models/binance/spot"
 	repositories "taoniu.local/cryptos/repositories/binance/spot/strategies"
 )
 

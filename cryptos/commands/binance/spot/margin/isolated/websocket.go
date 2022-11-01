@@ -11,8 +11,7 @@ import (
 	"nhooyr.io/websocket"
 	"strconv"
 	pool "taoniu.local/cryptos/common"
-
-	config "taoniu.local/cryptos/config/binance"
+	config "taoniu.local/cryptos/config/binance/spot"
 )
 
 type WebsocketHandler struct {

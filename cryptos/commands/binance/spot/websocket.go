@@ -10,9 +10,9 @@ import (
 	"log"
 	"nhooyr.io/websocket"
 	"strconv"
+	config "taoniu.local/cryptos/config/binance/spot"
 
 	pool "taoniu.local/cryptos/common"
-	config "taoniu.local/cryptos/config/binance"
 )
 
 type WebsocketHandler struct {

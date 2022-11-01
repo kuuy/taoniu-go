@@ -13,8 +13,9 @@ func NewSpot() *Spot {
 
 func (m *Spot) AutoMigrate(db *gorm.DB) error {
 	db.AutoMigrate(
+		&spot.Symbol{},
 		&spot.Order{},
-		&spot.Kline1d{},
+		&spot.Kline{},
 		&spot.Strategy{},
 		&spot.Plans{},
 		&spot.Grids{},

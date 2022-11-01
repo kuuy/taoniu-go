@@ -2,8 +2,7 @@ package repositories
 
 import (
 	"gorm.io/gorm"
-
-	. "taoniu.local/cryptos/models"
+	. "taoniu.local/cryptos/models/binance/futures"
 )
 
 type StrategyRepository struct {

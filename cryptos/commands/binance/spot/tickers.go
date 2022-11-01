@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 	"log"
 	pool "taoniu.local/cryptos/common"
-	models "taoniu.local/cryptos/models/binance"
+	models "taoniu.local/cryptos/models/binance/spot"
 	repositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 

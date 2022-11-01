@@ -5,6 +5,7 @@ import (
 	"errors"
 	"math"
 	"strconv"
+	config "taoniu.local/cryptos/config/binance/spot"
 
 	"gorm.io/gorm"
 
@@ -12,7 +13,6 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/rs/xid"
 
-	config "taoniu.local/cryptos/config/binance"
 	spotModels "taoniu.local/cryptos/models/binance/spot"
 	marginModels "taoniu.local/cryptos/models/binance/spot/margin"
 	models "taoniu.local/cryptos/models/binance/spot/margin/isolated"

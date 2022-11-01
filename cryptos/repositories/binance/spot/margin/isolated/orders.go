@@ -3,11 +3,11 @@ package isolated
 import (
 	"context"
 	"gorm.io/gorm"
+	config "taoniu.local/cryptos/config/binance/spot"
 
 	"github.com/adshao/go-binance/v2"
 	"github.com/go-redis/redis/v8"
 
-	config "taoniu.local/cryptos/config/binance"
 	repositories "taoniu.local/cryptos/repositories/binance/spot/margin"
 )
 

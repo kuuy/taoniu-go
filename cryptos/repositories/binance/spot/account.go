@@ -8,8 +8,8 @@ import (
 	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
 	"strconv"
-	config "taoniu.local/cryptos/config/binance"
-	binanceModels "taoniu.local/cryptos/models/binance"
+	config "taoniu.local/cryptos/config/binance/spot"
+	binanceModels "taoniu.local/cryptos/models/binance/spot"
 )
 
 type AccountError struct {

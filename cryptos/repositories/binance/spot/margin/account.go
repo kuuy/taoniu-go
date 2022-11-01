@@ -7,7 +7,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	"log"
 	"strconv"
-	config "taoniu.local/cryptos/config/binance"
+	config "taoniu.local/cryptos/config/binance/spot"
 )
 
 type AccountRepository struct {

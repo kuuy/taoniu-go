@@ -2,9 +2,11 @@ package strategies
 
 import (
 	"context"
+	"log"
+
 	"github.com/go-redis/redis/v8"
 	"github.com/urfave/cli/v2"
-	"log"
+
 	pool "taoniu.local/cryptos/common"
 	repositories "taoniu.local/cryptos/repositories/binance/spot/strategies"
 )

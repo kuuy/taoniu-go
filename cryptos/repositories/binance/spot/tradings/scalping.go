@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"strconv"
+	config "taoniu.local/cryptos/config/binance/spot"
 
 	"github.com/adshao/go-binance/v2"
 	"github.com/go-redis/redis/v8"
 	"github.com/rs/xid"
 	"gorm.io/gorm"
 
-	config "taoniu.local/cryptos/config/binance"
 	models "taoniu.local/cryptos/models/binance/spot"
 	marginModels "taoniu.local/cryptos/models/binance/spot/margin"
 	spotRepositories "taoniu.local/cryptos/repositories/binance/spot"

@@ -30,8 +30,14 @@ type DailyRepository struct {
 }
 
 func (r *DailyRepository) Pivot(symbol string) error {
-	var kline models.Kline1d
-	result := r.Db.Select([]string{"close", "high", "low", "timestamp"}).Where("symbol", symbol).Order("timestamp desc").Take(&kline)
+	var kline models.Kline
+	result := r.Db.Select(
+		[]string{"close", "high", "low", "timestamp"},
+	).Where(
+		"symbol=? AND interval=?", symbol, "1d",
+	).Order(
+		"timestamp desc",
+	).Take(&kline)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return result.Error
 	}
@@ -75,8 +81,18 @@ func (r *DailyRepository) Pivot(symbol string) error {
 }
 
 func (r *DailyRepository) Atr(symbol string, period int, limit int) error {
-	var klines []*models.Kline1d
-	r.Db.Select([]string{"close", "high", "low", "timestamp"}).Where("symbol", symbol).Order("timestamp desc").Limit(limit).Find(&klines)
+	var klines []*models.Kline
+	r.Db.Select(
+		[]string{"close", "high", "low", "timestamp"},
+	).Where(
+		"symbol=? AND interval=?", symbol, "1d",
+	).Order(
+		"timestamp desc",
+	).Limit(
+		limit,
+	).Find(
+		&klines,
+	)
 	var highs []float64
 	var lows []float64
 	var prices []float64
@@ -126,8 +142,18 @@ func (r *DailyRepository) Atr(symbol string, period int, limit int) error {
 }
 
 func (r *DailyRepository) Zlema(symbol string, period int, limit int) error {
-	var klines []models.Kline1d
-	r.Db.Select([]string{"close", "timestamp"}).Where("symbol", symbol).Order("timestamp desc").Limit(limit).Find(&klines)
+	var klines []*models.Kline
+	r.Db.Select(
+		[]string{"close", "timestamp"},
+	).Where(
+		"symbol=? AND interval=?", symbol, "1d",
+	).Order(
+		"timestamp desc",
+	).Limit(
+		limit,
+	).Find(
+		&klines,
+	)
 	var data []float64
 	var temp []float64
 	var timestamp int64
@@ -181,8 +207,18 @@ func (r *DailyRepository) Zlema(symbol string, period int, limit int) error {
 }
 
 func (r *DailyRepository) HaZlema(symbol string, period int, limit int) error {
-	var klines []models.Kline1d
-	r.Db.Select([]string{"open", "close", "high", "low", "timestamp"}).Where("symbol", symbol).Order("timestamp desc").Limit(limit).Find(&klines)
+	var klines []*models.Kline
+	r.Db.Select(
+		[]string{"open", "close", "high", "low", "timestamp"},
+	).Where(
+		"symbol=? AND interval=?", symbol, "1d",
+	).Order(
+		"timestamp desc",
+	).Limit(
+		limit,
+	).Find(
+		&klines,
+	)
 	var data []float64
 	var temp []float64
 	var timestamp int64
@@ -237,8 +273,18 @@ func (r *DailyRepository) HaZlema(symbol string, period int, limit int) error {
 }
 
 func (r *DailyRepository) Kdj(symbol string, longPeriod int, shortPeriod int, limit int) error {
-	var klines []models.Kline1d
-	r.Db.Select([]string{"close", "high", "low", "timestamp"}).Where("symbol", symbol).Order("timestamp desc").Limit(limit).Find(&klines)
+	var klines []*models.Kline
+	r.Db.Select(
+		[]string{"open", "close", "high", "low", "timestamp"},
+	).Where(
+		"symbol=? AND interval=?", symbol, "1d",
+	).Order(
+		"timestamp desc",
+	).Limit(
+		limit,
+	).Find(
+		&klines,
+	)
 	var highs []float64
 	var lows []float64
 	var prices []float64
@@ -290,8 +336,18 @@ func (r *DailyRepository) Kdj(symbol string, longPeriod int, shortPeriod int, li
 }
 
 func (r *DailyRepository) BBands(symbol string, period int, limit int) error {
-	var klines []models.Kline1d
-	r.Db.Select([]string{"close", "high", "low", "timestamp"}).Where("symbol", symbol).Order("timestamp desc").Limit(limit).Find(&klines)
+	var klines []*models.Kline
+	r.Db.Select(
+		[]string{"open", "close", "high", "low", "timestamp"},
+	).Where(
+		"symbol=? AND interval=?", symbol, "1d",
+	).Order(
+		"timestamp desc",
+	).Limit(
+		limit,
+	).Find(
+		&klines,
+	)
 	var prices []float64
 	var timestamp int64
 	for _, item := range klines {

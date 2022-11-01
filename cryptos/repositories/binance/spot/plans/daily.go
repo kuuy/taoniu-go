@@ -58,30 +58,6 @@ func (r *DailyRepository) Flush() error {
 	return nil
 }
 
-func (r *DailyRepository) Fix(duration int64) error {
-	var entities []*models.Plans
-	timestamp := time.Now().Unix() - duration
-	r.Db.Where(
-		"timestamp>?",
-		timestamp,
-	).Find(&entities)
-	for _, entity := range entities {
-		context := r.Symbols().Context(entity.Symbol)
-		isUpdate := false
-		for key, val := range entity.Context {
-			if val == nil {
-				entity.Context[key] = context[key]
-				isUpdate = true
-			}
-		}
-		if isUpdate {
-			r.Db.Model(&models.Plans{ID: entity.ID}).Updates(entity)
-		}
-	}
-
-	return nil
-}
-
 func (r *DailyRepository) Create(signals map[string]interface{}, side int64) error {
 	if _, ok := signals["kdj"]; !ok {
 		return nil
@@ -142,7 +118,7 @@ func (r *DailyRepository) Signals() (map[string]interface{}, map[string]interfac
 		"price",
 		"signal",
 	}).Where(
-		"indicator in ? AND duration = ? AND timestamp > ?",
+		"indicator in ? AND interval = ? AND timestamp > ?",
 		[]string{
 			"kdj",
 			"bbands",

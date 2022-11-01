@@ -12,6 +12,8 @@ type SpotTask struct {
 	Db             *gorm.DB
 	Rdb            *redis.Client
 	Ctx            context.Context
+	CronTask       *tasks.CronTask
+	SymbolsTask    *tasks.SymbolsTask
 	TickersTask    *tasks.TickersTask
 	KlinesTask     *tasks.KlinesTask
 	IndicatorsTask *tasks.IndicatorsTask
@@ -23,6 +25,29 @@ type SpotTask struct {
 	GridsTask      *tasks.GridsTask
 	AnalysisTask   *tasks.AnalysisTask
 	MarginTask     *tasks.MarginTask
+}
+
+func (t *SpotTask) Cron() *tasks.CronTask {
+	if t.CronTask == nil {
+		t.CronTask = &tasks.CronTask{
+			Db:  t.Db,
+			Rdb: t.Rdb,
+			Ctx: t.Ctx,
+		}
+	}
+	return t.CronTask
+}
+
+func (t *SpotTask) Symbols() *tasks.SymbolsTask {
+	if t.SymbolsTask == nil {
+		t.SymbolsTask = &tasks.SymbolsTask{}
+		t.SymbolsTask.Repository = &repositories.SymbolsRepository{
+			Db:  t.Db,
+			Rdb: t.Rdb,
+			Ctx: t.Ctx,
+		}
+	}
+	return t.SymbolsTask
 }
 
 func (t *SpotTask) Tickers() *tasks.TickersTask {
@@ -41,6 +66,10 @@ func (t *SpotTask) Tickers() *tasks.TickersTask {
 func (t *SpotTask) Klines() *tasks.KlinesTask {
 	if t.KlinesTask == nil {
 		t.KlinesTask = &tasks.KlinesTask{
+			Rdb: t.Rdb,
+			Ctx: t.Ctx,
+		}
+		t.KlinesTask.Repository = &repositories.KlinesRepository{
 			Db:  t.Db,
 			Rdb: t.Rdb,
 			Ctx: t.Ctx,
@@ -169,7 +198,7 @@ func (t *SpotTask) Flush() {
 }
 
 func (t *SpotTask) Clean() {
-	t.Klines().Daily().Clean()
+	t.Klines().Clean()
 }
 
 func (t *SpotTask) Sync() {

@@ -4,14 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/rs/xid"
 	"strconv"
 	"strings"
 	"time"
 
-	"gorm.io/gorm"
-
 	"github.com/go-redis/redis/v8"
+	"github.com/rs/xid"
+	"gorm.io/gorm"
 
 	models "taoniu.local/cryptos/models/binance/spot"
 )
@@ -77,7 +76,7 @@ func (r *DailyRepository) Atr(symbol string) error {
 
 func (r *DailyRepository) Zlema(symbol string) error {
 	indicator := "zlema"
-	duration := "1d"
+	interval := "1d"
 	val, err := r.Rdb.HGet(
 		r.Ctx,
 		fmt.Sprintf(
@@ -107,10 +106,10 @@ func (r *DailyRepository) Zlema(symbol string) error {
 	}
 	var entity models.Strategy
 	result := r.Db.Where(
-		"symbol=? AND indicator=? AND duration=?",
+		"symbol=? AND indicator=? AND interval=?",
 		symbol,
 		indicator,
-		duration,
+		interval,
 	).Order(
 		"timestamp DESC",
 	).Take(&entity)
@@ -126,7 +125,7 @@ func (r *DailyRepository) Zlema(symbol string) error {
 		ID:        xid.New().String(),
 		Symbol:    symbol,
 		Indicator: indicator,
-		Duration:  duration,
+		Interval:  interval,
 		Price:     price,
 		Signal:    signal,
 		Timestamp: timestamp,
@@ -139,7 +138,7 @@ func (r *DailyRepository) Zlema(symbol string) error {
 
 func (r *DailyRepository) HaZlema(symbol string) error {
 	indicator := "ha_zlema"
-	duration := "1d"
+	interval := "1d"
 	val, err := r.Rdb.HGet(
 		r.Ctx,
 		fmt.Sprintf(
@@ -169,10 +168,10 @@ func (r *DailyRepository) HaZlema(symbol string) error {
 	}
 	var entity models.Strategy
 	result := r.Db.Where(
-		"symbol=? AND indicator=? AND duration=?",
+		"symbol=? AND indicator=? AND interval=?",
 		symbol,
 		indicator,
-		duration,
+		interval,
 	).Order(
 		"timestamp DESC",
 	).Take(&entity)
@@ -188,7 +187,7 @@ func (r *DailyRepository) HaZlema(symbol string) error {
 		ID:        xid.New().String(),
 		Symbol:    symbol,
 		Indicator: indicator,
-		Duration:  duration,
+		Interval:  interval,
 		Price:     price,
 		Signal:    signal,
 		Timestamp: timestamp,
@@ -201,7 +200,7 @@ func (r *DailyRepository) HaZlema(symbol string) error {
 
 func (r *DailyRepository) Kdj(symbol string) error {
 	indicator := "kdj"
-	duration := "1d"
+	interval := "1d"
 	val, err := r.Rdb.HGet(
 		r.Ctx,
 		fmt.Sprintf(
@@ -233,10 +232,10 @@ func (r *DailyRepository) Kdj(symbol string) error {
 	}
 	var entity models.Strategy
 	result := r.Db.Where(
-		"symbol=? AND indicator=? AND duration=?",
+		"symbol=? AND indicator=? AND interval=?",
 		symbol,
 		indicator,
-		duration,
+		interval,
 	).Order(
 		"timestamp DESC",
 	).Take(&entity)
@@ -252,7 +251,7 @@ func (r *DailyRepository) Kdj(symbol string) error {
 		ID:        xid.New().String(),
 		Symbol:    symbol,
 		Indicator: indicator,
-		Duration:  duration,
+		Interval:  interval,
 		Price:     price,
 		Signal:    signal,
 		Timestamp: timestamp,
@@ -265,7 +264,7 @@ func (r *DailyRepository) Kdj(symbol string) error {
 
 func (r *DailyRepository) BBands(symbol string) error {
 	indicator := "bbands"
-	duration := "1d"
+	interval := "1d"
 	val, err := r.Rdb.HGet(
 		r.Ctx,
 		fmt.Sprintf(
@@ -311,10 +310,10 @@ func (r *DailyRepository) BBands(symbol string) error {
 	}
 	var entity models.Strategy
 	result := r.Db.Where(
-		"symbol=? AND indicator=? AND duration=?",
+		"symbol=? AND indicator=? AND interval=?",
 		symbol,
 		indicator,
-		duration,
+		interval,
 	).Order(
 		"timestamp DESC",
 	).Take(&entity)
@@ -330,7 +329,7 @@ func (r *DailyRepository) BBands(symbol string) error {
 		ID:        xid.New().String(),
 		Symbol:    symbol,
 		Indicator: indicator,
-		Duration:  duration,
+		Interval:  interval,
 		Price:     price,
 		Signal:    signal,
 		Timestamp: timestamp,

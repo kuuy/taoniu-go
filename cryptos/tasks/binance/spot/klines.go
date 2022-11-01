@@ -3,25 +3,24 @@ package spot
 import (
 	"context"
 	"github.com/go-redis/redis/v8"
-	"gorm.io/gorm"
-	repositories "taoniu.local/cryptos/repositories/binance/spot/klines"
-	tasks "taoniu.local/cryptos/tasks/binance/spot/klines"
+	repositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
 type KlinesTask struct {
-	Db  *gorm.DB
-	Rdb *redis.Client
-	Ctx context.Context
+	Rdb        *redis.Client
+	Ctx        context.Context
+	Repository *repositories.KlinesRepository
 }
 
-func (t *KlinesTask) Daily() *tasks.DailyTask {
-	return &tasks.DailyTask{
-		Rdb: t.Rdb,
-		Ctx: t.Ctx,
-		Repository: &repositories.DailyRepository{
-			Db:  t.Db,
-			Rdb: t.Rdb,
-			Ctx: t.Ctx,
-		},
+func (t *KlinesTask) Flush(interval string, limit int) error {
+	symbols, _ := t.Rdb.SMembers(t.Ctx, "binance:spot:websocket:symbols").Result()
+	for _, symbol := range symbols {
+		t.Repository.Flush(symbol, interval, limit)
 	}
+	return nil
+}
+
+func (t *KlinesTask) Clean() error {
+	t.Repository.Clean()
+	return nil
 }

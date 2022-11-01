@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	config "taoniu.local/cryptos/config/binance/spot"
 	"time"
 
 	"github.com/adshao/go-binance/v2"
@@ -12,7 +13,6 @@ import (
 	"github.com/rs/xid"
 	"gorm.io/gorm"
 
-	config "taoniu.local/cryptos/config/binance"
 	models "taoniu.local/cryptos/models/binance/spot"
 )
 
