@@ -51,6 +51,20 @@ func (r *GridsRepository) Flush(symbol string) error {
 	takeProfitPrice, _ := strconv.ParseFloat(context["take_profit_price"].(string), 64)
 	stopLossPoint, _ := strconv.ParseFloat(context["stop_loss_point"].(string), 64)
 	if profitTarget > entity.StopLossPoint {
+		price, err := r.Symbols().Price(symbol)
+		if err != nil {
+			return err
+		}
+		if price < entity.ProfitTarget {
+			return nil
+		}
+
+		if entity.Step == 1 {
+			return r.Close(symbol)
+		}
+
+		r.Db.Model(&entity).Update("status", 2)
+
 		return nil
 	}
 	amount := entity.Amount * math.Pow(2, float64(entity.Step-1))
@@ -100,6 +114,8 @@ func (r *GridsRepository) Open(symbol string, amount float64) error {
 	}
 	r.Db.Create(&entity)
 
+	r.Rdb.SAdd(r.Ctx, "binance:spot:grids:symbols", symbol)
+
 	return nil
 }
 
@@ -108,6 +124,9 @@ func (r *GridsRepository) Close(symbol string) error {
 		"symbol=? AND status=1",
 		symbol,
 	).Update("status", 2)
+
+	r.Rdb.SRem(r.Ctx, "binance:spot:grids:symbols", symbol)
+
 	return nil
 }
 

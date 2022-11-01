@@ -29,9 +29,6 @@ func NewAccountCommand() *cli.Command {
 			{
 				Name:  "flush",
 				Usage: "",
-				Before: func(c *cli.Context) error {
-					return nil
-				},
 				Action: func(c *cli.Context) error {
 					if err := h.flush(); err != nil {
 						return cli.Exit(err.Error(), 1)

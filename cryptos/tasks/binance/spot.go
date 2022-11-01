@@ -20,6 +20,7 @@ type SpotTask struct {
 	TradingsTask   *tasks.TradingsTask
 	AccountTask    *tasks.AccountTask
 	OrdersTask     *tasks.OrdersTask
+	GridsTask      *tasks.GridsTask
 	AnalysisTask   *tasks.AnalysisTask
 	MarginTask     *tasks.MarginTask
 }
@@ -118,6 +119,21 @@ func (t *SpotTask) Orders() *tasks.OrdersTask {
 		}
 	}
 	return t.OrdersTask
+}
+
+func (t *SpotTask) Grids() *tasks.GridsTask {
+	if t.GridsTask == nil {
+		t.GridsTask = &tasks.GridsTask{
+			Rdb: t.Rdb,
+			Ctx: t.Ctx,
+		}
+		t.GridsTask.Repository = &repositories.GridsRepository{
+			Db:  t.Db,
+			Rdb: t.Rdb,
+			Ctx: t.Ctx,
+		}
+	}
+	return t.GridsTask
 }
 
 func (t *SpotTask) Analysis() *tasks.AnalysisTask {

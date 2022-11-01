@@ -11,8 +11,6 @@ import (
 )
 
 type GridsHandler struct {
-	Symbol     string
-	Amount     float64
 	Rdb        *redis.Client
 	Ctx        context.Context
 	Repository *repositories.GridsRepository
@@ -23,34 +21,34 @@ func NewGridsCommand() *cli.Command {
 	return &cli.Command{
 		Name:  "grids",
 		Usage: "",
+		Before: func(c *cli.Context) error {
+			h = GridsHandler{
+				Rdb: pool.NewRedis(),
+				Ctx: context.Background(),
+			}
+			h.Repository = &repositories.GridsRepository{
+				Db:  pool.NewDB(),
+				Rdb: h.Rdb,
+				Ctx: h.Ctx,
+			}
+			return nil
+		},
 		Subcommands: []*cli.Command{
 			{
 				Name:  "open",
 				Usage: "",
-				Before: func(c *cli.Context) error {
-					h = GridsHandler{
-						Rdb: pool.NewRedis(),
-						Ctx: context.Background(),
-					}
-					h.Repository = &repositories.GridsRepository{
-						Db:  pool.NewDB(),
-						Rdb: h.Rdb,
-						Ctx: h.Ctx,
-					}
-					return nil
-				},
 				Action: func(c *cli.Context) error {
-					h.Symbol = c.Args().Get(0)
-					h.Amount, _ = strconv.ParseFloat(c.Args().Get(1), 16)
-					if h.Symbol == "" {
+					symbol := c.Args().Get(0)
+					amount, _ := strconv.ParseFloat(c.Args().Get(1), 16)
+					if symbol == "" {
 						log.Fatal("grid symbol can not be empty")
 						return nil
 					}
-					if h.Amount < 50 {
+					if amount < 50 {
 						log.Fatal("grid amount less than 50")
 						return nil
 					}
-					if err := h.open(); err != nil {
+					if err := h.open(symbol, amount); err != nil {
 						return cli.Exit(err.Error(), 1)
 					}
 					return nil
@@ -60,12 +58,12 @@ func NewGridsCommand() *cli.Command {
 				Name:  "close",
 				Usage: "",
 				Action: func(c *cli.Context) error {
-					h.Symbol = c.Args().Get(0)
-					if h.Symbol == "" {
+					symbol := c.Args().Get(0)
+					if symbol == "" {
 						log.Fatal("grid symbol can not be empty")
 						return nil
 					}
-					if err := h.close(); err != nil {
+					if err := h.close(symbol); err != nil {
 						return cli.Exit(err.Error(), 1)
 					}
 					return nil
@@ -75,11 +73,6 @@ func NewGridsCommand() *cli.Command {
 				Name:  "flush",
 				Usage: "",
 				Action: func(c *cli.Context) error {
-					h.Symbol = c.Args().Get(0)
-					if h.Symbol == "" {
-						log.Fatal("grid symbol can not be empty")
-						return nil
-					}
 					if err := h.flush(); err != nil {
 						return cli.Exit(err.Error(), 1)
 					}
@@ -90,17 +83,21 @@ func NewGridsCommand() *cli.Command {
 	}
 }
 
-func (h *GridsHandler) open() error {
+func (h *GridsHandler) open(symbol string, amount float64) error {
 	log.Println("spot grids open...")
-	return h.Repository.Open(h.Symbol, h.Amount)
+	return h.Repository.Open(symbol, amount)
 }
 
-func (h *GridsHandler) close() error {
+func (h *GridsHandler) close(symbol string) error {
 	log.Println("spot grids close...")
-	return h.Repository.Close(h.Symbol)
+	return h.Repository.Close(symbol)
 }
 
 func (h *GridsHandler) flush() error {
 	log.Println("spot grids flush...")
-	return h.Repository.Close(h.Symbol)
+	symbols, _ := h.Rdb.SMembers(h.Ctx, "binance:spot:grids:symbols").Result()
+	for _, symbol := range symbols {
+		h.Repository.Flush(symbol)
+	}
+	return nil
 }
