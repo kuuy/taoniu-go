@@ -72,7 +72,7 @@ func NewKlinesCommand() *cli.Command {
 func (h *KlinesHandler) flush(interval string, limit int) error {
 	log.Println("binance futures klines flush...")
 	var symbols []string
-	h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+	h.Db.Model(models.Symbol{}).Select("symbol").Where("status", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
 		err := h.Repository.Flush(symbol, interval, limit)
 		if err != nil {

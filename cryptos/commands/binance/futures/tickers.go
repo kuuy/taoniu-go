@@ -48,7 +48,7 @@ func NewTickersCommand() *cli.Command {
 func (h *TickersHandler) flush() error {
 	log.Println("Tickers flush...")
 	var symbols []string
-	h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+	h.Db.Model(models.Symbol{}).Select("symbol").Where("status", "TRADING").Find(&symbols)
 	for i := 0; i < len(symbols); i += 50 {
 		var j int = i + 50
 		if j > len(symbols)-1 {

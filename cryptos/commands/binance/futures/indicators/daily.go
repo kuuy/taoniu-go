@@ -99,7 +99,7 @@ func NewDailyCommand() *cli.Command {
 func (h *DailyHandler) atr() error {
 	log.Println("daily atr processing...")
 	var symbols []string
-	h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+	h.Db.Model(models.Symbol{}).Select("symbol").Where("status", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
 		h.repository.Atr(symbol, 14, 100)
 	}
@@ -109,7 +109,7 @@ func (h *DailyHandler) atr() error {
 func (h *DailyHandler) zlema() error {
 	log.Println("daily zlema processing...")
 	var symbols []string
-	h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+	h.Db.Model(models.Symbol{}).Select("symbol").Where("status", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
 		h.repository.Zlema(symbol, 14, 100)
 	}
@@ -119,7 +119,7 @@ func (h *DailyHandler) zlema() error {
 func (h *DailyHandler) haZlema() error {
 	log.Println("daily ha_zlema processing...")
 	var symbols []string
-	h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+	h.Db.Model(models.Symbol{}).Select("symbol").Where("status", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
 		h.repository.HaZlema(symbol, 14, 100)
 	}
@@ -129,7 +129,7 @@ func (h *DailyHandler) haZlema() error {
 func (h *DailyHandler) kdj() error {
 	log.Println("daily kdj indicator...")
 	var symbols []string
-	h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+	h.Db.Model(models.Symbol{}).Select("symbol").Where("status", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
 		h.repository.Kdj(symbol, 9, 3, 100)
 	}
@@ -139,7 +139,7 @@ func (h *DailyHandler) kdj() error {
 func (h *DailyHandler) bBands() error {
 	log.Println("daily boll bands indicator...")
 	var symbols []string
-	h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+	h.Db.Model(models.Symbol{}).Select("symbol").Where("status", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
 		h.repository.BBands(symbol, 14, 100)
 	}
@@ -149,7 +149,7 @@ func (h *DailyHandler) bBands() error {
 func (h *DailyHandler) pivot() error {
 	log.Println("daily pivot indicator...")
 	var symbols []string
-	h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+	h.Db.Model(models.Symbol{}).Select("symbol").Where("status", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
 		h.repository.Pivot(symbol)
 	}

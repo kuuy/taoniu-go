@@ -3,23 +3,20 @@ package futures
 import (
 	"context"
 	"fmt"
-	"gorm.io/gorm"
 	"strconv"
 	"strings"
 	"time"
 
+	"gorm.io/gorm"
 	"nhooyr.io/websocket"
 
 	"github.com/bitly/go-simplejson"
+	"github.com/gammazero/workerpool"
 	"github.com/go-redis/redis/v8"
 	"github.com/urfave/cli/v2"
 
 	pool "taoniu.local/cryptos/common"
-)
-
-var (
-	rdb *redis.Client
-	ctx context.Context
+	models "taoniu.local/cryptos/models/binance/futures"
 )
 
 type StreamsHandler struct {
@@ -84,15 +81,15 @@ func (h *StreamsHandler) handler(message []byte) {
 
 	timestamp := time.Now().Unix()
 	redisKey := fmt.Sprintf("binance:futures:realtime:%s", data["s"])
-	value, err := rdb.HGet(ctx, redisKey, "price").Result()
-	if err != redis.Nil {
+	value, err := h.Rdb.HGet(h.Ctx, redisKey, "price").Result()
+	if err != nil {
 		lasttime, _ := strconv.ParseInt(value, 10, 64)
 		if lasttime >= timestamp {
 			return
 		}
 	}
-	rdb.HMSet(
-		ctx,
+	h.Rdb.HMSet(
+		h.Ctx,
 		redisKey,
 		map[string]interface{}{
 			"symbol":    data["s"],
@@ -108,28 +105,111 @@ func (h *StreamsHandler) handler(message []byte) {
 }
 
 func (h *StreamsHandler) start() error {
-	symbols, _ := rdb.SMembers(ctx, "binance:futures:websocket:symbols").Result()
+	h.online()
+	defer h.offline()
+
 	streams := []string{}
-	for _, symbol := range symbols {
+	for _, symbol := range h.Symbols {
 		streams = append(
 			streams,
 			fmt.Sprintf("%s@miniTicker", strings.ToLower(symbol)),
 		)
 	}
+	if len(streams) < 1 {
+		return nil
+	}
 	endpoint := "wss://fstream.binance.com/stream?streams=" + strings.Join(streams, "/")
 
-	socket, _, err := websocket.Dial(ctx, endpoint, nil)
+	wp := workerpool.New(10)
+	defer wp.StopWait()
+
+	socket, _, err := websocket.Dial(h.Ctx, endpoint, &websocket.DialOptions{
+		CompressionMode: websocket.CompressionDisabled,
+	})
 	if err != nil {
 		return err
 	}
 	socket.SetReadLimit(655350)
 
 	for {
-		_, message, readErr := socket.Read(ctx)
+		_, message, readErr := socket.Read(h.Ctx)
 		if readErr != nil {
 			return readErr
 		}
-		h.handler(message)
+		wp.Submit(func() {
+			h.handler(message)
+		})
+	}
+
+	return nil
+}
+
+func (h *StreamsHandler) append(symbol string) error {
+	mutex := pool.NewMutex(
+		h.Rdb,
+		h.Ctx,
+		fmt.Sprintf("locks:binance:futures:streams:symbols:%s", symbol),
+	)
+	if mutex.Lock(5 * time.Second) {
+		return nil
+	}
+	defer mutex.Unlock()
+
+	h.Rdb.ZAdd(
+		h.Ctx,
+		"binance:futures:streams:symbols",
+		&redis.Z{Score: float64(h.ID), Member: symbol},
+	).Result()
+	h.Symbols = append(h.Symbols, symbol)
+
+	return nil
+}
+
+func (h *StreamsHandler) online() error {
+	var symbols []string
+
+	symbols, _ = h.Rdb.ZRangeByScore(
+		h.Ctx,
+		"binance:futures:streams:symbols",
+		&redis.ZRangeBy{
+			Min: fmt.Sprintf("%d", h.ID),
+			Max: fmt.Sprintf("%d", h.ID),
+		},
+	).Result()
+	for _, symbol := range symbols {
+		h.Rdb.ZRem(
+			h.Ctx,
+			"binance:futures:streams:symbols",
+			symbol,
+		).Result()
+	}
+
+	h.Db.Model(models.Symbol{}).Select("symbol").Where("status", "TRADING").Find(&symbols)
+	for _, symbol := range symbols {
+		score, _ := h.Rdb.ZScore(
+			h.Ctx,
+			"binance:futures:streams:symbols",
+			symbol,
+		).Result()
+		if score > 0 {
+			continue
+		}
+		h.append(symbol)
+		if len(h.Symbols) >= 50 {
+			break
+		}
+	}
+
+	return nil
+}
+
+func (h *StreamsHandler) offline() error {
+	for _, symbol := range h.Symbols {
+		h.Rdb.ZRem(
+			h.Ctx,
+			"binance:futures:streams:symbols",
+			symbol,
+		).Result()
 	}
 
 	return nil

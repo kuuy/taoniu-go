@@ -84,6 +84,9 @@ func (r *DailyRepository) Create(signals map[string]interface{}, side int64) err
 			}
 		}
 		price, quantity := r.Symbols().Filter(symbol, price, amount)
+		if price == 0 || quantity == 0 {
+			continue
+		}
 		var entity models.Plans
 		result := r.Db.Where(
 			"symbol=? AND timestamp=?",

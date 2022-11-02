@@ -91,7 +91,7 @@ func NewDailyCommand() *cli.Command {
 func (h *DailyHandler) atr() error {
 	log.Println("daily atr processing...")
 	var symbols []string
-	h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+	h.Db.Model(models.Symbol{}).Select("symbol").Where("status", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
 		h.Repository.Atr(symbol)
 	}
@@ -101,7 +101,7 @@ func (h *DailyHandler) atr() error {
 func (h *DailyHandler) zlema() error {
 	log.Println("daily zlema processing...")
 	var symbols []string
-	h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+	h.Db.Model(models.Symbol{}).Select("symbol").Where("status", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
 		h.Repository.Zlema(symbol)
 	}
@@ -111,7 +111,7 @@ func (h *DailyHandler) zlema() error {
 func (h *DailyHandler) haZlema() error {
 	log.Println("daily haZlema strategy...")
 	var symbols []string
-	h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+	h.Db.Model(models.Symbol{}).Select("symbol").Where("status", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
 		h.Repository.HaZlema(symbol)
 	}
@@ -121,7 +121,7 @@ func (h *DailyHandler) haZlema() error {
 func (h *DailyHandler) kdj() error {
 	log.Println("daily zlema strategy...")
 	var symbols []string
-	h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+	h.Db.Model(models.Symbol{}).Select("symbol").Where("status", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
 		h.Repository.Kdj(symbol)
 	}
@@ -131,7 +131,7 @@ func (h *DailyHandler) kdj() error {
 func (h *DailyHandler) bBands() error {
 	log.Println("daily bbands strategy...")
 	var symbols []string
-	h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+	h.Db.Model(models.Symbol{}).Select("symbol").Where("status", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
 		h.Repository.BBands(symbol)
 	}

@@ -17,7 +17,7 @@ type DailyTask struct {
 
 func (t *DailyTask) Pivot() error {
 	var symbols []string
-	t.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+	t.Db.Model(models.Symbol{}).Select("symbol").Where("status", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
 		t.Repository.Pivot(symbol)
 	}
@@ -26,7 +26,7 @@ func (t *DailyTask) Pivot() error {
 
 func (t *DailyTask) Atr(period int, limit int) error {
 	var symbols []string
-	t.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+	t.Db.Model(models.Symbol{}).Select("symbol").Where("status", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
 		t.Repository.Atr(symbol, period, limit)
 	}
@@ -35,7 +35,7 @@ func (t *DailyTask) Atr(period int, limit int) error {
 
 func (t *DailyTask) Zlema(period int, limit int) error {
 	var symbols []string
-	t.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+	t.Db.Model(models.Symbol{}).Select("symbol").Where("status", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
 		t.Repository.Zlema(symbol, period, limit)
 	}
@@ -44,7 +44,7 @@ func (t *DailyTask) Zlema(period int, limit int) error {
 
 func (t *DailyTask) HaZlema(period int, limit int) error {
 	var symbols []string
-	t.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+	t.Db.Model(models.Symbol{}).Select("symbol").Where("status", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
 		t.Repository.HaZlema(symbol, period, limit)
 	}
@@ -53,7 +53,7 @@ func (t *DailyTask) HaZlema(period int, limit int) error {
 
 func (t *DailyTask) Kdj(longPeriod int, shortPeriod int, limit int) error {
 	var symbols []string
-	t.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+	t.Db.Model(models.Symbol{}).Select("symbol").Where("status", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
 		t.Repository.Kdj(symbol, longPeriod, shortPeriod, limit)
 	}
@@ -62,7 +62,7 @@ func (t *DailyTask) Kdj(longPeriod int, shortPeriod int, limit int) error {
 
 func (t *DailyTask) BBands(period int, limit int) error {
 	var symbols []string
-	t.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+	t.Db.Model(models.Symbol{}).Select("symbol").Where("status", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
 		t.Repository.BBands(symbol, period, limit)
 	}

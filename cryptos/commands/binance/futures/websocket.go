@@ -63,7 +63,7 @@ func (h *WebsocketHandler) handler(message []byte) {
 
 	if event == "ACCOUNT_UPDATE" {
 		redisKey := "binance:futures:balance:USDT"
-		value, err := rdb.HGet(ctx, redisKey, "timestamp").Result()
+		value, err := h.Rdb.HGet(h.Ctx, redisKey, "timestamp").Result()
 		if err != redis.Nil {
 			lasttime, _ := strconv.ParseInt(value, 10, 64)
 			if lasttime > timestamp {
@@ -76,7 +76,7 @@ func (h *WebsocketHandler) handler(message []byte) {
 			if account["a"] != "USDT" {
 				continue
 			}
-			rdb.HMSet(ctx, redisKey, map[string]interface{}{
+			h.Rdb.HMSet(h.Ctx, redisKey, map[string]interface{}{
 				"balance":   account["wb"],
 				"timestamp": timestamp,
 			})
@@ -91,22 +91,22 @@ func (h *WebsocketHandler) handler(message []byte) {
 
 		log.Println("order", order)
 		if status != "NEW" || status != "PARTIALLY_FILLED" {
-			rdb.SAdd(
-				ctx,
+			h.Rdb.SAdd(
+				h.Ctx,
 				"binance:futures:websocket:orders",
 				fmt.Sprintf("%s,%d", symbol, orderID),
 			)
 		}
 		if status == "CANCELED" || status == "EXPIRED" {
-			rdb.HDel(
-				ctx,
+			h.Rdb.HDel(
+				h.Ctx,
 				"binance:futures:orders:take_profit",
 				fmt.Sprintf("%s,%d", symbol, orderID),
 			)
 		}
 		if status == "FILLED" {
-			item, err := rdb.HGet(
-				ctx,
+			item, err := h.Rdb.HGet(
+				h.Ctx,
 				"binance:futures:orders:take_profit",
 				fmt.Sprintf("%s,%d", symbol, orderID),
 			).Result()
@@ -147,10 +147,10 @@ func (h *WebsocketHandler) handler(message []byte) {
 					futures.WorkingTypeContractPrice,
 				).TimeInForce(
 					futures.TimeInForceTypeGTC,
-				).Do(ctx)
+				).Do(h.Ctx)
 				if err == nil {
-					rdb.HDel(
-						ctx,
+					h.Rdb.HDel(
+						h.Ctx,
 						"binance:futures:orders:take_profit",
 						fmt.Sprintf("%s,%d", symbol, orderID),
 					)
@@ -173,23 +173,23 @@ func (h *WebsocketHandler) start() error {
 
 	client := binance.NewFuturesClient(apiKey, secretKey)
 
-	listenKey, err := client.NewStartUserStreamService().Do(ctx)
+	listenKey, err := client.NewStartUserStreamService().Do(h.Ctx)
 	if err != nil {
 		return err
 	}
 	log.Println("listenKey:", listenKey)
-	defer client.NewCloseUserStreamService().ListenKey(listenKey).Do(ctx)
+	defer client.NewCloseUserStreamService().ListenKey(listenKey).Do(h.Ctx)
 
 	endpoint := fmt.Sprintf("wss://fstream.binance.com/ws/%s", listenKey)
 
-	socket, _, err := websocket.Dial(ctx, endpoint, nil)
+	socket, _, err := websocket.Dial(h.Ctx, endpoint, nil)
 	if err != nil {
 		return err
 	}
 	socket.SetReadLimit(655350)
 
 	for {
-		_, message, readErr := socket.Read(ctx)
+		_, message, readErr := socket.Read(h.Ctx)
 		if readErr != nil {
 			return readErr
 		}

@@ -17,7 +17,7 @@ type DailyTask struct {
 
 func (t *DailyTask) Atr() error {
 	var symbols []string
-	t.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+	t.Db.Model(models.Symbol{}).Select("symbol").Where("status", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
 		t.Repository.Atr(symbol)
 	}
@@ -26,7 +26,7 @@ func (t *DailyTask) Atr() error {
 
 func (t *DailyTask) Zlema() error {
 	var symbols []string
-	t.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+	t.Db.Model(models.Symbol{}).Select("symbol").Where("status", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
 		t.Repository.Zlema(symbol)
 	}
@@ -35,7 +35,7 @@ func (t *DailyTask) Zlema() error {
 
 func (t *DailyTask) HaZlema() error {
 	var symbols []string
-	t.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+	t.Db.Model(models.Symbol{}).Select("symbol").Where("status", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
 		t.Repository.HaZlema(symbol)
 	}
@@ -44,7 +44,7 @@ func (t *DailyTask) HaZlema() error {
 
 func (t *DailyTask) Kdj() error {
 	var symbols []string
-	t.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+	t.Db.Model(models.Symbol{}).Select("symbol").Where("status", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
 		t.Repository.Kdj(symbol)
 	}
@@ -53,7 +53,7 @@ func (t *DailyTask) Kdj() error {
 
 func (t *DailyTask) BBands() error {
 	var symbols []string
-	t.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+	t.Db.Model(models.Symbol{}).Select("symbol").Where("status", "TRADING").Find(&symbols)
 	for _, symbol := range symbols {
 		t.Repository.BBands(symbol)
 	}

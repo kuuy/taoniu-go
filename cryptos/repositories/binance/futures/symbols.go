@@ -35,7 +35,7 @@ type SymbolsRepository struct {
 
 func (r *SymbolsRepository) Symbols() []string {
 	var symbols []string
-	r.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+	r.Db.Model(models.Symbol{}).Select("symbol").Where("status", "TRADING").Find(&symbols)
 	return symbols
 }
 
@@ -125,7 +125,7 @@ func (r *SymbolsRepository) Flush() error {
 
 func (r *SymbolsRepository) Count() error {
 	var count int64
-	r.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Count(&count)
+	r.Db.Model(models.Symbol{}).Select("symbol").Where("status", "TRADING").Count(&count)
 	r.Rdb.HMSet(
 		r.Ctx,
 		fmt.Sprintf("binance:symbols:count"),

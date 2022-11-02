@@ -3,20 +3,20 @@ package spot
 import (
 	"context"
 	"fmt"
-	"github.com/gammazero/workerpool"
-	"gorm.io/gorm"
 	"strconv"
 	"strings"
-	models "taoniu.local/cryptos/models/binance/spot"
 	"time"
 
+	"gorm.io/gorm"
 	"nhooyr.io/websocket"
 
 	"github.com/bitly/go-simplejson"
+	"github.com/gammazero/workerpool"
 	"github.com/go-redis/redis/v8"
 	"github.com/urfave/cli/v2"
 
 	pool "taoniu.local/cryptos/common"
+	models "taoniu.local/cryptos/models/binance/spot"
 )
 
 type StreamsHandler struct {
@@ -123,7 +123,9 @@ func (h *StreamsHandler) start() error {
 	wp := workerpool.New(10)
 	defer wp.StopWait()
 
-	socket, _, err := websocket.Dial(h.Ctx, endpoint, nil)
+	socket, _, err := websocket.Dial(h.Ctx, endpoint, &websocket.DialOptions{
+		CompressionMode: websocket.CompressionDisabled,
+	})
 	if err != nil {
 		return err
 	}
@@ -138,6 +140,27 @@ func (h *StreamsHandler) start() error {
 			h.handler(message)
 		})
 	}
+
+	return nil
+}
+
+func (h *StreamsHandler) append(symbol string) error {
+	mutex := pool.NewMutex(
+		h.Rdb,
+		h.Ctx,
+		fmt.Sprintf("locks:binance:spot:streams:symbols:%s", symbol),
+	)
+	if mutex.Lock(5 * time.Second) {
+		return nil
+	}
+	defer mutex.Unlock()
+
+	h.Rdb.ZAdd(
+		h.Ctx,
+		"binance:spot:streams:symbols",
+		&redis.Z{Score: float64(h.ID), Member: symbol},
+	).Result()
+	h.Symbols = append(h.Symbols, symbol)
 
 	return nil
 }
@@ -172,31 +195,10 @@ func (h *StreamsHandler) online() error {
 			continue
 		}
 		h.append(symbol)
-		if len(h.Symbols) >= 20 {
+		if len(h.Symbols) >= 50 {
 			break
 		}
 	}
-
-	return nil
-}
-
-func (h *StreamsHandler) append(symbol string) error {
-	mutex := pool.NewMutex(
-		h.Rdb,
-		h.Ctx,
-		fmt.Sprintf("locks:binance:spot:streams:symbols:%s", symbol),
-	)
-	if mutex.Lock(5 * time.Second) {
-		return nil
-	}
-	defer mutex.Unlock()
-
-	h.Rdb.ZAdd(
-		h.Ctx,
-		"binance:spot:streams:symbols",
-		&redis.Z{Score: float64(h.ID), Member: symbol},
-	).Result()
-	h.Symbols = append(h.Symbols, symbol)
 
 	return nil
 }
