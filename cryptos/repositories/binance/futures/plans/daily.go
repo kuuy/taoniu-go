@@ -87,7 +87,7 @@ func (r *DailyRepository) Create(signals map[string]interface{}, side int64) err
 		if price == 0 || quantity == 0 {
 			continue
 		}
-		var entity models.Plans
+		var entity models.Plan
 		result := r.Db.Where(
 			"symbol=? AND timestamp=?",
 			symbol,
@@ -96,7 +96,7 @@ func (r *DailyRepository) Create(signals map[string]interface{}, side int64) err
 		if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			continue
 		}
-		entity = models.Plans{
+		entity = models.Plan{
 			ID:        xid.New().String(),
 			Symbol:    symbol,
 			Side:      side,
@@ -152,12 +152,12 @@ func (r *DailyRepository) Signals() (map[string]interface{}, map[string]interfac
 	return buys, sells
 }
 
-func (r *DailyRepository) Filter() (*models.Plans, error) {
+func (r *DailyRepository) Filter() (*models.Plan, error) {
 	now := time.Now()
 	duration := time.Hour*time.Duration(8-now.Hour()) - time.Minute*time.Duration(now.Minute()) - time.Second*time.Duration(now.Second())
 	timestamp := now.Add(duration).Unix()
 
-	var entities []*models.Plans
+	var entities []*models.Plan
 	r.Db.Where(
 		"timestamp=? AND status=0",
 		timestamp,

@@ -5,8 +5,7 @@ import (
 	"github.com/urfave/cli/v2"
 	"log"
 	"net/http"
-	"taoniu.local/cryptos/api"
-	"taoniu.local/cryptos/api/v1"
+	v1 "taoniu.local/cryptos/api/v1"
 )
 
 type ApiHandler struct{}
@@ -33,14 +32,12 @@ func (h *ApiHandler) run() error {
 	log.Println("api running...")
 
 	r := chi.NewRouter()
-	r.Mount("/orders", api.NewOrderRouter())
-	r.Mount("/strategies", api.NewStrategyRouter())
-
 	r.Route("/v1", func(r chi.Router) {
-		r.Mount("/strategies", v1.NewStrategyRouter())
+		r.Mount("/binance", v1.NewBinanceRouter())
+		r.Mount("/account", v1.NewAccountRouter())
 	})
 
-	http.ListenAndServe(":3000", r)
+	http.ListenAndServe("127.0.0.1:3000", r)
 
 	return nil
 }

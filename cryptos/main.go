@@ -22,6 +22,7 @@ func main() {
 		},
 		Commands: []*cli.Command{
 			commands.NewApiCommand(),
+			commands.NewAccountCommand(),
 			commands.NewBinanceCommand(),
 			commands.NewCronCommand(),
 			commands.NewDbCommand(),

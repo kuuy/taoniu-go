@@ -120,7 +120,7 @@ func (r *GridsRepository) Flush(symbol string) error {
 	return nil
 }
 
-func (r *GridsRepository) Buy(grid *models.Grids, price float64, amount float64) error {
+func (r *GridsRepository) Buy(grid *models.Grid, price float64, amount float64) error {
 	balance, _, err := r.Account().Balance(grid.Symbol)
 	if err != nil {
 		return err
@@ -167,7 +167,7 @@ func (r *GridsRepository) Buy(grid *models.Grids, price float64, amount float64)
 	return nil
 }
 
-func (r *GridsRepository) Sell(grid *models.Grids, entities []*models.TradingGrid) error {
+func (r *GridsRepository) Sell(grid *models.Grid, entities []*models.TradingGrid) error {
 	for _, entity := range entities {
 		var sellOrderId int64 = 0
 		var err error
@@ -243,7 +243,7 @@ func (r *GridsRepository) Update() error {
 	return nil
 }
 
-func (r *GridsRepository) FilterGrid(grid *models.Grids, price float64, signal int64) ([]*models.TradingGrid, error) {
+func (r *GridsRepository) FilterGrid(grid *models.Grid, price float64, signal int64) ([]*models.TradingGrid, error) {
 	var entryPrice float64
 	var takePrice float64
 	var entities []*models.TradingGrid

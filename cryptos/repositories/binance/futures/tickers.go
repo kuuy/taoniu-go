@@ -50,7 +50,7 @@ func (r *TickersRepository) Flush(symbols []string) error {
 				"low":       low,
 				"volume":    volume,
 				"quota":     quota,
-				"timestamp": fmt.Sprint(timestamp),
+				"timestamp": timestamp,
 			},
 		)
 	}

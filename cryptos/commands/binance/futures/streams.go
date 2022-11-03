@@ -88,18 +88,25 @@ func (h *StreamsHandler) handler(message []byte) {
 			return
 		}
 	}
+	symbol := data["s"]
+	open, _ := strconv.ParseFloat(data["o"].(string), 64)
+	price, _ := strconv.ParseFloat(data["c"].(string), 64)
+	high, _ := strconv.ParseFloat(data["h"].(string), 64)
+	low, _ := strconv.ParseFloat(data["l"].(string), 64)
+	volume, _ := strconv.ParseFloat(data["v"].(string), 64)
+	quota, _ := strconv.ParseFloat(data["q"].(string), 64)
 	h.Rdb.HMSet(
 		h.Ctx,
 		redisKey,
 		map[string]interface{}{
-			"symbol":    data["s"],
-			"price":     data["c"],
-			"open":      data["o"],
-			"high":      data["h"],
-			"low":       data["l"],
-			"volume":    data["v"],
-			"quota":     data["q"],
-			"timestamp": fmt.Sprint(timestamp),
+			"symbol":    symbol,
+			"open":      open,
+			"price":     price,
+			"high":      high,
+			"low":       low,
+			"volume":    volume,
+			"quota":     quota,
+			"timestamp": timestamp,
 		},
 	)
 }

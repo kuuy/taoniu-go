@@ -164,7 +164,7 @@ func (r *ScalpingRepository) Flush() error {
 	r.Db.Create(&entity)
 
 	plan.Status = 1
-	r.Db.Model(&models.Plans{ID: plan.ID}).Updates(plan)
+	r.Db.Model(&models.Plan{ID: plan.ID}).Updates(plan)
 
 	return nil
 }

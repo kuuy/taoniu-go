@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-type Plans struct {
+type Plan struct {
 	ID        string            `gorm:"size:20;primaryKey"`
 	Symbol    string            `gorm:"size:20;not null;uniqueIndex:unq_binance_futures_plans_symbol_timestamp"`
 	Side      int64             `gorm:"not null"`
@@ -20,6 +20,6 @@ type Plans struct {
 	UpdatedAt time.Time         `gorm:"not null"`
 }
 
-func (m *Plans) TableName() string {
+func (m *Plan) TableName() string {
 	return "binance_futures_plans"
 }

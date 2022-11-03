@@ -40,7 +40,7 @@ func (r *GridsRepository) Symbols() *SymbolsRepository {
 }
 
 func (r *GridsRepository) Flush(symbol string) error {
-	var entity models.Grids
+	var entity models.Grid
 	result := r.Db.Where(
 		"symbol=? AND status=1",
 		symbol,
@@ -70,7 +70,7 @@ func (r *GridsRepository) Flush(symbol string) error {
 		return nil
 	}
 	amount := entity.Amount * math.Pow(2, float64(entity.Step-1))
-	entity = models.Grids{
+	entity = models.Grid{
 		ID:                xid.New().String(),
 		Symbol:            symbol,
 		Step:              entity.Step + 1,
@@ -89,7 +89,7 @@ func (r *GridsRepository) Flush(symbol string) error {
 }
 
 func (r *GridsRepository) Open(symbol string, amount float64) error {
-	var entity models.Grids
+	var entity models.Grid
 	result := r.Db.Where(
 		"symbol=? AND status=1",
 		symbol,
@@ -101,7 +101,7 @@ func (r *GridsRepository) Open(symbol string, amount float64) error {
 	profitTarget, _ := strconv.ParseFloat(context["profit_target"].(string), 64)
 	takeProfitPrice, _ := strconv.ParseFloat(context["take_profit_price"].(string), 64)
 	stopLossPoint, _ := strconv.ParseFloat(context["stop_loss_point"].(string), 64)
-	entity = models.Grids{
+	entity = models.Grid{
 		ID:                xid.New().String(),
 		Symbol:            symbol,
 		Step:              1,
@@ -122,7 +122,7 @@ func (r *GridsRepository) Open(symbol string, amount float64) error {
 }
 
 func (r *GridsRepository) Close(symbol string) error {
-	r.Db.Model(&models.Grids{}).Where(
+	r.Db.Model(&models.Grid{}).Where(
 		"symbol=? AND status=1",
 		symbol,
 	).Update("status", 2)
@@ -132,8 +132,8 @@ func (r *GridsRepository) Close(symbol string) error {
 	return nil
 }
 
-func (r *GridsRepository) Filter(symbol string, price float64) (*models.Grids, error) {
-	var entities []*models.Grids
+func (r *GridsRepository) Filter(symbol string, price float64) (*models.Grid, error) {
+	var entities []*models.Grid
 	r.Db.Where(
 		"symbol=? AND status=1",
 		symbol,
