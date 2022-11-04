@@ -16,14 +16,14 @@ func Authenticator(next http.Handler) http.Handler {
 
 		bearer := r.Header.Get("Authorization")
 		if len(bearer) <= 7 || strings.ToUpper(bearer[0:6]) != "TAONIU" {
-			response.Error(http.StatusInternalServerError, 403, "access not allowed")
+			response.Error(http.StatusForbidden, 403, "access not allowed")
 			return
 		}
 
 		repository := &repositories.TokenRepository{}
 		uid, err := repository.Uid(bearer[7:])
 		if err != nil {
-			response.Error(http.StatusInternalServerError, 403, "access not valid")
+			response.Error(http.StatusForbidden, 403, "access not valid")
 			return
 		}
 		r.Header.Set("uid", uid)

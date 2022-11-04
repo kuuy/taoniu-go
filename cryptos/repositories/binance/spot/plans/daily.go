@@ -53,6 +53,37 @@ func (r *DailyRepository) Symbols() *spotRepositories.SymbolsRepository {
 	return r.SymbolsRepository
 }
 
+func (r *DailyRepository) Count() int64 {
+	var total int64
+	r.Db.Model(&models.Plan{}).Count(&total)
+	return total
+}
+
+func (r *DailyRepository) Listings(current int, pageSize int) []*models.Plan {
+	offset := (current - 1) * pageSize
+
+	var plans []*models.Plan
+	r.Db.Select(
+		"id",
+		"symbol",
+		"side",
+		"price",
+		"quantity",
+		"amount",
+		"created_at",
+	).Order(
+		"created_at desc",
+	).Offset(
+		offset,
+	).Limit(
+		pageSize,
+	).Find(
+		&plans,
+	)
+
+	return plans
+}
+
 func (r *DailyRepository) Flush() error {
 	buys, sells := r.Signals()
 	r.Create(buys, 1)

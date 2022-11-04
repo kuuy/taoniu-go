@@ -10,5 +10,6 @@ func NewSpotRouter() http.Handler {
 	r := chi.NewRouter()
 	r.Mount("/symbols", spot.NewSymbolsRouter())
 	r.Mount("/tickers", spot.NewTickersRouter())
+	r.Mount("/plans", spot.NewPlansRouter())
 	return r
 }

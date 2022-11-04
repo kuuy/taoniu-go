@@ -16,7 +16,7 @@ type Plan struct {
 	Context   datatypes.JSONMap `gorm:"not null"`
 	Status    int64             `gorm:"not null"`
 	Remark    string            `gorm:"size:5000;not null"`
-	CreatedAt time.Time         `gorm:"not null"`
+	CreatedAt time.Time         `gorm:"not null;index"`
 	UpdatedAt time.Time         `gorm:"not null"`
 }
 
