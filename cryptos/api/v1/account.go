@@ -10,6 +10,7 @@ func NewAccountRouter() http.Handler {
 	r := chi.NewRouter()
 	r.Mount("/login", account.NewLoginRouter())
 	r.Mount("/logout", account.NewLogoutRouter())
+	r.Mount("/token", account.NewTokenRouter())
 	r.Mount("/profile", account.NewProfileRouter())
 
 	return r

@@ -17,8 +17,8 @@ type LoginHandler struct {
 }
 
 type Token struct {
-	Access  string `json:"access_token"`
-	Refresh string `json:"refresh_token"`
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
 }
 
 func NewLoginRouter() http.Handler {
@@ -92,8 +92,10 @@ func (h *LoginHandler) Do(
 		return
 	}
 
-	h.Response.Json(&Token{
-		Access:  accessToken,
-		Refresh: refreshToken,
-	})
+	token := &Token{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	}
+
+	h.Response.Json(token)
 }
