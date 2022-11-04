@@ -67,6 +67,9 @@ func (h *CronHandler) run() error {
 	c.AddFunc("@every 10s", func() {
 		proxies.Tor().Checker()
 	})
+	c.AddFunc("@every 15s", func() {
+		binance.Spot().Tickers().Flush()
+	})
 	c.AddFunc("@every 30s", func() {
 		binance.Spot().Flush()
 		binance.Spot().Margin().Isolated().Tradings().Grids().Flush()

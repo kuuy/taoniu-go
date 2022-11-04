@@ -53,7 +53,8 @@ func (t *SpotTask) Symbols() *tasks.SymbolsTask {
 func (t *SpotTask) Tickers() *tasks.TickersTask {
 	if t.TickersTask == nil {
 		t.TickersTask = &tasks.TickersTask{
-			Db: t.Db,
+			Rdb: t.Rdb,
+			Ctx: t.Ctx,
 		}
 		t.TickersTask.Repository = &repositories.TickersRepository{
 			Rdb: t.Rdb,

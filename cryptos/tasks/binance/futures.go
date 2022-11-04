@@ -49,7 +49,8 @@ func (t *FuturesTask) Symbols() *tasks.SymbolsTask {
 func (t *FuturesTask) Tickers() *tasks.TickersTask {
 	if t.TickersTask == nil {
 		t.TickersTask = &tasks.TickersTask{
-			Db: t.Db,
+			Rdb: t.Rdb,
+			Ctx: t.Ctx,
 		}
 		t.TickersTask.Repository = &repositories.TickersRepository{
 			Rdb: t.Rdb,

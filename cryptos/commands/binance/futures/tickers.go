@@ -2,16 +2,18 @@ package futures
 
 import (
 	"context"
-	"github.com/urfave/cli/v2"
-	"gorm.io/gorm"
 	"log"
+
+	"github.com/go-redis/redis/v8"
+	"github.com/urfave/cli/v2"
+
 	pool "taoniu.local/cryptos/common"
-	models "taoniu.local/cryptos/models/binance/futures"
 	repositories "taoniu.local/cryptos/repositories/binance/futures"
 )
 
 type TickersHandler struct {
-	Db         *gorm.DB
+	Rdb        *redis.Client
+	Ctx        context.Context
 	Repository *repositories.TickersRepository
 }
 
@@ -22,11 +24,12 @@ func NewTickersCommand() *cli.Command {
 		Usage: "",
 		Before: func(c *cli.Context) error {
 			h = TickersHandler{
-				Db: pool.NewDB(),
-			}
-			h.Repository = &repositories.TickersRepository{
 				Rdb: pool.NewRedis(),
 				Ctx: context.Background(),
+			}
+			h.Repository = &repositories.TickersRepository{
+				Rdb: h.Rdb,
+				Ctx: h.Ctx,
 			}
 			return nil
 		},
@@ -47,12 +50,16 @@ func NewTickersCommand() *cli.Command {
 
 func (h *TickersHandler) flush() error {
 	log.Println("Tickers flush...")
-	var symbols []string
-	h.Db.Model(models.Symbol{}).Select("symbol").Where("status", "TRADING").Find(&symbols)
-	for i := 0; i < len(symbols); i += 50 {
-		var j int = i + 50
-		if j > len(symbols)-1 {
-			j = len(symbols) - 1
+	symbols, _ := h.Rdb.ZRevRange(
+		h.Ctx,
+		"binance:futures:tickers:flush",
+		0,
+		-1,
+	).Result()
+	for i := 0; i < len(symbols); i += 20 {
+		j := i + 20
+		if j > len(symbols) {
+			j = len(symbols)
 		}
 		h.Repository.Flush(symbols[i:j])
 	}

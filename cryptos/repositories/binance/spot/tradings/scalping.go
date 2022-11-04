@@ -84,7 +84,9 @@ func (r *ScalpingRepository) Plans() *plansRepositories.DailyRepository {
 func (r *ScalpingRepository) Tradingview() *tradingviewRepositories.AnalysisRepository {
 	if r.TradingviewRepository == nil {
 		r.TradingviewRepository = &tradingviewRepositories.AnalysisRepository{
-			Db: r.Db,
+			Db:  r.Db,
+			Rdb: r.Rdb,
+			Ctx: r.Ctx,
 		}
 	}
 	return r.TradingviewRepository
@@ -96,7 +98,12 @@ func (r *ScalpingRepository) Flush() error {
 		return err
 	}
 	var entity *models.TradingScalping
-	result := r.Db.Model(&models.TradingScalping{}).Where("symbol=? AND status=0", plan.Symbol).Take(&entity)
+	result := r.Db.Model(
+		&models.TradingScalping{},
+	).Where(
+		"symbol=? AND status=0",
+		plan.Symbol,
+	).Take(&entity)
 	if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil
 	}

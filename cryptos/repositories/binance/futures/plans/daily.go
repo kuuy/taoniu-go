@@ -34,7 +34,9 @@ type DailyRepository struct {
 func (r *DailyRepository) Tradingview() *tradingviewRepositories.AnalysisRepository {
 	if r.TradingviewRepository == nil {
 		r.TradingviewRepository = &tradingviewRepositories.AnalysisRepository{
-			Db: r.Db,
+			Db:  r.Db,
+			Rdb: r.Rdb,
+			Ctx: r.Ctx,
 		}
 	}
 	return r.TradingviewRepository

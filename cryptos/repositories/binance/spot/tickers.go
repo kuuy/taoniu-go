@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	config "taoniu.local/cryptos/config/binance/spot"
 	"time"
 
 	"github.com/adshao/go-binance/v2"
@@ -18,7 +17,7 @@ type TickersRepository struct {
 }
 
 func (r *TickersRepository) Flush(symbols []string) error {
-	client := binance.NewClient(config.REST_API_KEY, config.REST_SECRET_KEY)
+	client := binance.NewClient("", "")
 	tickers, err := client.NewListSymbolTickerService().Symbols(symbols).Do(r.Ctx)
 	if err != nil {
 		return err
@@ -53,6 +52,8 @@ func (r *TickersRepository) Flush(symbols []string) error {
 				"timestamp": timestamp,
 			},
 		)
+
+		r.Rdb.ZRem(r.Ctx, "binance:spot:tickers:flush", item.Symbol)
 	}
 
 	return nil
