@@ -203,9 +203,6 @@ func (r *DailyRepository) Filter() (*models.Plan, error) {
 		if err != nil {
 			continue
 		}
-		if entity.Side == 1 && signal != 1 {
-			continue
-		}
 		if entity.Side == 2 && signal != 2 {
 			continue
 		}
@@ -214,10 +211,7 @@ func (r *DailyRepository) Filter() (*models.Plan, error) {
 		if err != nil {
 			continue
 		}
-		if signal == 1 && price > entity.Price {
-			continue
-		}
-		if signal == 2 && price < entity.Price {
+		if entity.Side == 2 && price < entity.Price {
 			continue
 		}
 

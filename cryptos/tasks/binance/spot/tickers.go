@@ -2,7 +2,11 @@ package spot
 
 import (
 	"context"
+	"time"
+
 	"github.com/go-redis/redis/v8"
+
+	pool "taoniu.local/cryptos/common"
 	repositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
@@ -13,6 +17,16 @@ type TickersTask struct {
 }
 
 func (t *TickersTask) Flush() error {
+	mutex := pool.NewMutex(
+		t.Rdb,
+		t.Ctx,
+		"locks:binance:spot:tickers:flush",
+	)
+	if mutex.Lock(10 * time.Second) {
+		return nil
+	}
+	defer mutex.Unlock()
+
 	symbols, _ := t.Rdb.ZRevRange(
 		t.Ctx,
 		"binance:spot:tickers:flush",
