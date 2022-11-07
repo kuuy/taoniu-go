@@ -63,7 +63,7 @@ func (h *BetHandler) place(rule string, limit int) error {
 	var err error
 
 	request := &repositories.BetRequest{
-		Currency: "usdt",
+		Currency: "trx",
 		Amount:   "0.00000001",
 		Rule:     rule,
 	}

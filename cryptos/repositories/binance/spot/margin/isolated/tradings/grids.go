@@ -147,13 +147,8 @@ func (r *GridsRepository) Buy(grid *spotModels.Grid, price float64, amount float
 	if balance < buyAmount || grid.Balance < buyAmount {
 		status = 1
 	} else {
-		buyOrderId, err = r.Order(grid.Symbol, binance.SideTypeBuy, price, buyQuantity)
-		if err != nil {
-			remark = err.Error()
-		} else {
-			grid.Balance = grid.Balance - buyAmount
-			r.Db.Model(&models.TradingGrid{ID: grid.ID}).Updates(grid)
-		}
+		grid.Balance = grid.Balance - buyAmount
+		r.Db.Model(&spotModels.Grid{ID: grid.ID}).Updates(grid)
 	}
 
 	var entity *models.TradingGrid
@@ -169,8 +164,18 @@ func (r *GridsRepository) Buy(grid *spotModels.Grid, price float64, amount float
 		Status:       status,
 		Remark:       remark,
 	}
-
 	r.Db.Create(entity)
+
+	if entity.Status == 0 {
+		buyOrderId, err = r.Order(grid.Symbol, binance.SideTypeBuy, price, buyQuantity)
+		if err != nil {
+			entity.Remark = err.Error()
+		} else {
+			entity.BuyOrderId = buyOrderId
+			entity.Status = 1
+		}
+		r.Db.Model(&models.TradingGrid{ID: grid.ID}).Updates(entity)
+	}
 
 	return nil
 }
