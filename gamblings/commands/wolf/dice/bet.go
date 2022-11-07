@@ -15,6 +15,7 @@ type BetHandler struct {
 	Mode       string
 	IPart      string
 	DPart      string
+	Numbers    []float64
 	Repository *repositories.BetRepository
 }
 
@@ -38,6 +39,11 @@ func NewBetCommand() *cli.Command {
 						Value: "",
 					},
 					&cli.StringFlag{
+						Name:    "numbers",
+						Aliases: []string{"n"},
+						Value:   "",
+					},
+					&cli.StringFlag{
 						Name:    "ipart",
 						Aliases: []string{"i"},
 						Value:   "",
@@ -54,6 +60,13 @@ func NewBetCommand() *cli.Command {
 				},
 				Action: func(c *cli.Context) error {
 					h.Mode = c.String("mode")
+					if c.String("numbers") != "" {
+						numbers := strings.Split(c.String("numbers"), ",")
+						h.Numbers = make([]float64, len(numbers))
+						for i := 0; i < len(numbers); i++ {
+							h.Numbers[i], _ = strconv.ParseFloat(numbers[i], 64)
+						}
+					}
 					h.IPart = c.String("ipart")
 					h.DPart = c.String("dpart")
 					h.Repository.UseProxy = c.Bool("proxy")
@@ -79,8 +92,9 @@ func NewBetCommand() *cli.Command {
 
 func (h *BetHandler) test() error {
 	var result float64
-	result = 1.23
-	h.Mode = "neighbor"
+	result = 34.34
+	h.Mode = "repeate"
+	//h.Numbers = []float64{11.22, 3.33}
 	//h.IPart = "13-23"
 	if !h.verify(result) {
 		log.Println("result verify false")
@@ -96,6 +110,15 @@ func (h *BetHandler) verify(result float64) bool {
 	parts := strings.Split(number, ".")
 	if len(parts) == 1 {
 		parts = append(parts, "0")
+	}
+
+	if len(h.Numbers) > 0 {
+		for _, item := range h.Numbers {
+			if result == item {
+				return true
+			}
+		}
+		return false
 	}
 
 	if h.IPart == "o" {
@@ -179,6 +202,12 @@ func (h *BetHandler) verify(result float64) bool {
 		}
 
 		if parts[0][0] != parts[0][1] || parts[1][0] != parts[1][1] {
+			return false
+		}
+	}
+
+	if h.Mode == "repeate" {
+		if parts[0] != parts[1] {
 			return false
 		}
 	}
