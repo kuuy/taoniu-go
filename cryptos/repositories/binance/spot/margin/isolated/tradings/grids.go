@@ -182,6 +182,8 @@ func (r *GridsRepository) Buy(grid *spotModels.Grid, price float64, amount float
 
 func (r *GridsRepository) Sell(grid *spotModels.Grid, entities []*models.TradingGrid) error {
 	for _, entity := range entities {
+		sellAmount := entity.SellPrice * entity.SellQuantity
+
 		var sellOrderId int64 = 0
 		var err error
 		var status int64 = 2
@@ -189,20 +191,24 @@ func (r *GridsRepository) Sell(grid *spotModels.Grid, entities []*models.Trading
 		if entity.BuyOrderId == 0 {
 			status = 3
 		} else {
+			grid.Balance = grid.Balance + sellAmount
+			r.Db.Model(&spotModels.Grid{ID: grid.ID}).Updates(grid)
+		}
+		entity.SellOrderId = sellOrderId
+		entity.Status = status
+		entity.Remark = remark
+		r.Db.Model(&models.TradingGrid{ID: entity.ID}).Updates(entity)
+
+		if entity.Status == 2 {
 			sellOrderId, err = r.Order(entity.Symbol, binance.SideTypeSell, entity.SellPrice, entity.SellQuantity)
 			if err != nil {
 				remark = err.Error()
 			} else {
-				grid.Balance = grid.Balance + entity.SellPrice*entity.SellQuantity
-				r.Db.Model(&models.TradingGrid{ID: grid.ID}).Updates(grid)
+				entity.SellOrderId = sellOrderId
+				entity.Status = 3
 			}
+			r.Db.Model(&models.TradingGrid{ID: entity.ID}).Updates(entity)
 		}
-
-		entity.SellOrderId = sellOrderId
-		entity.Status = status
-		entity.Remark = remark
-
-		r.Db.Model(&models.TradingGrid{ID: entity.ID}).Updates(entity)
 	}
 
 	return nil
