@@ -6,12 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math"
 	"net"
 	"net/http"
 	"strconv"
-	"taoniu.local/gamblings/common"
 	"time"
 
+	"taoniu.local/gamblings/common"
 	config "taoniu.local/gamblings/config/wolf"
 )
 
@@ -20,15 +21,39 @@ type BetRepository struct {
 }
 
 type BetRequest struct {
-	Currency   string  `json:"currency"`
-	Game       string  `json:"game"`
-	Multiplier string  `json:"multiplier"`
-	Amount     string  `json:"amount"`
-	Rule       string  `json:"rule"`
-	BetValue   float64 `json:"bet_value"`
+	Currency   string `json:"currency"`
+	Game       string `json:"game"`
+	Multiplier string `json:"multiplier"`
+	Amount     string `json:"amount"`
+	Rule       string `json:"rule"`
+	BetValue   string `json:"bet_value"`
 }
 
-func (r *BetRepository) Place(request *BetRequest) (string, float64, bool, error) {
+func (r *BetRepository) BetRule(rule string, betValue float64) (float64, error) {
+	if rule == "under" {
+		return math.Round(990000/betValue) / 10000, nil
+	}
+	if rule == "over" {
+		return math.Round(990000/(100-betValue-0.01)) / 10000, nil
+	}
+	return 0, errors.New("rule not supported")
+}
+
+func (r *BetRepository) Place(amount float64, rule string, betValue float64) (string, float64, bool, error) {
+	multiplier, err := r.BetRule(rule, betValue)
+	if err != nil {
+		return "", 0, false, err
+	}
+
+	request := &BetRequest{
+		Currency:   "trx",
+		Game:       "dice",
+		Multiplier: strconv.FormatFloat(multiplier, 'f', -1, 64),
+		Amount:     strconv.FormatFloat(amount, 'f', -1, 64),
+		Rule:       rule,
+		BetValue:   strconv.FormatFloat(betValue, 'f', -1, 64),
+	}
+
 	tr := &http.Transport{
 		DisableKeepAlives: true,
 	}

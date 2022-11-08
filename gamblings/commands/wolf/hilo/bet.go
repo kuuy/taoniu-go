@@ -67,21 +67,6 @@ func (h *BetHandler) place(rule string, limit int) error {
 		Amount:   "0.00000001",
 		Rule:     rule,
 	}
-	if rule == "red" {
-		request.Multiplier = "1.98"
-		request.WinChance = 50
-	} else if rule == "black" {
-		request.Multiplier = "1.98"
-		request.WinChance = 50
-	} else if rule == "number" {
-		request.Multiplier = "1.43"
-		request.WinChance = 69.23
-	} else if rule == "letter" {
-		request.Multiplier = "3.2174"
-		request.WinChance = 30.77
-	} else {
-		return errors.New("rule not supported")
-	}
 
 	for {
 		if hash == "" {
@@ -93,7 +78,7 @@ func (h *BetHandler) place(rule string, limit int) error {
 
 		request.BetValue = betValue
 		request.SubNonce = subNonce
-		betValue, status, subNonce, err = h.Repository.Place(request, limit)
+		betValue, status, subNonce, err = h.Repository.Place(rule, limit)
 		if err != nil {
 			continue
 		}

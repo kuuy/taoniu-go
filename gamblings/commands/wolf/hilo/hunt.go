@@ -1,16 +1,14 @@
-package dice
+package hilo
 
 import (
 	"context"
-	"log"
-	"time"
-
 	"github.com/gammazero/workerpool"
 	"github.com/go-redis/redis/v8"
 	"github.com/urfave/cli/v2"
+	"log"
 
 	common "taoniu.local/gamblings/common"
-	repositories "taoniu.local/gamblings/repositories/wolf/dice"
+	repositories "taoniu.local/gamblings/repositories/wolf/hilo"
 )
 
 type HuntHandler struct {
@@ -71,37 +69,45 @@ func NewHuntCommand() *cli.Command {
 }
 
 func (h *HuntHandler) place() error {
-	log.Println("wolf dice hunt place...")
+	log.Println("wolf hilo hunt place...")
 
 	wp := workerpool.New(5)
 	defer wp.StopWait()
 
-	for {
-		timestamp := time.Now().Unix()
-		score, _ := h.Rdb.ZScore(
-			h.Ctx,
-			"wolf:hunts",
-			"dice",
-		).Result()
-		if int64(score) < timestamp-1800 {
-			log.Println("hunt not start")
-			break
-		}
-
-		hash, result, _, err := h.BetRepository.Place(0.000001, "under", 98)
-		if err != nil {
-			log.Println(" bet error", err)
-			continue
-		}
-		wp.Submit(func() {
-			h.Repository.Handing(hash, result)
-		})
-	}
+	//for {
+	//	timestamp := time.Now().Unix()
+	//	score, _ := h.Rdb.ZScore(
+	//		h.Ctx,
+	//		"wolf:hunts",
+	//		"hilo",
+	//	).Result()
+	//	if int64(score) < timestamp-1800 {
+	//		log.Println("hunt not start")
+	//		break
+	//	}
+	//
+	//	request := &repositories.BetRequest{
+	//		Currency:   "trx",
+	//		Game:       "hilo",
+	//		Multiplier: "1.0102",
+	//		Amount:     "0.000001",
+	//		Rule:       "under",
+	//		BetValue:   98,
+	//	}
+	//	hash, result, _, err := h.BetRepository.Place(request)
+	//	if err != nil {
+	//		log.Println(" bet error", err)
+	//		continue
+	//	}
+	//	wp.Submit(func() {
+	//		h.Repository.Handing(hash, result)
+	//	})
+	//}
 
 	return nil
 }
 
 func (h *HuntHandler) start() error {
-	log.Println("wolf dice hunt starting...")
+	log.Println("wolf hilo hunt starting...")
 	return h.Repository.Start()
 }

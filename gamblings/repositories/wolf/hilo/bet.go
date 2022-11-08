@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"taoniu.local/gamblings/common"
 	"time"
 
+	"taoniu.local/gamblings/common"
 	config "taoniu.local/gamblings/config/wolf"
 )
 
@@ -27,31 +27,46 @@ type BetRequest struct {
 	WinChance  float64 `json:"win_chance"`
 }
 
-func (r *BetRepository) Place(request *BetRequest, limit int) (float64, int, int, error) {
-	var betValue float64
-	var status, subNonce int
-	var err error
-
-	subNonce = request.SubNonce
-	for i := subNonce; i < limit; i++ {
-		if betValue != 0 {
-			request.BetValue = betValue
-		}
-		betValue, status, err = r.Play(request)
-		if err != nil {
-			return 0, 0, 0, err
-		}
-		if status != 3 {
-			return betValue, status, 0, nil
-		}
-		request.SubNonce += 1
+func (r *BetRepository) BetRule(rule string) (float64, float64, error) {
+	if rule == "red" || rule == "black" {
+		return 1.98, 50, nil
 	}
+	if rule == "number" {
+		return 1.43, 69.23, nil
+	}
+	if rule == "letter" {
+		return 3.2174, 30.77, nil
+	}
+
+	return 0, 0, errors.New("rule not supported")
+}
+
+func (r *BetRepository) Place(rule string, limit int) (float64, int, int, error) {
+	//var betValue float64
+	//var status, subNonce int
+	//var err error
+
+	//subNonce = request.SubNonce
+	//for i := subNonce; i < limit; i++ {
+	//	if betValue != 0 {
+	//		request.BetValue = betValue
+	//	}
+	//	betValue, status, err = r.Play(request)
+	//	if err != nil {
+	//		return 0, 0, 0, err
+	//	}
+	//	if status != 3 {
+	//		return betValue, status, 0, nil
+	//	}
+	//	request.SubNonce += 1
+	//}
 	//err = r.Finish()
 	//if err != nil {
 	//	return 0, 0, 0, err
 	//}
 
-	return betValue, status, 0, nil
+	return 0, 0, 0, errors.New("not implement")
+	//return betValue, status, 0, nil
 }
 
 func (r *BetRepository) Status(request *BetRequest) (string, float64, int, error) {

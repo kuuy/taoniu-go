@@ -16,7 +16,7 @@ require (
 	github.com/rs/xid v1.4.0
 	github.com/stretchr/testify v1.8.0 // indirect
 	github.com/urfave/cli/v2 v2.5.1
-	golang.org/x/crypto v0.0.0-20220427172511-eb4f295cb31f // indirect
+	golang.org/x/crypto v0.0.0-20220427172511-eb4f295cb31f
 	gorm.io/datatypes v1.0.7
 	gorm.io/driver/postgres v1.3.5
 	gorm.io/gorm v1.23.6

@@ -1,14 +1,15 @@
 package dice
 
 import (
+	"errors"
 	"log"
 	"os"
 	"strconv"
 	"strings"
-	pool "taoniu.local/gamblings/common"
 
 	"github.com/urfave/cli/v2"
 
+	pool "taoniu.local/gamblings/common"
 	repositories "taoniu.local/gamblings/repositories/wolf/dice"
 )
 
@@ -91,21 +92,45 @@ func NewBetCommand() *cli.Command {
 					return nil
 				},
 			},
+			{
+				Name:  "multiple",
+				Usage: "",
+				Action: func(c *cli.Context) error {
+					rule := c.Args().Get(0)
+					betValue, _ := strconv.ParseFloat(c.Args().Get(1), 64)
+					if betValue < 2 || betValue > 98 {
+						return errors.New("betValue not valid")
+					}
+					if err := h.multiple(rule, betValue); err != nil {
+						return cli.Exit(err.Error(), 1)
+					}
+					return nil
+				},
+			},
 		},
 	}
 }
 
+func (h *BetHandler) multiple(rule string, betValue float64) error {
+	multiple, err := h.Repository.BetRule(rule, betValue)
+	if err != nil {
+		return err
+	}
+	log.Println("multiple", multiple)
+	return nil
+}
+
 func (h *BetHandler) test() error {
-	var result float64
-	result = 34.34
-	h.Mode = "repeate"
+	//var result float64
+	//result = 34.34
+	//h.Mode = "repeate"
 	//h.Numbers = []float64{11.22, 3.33}
 	//h.IPart = "13-23"
-	if !h.verify(result) {
-		log.Println("result verify false")
-	} else {
-		log.Println("result verify ok")
-	}
+	//if !h.verify(result) {
+	//	log.Println("result verify false")
+	//} else {
+	//	log.Println("result verify ok")
+	//}
 
 	return nil
 }
@@ -344,15 +369,7 @@ func (h *BetHandler) place() error {
 	log.Println("wolf dice bet place...")
 
 	for {
-		request := &repositories.BetRequest{
-			Currency:   "trx",
-			Game:       "dice",
-			Multiplier: "1.0102",
-			Amount:     "0.000001",
-			Rule:       "under",
-			BetValue:   98,
-		}
-		hash, result, _, err := h.Repository.Place(request)
+		hash, result, _, err := h.Repository.Place(0.000001, "under", 98)
 		if err != nil {
 			log.Println("result verify error", err)
 			os.Exit(1)

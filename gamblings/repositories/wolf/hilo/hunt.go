@@ -1,18 +1,15 @@
-package dice
+package hilo
 
 import (
 	"context"
-	"errors"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
 
-	"github.com/go-redis/redis/v8"
-	"github.com/rs/xid"
-
-	models "taoniu.local/gamblings/models/wolf/dice"
+	models "taoniu.local/gamblings/models/wolf/hilo"
 )
 
 type HuntRepository struct {
@@ -25,7 +22,7 @@ func (r *HuntRepository) Start() error {
 	timestamp := time.Now().Unix()
 	r.Rdb.ZAdd(r.Ctx, "wolf:hunts", &redis.Z{
 		float64(timestamp),
-		"dice",
+		"hilo",
 	})
 	return nil
 }
@@ -72,34 +69,34 @@ func (r *HuntRepository) Handing(hash string, number float64) error {
 		parts = append(parts, "0")
 	}
 
-	ipart, _ := strconv.Atoi(parts[0])
-	dpart, _ := strconv.Atoi(parts[1])
-
-	var hunt models.Hunt
-	result := r.Db.Where(
-		"number=?",
-		number,
-	).Take(&hunt)
-	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		side := r.Side(parts[0], parts[1])
-		hunt = models.Hunt{
-			ID:        xid.New().String(),
-			Number:    number,
-			Ipart:     uint8(ipart),
-			Dpart:     uint8(dpart),
-			Hash:      hash,
-			Side:      side,
-			IsMirror:  r.IsMirror(parts[0], parts[1]),
-			IsRepeate: r.IsRepeate(parts[0], parts[1]),
-		}
-		if side != 0 {
-			hunt.IsNeighbor = r.IsNeighbor(side, parts[0], parts[1])
-		}
-		r.Db.Create(&hunt)
-	} else {
-		hunt.Hash = hash
-		r.Db.Model(&models.Hunt{ID: hunt.ID}).Updates(hunt)
-	}
+	//ipart, _ := strconv.Atoi(parts[0])
+	//dpart, _ := strconv.Atoi(parts[1])
+	//
+	//var hunt models.Hunt
+	//result := r.Db.Where(
+	//	"number=?",
+	//	number,
+	//).Take(&hunt)
+	//if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+	//	side := r.Side(parts[0], parts[1])
+	//	hunt = models.Hunt{
+	//		ID:        xid.New().String(),
+	//		Number:    number,
+	//		Ipart:     uint8(ipart),
+	//		Dpart:     uint8(dpart),
+	//		Hash:      hash,
+	//		Side:      side,
+	//		IsMirror:  r.IsMirror(parts[0], parts[1]),
+	//		IsRepeate: r.IsRepeate(parts[0], parts[1]),
+	//	}
+	//	if side != 0 {
+	//		hunt.IsNeighbor = r.IsNeighbor(side, parts[0], parts[1])
+	//	}
+	//	r.Db.Create(&hunt)
+	//} else {
+	//	hunt.Hash = hash
+	//	r.Db.Model(&models.Hunt{ID: hunt.ID}).Updates(hunt)
+	//}
 
 	return nil
 }
