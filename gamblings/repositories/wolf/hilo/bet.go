@@ -46,10 +46,10 @@ func (r *BetRepository) Place(request *BetRequest, limit int) (float64, int, int
 		}
 		request.SubNonce += 1
 	}
-	err = r.Finish()
-	if err != nil {
-		return 0, 0, 0, err
-	}
+	//err = r.Finish()
+	//if err != nil {
+	//	return 0, 0, 0, err
+	//}
 
 	return betValue, status, 0, nil
 }

@@ -5,6 +5,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	pool "taoniu.local/gamblings/common"
 
 	"github.com/urfave/cli/v2"
 
@@ -12,11 +13,12 @@ import (
 )
 
 type BetHandler struct {
-	Mode       string
-	IPart      string
-	DPart      string
-	Numbers    []float64
-	Repository *repositories.BetRepository
+	Mode           string
+	IPart          string
+	DPart          string
+	Numbers        []float64
+	Repository     *repositories.BetRepository
+	HuntRepository *repositories.HuntRepository
 }
 
 func NewBetCommand() *cli.Command {
@@ -27,6 +29,9 @@ func NewBetCommand() *cli.Command {
 		Before: func(c *cli.Context) error {
 			h = BetHandler{}
 			h.Repository = &repositories.BetRepository{}
+			h.HuntRepository = &repositories.HuntRepository{
+				Db: pool.NewDB(),
+			}
 			return nil
 		},
 		Subcommands: []*cli.Command{
@@ -332,7 +337,7 @@ func (h *BetHandler) verify(result float64) bool {
 		}
 	}
 
-	return true
+	return false
 }
 
 func (h *BetHandler) place() error {
@@ -352,6 +357,7 @@ func (h *BetHandler) place() error {
 			log.Println("result verify error", err)
 			os.Exit(1)
 		}
+		h.HuntRepository.Handing(hash, result)
 
 		if h.verify(result) {
 			log.Println("lucky", hash, result)

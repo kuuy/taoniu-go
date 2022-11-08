@@ -10,6 +10,7 @@ func NewDiceCommand() *cli.Command {
 		Name:  "dice",
 		Usage: "",
 		Subcommands: []*cli.Command{
+			dice.NewHuntCommand(),
 			dice.NewBetCommand(),
 		},
 	}

@@ -20,6 +20,8 @@ func main() {
 			return nil
 		},
 		Commands: []*cli.Command{
+			commands.NewApiCommand(),
+			commands.NewDbCommand(),
 			commands.NewWolfCommand(),
 		},
 		Version: "0.0.0",
