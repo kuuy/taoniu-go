@@ -64,6 +64,11 @@ func (h *HuntHandler) Gets(
 		conditions["numbers"] = numbers
 	}
 
+	if r.URL.Query().Get("side") != "" {
+		side, _ := strconv.Atoi(r.URL.Query().Get("side"))
+		conditions["side"] = side
+	}
+
 	if r.URL.Query().Get("ipart") != "" {
 		var numbers []int
 		ranges := strings.Split(r.URL.Query().Get("ipart"), "-")
@@ -100,11 +105,6 @@ func (h *HuntHandler) Gets(
 			}
 		}
 		conditions["dpart"] = numbers
-	}
-
-	if r.URL.Query().Get("side") != "" {
-		side, _ := strconv.Atoi(r.URL.Query().Get("side"))
-		conditions["side"] = side
 	}
 
 	if r.URL.Query().Get("is_mirror") == "1" {

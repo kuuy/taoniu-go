@@ -121,16 +121,16 @@ func (h *BetHandler) multiple(rule string, betValue float64) error {
 }
 
 func (h *BetHandler) test() error {
-	//var result float64
-	//result = 34.34
-	//h.Mode = "repeate"
+	var result float64
+	result = 34.34
+	h.Mode = "repeate"
 	//h.Numbers = []float64{11.22, 3.33}
 	//h.IPart = "13-23"
-	//if !h.verify(result) {
-	//	log.Println("result verify false")
-	//} else {
-	//	log.Println("result verify ok")
-	//}
+	if !h.verify(result) {
+		log.Println("result verify false")
+	} else {
+		log.Println("result verify ok")
+	}
 
 	return nil
 }
