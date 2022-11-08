@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strconv"
 	"time"
 
 	"taoniu.local/gamblings/common"
@@ -19,12 +20,12 @@ type BetRepository struct {
 
 type BetRequest struct {
 	Currency   string  `json:"currency"`
-	Multiplier string  `json:"multiplier"`
 	Amount     string  `json:"amount"`
 	Rule       string  `json:"rule"`
+	Multiplier float64 `json:"multiplier"`
+	WinChance  float64 `json:"win_chance"`
 	BetValue   float64 `json:"bet_value"`
 	SubNonce   int     `json:"sub_nonce"`
-	WinChance  float64 `json:"win_chance"`
 }
 
 func (r *BetRepository) BetRule(rule string) (float64, float64, error) {
@@ -41,41 +42,13 @@ func (r *BetRepository) BetRule(rule string) (float64, float64, error) {
 	return 0, 0, errors.New("rule not supported")
 }
 
-func (r *BetRepository) Place(rule string, limit int) (float64, int, int, error) {
-	//var betValue float64
-	//var status, subNonce int
-	//var err error
-
-	//subNonce = request.SubNonce
-	//for i := subNonce; i < limit; i++ {
-	//	if betValue != 0 {
-	//		request.BetValue = betValue
-	//	}
-	//	betValue, status, err = r.Play(request)
-	//	if err != nil {
-	//		return 0, 0, 0, err
-	//	}
-	//	if status != 3 {
-	//		return betValue, status, 0, nil
-	//	}
-	//	request.SubNonce += 1
-	//}
-	//err = r.Finish()
-	//if err != nil {
-	//	return 0, 0, 0, err
-	//}
-
-	return 0, 0, 0, errors.New("not implement")
-	//return betValue, status, 0, nil
-}
-
-func (r *BetRepository) Status(request *BetRequest) (string, float64, int, error) {
+func (r *BetRepository) Status() (string, float64, int, error) {
 	tr := &http.Transport{
 		DisableKeepAlives: true,
 	}
 	if r.UseProxy {
 		session := &common.ProxySession{
-			Proxy: "socks5://127.0.0.1:1080?timeout=5s",
+			Proxy: "socks5://127.0.0.1:1080?timeout=2s",
 		}
 		tr.DialContext = session.DialContext
 	} else {
@@ -85,7 +58,7 @@ func (r *BetRepository) Status(request *BetRequest) (string, float64, int, error
 
 	httpClient := &http.Client{
 		Transport: tr,
-		Timeout:   5 * time.Second,
+		Timeout:   2 * time.Second,
 	}
 
 	url := "https://wolf.bet/api/v1/user/hilo/status"
@@ -150,13 +123,13 @@ func (r *BetRepository) Status(request *BetRequest) (string, float64, int, error
 	return hash, betValue, subNonce, nil
 }
 
-func (r *BetRepository) Start(request *BetRequest) (string, float64, error) {
+func (r *BetRepository) Start(amount float64, betValue float64, subNonce int) (string, float64, error) {
 	tr := &http.Transport{
 		DisableKeepAlives: true,
 	}
 	if r.UseProxy {
 		session := &common.ProxySession{
-			Proxy: "socks5://127.0.0.1:1080?timeout=5s",
+			Proxy: "socks5://127.0.0.1:1080?timeout=2s",
 		}
 		tr.DialContext = session.DialContext
 	} else {
@@ -166,18 +139,20 @@ func (r *BetRepository) Start(request *BetRequest) (string, float64, error) {
 
 	httpClient := &http.Client{
 		Transport: tr,
-		Timeout:   5 * time.Second,
+		Timeout:   2 * time.Second,
 	}
 
-	body, _ := json.Marshal(&BetRequest{
-		Currency:   request.Currency,
-		Multiplier: "0",
-		Amount:     request.Amount,
+	request := &BetRequest{
+		Currency:   "trx",
+		Amount:     strconv.FormatFloat(amount, 'f', -1, 64),
 		Rule:       "start",
-		BetValue:   request.BetValue,
-		SubNonce:   request.SubNonce,
+		Multiplier: 0,
 		WinChance:  0,
-	})
+		BetValue:   betValue,
+		SubNonce:   subNonce,
+	}
+
+	body, _ := json.Marshal(request)
 
 	url := "https://wolf.bet/api/v1/user/hilo/play"
 	req, _ := http.NewRequest("POST", url, bytes.NewReader(body))
@@ -215,7 +190,7 @@ func (r *BetRepository) Start(request *BetRequest) (string, float64, error) {
 	if _, ok := bet["initial_bet_value"]; !ok {
 		return "", 0, errors.New("initial bet value not exists")
 	}
-	betValue := bet["initial_bet_value"].(float64)
+	betValue = bet["initial_bet_value"].(float64)
 
 	if _, ok := bet["status"]; !ok {
 		return "", 0, errors.New("status not exists")
@@ -234,7 +209,7 @@ func (r *BetRepository) Finish() error {
 	}
 	if r.UseProxy {
 		session := &common.ProxySession{
-			Proxy: "socks5://127.0.0.1:1080?timeout=5s",
+			Proxy: "socks5://127.0.0.1:1080?timeout=2s",
 		}
 		tr.DialContext = session.DialContext
 	} else {
@@ -244,7 +219,7 @@ func (r *BetRepository) Finish() error {
 
 	httpClient := &http.Client{
 		Transport: tr,
-		Timeout:   5 * time.Second,
+		Timeout:   2 * time.Second,
 	}
 
 	url := "https://wolf.bet/api/v1/user/hilo/finish"
@@ -285,7 +260,19 @@ func (r *BetRepository) Finish() error {
 	return nil
 }
 
-func (r *BetRepository) Play(request *BetRequest) (float64, int, error) {
+func (r *BetRepository) Play(amount float64, rule string, betValue float64, subNonce int) (float64, int, error) {
+	multiplier, winChance, err := r.BetRule(rule)
+
+	request := &BetRequest{
+		Currency:   "trx",
+		Amount:     strconv.FormatFloat(amount, 'f', -1, 64),
+		Rule:       rule,
+		Multiplier: multiplier,
+		WinChance:  winChance,
+		BetValue:   betValue,
+		SubNonce:   subNonce,
+	}
+
 	tr := &http.Transport{
 		DisableKeepAlives: true,
 	}
@@ -332,7 +319,6 @@ func (r *BetRepository) Play(request *BetRequest) (float64, int, error) {
 	if _, ok := data["bet"]; !ok {
 		return 0, 0, errors.New("bet not exists")
 	}
-
 	bet := data["bet"].(map[string]interface{})
 	if _, ok := bet["status"]; !ok {
 		return 0, 0, errors.New("status not exists")
@@ -343,15 +329,8 @@ func (r *BetRepository) Play(request *BetRequest) (float64, int, error) {
 		return 0, 0, errors.New("bets not exists")
 	}
 	bets := bet["bets"].([]interface{})
-	if len(bets) == 0 {
-		return 0, 0, errors.New("bets result empty")
-	}
-
 	result := bets[len(bets)-1].(map[string]interface{})
-	if _, ok := result["result_value"]; !ok {
-		return 0, 0, errors.New("bet value not exists")
-	}
-	betValue, _ := result["result_value"].(float64)
+	betValue, _ = result["result_value"].(float64)
 
 	return betValue, status, nil
 }

@@ -62,35 +62,31 @@ func (h *BetHandler) place(rule string, limit int) error {
 	var status, subNonce int
 	var err error
 
-	request := &repositories.BetRequest{
-		Currency: "trx",
-		Amount:   "0.00000001",
-		Rule:     rule,
-	}
+	amount := 0.00000001
 
 	for {
-		if hash == "" {
-			hash, betValue, subNonce, err = h.Repository.Status(request)
-			if err != nil {
-				return err
-			}
+		hash, betValue, subNonce, err = h.Repository.Status()
+		if err != nil {
+			return err
 		}
 
-		request.BetValue = betValue
-		request.SubNonce = subNonce
-		betValue, status, subNonce, err = h.Repository.Place(rule, limit)
-		if err != nil {
-			continue
-		}
-		if status == 0 {
-			request.BetValue = betValue
-			request.SubNonce = subNonce
-			hash, betValue, err = h.Repository.Start(request)
+		for i := subNonce; i < limit; i++ {
+			log.Println("play", hash, betValue, subNonce)
+			betValue, status, err = h.Repository.Play(amount, rule, betValue, subNonce)
 			if err != nil {
-				return err
+				return h.place(rule, limit)
 			}
-			continue
+
+			if status == 0 {
+				h.Repository.Start(amount, betValue, subNonce)
+				return h.place(rule, limit)
+			}
+
+			subNonce++
 		}
+
+		h.Repository.Finish()
+		h.Repository.Start(amount, betValue, subNonce)
 
 		log.Println("lucky", hash)
 		os.Exit(1)
