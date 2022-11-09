@@ -30,6 +30,11 @@ func (r *HuntRepository) Start() error {
 	return nil
 }
 
+func (r *HuntRepository) Stop() error {
+	r.Rdb.ZRem(r.Ctx, "wolf:hunts", "dice")
+	return nil
+}
+
 func (r *HuntRepository) Gets(conditions map[string]interface{}) []*models.Hunt {
 	var hunts []*models.Hunt
 

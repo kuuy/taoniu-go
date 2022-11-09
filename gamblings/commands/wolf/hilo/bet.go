@@ -6,8 +6,14 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	repositories "taoniu.local/gamblings/repositories/wolf/hilo"
 )
+
+type BetSerial struct {
+	Rule string
+	Size int
+}
 
 type BetHandler struct {
 	Hash       string
@@ -36,15 +42,29 @@ func NewBetCommand() *cli.Command {
 				},
 				Action: func(c *cli.Context) error {
 					h.Repository.UseProxy = c.Bool("proxy")
-					rule := c.Args().Get(0)
-					if rule == "" {
-						return errors.New("rule is empty")
+					if c.Args().Get(0) == "" {
+						return errors.New("rules is empty")
 					}
-					limit, _ := strconv.Atoi(c.Args().Get(1))
-					if limit < 1 {
-						return errors.New("limit not valid")
+					rules := strings.Split(c.Args().Get(0), ",")
+
+					if c.Args().Get(1) == "" {
+						return errors.New("sizes is empty")
 					}
-					if err := h.place(rule, limit); err != nil {
+					sizes := strings.Split(c.Args().Get(1), ",")
+
+					if len(rules) != len(sizes) {
+						return errors.New("rules sizes not match")
+					}
+
+					gene := make([]*BetSerial, len(rules))
+					for i, rule := range rules {
+						gene[i] = &BetSerial{
+							Rule: rule,
+						}
+						gene[i].Size, _ = strconv.Atoi(sizes[i])
+					}
+
+					if err := h.place(gene, 0); err != nil {
 						return cli.Exit(err.Error(), 1)
 					}
 					return nil
@@ -54,7 +74,7 @@ func NewBetCommand() *cli.Command {
 	}
 }
 
-func (h *BetHandler) place(rule string, limit int) error {
+func (h *BetHandler) place(gene []*BetSerial, offset int) error {
 	log.Println("wolf hilo bet place...")
 
 	var hash string
@@ -64,25 +84,41 @@ func (h *BetHandler) place(rule string, limit int) error {
 
 	amount := 0.00000001
 
+	var limit int
+	for i, serial := range gene {
+		if i > offset {
+			continue
+		}
+		limit += serial.Size
+	}
+
 	for {
 		hash, betValue, subNonce, err = h.Repository.Status()
 		if err != nil {
 			return err
 		}
 
+		rule := gene[offset].Rule
+
+		log.Println("hits gene serial", rule, gene[offset].Size, subNonce, limit)
+
 		for i := subNonce; i < limit; i++ {
-			log.Println("play", hash, betValue, subNonce)
+			log.Println("play", hash, rule, betValue, subNonce)
 			betValue, status, err = h.Repository.Play(amount, rule, betValue, subNonce)
 			if err != nil {
-				return h.place(rule, limit)
+				return h.place(gene, offset)
 			}
 
 			if status == 0 {
 				h.Repository.Start(amount, betValue, subNonce)
-				return h.place(rule, limit)
+				return h.place(gene, offset)
 			}
 
 			subNonce++
+		}
+
+		if offset < len(gene)-1 {
+			return h.place(gene, offset+1)
 		}
 
 		h.Repository.Finish()

@@ -83,6 +83,16 @@ func NewHuntCommand() *cli.Command {
 				},
 			},
 			{
+				Name:  "stop",
+				Usage: "",
+				Action: func(c *cli.Context) error {
+					if err := h.stop(); err != nil {
+						return cli.Exit(err.Error(), 1)
+					}
+					return nil
+				},
+			},
+			{
 				Name:  "monitor",
 				Usage: "",
 				Flags: []cli.Flag{
@@ -186,6 +196,11 @@ func (h *HuntHandler) place() error {
 func (h *HuntHandler) start() error {
 	log.Println("wolf dice hunt starting...")
 	return h.Repository.Start()
+}
+
+func (h *HuntHandler) stop() error {
+	log.Println("wolf dice hunt stopping...")
+	return h.Repository.Stop()
 }
 
 func (h *HuntHandler) monitor() error {
