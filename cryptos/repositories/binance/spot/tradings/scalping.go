@@ -29,14 +29,6 @@ type ScalpingRepository struct {
 	TradingviewRepository *tradingviewRepositories.AnalysisRepository
 }
 
-type ScalpingError struct {
-	Message string
-}
-
-func (m *ScalpingError) Error() string {
-	return m.Message
-}
-
 func (r *ScalpingRepository) Symbols() *spotRepositories.SymbolsRepository {
 	if r.SymbolsRepository == nil {
 		r.SymbolsRepository = &spotRepositories.SymbolsRepository{

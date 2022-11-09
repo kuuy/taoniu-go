@@ -6,12 +6,12 @@ import (
 	"github.com/rs/xid"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
-	isolatedModels "taoniu.local/cryptos/models/binance/spot/margin/isolated"
 	"time"
 
 	"github.com/go-redis/redis/v8"
 
 	models "taoniu.local/cryptos/models/binance/spot/analysis/daily/margin"
+	isolatedModels "taoniu.local/cryptos/models/binance/spot/margin/isolated"
 )
 
 type IsolatedRepository struct {

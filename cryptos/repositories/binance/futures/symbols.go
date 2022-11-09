@@ -19,14 +19,6 @@ import (
 	models "taoniu.local/cryptos/models/binance/futures"
 )
 
-type SymbolsError struct {
-	Message string
-}
-
-func (m *SymbolsError) Error() string {
-	return m.Message
-}
-
 type SymbolsRepository struct {
 	Db  *gorm.DB
 	Rdb *redis.Client
@@ -152,7 +144,7 @@ func (r *SymbolsRepository) Price(symbol string) (float64, error) {
 	).Result()
 	for i := 0; i < len(fields); i++ {
 		if data[i] == nil {
-			return 0, &SymbolsError{"price not exists"}
+			return 0, errors.New("price not exists")
 		}
 	}
 
@@ -164,7 +156,7 @@ func (r *SymbolsRepository) Price(symbol string) (float64, error) {
 			float64(timestamp),
 			symbol,
 		})
-		return 0, &SymbolsError{"price long time not freshed"}
+		return 0, errors.New("price long time not freshed")
 	}
 
 	return price, nil

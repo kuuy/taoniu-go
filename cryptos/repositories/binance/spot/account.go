@@ -12,14 +12,6 @@ import (
 	binanceModels "taoniu.local/cryptos/models/binance/spot"
 )
 
-type AccountError struct {
-	Message string
-}
-
-func (m *AccountError) Error() string {
-	return m.Message
-}
-
 type AccountRepository struct {
 	Db  *gorm.DB
 	Rdb *redis.Client
@@ -55,7 +47,7 @@ func (r *AccountRepository) Balance(symbol string) (float64, float64, error) {
 	var entity *binanceModels.Symbol
 	result := r.Db.Select([]string{"base_asset", "quote_asset"}).Where("symbol", symbol).Take(&entity)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return 0, 0, &AccountError{"no symbol data"}
+		return 0, 0, errors.New("no symbol data")
 	}
 
 	var balance float64 = 0

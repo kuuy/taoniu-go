@@ -9,14 +9,6 @@ import (
 	config "taoniu.local/cryptos/config/binance/futures"
 )
 
-type AccountError struct {
-	Message string
-}
-
-func (m *AccountError) Error() string {
-	return m.Message
-}
-
 type AccountRepository struct {
 	Db  *gorm.DB
 	Rdb *redis.Client

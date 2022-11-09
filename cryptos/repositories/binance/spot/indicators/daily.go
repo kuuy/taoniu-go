@@ -15,14 +15,6 @@ import (
 	models "taoniu.local/cryptos/models/binance/spot"
 )
 
-type DailyError struct {
-	Message string
-}
-
-func (m *DailyError) Error() string {
-	return m.Message
-}
-
 type DailyRepository struct {
 	Db  *gorm.DB
 	Rdb *redis.Client
@@ -411,7 +403,7 @@ func (r *DailyRepository) Day(timestamp int64) (string, error) {
 	open := utc.Add(duration)
 	last := time.Unix(timestamp, 0)
 	if open.Format("0102") != last.Format("0102") {
-		return "", &DailyError{"timestamp is not today"}
+		return "", errors.New("timestamp is not today")
 	}
 
 	return now.Format("0102"), nil

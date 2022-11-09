@@ -18,14 +18,6 @@ type GridsRepository struct {
 	SymbolsRepository *SymbolsRepository
 }
 
-type GridsError struct {
-	Message string
-}
-
-func (m *GridsError) Error() string {
-	return m.Message
-}
-
 func (r *GridsRepository) Symbols() *SymbolsRepository {
 	if r.SymbolsRepository == nil {
 		r.SymbolsRepository = &SymbolsRepository{
@@ -93,7 +85,7 @@ func (r *GridsRepository) Open(symbol string, amount float64) error {
 		symbol,
 	).Take(&entity)
 	if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return &GridsError{"grid already opened"}
+		return errors.New("grid already opened")
 	}
 	context := r.Symbols().Context(symbol)
 	profitTarget, _ := strconv.ParseFloat(context["profit_target"].(string), 64)
@@ -148,5 +140,5 @@ func (r *GridsRepository) Filter(symbol string, price float64) (*models.Grid, er
 		return entity, nil
 	}
 
-	return nil, &GridsError{"no valid grid"}
+	return nil, errors.New("no valid grid")
 }

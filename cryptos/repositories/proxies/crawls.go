@@ -3,6 +3,7 @@ package proxies
 import (
 	"context"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -15,14 +16,6 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/go-redis/redis/v8"
 )
-
-type CrawlsError struct {
-	Message string
-}
-
-func (m *CrawlsError) Error() string {
-	return m.Message
-}
 
 type CrawlsRepository struct {
 	Db  *gorm.DB
@@ -82,7 +75,13 @@ func (r *CrawlsRepository) Request(source *CrawlSource) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return &CrawlsError{fmt.Sprintf("request error: status[%s] code[%d]", resp.Status, resp.StatusCode)}
+		return errors.New(
+			fmt.Sprintf(
+				"request error: status[%s] code[%d]",
+				resp.Status,
+				resp.StatusCode,
+			),
+		)
 	}
 
 	proxies, err := r.ExtractHtml(resp, source.HtmlRules)
@@ -104,7 +103,7 @@ func (r *CrawlsRepository) ExtractHtml(resp *http.Response, rules *HtmlExtractRu
 
 	var container = doc.Find(rules.Container.Selector).First()
 	if container.Nodes == nil {
-		return nil, &CrawlsError{"container not exists"}
+		return nil, errors.New("container not exists")
 	}
 
 	var proxies []*SocksProxy

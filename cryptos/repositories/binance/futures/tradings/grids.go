@@ -28,14 +28,6 @@ type GridsRepository struct {
 	TradingviewRepository *tradingviewRepositories.AnalysisRepository
 }
 
-type GridsError struct {
-	Message string
-}
-
-func (m *GridsError) Error() string {
-	return m.Message
-}
-
 func (r *GridsRepository) Account() *futuresRepositories.AccountRepository {
 	if r.AccountRepository == nil {
 		r.AccountRepository = &futuresRepositories.AccountRepository{
@@ -96,7 +88,7 @@ func (r *GridsRepository) Flush(symbol string) error {
 		return err
 	}
 	if signal == 0 {
-		return &GridsError{"tradingview no trading signal"}
+		return errors.New("tradingview no trading signal")
 	}
 
 	price, err := r.Symbols().Price(symbol)
@@ -279,13 +271,13 @@ func (r *GridsRepository) FilterGrid(grid *models.Grid, price float64, signal in
 		}
 	}
 	if signal == 1 && entryPrice > 0 && price > entryPrice {
-		return nil, &GridsError{"buy price too high"}
+		return nil, errors.New("buy price too high")
 	}
 	if signal == 2 && (takePrice == 0 || price < takePrice) {
-		return nil, &GridsError{"sell price too low"}
+		return nil, errors.New("sell price too low")
 	}
 	if signal == 2 && len(sellItems) == 0 {
-		return nil, &GridsError{"nothing sell"}
+		return nil, errors.New("nothing sell")
 	}
 
 	return sellItems, nil

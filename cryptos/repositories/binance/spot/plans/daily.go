@@ -15,14 +15,6 @@ import (
 	tradingviewRepositories "taoniu.local/cryptos/repositories/tradingview"
 )
 
-type DailyError struct {
-	Message string
-}
-
-func (m *DailyError) Error() string {
-	return m.Message
-}
-
 type DailyRepository struct {
 	Db                    *gorm.DB
 	Rdb                   *redis.Client
@@ -218,5 +210,5 @@ func (r *DailyRepository) Filter() (*models.Plan, error) {
 		return entity, nil
 	}
 
-	return nil, &DailyError{"no valid plan"}
+	return nil, errors.New("no valid plan")
 }

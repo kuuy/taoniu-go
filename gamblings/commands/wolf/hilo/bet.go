@@ -17,6 +17,7 @@ type BetSerial struct {
 
 type BetHandler struct {
 	Hash       string
+	Amount     float64
 	Repository *repositories.BetRepository
 }
 
@@ -35,12 +36,18 @@ func NewBetCommand() *cli.Command {
 				Name:  "place",
 				Usage: "",
 				Flags: []cli.Flag{
+					&cli.Float64Flag{
+						Name:    "amount",
+						Aliases: []string{"a"},
+						Value:   0.00000001,
+					},
 					&cli.BoolFlag{
 						Name:  "proxy",
 						Value: false,
 					},
 				},
 				Action: func(c *cli.Context) error {
+					h.Amount = c.Float64("amount")
 					h.Repository.UseProxy = c.Bool("proxy")
 					if c.Args().Get(0) == "" {
 						return errors.New("rules is empty")
@@ -82,8 +89,6 @@ func (h *BetHandler) place(gene []*BetSerial, offset int) error {
 	var status, subNonce int
 	var err error
 
-	amount := 0.00000001
-
 	var limit int
 	for i, serial := range gene {
 		if i > offset {
@@ -100,18 +105,18 @@ func (h *BetHandler) place(gene []*BetSerial, offset int) error {
 
 		rule := gene[offset].Rule
 
-		log.Println("hits gene serial", rule, gene[offset].Size, subNonce, limit)
+		log.Println("hits gene serial", rule, h.Amount, gene[offset].Size, subNonce, limit)
 
 		for i := subNonce; i < limit; i++ {
 			log.Println("play", hash, rule, betValue, subNonce)
-			betValue, status, err = h.Repository.Play(amount, rule, betValue, subNonce)
+			betValue, status, err = h.Repository.Play(h.Amount, rule, betValue, subNonce)
 			if err != nil {
 				return h.place(gene, offset)
 			}
 
 			if status == 0 {
-				h.Repository.Start(amount, betValue, subNonce)
-				return h.place(gene, offset)
+				h.Repository.Start(h.Amount, betValue, subNonce)
+				return h.place(gene, 0)
 			}
 
 			subNonce++
@@ -122,7 +127,7 @@ func (h *BetHandler) place(gene []*BetSerial, offset int) error {
 		}
 
 		h.Repository.Finish()
-		h.Repository.Start(amount, betValue, subNonce)
+		h.Repository.Start(0.00000001, betValue, subNonce)
 
 		log.Println("lucky", hash)
 		os.Exit(1)

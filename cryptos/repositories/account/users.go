@@ -12,14 +12,6 @@ type UsersRepository struct {
 	Db *gorm.DB
 }
 
-type UsersError struct {
-	Message string
-}
-
-func (m *UsersError) Error() string {
-	return m.Message
-}
-
 func (r *UsersRepository) Get(email string) *models.User {
 	var entity models.User
 	result := r.Db.Where(
@@ -40,7 +32,7 @@ func (r *UsersRepository) Create(email string, password string) error {
 		email,
 	).Take(&entity)
 	if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return &UsersError{"user already exists"}
+		return errors.New("user already exists")
 	}
 	salt := common.GenerateSalt(16)
 	hashedPassword := common.GeneratePassword(password, salt)

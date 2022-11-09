@@ -2,6 +2,7 @@ package isolated
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/adshao/go-binance/v2"
 	"github.com/go-redis/redis/v8"
@@ -12,14 +13,6 @@ import (
 type AccountRepository struct {
 	Rdb *redis.Client
 	Ctx context.Context
-}
-
-type AccountError struct {
-	Message string
-}
-
-func (m *AccountError) Error() string {
-	return m.Message
 }
 
 func (r *AccountRepository) Flush() error {
@@ -75,7 +68,7 @@ func (r *AccountRepository) Balance(symbol string) (float64, float64, error) {
 	).Result()
 	for i := 0; i < len(fields); i++ {
 		if data[i] == nil {
-			return 0, 0, &AccountError{"price not exists"}
+			return 0, 0, errors.New("price not exists")
 		}
 	}
 	balance, _ := strconv.ParseFloat(data[0].(string), 64)

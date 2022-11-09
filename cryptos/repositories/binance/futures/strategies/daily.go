@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/rs/xid"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/rs/xid"
 	"gorm.io/gorm"
 
 	models "taoniu.local/cryptos/models/binance/futures"

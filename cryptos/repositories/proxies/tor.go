@@ -2,6 +2,7 @@ package proxies
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -14,14 +15,6 @@ import (
 
 	"github.com/go-redis/redis/v8"
 )
-
-type TorError struct {
-	Message string
-}
-
-func (m *TorError) Error() string {
-	return m.Message
-}
 
 type TorRepository struct {
 	Rdb *redis.Client
@@ -100,14 +93,19 @@ func (r *TorRepository) Checker(port int) error {
 		return err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return &TorError{fmt.Sprintf("response status invalid code[%d]", resp.StatusCode)}
+		return errors.New(
+			fmt.Sprintf(
+				"response status invalid code[%d]",
+				resp.StatusCode,
+			),
+		)
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
 	if !strings.Contains(string(body), url) {
-		return &TorError{"response body invalid"}
+		return errors.New("response body invalid")
 	}
 	r.Online(port)
 	r.Rdb.ZRem(r.Ctx, "proxies:tor:checker", port)
@@ -134,7 +132,7 @@ func (r *TorRepository) Cmd(cmd string, want string) error {
 		return err
 	}
 	if !strings.Contains(string(reply), "IPCHANGER API") {
-		return &TorError{"reply not valid"}
+		return errors.New("reply not valid")
 	}
 
 	_, err = conn.Write([]byte(fmt.Sprintf("%s\r\n", cmd)))
@@ -143,7 +141,7 @@ func (r *TorRepository) Cmd(cmd string, want string) error {
 	}
 	_, err = conn.Read(reply)
 	if err != nil {
-		return &TorError{"reply not valid"}
+		return errors.New("reply not valid")
 	}
 
 	return nil
