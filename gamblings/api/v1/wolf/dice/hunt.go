@@ -2,13 +2,12 @@ package dice
 
 import (
 	"context"
+	"github.com/go-chi/chi/v5"
 	"github.com/go-redis/redis/v8"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/go-chi/chi/v5"
 
 	"taoniu.local/gamblings/api"
 	"taoniu.local/gamblings/common"
@@ -41,6 +40,7 @@ func NewHuntRouter() http.Handler {
 	r := chi.NewRouter()
 	r.Get("/", h.Gets)
 	r.Get("/start", h.Start)
+	r.Get("/stop", h.Stop)
 
 	return r
 }
@@ -70,41 +70,55 @@ func (h *HuntHandler) Gets(
 	}
 
 	if r.URL.Query().Get("ipart") != "" {
-		var numbers []int
-		ranges := strings.Split(r.URL.Query().Get("ipart"), "-")
-		if len(ranges) == 2 {
-			min, _ := strconv.Atoi(ranges[0])
-			max, _ := strconv.Atoi(ranges[1])
-			for i := min; i < max; i++ {
-				numbers = append(numbers, i)
-			}
+		if r.URL.Query().Get("ipart")[0] == '%' {
+			values := strings.Split(r.URL.Query().Get("ipart")[1:], ",")
+			divisor, _ := strconv.Atoi(values[0])
+			remainder, _ := strconv.Atoi(values[1])
+			conditions["ipart_mod"] = []int{divisor, remainder}
 		} else {
-			values := strings.Split(r.URL.Query().Get("ipart"), ",")
-			for i := 0; i < len(values); i++ {
-				value, _ := strconv.Atoi(values[i])
-				numbers = append(numbers, value)
+			var numbers []int
+			ranges := strings.Split(r.URL.Query().Get("ipart"), "-")
+			if len(ranges) == 2 {
+				min, _ := strconv.Atoi(ranges[0])
+				max, _ := strconv.Atoi(ranges[1])
+				for i := min; i < max; i++ {
+					numbers = append(numbers, i)
+				}
+			} else {
+				values := strings.Split(r.URL.Query().Get("ipart"), ",")
+				for i := 0; i < len(values); i++ {
+					value, _ := strconv.Atoi(values[i])
+					numbers = append(numbers, value)
+				}
 			}
+			conditions["ipart"] = numbers
 		}
-		conditions["ipart"] = numbers
 	}
 
 	if r.URL.Query().Get("dpart") != "" {
-		var numbers []int
-		ranges := strings.Split(r.URL.Query().Get("dpart"), "-")
-		if len(ranges) == 2 {
-			min, _ := strconv.Atoi(ranges[0])
-			max, _ := strconv.Atoi(ranges[1])
-			for i := min; i < max; i++ {
-				numbers = append(numbers, i)
-			}
+		if r.URL.Query().Get("dpart")[0] == '%' {
+			values := strings.Split(r.URL.Query().Get("dpart")[1:], ",")
+			divisor, _ := strconv.Atoi(values[0])
+			remainder, _ := strconv.Atoi(values[1])
+			conditions["dpart_mod"] = []int{divisor, remainder}
 		} else {
-			values := strings.Split(r.URL.Query().Get("dpart"), ",")
-			for i := 0; i < len(values); i++ {
-				value, _ := strconv.Atoi(values[i])
-				numbers = append(numbers, value)
+			var numbers []int
+			ranges := strings.Split(r.URL.Query().Get("dpart"), "-")
+			if len(ranges) == 2 {
+				min, _ := strconv.Atoi(ranges[0])
+				max, _ := strconv.Atoi(ranges[1])
+				for i := min; i < max; i++ {
+					numbers = append(numbers, i)
+				}
+			} else {
+				values := strings.Split(r.URL.Query().Get("dpart"), ",")
+				for i := 0; i < len(values); i++ {
+					value, _ := strconv.Atoi(values[i])
+					numbers = append(numbers, value)
+				}
 			}
+			conditions["dpart"] = numbers
 		}
-		conditions["dpart"] = numbers
 	}
 
 	if r.URL.Query().Get("is_mirror") == "1" {
@@ -124,9 +138,11 @@ func (h *HuntHandler) Gets(
 		"wolf:hunts",
 		"dice",
 	).Result()
-	if score > 0 {
-		conditions["opentime"] = time.Unix(int64(score), 0)
+	if score == 0 {
+		h.Response.Json([]*HuntInfo{})
+		return
 	}
+	conditions["opentime"] = time.Unix(int64(score), 0)
 
 	hunts := h.Repository.Gets(conditions)
 	data := make([]*HuntInfo, len(hunts))
@@ -148,5 +164,16 @@ func (h *HuntHandler) Start(
 		Writer: w,
 	}
 	h.Repository.Start()
+	h.Response.Json(nil)
+}
+
+func (h *HuntHandler) Stop(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+	h.Response = &api.ResponseHandler{
+		Writer: w,
+	}
+	h.Repository.Stop()
 	h.Response.Json(nil)
 }

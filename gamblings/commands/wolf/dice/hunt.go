@@ -222,41 +222,55 @@ func (h *HuntHandler) monitor() error {
 	}
 
 	if h.HuntCondition.Ipart != "" {
-		var numbers []int
-		ranges := strings.Split(h.HuntCondition.Ipart, "-")
-		if len(ranges) == 2 {
-			min, _ := strconv.Atoi(ranges[0])
-			max, _ := strconv.Atoi(ranges[1])
-			for i := min; i < max; i++ {
-				numbers = append(numbers, i)
-			}
+		if h.HuntCondition.Ipart[0] == '%' {
+			values := strings.Split(h.HuntCondition.Ipart[1:], ",")
+			divisor, _ := strconv.Atoi(values[0])
+			remainder, _ := strconv.Atoi(values[1])
+			conditions["ipart_mod"] = []int{divisor, remainder}
 		} else {
-			values := strings.Split(h.HuntCondition.Ipart, ",")
-			for i := 0; i < len(values); i++ {
-				value, _ := strconv.Atoi(values[i])
-				numbers = append(numbers, value)
+			var numbers []int
+			ranges := strings.Split(h.HuntCondition.Ipart, "-")
+			if len(ranges) == 2 {
+				min, _ := strconv.Atoi(ranges[0])
+				max, _ := strconv.Atoi(ranges[1])
+				for i := min; i < max; i++ {
+					numbers = append(numbers, i)
+				}
+			} else {
+				values := strings.Split(h.HuntCondition.Ipart, ",")
+				for i := 0; i < len(values); i++ {
+					value, _ := strconv.Atoi(values[i])
+					numbers = append(numbers, value)
+				}
 			}
+			conditions["ipart"] = numbers
 		}
-		conditions["ipart"] = numbers
 	}
 
 	if h.HuntCondition.Dpart != "" {
-		var numbers []int
-		ranges := strings.Split(h.HuntCondition.Dpart, "-")
-		if len(ranges) == 2 {
-			min, _ := strconv.Atoi(ranges[0])
-			max, _ := strconv.Atoi(ranges[1])
-			for i := min; i < max; i++ {
-				numbers = append(numbers, i)
-			}
+		if h.HuntCondition.Dpart[0] == '%' {
+			values := strings.Split(h.HuntCondition.Dpart[1:], ",")
+			divisor, _ := strconv.Atoi(values[0])
+			remainder, _ := strconv.Atoi(values[1])
+			conditions["dpart_mod"] = []int{divisor, remainder}
 		} else {
-			values := strings.Split(h.HuntCondition.Dpart, ",")
-			for i := 0; i < len(values); i++ {
-				value, _ := strconv.Atoi(values[i])
-				numbers = append(numbers, value)
+			var numbers []int
+			ranges := strings.Split(h.HuntCondition.Dpart, "-")
+			if len(ranges) == 2 {
+				min, _ := strconv.Atoi(ranges[0])
+				max, _ := strconv.Atoi(ranges[1])
+				for i := min; i < max; i++ {
+					numbers = append(numbers, i)
+				}
+			} else {
+				values := strings.Split(h.HuntCondition.Dpart, ",")
+				for i := 0; i < len(values); i++ {
+					value, _ := strconv.Atoi(values[i])
+					numbers = append(numbers, value)
+				}
 			}
+			conditions["dpart"] = numbers
 		}
-		conditions["dpart"] = numbers
 	}
 
 	if h.HuntCondition.IsMirror {
@@ -276,10 +290,9 @@ func (h *HuntHandler) monitor() error {
 		"wolf:hunts",
 		"dice",
 	).Result()
-	if score == 0 {
-		h.start()
+	if score > 0 {
+		conditions["opentime"] = time.Unix(int64(score), 0)
 	}
-	conditions["opentime"] = time.Unix(int64(score), 0)
 
 	for {
 		hunts := h.Repository.Gets(conditions)

@@ -3,6 +3,7 @@ package dice
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -39,6 +40,14 @@ func (r *HuntRepository) Gets(conditions map[string]interface{}) []*models.Hunt 
 	var hunts []*models.Hunt
 
 	query := r.Db.Select([]string{"hash", "number"})
+	if _, ok := conditions["ipart_mod"]; ok {
+		mod := conditions["ipart_mod"].([]int)
+		query.Where(fmt.Sprintf("ipart %% %d=%d", mod[0], mod[1]))
+	}
+	if _, ok := conditions["dpart_mod"]; ok {
+		mod := conditions["dpart_mod"].([]int)
+		query.Where(fmt.Sprintf("dpart %% %d=%d", mod[0], mod[1]))
+	}
 	if _, ok := conditions["numbers"]; ok {
 		query.Where("number IN ?", conditions["numbers"].([]float64))
 	}
@@ -63,7 +72,7 @@ func (r *HuntRepository) Gets(conditions map[string]interface{}) []*models.Hunt 
 	if _, ok := conditions["opentime"]; ok {
 		query.Where("updated_at > ?", conditions["opentime"].(time.Time))
 	}
-	query.Limit(50).Find(&hunts)
+	query.Order("updated_at desc").Limit(5).Find(&hunts)
 
 	return hunts
 }
@@ -161,6 +170,9 @@ func (r *HuntRepository) IsMirror(ipart string, dpart string) bool {
 }
 
 func (r *HuntRepository) IsRepeate(ipart string, dpart string) bool {
+	if len(dpart) == 1 && dpart[0] != '0' {
+		return false
+	}
 	if ipart != dpart {
 		return false
 	}
