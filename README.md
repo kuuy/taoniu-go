@@ -115,3 +115,5 @@ TTpMqd3SGckaAmuh1v5VuzJEMegRpqkWWQ
 [透明代理入门](https://xtls.github.io/document/level-2/transparent_proxy/transparent_proxy.html#%E9%A6%96%E5%85%88-%E6%88%91%E4%BB%AC%E5%85%88%E8%AF%95%E8%AF%95%E5%81%9A%E5%88%B0%E7%AC%AC%E4%B8%80%E9%98%B6%E6%AE%B5)  
 [安全解析检查](https://dnssec.vs.uni-due.de/)  
 [代理IP](https://github.com/seevik2580/tor-ip-changer)
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://kuuy-super-space-succotash-6v7g5g7wqv34qq6.github.dev/)
