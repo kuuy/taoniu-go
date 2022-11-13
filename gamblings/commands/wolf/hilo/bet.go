@@ -1,12 +1,17 @@
 package hilo
 
 import (
+	"context"
 	"errors"
-	"github.com/urfave/cli/v2"
 	"log"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/go-redis/redis/v8"
+	"github.com/urfave/cli/v2"
+
+	"taoniu.local/gamblings/common"
 	repositories "taoniu.local/gamblings/repositories/wolf/hilo"
 )
 
@@ -16,6 +21,8 @@ type BetSerial struct {
 }
 
 type BetHandler struct {
+	Rdb        *redis.Client
+	Ctx        context.Context
 	Hash       string
 	Amount     float64
 	Repository *repositories.BetRepository
@@ -27,8 +34,14 @@ func NewBetCommand() *cli.Command {
 		Name:  "bet",
 		Usage: "",
 		Before: func(c *cli.Context) error {
-			h = BetHandler{}
-			h.Repository = &repositories.BetRepository{}
+			h = BetHandler{
+				Rdb: common.NewRedis(),
+				Ctx: context.Background(),
+			}
+			h.Repository = &repositories.BetRepository{
+				Rdb: h.Rdb,
+				Ctx: h.Ctx,
+			}
 			return nil
 		},
 		Subcommands: []*cli.Command{

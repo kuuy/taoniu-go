@@ -51,7 +51,10 @@ func NewHuntCommand() *cli.Command {
 				Rdb: h.Rdb,
 				Ctx: h.Ctx,
 			}
-			h.BetRepository = &repositories.BetRepository{}
+			h.BetRepository = &repositories.BetRepository{
+				Rdb: h.Rdb,
+				Ctx: h.Ctx,
+			}
 			return nil
 		},
 		Subcommands: []*cli.Command{
@@ -179,8 +182,8 @@ func (h *HuntHandler) place() error {
 		} else {
 			betValue = 33
 		}
-		log.Println("rule", rule, betValue)
-		hash, result, _, err := h.BetRepository.Place(amount, rule, betValue)
+
+		hash, result, _, err := h.BetRepository.Place("trx", amount, rule, betValue)
 		if err != nil {
 			log.Println("bet error", err)
 			continue
@@ -233,7 +236,7 @@ func (h *HuntHandler) monitor() error {
 			if len(ranges) == 2 {
 				min, _ := strconv.Atoi(ranges[0])
 				max, _ := strconv.Atoi(ranges[1])
-				for i := min; i < max; i++ {
+				for i := min; i <= max; i++ {
 					numbers = append(numbers, i)
 				}
 			} else {
@@ -259,7 +262,7 @@ func (h *HuntHandler) monitor() error {
 			if len(ranges) == 2 {
 				min, _ := strconv.Atoi(ranges[0])
 				max, _ := strconv.Atoi(ranges[1])
-				for i := min; i < max; i++ {
+				for i := min; i <= max; i++ {
 					numbers = append(numbers, i)
 				}
 			} else {

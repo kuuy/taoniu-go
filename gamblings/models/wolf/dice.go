@@ -14,6 +14,8 @@ func NewDice() *Dice {
 func (m *Dice) AutoMigrate(db *gorm.DB) error {
 	db.AutoMigrate(
 		&dice.Hunt{},
+		&dice.Multiple{},
 	)
+	dice.NewBet().AutoMigrate(db)
 	return nil
 }

@@ -1,17 +1,23 @@
 package limbo
 
 import (
+	"context"
 	"errors"
-	"github.com/gammazero/workerpool"
-	"github.com/urfave/cli/v2"
 	"log"
 	"os"
 	"strconv"
 
+	"github.com/gammazero/workerpool"
+	"github.com/go-redis/redis/v8"
+	"github.com/urfave/cli/v2"
+
+	"taoniu.local/gamblings/common"
 	repositories "taoniu.local/gamblings/repositories/wolf/limbo"
 )
 
 type BetHandler struct {
+	Rdb        *redis.Client
+	Ctx        context.Context
 	Repository *repositories.BetRepository
 }
 
@@ -21,8 +27,14 @@ func NewBetCommand() *cli.Command {
 		Name:  "bet",
 		Usage: "",
 		Before: func(c *cli.Context) error {
-			h = BetHandler{}
-			h.Repository = &repositories.BetRepository{}
+			h = BetHandler{
+				Rdb: common.NewRedis(),
+				Ctx: context.Background(),
+			}
+			h.Repository = &repositories.BetRepository{
+				Rdb: h.Rdb,
+				Ctx: h.Ctx,
+			}
 			return nil
 		},
 		Subcommands: []*cli.Command{

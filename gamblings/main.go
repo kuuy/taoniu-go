@@ -20,6 +20,7 @@ func main() {
 			return nil
 		},
 		Commands: []*cli.Command{
+			commands.NewCronCommand(),
 			commands.NewApiCommand(),
 			commands.NewDbCommand(),
 			commands.NewWolfCommand(),

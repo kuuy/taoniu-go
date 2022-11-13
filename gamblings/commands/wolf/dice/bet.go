@@ -1,25 +1,34 @@
 package dice
 
 import (
+	"context"
 	"errors"
+	"github.com/go-redis/redis/v8"
 	"log"
+	"math"
+	"math/rand"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/urfave/cli/v2"
 
 	pool "taoniu.local/gamblings/common"
+	wolfRepositories "taoniu.local/gamblings/repositories/wolf"
 	repositories "taoniu.local/gamblings/repositories/wolf/dice"
 )
 
 type BetHandler struct {
-	Mode           string
-	IPart          string
-	DPart          string
-	Numbers        []float64
-	Repository     *repositories.BetRepository
-	HuntRepository *repositories.HuntRepository
+	Rdb               *redis.Client
+	Ctx               context.Context
+	Mode              string
+	IPart             string
+	DPart             string
+	Numbers           []float64
+	Repository        *repositories.BetRepository
+	HuntRepository    *repositories.HuntRepository
+	AccountRepository *wolfRepositories.AccountRepository
 }
 
 func NewBetCommand() *cli.Command {
@@ -28,10 +37,20 @@ func NewBetCommand() *cli.Command {
 		Name:  "bet",
 		Usage: "",
 		Before: func(c *cli.Context) error {
-			h = BetHandler{}
-			h.Repository = &repositories.BetRepository{}
+			h = BetHandler{
+				Rdb: pool.NewRedis(),
+				Ctx: context.Background(),
+			}
+			h.Repository = &repositories.BetRepository{
+				Rdb: h.Rdb,
+				Ctx: h.Ctx,
+			}
 			h.HuntRepository = &repositories.HuntRepository{
 				Db: pool.NewDB(),
+			}
+			h.AccountRepository = &wolfRepositories.AccountRepository{
+				Rdb: h.Rdb,
+				Ctx: h.Ctx,
 			}
 			return nil
 		},
@@ -76,6 +95,7 @@ func NewBetCommand() *cli.Command {
 					h.IPart = c.String("ipart")
 					h.DPart = c.String("dpart")
 					h.Repository.UseProxy = c.Bool("proxy")
+					h.AccountRepository.UseProxy = c.Bool("proxy")
 					if err := h.place(); err != nil {
 						return cli.Exit(err.Error(), 1)
 					}
@@ -95,13 +115,20 @@ func NewBetCommand() *cli.Command {
 			{
 				Name:  "multiple",
 				Usage: "",
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:  "proxy",
+						Value: false,
+					},
+				},
 				Action: func(c *cli.Context) error {
-					rule := c.Args().Get(0)
-					betValue, _ := strconv.ParseFloat(c.Args().Get(1), 64)
-					if betValue < 2 || betValue > 98 {
-						return errors.New("betValue not valid")
+					amount, _ := strconv.ParseFloat(c.Args().Get(0), 64)
+					if amount < 0.00000001 {
+						return errors.New("amount not valid")
 					}
-					if err := h.multiple(rule, betValue); err != nil {
+					amount = math.Ceil(amount/0.00000001) / math.Ceil(1/0.00000001)
+					h.Repository.UseProxy = c.Bool("proxy")
+					if err := h.multiple(amount); err != nil {
 						return cli.Exit(err.Error(), 1)
 					}
 					return nil
@@ -111,12 +138,72 @@ func NewBetCommand() *cli.Command {
 	}
 }
 
-func (h *BetHandler) multiple(rule string, betValue float64) error {
-	multiple, err := h.Repository.BetRule(rule, betValue)
-	if err != nil {
-		return err
+func (h *BetHandler) multiple(amount float64) error {
+	log.Println("wolf dice multiple bet...")
+
+	amount = math.Ceil(amount*0.001/0.00000001) / math.Ceil(1/0.00000001)
+
+	var profitAmount float64 = 0
+	var lossAmount float64 = 0
+	var winAmount float64 = 0
+	var count = 0
+	var fails = 0
+
+	rules := []string{"under", "over"}
+	for {
+		rand.Seed(time.Now().UnixNano())
+		rand.Shuffle(len(rules), func(i, j int) { rules[i], rules[j] = rules[j], rules[i] })
+		rule := rules[(rand.Intn(571-23)+23)%len(rules)]
+		var betValue float64
+		if rule == "under" {
+			betValue = 67
+		} else {
+			betValue = 33
+		}
+
+		_, _, state, err := h.Repository.Place("trx", amount, rule, betValue)
+		if err != nil {
+			log.Println("bet error", err)
+			continue
+		}
+
+		multiplier, _ := h.Repository.BetRule(rule, betValue)
+
+		if state {
+			winAmount += amount * (multiplier - 1)
+		} else {
+			lossAmount += amount
+			fails++
+		}
+
+		count++
+		profitAmount = winAmount - lossAmount
+
+		if profitAmount > 0 {
+			break
+		}
+
+		if fails >= 3 {
+			amount = math.Ceil(-profitAmount/(3*0.99*(multiplier-1))/0.00000001) / math.Ceil(1/0.00000001)
+			fails = 0
+		}
+
+		time.Sleep(1 * time.Second)
 	}
-	log.Println("multiple", multiple)
+
+	profitAmount = math.Ceil(profitAmount/0.00000001) / math.Ceil(1/0.00000001)
+	winAmount = math.Ceil(winAmount/0.00000001) / math.Ceil(1/0.00000001)
+	lossAmount = math.Ceil(lossAmount/0.00000001) / math.Ceil(1/0.00000001)
+
+	log.Println(
+		"profit",
+		count,
+		strconv.FormatFloat(amount, 'f', -1, 64),
+		strconv.FormatFloat(profitAmount, 'f', -1, 64),
+		strconv.FormatFloat(winAmount, 'f', -1, 64),
+		strconv.FormatFloat(lossAmount, 'f', -1, 64),
+	)
+
 	return nil
 }
 
@@ -369,7 +456,7 @@ func (h *BetHandler) place() error {
 	log.Println("wolf dice bet place...")
 
 	for {
-		hash, result, _, err := h.Repository.Place(0.000001, "under", 98)
+		hash, result, _, err := h.Repository.Place("trx", 0.000001, "under", 98)
 		if err != nil {
 			log.Println("result verify error", err)
 			os.Exit(1)

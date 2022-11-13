@@ -2,21 +2,25 @@ package dice
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"math"
 	"net"
 	"net/http"
 	"strconv"
 	"time"
 
+	"github.com/go-redis/redis/v8"
+
 	"taoniu.local/gamblings/common"
 	config "taoniu.local/gamblings/config/wolf"
 )
 
 type BetRepository struct {
+	Rdb      *redis.Client
+	Ctx      context.Context
 	UseProxy bool
 }
 
@@ -39,14 +43,24 @@ func (r *BetRepository) BetRule(rule string, betValue float64) (float64, error) 
 	return 0, errors.New("rule not supported")
 }
 
-func (r *BetRepository) Place(amount float64, rule string, betValue float64) (string, float64, bool, error) {
+func (r *BetRepository) Place(currency string, amount float64, rule string, betValue float64) (string, float64, bool, error) {
+	mutex := common.NewMutex(
+		r.Rdb,
+		r.Ctx,
+		"locks:wolf:api",
+	)
+	if mutex.Lock(2 * time.Second) {
+		return "", 0, false, errors.New("wolf api locked")
+	}
+	defer mutex.Unlock()
+
 	multiplier, err := r.BetRule(rule, betValue)
 	if err != nil {
 		return "", 0, false, err
 	}
 
 	request := &BetRequest{
-		Currency:   "trx",
+		Currency:   currency,
 		Game:       "dice",
 		Multiplier: strconv.FormatFloat(multiplier, 'f', -1, 64),
 		Amount:     strconv.FormatFloat(amount, 'f', -1, 64),
@@ -91,7 +105,6 @@ func (r *BetRepository) Place(amount float64, rule string, betValue float64) (st
 	json.NewDecoder(resp.Body).Decode(&data)
 
 	if _, ok := data["bet"]; !ok {
-		log.Println("data", data)
 		return "", 0, false, errors.New("bet not exists")
 	}
 

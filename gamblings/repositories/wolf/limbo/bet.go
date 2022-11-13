@@ -2,9 +2,11 @@ package dice
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/go-redis/redis/v8"
 	"log"
 	"net"
 	"net/http"
@@ -16,6 +18,8 @@ import (
 )
 
 type BetRepository struct {
+	Rdb      *redis.Client
+	Ctx      context.Context
 	UseProxy bool
 }
 
@@ -28,6 +32,16 @@ type BetRequest struct {
 }
 
 func (r *BetRepository) Place(request *BetRequest) (string, float64, bool, error) {
+	mutex := common.NewMutex(
+		r.Rdb,
+		r.Ctx,
+		"locks:wolf:api",
+	)
+	if mutex.Lock(2 * time.Second) {
+		return "", 0, false, errors.New("wolf api locked")
+	}
+	defer mutex.Unlock()
+
 	tr := &http.Transport{
 		DisableKeepAlives: true,
 	}

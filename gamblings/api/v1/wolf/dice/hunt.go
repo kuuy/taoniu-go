@@ -2,12 +2,13 @@ package dice
 
 import (
 	"context"
-	"github.com/go-chi/chi/v5"
-	"github.com/go-redis/redis/v8"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-redis/redis/v8"
 
 	"taoniu.local/gamblings/api"
 	"taoniu.local/gamblings/common"
@@ -81,7 +82,7 @@ func (h *HuntHandler) Gets(
 			if len(ranges) == 2 {
 				min, _ := strconv.Atoi(ranges[0])
 				max, _ := strconv.Atoi(ranges[1])
-				for i := min; i < max; i++ {
+				for i := min; i <= max; i++ {
 					numbers = append(numbers, i)
 				}
 			} else {
@@ -107,7 +108,7 @@ func (h *HuntHandler) Gets(
 			if len(ranges) == 2 {
 				min, _ := strconv.Atoi(ranges[0])
 				max, _ := strconv.Atoi(ranges[1])
-				for i := min; i < max; i++ {
+				for i := min; i <= max; i++ {
 					numbers = append(numbers, i)
 				}
 			} else {

@@ -2,6 +2,7 @@ package hilo
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,11 +11,15 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/go-redis/redis/v8"
+
 	"taoniu.local/gamblings/common"
 	config "taoniu.local/gamblings/config/wolf"
 )
 
 type BetRepository struct {
+	Rdb      *redis.Client
+	Ctx      context.Context
 	UseProxy bool
 }
 
@@ -43,6 +48,16 @@ func (r *BetRepository) BetRule(rule string) (float64, float64, error) {
 }
 
 func (r *BetRepository) Status() (string, float64, int, error) {
+	mutex := common.NewMutex(
+		r.Rdb,
+		r.Ctx,
+		"locks:wolf:api",
+	)
+	if mutex.Lock(2 * time.Second) {
+		return "", 0, 0, errors.New("wolf api locked")
+	}
+	defer mutex.Unlock()
+
 	tr := &http.Transport{
 		DisableKeepAlives: true,
 	}
@@ -124,6 +139,16 @@ func (r *BetRepository) Status() (string, float64, int, error) {
 }
 
 func (r *BetRepository) Start(amount float64, betValue float64, subNonce int) (string, float64, error) {
+	mutex := common.NewMutex(
+		r.Rdb,
+		r.Ctx,
+		"locks:wolf:api",
+	)
+	if mutex.Lock(2 * time.Second) {
+		return "", 0, errors.New("wolf api locked")
+	}
+	defer mutex.Unlock()
+
 	tr := &http.Transport{
 		DisableKeepAlives: true,
 	}
@@ -204,6 +229,16 @@ func (r *BetRepository) Start(amount float64, betValue float64, subNonce int) (s
 }
 
 func (r *BetRepository) Finish() error {
+	mutex := common.NewMutex(
+		r.Rdb,
+		r.Ctx,
+		"locks:wolf:api",
+	)
+	if mutex.Lock(2 * time.Second) {
+		return errors.New("wolf api locked")
+	}
+	defer mutex.Unlock()
+
 	tr := &http.Transport{
 		DisableKeepAlives: true,
 	}
@@ -261,6 +296,16 @@ func (r *BetRepository) Finish() error {
 }
 
 func (r *BetRepository) Play(amount float64, rule string, betValue float64, subNonce int) (float64, int, error) {
+	mutex := common.NewMutex(
+		r.Rdb,
+		r.Ctx,
+		"locks:wolf:api",
+	)
+	if mutex.Lock(2 * time.Second) {
+		return 0, 0, errors.New("wolf api locked")
+	}
+	defer mutex.Unlock()
+
 	multiplier, winChance, err := r.BetRule(rule)
 
 	request := &BetRequest{

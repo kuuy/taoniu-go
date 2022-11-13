@@ -12,6 +12,7 @@ func NewDiceCommand() *cli.Command {
 		Subcommands: []*cli.Command{
 			dice.NewHuntCommand(),
 			dice.NewBetCommand(),
+			dice.NewMultipleCommand(),
 		},
 	}
 }
