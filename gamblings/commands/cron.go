@@ -58,10 +58,10 @@ func (h *CronHandler) run() error {
 	c.AddFunc("0 30 * * * *", func() {
 		wolf.Dice().Clean()
 	})
-	c.AddFunc("0 30 7 * * *", func() {
+	c.AddFunc("0 30 7,15 * * *", func() {
 		wolf.Dice().Multiple().Start()
 	})
-	c.AddFunc("0 30 1 * * *", func() {
+	c.AddFunc("0 30 1,13 * * *", func() {
 		wolf.Dice().Multiple().Stop()
 	})
 	c.Start()
