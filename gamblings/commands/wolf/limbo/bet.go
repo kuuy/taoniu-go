@@ -85,8 +85,8 @@ func (h *BetHandler) place(amount float64, multiplier float64) error {
 
 		hash, result, state, err := h.Repository.Place(request)
 		if err != nil {
-			log.Println("result verify error", err)
-			os.Exit(1)
+			log.Println("bet error", err)
+			continue
 		}
 		if state {
 			log.Println("lucky", hash, result)

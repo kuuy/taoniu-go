@@ -55,13 +55,13 @@ func (h *CronHandler) run() error {
 	}
 
 	c := cron.New()
-	c.AddFunc("0 30 * * * *", func() {
+	c.AddFunc("30 2 * * *", func() {
 		wolf.Dice().Clean()
 	})
-	c.AddFunc("0 30 7,15 * * *", func() {
+	c.AddFunc("30 7,15,19 * * *", func() {
 		wolf.Dice().Multiple().Start()
 	})
-	c.AddFunc("0 30 1,13 * * *", func() {
+	c.AddFunc("30 1,11,22 * * *", func() {
 		wolf.Dice().Multiple().Stop()
 	})
 	c.Start()

@@ -47,7 +47,7 @@ func (r *BetRepository) Place(request *BetRequest) (string, float64, bool, error
 	}
 	if r.UseProxy {
 		session := &common.ProxySession{
-			Proxy: "socks5://127.0.0.1:1080?timeout=5s",
+			Proxy: "socks5://127.0.0.1:1080?timeout=2s",
 		}
 		tr.DialContext = session.DialContext
 	} else {
@@ -56,7 +56,7 @@ func (r *BetRepository) Place(request *BetRequest) (string, float64, bool, error
 	}
 	httpClient := &http.Client{
 		Transport: tr,
-		Timeout:   5 * time.Second,
+		Timeout:   2 * time.Second,
 	}
 
 	body, _ := json.Marshal(request)

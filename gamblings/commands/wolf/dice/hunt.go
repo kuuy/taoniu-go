@@ -2,6 +2,7 @@ package dice
 
 import (
 	"context"
+	"errors"
 	"log"
 	"math/rand"
 	"os"
@@ -156,21 +157,32 @@ func NewHuntCommand() *cli.Command {
 func (h *HuntHandler) place() error {
 	log.Println("wolf dice hunt place...")
 
+	var score float64
+
 	wp := workerpool.New(5)
 	defer wp.StopWait()
 
+	currency := "trx"
 	amount := 0.00000001
 	rules := []string{"under", "over"}
+
 	for {
-		timestamp := time.Now().Unix()
-		score, _ := h.Rdb.ZScore(
+		score, _ = h.Rdb.ZScore(
 			h.Ctx,
 			"wolf:hunts",
 			"dice",
 		).Result()
-		if int64(score) < timestamp-1800 {
-			log.Println("hunt not start")
-			break
+		if int64(score) == 0 {
+			return errors.New("hunt not start")
+		}
+
+		score, _ = h.Rdb.ZScore(
+			h.Ctx,
+			"wolf:multiple",
+			"dice",
+		).Result()
+		if int64(score) > 0 {
+			return errors.New("bet multiple started")
 		}
 
 		rand.Seed(time.Now().UnixNano())
@@ -183,7 +195,7 @@ func (h *HuntHandler) place() error {
 			betValue = 33
 		}
 
-		hash, result, _, err := h.BetRepository.Place("trx", amount, rule, betValue)
+		hash, result, _, err := h.BetRepository.Place(currency, amount, rule, betValue)
 		if err != nil {
 			log.Println("bet error", err)
 			continue

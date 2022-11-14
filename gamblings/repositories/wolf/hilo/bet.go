@@ -323,7 +323,7 @@ func (r *BetRepository) Play(amount float64, rule string, betValue float64, subN
 	}
 	if r.UseProxy {
 		session := &common.ProxySession{
-			Proxy: "socks5://127.0.0.1:1080?timeout=5s",
+			Proxy: "socks5://127.0.0.1:1080?timeout=2s",
 		}
 		tr.DialContext = session.DialContext
 	} else {
@@ -333,7 +333,7 @@ func (r *BetRepository) Play(amount float64, rule string, betValue float64, subN
 
 	httpClient := &http.Client{
 		Transport: tr,
-		Timeout:   5 * time.Second,
+		Timeout:   2 * time.Second,
 	}
 
 	body, _ := json.Marshal(request)
