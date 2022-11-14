@@ -190,9 +190,9 @@ func (h *HuntHandler) place() error {
 		rule := rules[(rand.Intn(571-23)+23)%len(rules)]
 		var betValue float64
 		if rule == "under" {
-			betValue = 67
+			betValue = 66.66
 		} else {
-			betValue = 33
+			betValue = 33.33
 		}
 
 		hash, result, _, err := h.BetRepository.Place(currency, amount, rule, betValue)

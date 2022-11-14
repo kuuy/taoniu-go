@@ -165,7 +165,10 @@ func (h *StreamsHandler) append(symbol string) error {
 	h.Rdb.ZAdd(
 		h.Ctx,
 		"binance:futures:streams:symbols",
-		&redis.Z{Score: float64(h.ID), Member: symbol},
+		&redis.Z{
+			Score:  float64(h.ID),
+			Member: symbol,
+		},
 	).Result()
 	h.Symbols = append(h.Symbols, symbol)
 

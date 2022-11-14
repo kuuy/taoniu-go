@@ -93,7 +93,7 @@ func (h *CronHandler) run() error {
 		binance.Spot().Cron().Hourly()
 		binance.Futures().Cron().Hourly()
 	})
-	c.AddFunc("0 30 * * * *", func() {
+	c.AddFunc("30 23 * * *", func() {
 		binance.Spot().Clean()
 	})
 	c.Start()

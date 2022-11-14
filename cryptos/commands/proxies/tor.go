@@ -152,8 +152,8 @@ func (h *TorHandler) flush() error {
 			h.Ctx,
 			"proxies:tor:checker",
 			&redis.Z{
-				float64(timestamp),
-				port,
+				Score:  float64(timestamp),
+				Member: port,
 			},
 		)
 	}

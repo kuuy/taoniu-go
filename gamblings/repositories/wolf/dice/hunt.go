@@ -25,8 +25,8 @@ type HuntRepository struct {
 func (r *HuntRepository) Start() error {
 	timestamp := time.Now().Unix()
 	r.Rdb.ZAdd(r.Ctx, "wolf:hunts", &redis.Z{
-		float64(timestamp),
-		"dice",
+		Score:  float64(timestamp),
+		Member: "dice",
 	})
 	return nil
 }
