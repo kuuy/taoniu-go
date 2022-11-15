@@ -17,6 +17,44 @@ type AnalysisRepository struct {
 	Ctx context.Context
 }
 
+func (r *AnalysisRepository) Count(conditions map[string]interface{}) int64 {
+	var total int64
+	query := r.Db.Model(&models.Analysis{})
+	if _, ok := conditions["exchange"]; ok {
+		query.Where("exchange", conditions["exchange"])
+	}
+	if _, ok := conditions["interval"]; ok {
+		query.Where("interval", conditions["interval"])
+	}
+	query.Count(&total)
+	return total
+}
+
+func (r *AnalysisRepository) Listings(
+	current int,
+	pageSize int,
+	conditions map[string]interface{},
+) []*models.Analysis {
+	offset := (current - 1) * pageSize
+
+	var analysis []*models.Analysis
+	query := r.Db.Select([]string{
+		"id",
+		"symbol",
+		"summary",
+		"updated_at",
+	})
+	if _, ok := conditions["exchange"]; ok {
+		query.Where("exchange", conditions["exchange"])
+	}
+	if _, ok := conditions["interval"]; ok {
+		query.Where("interval", conditions["interval"])
+	}
+	query.Order("created_at desc")
+	query.Offset(offset).Limit(pageSize).Find(&analysis)
+	return analysis
+}
+
 func (r *AnalysisRepository) Signal(symbol string) (int64, bool, error) {
 	var entity models.Analysis
 	result := r.Db.Where(

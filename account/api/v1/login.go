@@ -1,12 +1,15 @@
-package account
+package v1
 
 import (
-	"github.com/go-chi/chi/v5"
-	"gorm.io/gorm"
 	"net/http"
-	"taoniu.local/cryptos/api"
-	"taoniu.local/cryptos/common"
-	repositories "taoniu.local/cryptos/repositories/account"
+
+	"gorm.io/gorm"
+
+	"github.com/go-chi/chi/v5"
+
+	"taoniu.local/account/api"
+	"taoniu.local/account/common"
+	repositories "taoniu.local/account/repositories"
 )
 
 type LoginHandler struct {
@@ -49,8 +52,8 @@ func (h *LoginHandler) Token() *repositories.TokenRepository {
 }
 
 func (h *LoginHandler) Do(
-	w http.ResponseWriter,
-	r *http.Request,
+		w http.ResponseWriter,
+		r *http.Request,
 ) {
 	h.Response = &api.ResponseHandler{
 		Writer: w,

@@ -1,10 +1,10 @@
-package account
+package v1
 
 import (
 	"github.com/go-chi/chi/v5"
 	"net/http"
-	"taoniu.local/cryptos/api"
-	repositories "taoniu.local/cryptos/repositories/account"
+	"taoniu.local/account/api"
+	repositories "taoniu.local/account/repositories"
 )
 
 type TokenHandler struct {

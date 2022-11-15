@@ -1,9 +1,9 @@
-package account
+package v1
 
 import (
 	"github.com/go-chi/chi/v5"
 	"net/http"
-	"taoniu.local/cryptos/api"
+	"taoniu.local/account/api"
 )
 
 type LogoutHandler struct{}

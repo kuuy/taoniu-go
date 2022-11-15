@@ -4,8 +4,8 @@ import (
 	"errors"
 	"github.com/rs/xid"
 	"gorm.io/gorm"
-	"taoniu.local/cryptos/common"
-	models "taoniu.local/cryptos/models/account"
+	"taoniu.local/account/common"
+	"taoniu.local/account/models"
 )
 
 type UsersRepository struct {
