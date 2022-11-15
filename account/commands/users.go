@@ -1,4 +1,4 @@
-package account
+package commands
 
 import (
 	"context"
@@ -7,8 +7,8 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/urfave/cli/v2"
 	"log"
-	pool "taoniu.local/cryptos/common"
-	repositories "taoniu.local/cryptos/repositories/account"
+	pool "taoniu.local/account/common"
+	repositories "taoniu.local/account/repositories"
 )
 
 type UsersHandler struct {

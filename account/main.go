@@ -22,6 +22,7 @@ func main() {
 		Commands: []*cli.Command{
 			commands.NewApiCommand(),
 			commands.NewDbCommand(),
+			commands.NewUsersCommand(),
 		},
 		Version: "0.0.0",
 	}
