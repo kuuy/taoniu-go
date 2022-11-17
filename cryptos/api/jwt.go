@@ -23,7 +23,11 @@ func Authenticator(next http.Handler) http.Handler {
 		repository := &repositories.TokenRepository{}
 		uid, err := repository.Uid(bearer[7:])
 		if err != nil {
-			response.Error(http.StatusForbidden, 403, "access not valid")
+			if uid != "" {
+				response.Error(http.StatusUnauthorized, 401, err.Error())
+			} else {
+				response.Error(http.StatusForbidden, 403, "access not allowed")
+			}
 			return
 		}
 		r.Header.Set("uid", uid)

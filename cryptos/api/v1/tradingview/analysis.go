@@ -2,12 +2,10 @@ package tradingview
 
 import (
 	"context"
-	"net/http"
-	"strconv"
-	"time"
-
 	"github.com/go-chi/chi/v5"
 	"gorm.io/datatypes"
+	"net/http"
+	"strconv"
 
 	"taoniu.local/cryptos/api"
 	"taoniu.local/cryptos/common"
@@ -23,7 +21,7 @@ type AnalysisInfo struct {
 	ID        string            `json:"id"`
 	Symbol    string            `json:"symbol"`
 	Summary   datatypes.JSONMap `json:"summary"`
-	UpdatedAt time.Time         `json:"updated_at"`
+	Timestamp int64             `json:"timestamp"`
 }
 
 func NewAnalysisRouter() http.Handler {
@@ -89,7 +87,7 @@ func (h *AnalysisHandler) Listings(
 			ID:        item.ID,
 			Symbol:    item.Symbol,
 			Summary:   item.Summary,
-			UpdatedAt: item.UpdatedAt,
+			Timestamp: item.UpdatedAt.Unix(),
 		}
 	}
 

@@ -83,7 +83,7 @@ func (r *TokenRepository) Uid(tokenString string) (string, error) {
 	uid, _ := token.Get("uid")
 	exp, _ := token.Get("exp")
 	if now.Unix() > exp.(*jwt.NumericDate).Unix() {
-		return "", errors.New("token has been expired")
+		return uid.(string), errors.New("token has been expired")
 	}
 
 	return uid.(string), nil

@@ -43,14 +43,18 @@ func (h *TokenHandler) Refresh(
 	r.ParseMultipartForm(1024)
 
 	if r.Form.Get("refresh_token") == "" {
-		h.Response.Error(http.StatusForbidden, 1004, "refresh token is empty")
+		h.Response.Error(http.StatusForbidden, 1004, "token is empty")
 		return
 	}
 
 	refreshToken := r.Form.Get("refresh_token")
 	uid, err := h.Token().Uid(refreshToken)
 	if err != nil {
-		h.Response.Error(http.StatusForbidden, 403, "refresh token not valid")
+		if uid != "" {
+			h.Response.Error(http.StatusForbidden, 401, err.Error())
+		} else {
+			h.Response.Error(http.StatusForbidden, 403, "token not valid")
+		}
 		return
 	}
 
