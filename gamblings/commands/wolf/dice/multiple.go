@@ -6,7 +6,6 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/urfave/cli/v2"
 	"log"
-
 	"taoniu.local/gamblings/common"
 	repositories "taoniu.local/gamblings/repositories/wolf/dice"
 )
@@ -145,7 +144,7 @@ func (h *MultipleHandler) stop() error {
 }
 
 func (h *MultipleHandler) test() error {
-	log.Println("wolf dice bet multiple monitor...")
+	log.Println("wolf dice bet multiple test...")
 	rule := h.Repository.Switch(10)
 	log.Println("rule", rule)
 	return nil
