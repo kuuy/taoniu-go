@@ -15,6 +15,8 @@ func (m *Dice) AutoMigrate(db *gorm.DB) error {
 	db.AutoMigrate(
 		&dice.Hunt{},
 		&dice.Multiple{},
+		&dice.Plan{},
+		&dice.Hell{},
 	)
 	dice.NewBet().AutoMigrate(db)
 	return nil

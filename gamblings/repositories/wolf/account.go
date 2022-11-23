@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net"
 	"net/http"
 	"strconv"
@@ -23,16 +24,6 @@ type AccountRepository struct {
 }
 
 func (r *AccountRepository) Balance(currency string) (float64, error) {
-	mutex := common.NewMutex(
-		r.Rdb,
-		r.Ctx,
-		"locks:wolf:api",
-	)
-	if mutex.Lock(2 * time.Second) {
-		return 0, errors.New("wolf api locked")
-	}
-	defer mutex.Unlock()
-
 	tr := &http.Transport{
 		DisableKeepAlives: true,
 	}
@@ -91,11 +82,16 @@ func (r *AccountRepository) Balance(currency string) (float64, error) {
 		balances,
 	)
 
+	if currency == "" {
+		return 0, nil
+	}
+
 	if _, ok := balances[currency]; !ok {
 		return 0, errors.New("currency not exists")
 	}
 
 	balance, _ := strconv.ParseFloat(balances[currency], 64)
+	balance = math.Round(balance*10000000000) / 10000000000
 
 	return balance, nil
 }

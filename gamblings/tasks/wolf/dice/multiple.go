@@ -8,14 +8,10 @@ type MultipleTask struct {
 	Repository *repositories.MultipleRepository
 }
 
-func (t *MultipleTask) Start() error {
-	return t.Repository.Start()
+func (t *MultipleTask) Apply(currency string) error {
+	return t.Repository.Apply(currency)
 }
 
-func (t *MultipleTask) Stop() error {
-	return t.Repository.Stop()
-}
-
-func (t *MultipleTask) Clean() error {
-	return t.Repository.Clean()
+func (t *MultipleTask) Rescue() error {
+	return t.Repository.Rescue()
 }

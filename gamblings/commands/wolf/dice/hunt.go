@@ -2,15 +2,12 @@ package dice
 
 import (
 	"context"
-	"errors"
 	"log"
-	"math/rand"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/gammazero/workerpool"
 	"github.com/go-redis/redis/v8"
 	"github.com/urfave/cli/v2"
 
@@ -29,11 +26,12 @@ type HuntCondition struct {
 }
 
 type HuntHandler struct {
-	Rdb           *redis.Client
-	Ctx           context.Context
-	HuntCondition *HuntCondition
-	Repository    *repositories.HuntRepository
-	BetRepository *repositories.BetRepository
+	Rdb             *redis.Client
+	Ctx             context.Context
+	HuntCondition   *HuntCondition
+	Repository      *repositories.HuntRepository
+	BetRepository   *repositories.BetRepository
+	PlansRepository *repositories.PlansRepository
 }
 
 func NewHuntCommand() *cli.Command {
@@ -53,6 +51,11 @@ func NewHuntCommand() *cli.Command {
 				Ctx: h.Ctx,
 			}
 			h.BetRepository = &repositories.BetRepository{
+				Rdb: h.Rdb,
+				Ctx: h.Ctx,
+			}
+			h.PlansRepository = &repositories.PlansRepository{
+				Db:  common.NewDB(),
 				Rdb: h.Rdb,
 				Ctx: h.Ctx,
 			}
@@ -156,56 +159,7 @@ func NewHuntCommand() *cli.Command {
 
 func (h *HuntHandler) place() error {
 	log.Println("wolf dice hunt place...")
-
-	var score float64
-
-	wp := workerpool.New(5)
-	defer wp.StopWait()
-
-	currency := "trx"
-	amount := 0.00000001
-	rules := []string{"under", "over"}
-
-	for {
-		score, _ = h.Rdb.ZScore(
-			h.Ctx,
-			"wolf:hunts",
-			"dice",
-		).Result()
-		if int64(score) == 0 {
-			return errors.New("hunt not start")
-		}
-
-		score, _ = h.Rdb.ZScore(
-			h.Ctx,
-			"wolf:multiple",
-			"dice",
-		).Result()
-		if int64(score) > 0 {
-			return errors.New("bet multiple started")
-		}
-
-		rand.Seed(time.Now().UnixNano())
-		rand.Shuffle(len(rules), func(i, j int) { rules[i], rules[j] = rules[j], rules[i] })
-		rule := rules[(rand.Intn(571-23)+23)%len(rules)]
-		var betValue float64
-		if rule == "under" {
-			betValue = 66.66
-		} else {
-			betValue = 33.33
-		}
-
-		hash, result, _, err := h.BetRepository.Place(currency, amount, rule, betValue)
-		if err != nil {
-			log.Println("bet error", err)
-			continue
-		}
-		wp.Submit(func() {
-			h.Repository.Handing(hash, result)
-		})
-	}
-
-	return nil
+	return h.Repository.Place()
 }
 
 func (h *HuntHandler) start() error {

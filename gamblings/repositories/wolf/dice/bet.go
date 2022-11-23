@@ -33,31 +33,55 @@ type BetRequest struct {
 	BetValue   string `json:"bet_value"`
 }
 
-func (r *BetRepository) BetRule(rule string, betValue float64) (float64, error) {
+func (r *BetRepository) BetValue(rule string, multiplier float64) float64 {
 	if rule == "under" {
-		return math.Round(990000/betValue) / 10000, nil
+		return math.Round(9900/multiplier) / 100
 	}
+
 	if rule == "over" {
-		return math.Round(990000/(100-betValue-0.01)) / 10000, nil
+		return 99.99 - math.Round(9900/multiplier)/100
 	}
-	return 0, errors.New("rule not supported")
+
+	return 0
 }
 
-func (r *BetRepository) Place(currency string, amount float64, rule string, betValue float64) (string, float64, bool, error) {
+func (r *BetRepository) Multiplier(rule string, betValue float64) float64 {
+	if rule == "under" {
+		return math.Round(990000/betValue) / 10000
+	}
+
+	if rule == "over" {
+		return math.Round(990000/(100-betValue-0.01)) / 10000
+	}
+
+	return 0
+}
+
+func (r *BetRepository) Start() {
+	timestamp := time.Now().Unix()
+	r.Rdb.ZAdd(r.Ctx, "wolf:bet", &redis.Z{
+		Score:  float64(timestamp),
+		Member: "dice",
+	})
+}
+
+func (r *BetRepository) Stop() {
+	r.Rdb.ZRem(r.Ctx, "wolf:bet", "dice")
+}
+
+func (r *BetRepository) Place(currency string, rule string, amount float64, multiplier float64) (string, float64, float64, error) {
 	mutex := common.NewMutex(
 		r.Rdb,
 		r.Ctx,
 		"locks:wolf:api",
 	)
 	if mutex.Lock(2 * time.Second) {
-		return "", 0, false, errors.New("wolf api locked")
+		return "", 0, 0, errors.New("wolf api locked")
 	}
 	defer mutex.Unlock()
 
-	multiplier, err := r.BetRule(rule, betValue)
-	if err != nil {
-		return "", 0, false, err
-	}
+	betValue := r.BetValue(rule, multiplier)
+	multiplier = r.Multiplier(rule, betValue)
 
 	request := &BetRequest{
 		Currency:   currency,
@@ -93,39 +117,36 @@ func (r *BetRepository) Place(currency string, amount float64, rule string, betV
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", config.API_TOKEN))
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		return "", 0, false, err
+		return "", 0, 0, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", 0, false, errors.New(fmt.Sprintf("request error: status[%s] code[%d]", resp.Status, resp.StatusCode))
+		return "", 0, 0, errors.New(fmt.Sprintf("request error: status[%s] code[%d]", resp.Status, resp.StatusCode))
 	}
 
 	var data map[string]interface{}
 	json.NewDecoder(resp.Body).Decode(&data)
 
 	if _, ok := data["bet"]; !ok {
-		return "", 0, false, errors.New("bet not exists")
+		return "", 0, 0, errors.New("bet not exists")
 	}
 
 	bet := data["bet"].(map[string]interface{})
 	if _, ok := bet["hash"]; !ok {
-		return "", 0, false, errors.New("hash not exists")
-	}
-	if _, ok := bet["state"]; !ok {
-		return "", 0, false, errors.New("state not exists")
+		return "", 0, 0, errors.New("hash not exists")
 	}
 	if _, ok := bet["result_value"]; !ok {
-		return "", 0, false, errors.New("result value not exists")
+		return "", 0, 0, errors.New("result value not exists")
+	}
+	if _, ok := bet["profit"]; !ok {
+		return "", 0, 0, errors.New("state not exists")
 	}
 
 	hash := bet["hash"].(string)
-	state := false
-	if bet["state"].(string) == "win" {
-		state = true
-	}
 
 	result, _ := strconv.ParseFloat(bet["result_value"].(string), 64)
+	profit, _ := strconv.ParseFloat(bet["profit"].(string), 64)
 
-	return hash, result, state, nil
+	return hash, result, profit, nil
 }

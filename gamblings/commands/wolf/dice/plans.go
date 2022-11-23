@@ -11,23 +11,23 @@ import (
 	repositories "taoniu.local/gamblings/repositories/wolf/dice"
 )
 
-type MultipleHandler struct {
+type PlansHandler struct {
 	Rdb        *redis.Client
 	Ctx        context.Context
-	Repository *repositories.MultipleRepository
+	Repository *repositories.PlansRepository
 }
 
-func NewMultipleCommand() *cli.Command {
-	var h MultipleHandler
+func NewPlansCommand() *cli.Command {
+	var h PlansHandler
 	return &cli.Command{
-		Name:  "multiple",
+		Name:  "plans",
 		Usage: "",
 		Before: func(c *cli.Context) error {
-			h = MultipleHandler{
+			h = PlansHandler{
 				Rdb: common.NewRedis(),
 				Ctx: context.Background(),
 			}
-			h.Repository = &repositories.MultipleRepository{
+			h.Repository = &repositories.PlansRepository{
 				Db:  common.NewDB(),
 				Rdb: h.Rdb,
 				Ctx: h.Ctx,
@@ -35,6 +35,23 @@ func NewMultipleCommand() *cli.Command {
 			return nil
 		},
 		Subcommands: []*cli.Command{
+			{
+				Name:  "place",
+				Usage: "",
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:  "proxy",
+						Value: false,
+					},
+				},
+				Action: func(c *cli.Context) error {
+					h.Repository.UseProxy = c.Bool("proxy")
+					if err := h.place(); err != nil {
+						return cli.Exit(err.Error(), 1)
+					}
+					return nil
+				},
+			},
 			{
 				Name:  "apply",
 				Usage: "",
@@ -51,23 +68,6 @@ func NewMultipleCommand() *cli.Command {
 					}
 					h.Repository.UseProxy = c.Bool("proxy")
 					if err := h.apply(currency); err != nil {
-						return cli.Exit(err.Error(), 1)
-					}
-					return nil
-				},
-			},
-			{
-				Name:  "place",
-				Usage: "",
-				Flags: []cli.Flag{
-					&cli.BoolFlag{
-						Name:  "proxy",
-						Value: false,
-					},
-				},
-				Action: func(c *cli.Context) error {
-					h.Repository.UseProxy = c.Bool("proxy")
-					if err := h.place(); err != nil {
 						return cli.Exit(err.Error(), 1)
 					}
 					return nil
@@ -117,36 +117,37 @@ func NewMultipleCommand() *cli.Command {
 	}
 }
 
-func (h *MultipleHandler) apply(currency string) error {
-	log.Println("wolf dice bet multiple apply...")
+func (h *PlansHandler) apply(currency string) error {
+	log.Println("wolf dice bet plan apply...")
 	return h.Repository.Apply(currency)
 }
 
-func (h *MultipleHandler) place() error {
-	log.Println("wolf dice multiple place...")
+func (h *PlansHandler) place() error {
+	log.Println("wolf dice plan place...")
 	return h.Repository.Place()
 }
 
-func (h *MultipleHandler) rescue() error {
-	log.Println("wolf dice bet multiple rescue...")
+func (h *PlansHandler) rescue() error {
+	log.Println("wolf dice bet plans rescue...")
 	return h.Repository.Rescue()
 }
 
-func (h *MultipleHandler) start() error {
-	log.Println("wolf dice bet multiple starting...")
+func (h *PlansHandler) start() error {
+	log.Println("wolf dice bet plan starting...")
 	h.Repository.Start()
 	return nil
 }
 
-func (h *MultipleHandler) stop() error {
-	log.Println("wolf dice bet multiple stopping...")
+func (h *PlansHandler) stop() error {
+	log.Println("wolf dice bet plan stopping...")
 	h.Repository.Stop()
 	return nil
 }
 
-func (h *MultipleHandler) test() error {
-	log.Println("wolf dice bet multiple monitor...")
-	rule := h.Repository.Switch(10)
-	log.Println("rule", rule)
+func (h *PlansHandler) test() error {
+	log.Println("wolf dice bet plan test...")
+	rule := "over"
+	betCount := 6
+	rule = h.Repository.Switch(rule, betCount)
 	return nil
 }

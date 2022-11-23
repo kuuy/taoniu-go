@@ -13,6 +13,8 @@ func NewDiceCommand() *cli.Command {
 			dice.NewHuntCommand(),
 			dice.NewBetCommand(),
 			dice.NewMultipleCommand(),
+			dice.NewPlansCommand(),
+			dice.NewHellsCommand(),
 		},
 	}
 }

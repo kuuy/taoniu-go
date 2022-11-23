@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand"
 	"strconv"
 	"strings"
 	"time"
@@ -17,9 +18,22 @@ import (
 )
 
 type HuntRepository struct {
-	Db  *gorm.DB
-	Rdb *redis.Client
-	Ctx context.Context
+	Db            *gorm.DB
+	Rdb           *redis.Client
+	Ctx           context.Context
+	UseProxy      bool
+	BetRepository *BetRepository
+}
+
+func (r *HuntRepository) Bet() *BetRepository {
+	if r.BetRepository == nil {
+		r.BetRepository = &BetRepository{
+			Rdb:      r.Rdb,
+			Ctx:      r.Ctx,
+			UseProxy: r.UseProxy,
+		}
+	}
+	return r.BetRepository
 }
 
 func (r *HuntRepository) Start() error {
@@ -75,6 +89,45 @@ func (r *HuntRepository) Gets(conditions map[string]interface{}) []*models.Hunt 
 	query.Order("updated_at desc").Limit(5).Find(&hunts)
 
 	return hunts
+}
+
+func (r *HuntRepository) Place() error {
+	currency := "trx"
+	amount := 0.00000001
+	multiplier := 1.4851
+	rules := []string{"under", "over"}
+
+	for {
+		score, _ := r.Rdb.ZScore(
+			r.Ctx,
+			"wolf:hunts",
+			"dice",
+		).Result()
+		if int64(score) == 0 {
+			return errors.New("hunt not start")
+		}
+
+		strategy, _ := r.Rdb.ZScore(
+			r.Ctx,
+			"wolf:strategies",
+			"dice",
+		).Result()
+		if int64(strategy) != 0 {
+			return errors.New("strategy not finished")
+		}
+
+		rand.Seed(time.Now().UnixNano())
+		rand.Shuffle(len(rules), func(i, j int) { rules[i], rules[j] = rules[j], rules[i] })
+		rule := rules[(rand.Intn(571-23)+23)%len(rules)]
+
+		hash, result, _, err := r.Bet().Place(currency, rule, amount, multiplier)
+		if err != nil {
+			return err
+		}
+		r.Handing(hash, result)
+	}
+
+	return nil
 }
 
 func (r *HuntRepository) Handing(hash string, number float64) error {

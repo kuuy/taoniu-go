@@ -9,6 +9,9 @@ import (
 func NewDiceRouter() http.Handler {
 	r := chi.NewRouter()
 	r.Mount("/hunt", dice.NewHuntRouter())
+	r.Mount("/plans", dice.NewPlansRouter())
+	r.Mount("/hells", dice.NewHellsRouter())
+	r.Mount("/multiple", dice.NewMultipleRouter())
 
 	return r
 }
