@@ -116,8 +116,8 @@ func (r *HellsRepository) Apply(currency string) error {
 
 		rule := rules[(rand.Intn(313-13)+13)%len(rules)]
 		multiplier := 4.95
-		targetBalance := math.Round(balance*10000000000*1.00028) / 10000000000
-		stopBalance := math.Round(balance*10000000000*0.998) / 10000000000
+		targetBalance := math.Round(balance*10000000000*1.00018) / 10000000000
+		stopBalance := math.Round(balance*10000000000*0.9986) / 10000000000
 
 		if stopBalance < balance-10 {
 			targetBalance = math.Round(balance*10000000000+20000000000) / 10000000000

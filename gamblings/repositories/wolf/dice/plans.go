@@ -116,7 +116,8 @@ func (r *PlansRepository) Apply(currency string) error {
 
 		rule := rules[(rand.Intn(313-13)+13)%len(rules)]
 		multiplier := 3.2174
-		targetBalance := math.Round(balance*10000000000*1.00015) / 10000000000
+
+		targetBalance := math.Round(balance*10000000000*1.000012) / 10000000000
 		stopBalance := math.Round(balance*10000000000*0.998) / 10000000000
 
 		if stopBalance < balance-10 {
@@ -289,6 +290,20 @@ func (r *PlansRepository) Place() error {
 			return errors.New("plan not start")
 		}
 
+		if plan.Profit >= 0 && plan.UpdatedAt.Unix()-plan.CreatedAt.Unix() > 300 {
+			plan.Status = 2
+			r.Db.Model(&models.Plan{ID: plan.ID}).Select("*").Updates(plan)
+			r.Stop()
+			return errors.New("plan error timeout")
+		}
+
+		if plan.Profit < 0 && plan.UpdatedAt.Unix()-plan.CreatedAt.Unix() > 900 {
+			plan.Status = 4
+			r.Db.Model(&models.Plan{ID: plan.ID}).Select("*").Updates(plan)
+			r.Stop()
+			return errors.New("plan error serious timeout")
+		}
+
 		hash, result, profit, err := r.Bet().Place(plan.Currency, plan.Rule, plan.Amount, plan.Multiplier)
 		if err != nil {
 			plan.Remark = err.Error()
@@ -345,6 +360,7 @@ func (r *PlansRepository) Place() error {
 		if plan.Balance >= plan.TargetBalance {
 			plan.Status = 2
 			r.Db.Model(&models.Plan{ID: plan.ID}).Select("*").Updates(plan)
+			r.Stop()
 			break
 		}
 

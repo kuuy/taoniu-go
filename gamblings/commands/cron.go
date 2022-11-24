@@ -4,7 +4,9 @@ import (
 	"context"
 	"gorm.io/gorm"
 	"log"
+	"math/rand"
 	"sync"
+	"time"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/robfig/cron/v3"
@@ -55,14 +57,50 @@ func (h *CronHandler) run() error {
 	}
 
 	c := cron.New()
-	c.AddFunc("30 2 * * *", func() {
-		wolf.Dice().Clean()
+	c.AddFunc("@every 5s", func() {
+		wolf.Account().Flush()
 	})
-	c.AddFunc("45 7,15,22 * * *", func() {
-		wolf.Dice().Multiple().Start()
+	c.AddFunc("@every 30s", func() {
+		var err error
+		mask := 7
+		for {
+			if mask == 0 {
+				break
+			}
+
+			rand.Seed(time.Now().UnixNano())
+			i := (rand.Intn(571-23) + 23) % 3
+			if i == 0 && mask&1 == 1 {
+				err = wolf.Dice().Multiple().Apply("usdt")
+				if err != nil {
+					mask ^= 1
+					continue
+				}
+			} else if i == 1 && mask&2 == 2 {
+				err = wolf.Dice().Plans().Apply("usdt")
+				if err != nil {
+					mask ^= 2
+					continue
+				}
+			} else if i == 2 && mask&4 == 4 {
+				err = wolf.Dice().Hells().Apply("usdt")
+				if err != nil {
+					mask ^= 4
+					continue
+				}
+			}
+		}
+	})
+	c.AddFunc("30 2 * * *", func() {
+		wolf.Dice().Multiple().Rescue()
+		wolf.Dice().Plans().Rescue()
+		wolf.Dice().Hells().Rescue()
+	})
+	c.AddFunc("45 7,15 * * *", func() {
+		wolf.Dice().Bet().Start()
 	})
 	c.AddFunc("15 1,11,19 * * *", func() {
-		wolf.Dice().Multiple().Stop()
+		wolf.Dice().Bet().Stop()
 	})
 	c.Start()
 
