@@ -390,8 +390,6 @@ func (r *PlansRepository) Rescue() error {
 	plan.Status = 5
 	r.Db.Model(&models.Plan{ID: plan.ID}).Updates(plan)
 
-	r.Start()
-
 	return nil
 }
 

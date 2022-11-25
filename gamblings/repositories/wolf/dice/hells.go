@@ -378,8 +378,6 @@ func (r *HellsRepository) Rescue() error {
 	hell.Status = 5
 	r.Db.Model(&models.Hell{ID: hell.ID}).Updates(hell)
 
-	r.Start()
-
 	return nil
 }
 
