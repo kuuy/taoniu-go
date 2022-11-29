@@ -1,35 +1,34 @@
-package plans
+package tradings
 
 import (
 	"context"
-	"github.com/go-chi/chi/v5"
 	"net/http"
 	"strconv"
+
+	"github.com/go-chi/chi/v5"
 	"taoniu.local/cryptos/api"
 	"taoniu.local/cryptos/common"
-	repositories "taoniu.local/cryptos/repositories/binance/spot/plans"
+	repositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated/tradings"
 )
 
-type DailyHandler struct {
+type GridsHandler struct {
 	Response   *api.ResponseHandler
-	Repository *repositories.DailyRepository
+	Repository *repositories.GridsRepository
 }
 
-type DailyInfo struct {
+type GridInfo struct {
 	ID              string  `json:"id"`
 	Symbol          string  `json:"symbol"`
-	Side            int     `json:"side"`
-	Price           float64 `json:"price"`
-	Quantity        float64 `json:"quantity"`
-	Amount          float64 `json:"amount"`
+	BuyPrice        float64 `json:"buy_price"`
+	SellPrice       float64 `json:"sell_price"`
 	Status          int     `json:"status"`
 	Timestamp       int64   `json:"timestamp"`
 	TimestampFormat string  `json:"timestamp_fmt"`
 }
 
-func NewDailyRouter() http.Handler {
-	h := DailyHandler{}
-	h.Repository = &repositories.DailyRepository{
+func NewGridsRouter() http.Handler {
+	h := GridsHandler{}
+	h.Repository = &repositories.GridsRepository{
 		Db:  common.NewDB(),
 		Rdb: common.NewRedis(),
 		Ctx: context.Background(),
@@ -41,7 +40,7 @@ func NewDailyRouter() http.Handler {
 	return r
 }
 
-func (h *DailyHandler) Listings(
+func (h *GridsHandler) Listings(
 	w http.ResponseWriter,
 	r *http.Request,
 ) {
@@ -70,19 +69,17 @@ func (h *DailyHandler) Listings(
 	}
 
 	total := h.Repository.Count()
-	plans := h.Repository.Listings(current, pageSize)
-	data := make([]*DailyInfo, len(plans))
-	for i, plan := range plans {
-		data[i] = &DailyInfo{
-			ID:              plan.ID,
-			Symbol:          plan.Symbol,
-			Side:            plan.Side,
-			Price:           plan.Price,
-			Quantity:        plan.Quantity,
-			Amount:          plan.Amount,
-			Status:          plan.Status,
-			Timestamp:       plan.CreatedAt.Unix(),
-			TimestampFormat: common.FormatDatetime(plan.CreatedAt),
+	tradings := h.Repository.Listings(current, pageSize)
+	data := make([]*GridInfo, len(tradings))
+	for i, trade := range tradings {
+		data[i] = &GridInfo{
+			ID:              trade.ID,
+			Symbol:          trade.Symbol,
+			BuyPrice:        trade.BuyPrice,
+			SellPrice:       trade.SellPrice,
+			Status:          trade.Status,
+			Timestamp:       trade.CreatedAt.Unix(),
+			TimestampFormat: common.FormatDatetime(trade.CreatedAt),
 		}
 	}
 

@@ -2,10 +2,11 @@ package tradingview
 
 import (
 	"context"
-	"github.com/go-chi/chi/v5"
-	"gorm.io/datatypes"
 	"net/http"
 	"strconv"
+
+	"github.com/go-chi/chi/v5"
+	"gorm.io/datatypes"
 
 	"taoniu.local/cryptos/api"
 	"taoniu.local/cryptos/common"

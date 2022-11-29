@@ -12,9 +12,9 @@ type TradingGrid struct {
 	SellPrice    float64   `gorm:"not null"`
 	BuyQuantity  float64   `gorm:"not null"`
 	SellQuantity float64   `gorm:"not null"`
-	Status       int64     `gorm:"size:30;not null;index:idx_binance_spot_margin_isolated_tradings_grids_grid_status"`
+	Status       int       `gorm:"size:30;not null;index:idx_binance_spot_margin_isolated_tradings_grids_grid_status"`
 	Remark       string    `gorm:"size:5000;not null"`
-	CreatedAt    time.Time `gorm:"not null"`
+	CreatedAt    time.Time `gorm:"not null;index"`
 	UpdatedAt    time.Time `gorm:"not null"`
 }
 

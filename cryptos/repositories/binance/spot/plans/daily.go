@@ -83,7 +83,7 @@ func (r *DailyRepository) Flush() error {
 	return nil
 }
 
-func (r *DailyRepository) Create(signals map[string]interface{}, side int64) error {
+func (r *DailyRepository) Create(signals map[string]interface{}, side int) error {
 	if _, ok := signals["kdj"]; !ok {
 		return nil
 	}

@@ -126,8 +126,6 @@ func (r *HuntRepository) Place() error {
 		}
 		r.Handing(hash, result)
 	}
-
-	return nil
 }
 
 func (r *HuntRepository) Handing(hash string, number float64) error {

@@ -87,6 +87,36 @@ func (r *GridsRepository) Tradingview() *tradingviewRepositories.AnalysisReposit
 	return r.TradingviewRepository
 }
 
+func (r *GridsRepository) Count() int64 {
+	var total int64
+	r.Db.Model(&models.TradingGrid{}).Count(&total)
+	return total
+}
+
+func (r *GridsRepository) Listings(current int, pageSize int) []*models.TradingGrid {
+	offset := (current - 1) * pageSize
+
+	var trades []*models.TradingGrid
+	r.Db.Select(
+		"id",
+		"symbol",
+		"buy_price",
+		"sell_price",
+		"status",
+		"created_at",
+	).Order(
+		"created_at desc",
+	).Offset(
+		offset,
+	).Limit(
+		pageSize,
+	).Find(
+		&trades,
+	)
+
+	return trades
+}
+
 func (r *GridsRepository) Flush(symbol string) error {
 	signal, _, err := r.Tradingview().Signal(symbol)
 	if err != nil {
@@ -116,8 +146,6 @@ func (r *GridsRepository) Flush(symbol string) error {
 	} else {
 		return r.Sell(grid, sellItems)
 	}
-
-	return nil
 }
 
 func (r *GridsRepository) Buy(grid *spotModels.Grid, price float64, amount float64) error {
@@ -134,7 +162,7 @@ func (r *GridsRepository) Buy(grid *spotModels.Grid, price float64, amount float
 	buyAmount := buyPrice * buyQuantity
 
 	var buyOrderId int64 = 0
-	var status int64 = 0
+	var status = 0
 	var remark = ""
 	if balance < buyAmount || grid.Balance < buyAmount {
 		status = 1
@@ -178,7 +206,7 @@ func (r *GridsRepository) Sell(grid *spotModels.Grid, entities []*models.Trading
 
 		var sellOrderId int64 = 0
 		var err error
-		var status int64 = 2
+		var status = 2
 		var remark = entity.Remark
 		if entity.BuyOrderId == 0 {
 			status = 3
@@ -231,7 +259,7 @@ func (r *GridsRepository) Update() error {
 			continue
 		}
 
-		var status int64
+		status := 0
 		if entity.Status == 0 {
 			if order.Status != "FILLED" {
 				status = 4

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"math"
 	"math/rand"
-	"taoniu.local/gamblings/common"
 	"time"
 
 	"gorm.io/gorm"
@@ -13,6 +12,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/rs/xid"
 
+	"taoniu.local/gamblings/common"
 	models "taoniu.local/gamblings/models/wolf/dice"
 	repositories "taoniu.local/gamblings/repositories/wolf"
 )
@@ -117,8 +117,8 @@ func (r *PlansRepository) Apply(currency string) error {
 		rule := rules[(rand.Intn(313-13)+13)%len(rules)]
 		multiplier := 3.2174
 
-		targetBalance := math.Round(balance*10000000000*1.000012) / 10000000000
-		stopBalance := math.Round(balance*10000000000*0.998) / 10000000000
+		targetBalance := math.Round(balance*10000000000*1.000003) / 10000000000
+		stopBalance := math.Round(balance*10000000000*0.9989) / 10000000000
 
 		if stopBalance < balance-10 {
 			targetBalance = math.Round(balance*10000000000+20000000000) / 10000000000
@@ -290,14 +290,15 @@ func (r *PlansRepository) Place() error {
 			return errors.New("plan not start")
 		}
 
-		if plan.Profit >= 0 && plan.UpdatedAt.Unix()-plan.CreatedAt.Unix() > 300 {
+		timestamp := time.Now().Unix()
+		if plan.Profit >= 0 && timestamp-plan.CreatedAt.Unix() > 300 {
 			plan.Status = 2
 			r.Db.Model(&models.Plan{ID: plan.ID}).Select("*").Updates(plan)
 			r.Stop()
 			return errors.New("plan error timeout")
 		}
 
-		if plan.Profit < 0 && plan.UpdatedAt.Unix()-plan.CreatedAt.Unix() > 900 {
+		if timestamp-plan.CreatedAt.Unix() > 480 {
 			plan.Status = 4
 			r.Db.Model(&models.Plan{ID: plan.ID}).Select("*").Updates(plan)
 			r.Stop()
