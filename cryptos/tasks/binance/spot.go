@@ -191,7 +191,7 @@ func (t *SpotTask) Margin() *tasks.MarginTask {
 func (t *SpotTask) Flush() {
 	t.Account().Flush()
 	//t.Orders().Open()
-	//t.Orders().Flush()
+	//t.Orders().Gets()
 	t.Margin().Flush()
 	t.Indicators().Daily().Pivot()
 	t.Indicators().Daily().Atr(14, 100)

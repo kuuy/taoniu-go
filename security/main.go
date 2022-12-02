@@ -1,15 +1,17 @@
 package main
 
 import (
-	"github.com/urfave/cli/v2"
 	"log"
 	"os"
-	"taoniu.local/gamblings/commands"
+
+	"github.com/urfave/cli/v2"
+
+	"taoniu.local/security/commands"
 )
 
 func main() {
 	app := &cli.App{
-		Name:  "gamblings commands",
+		Name:  "security commands",
 		Usage: "",
 		Action: func(c *cli.Context) error {
 			if c.Command.Action == nil {
@@ -23,10 +25,9 @@ func main() {
 			return nil
 		},
 		Commands: []*cli.Command{
-			commands.NewCronCommand(),
-			commands.NewApiCommand(),
 			commands.NewDbCommand(),
-			commands.NewWolfCommand(),
+			commands.NewApiCommand(),
+			commands.NewGfwCommand(),
 		},
 		Version: "0.0.0",
 	}

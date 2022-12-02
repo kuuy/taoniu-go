@@ -38,14 +38,14 @@ func FormatDatetime(datetime time.Time) string {
 	if days == 3 {
 		return "大前天"
 	}
-	if days > 10 {
-		return "十天前"
+	if days < 5 {
+		return "三天前"
 	}
-	if days > 5 {
+	if days < 10 {
 		return "五天前"
 	}
-	if days > 3 {
-		return "三天前"
+	if days < 15 {
+		return "十天前"
 	}
 	if now.Year() == datetime.Year() && now.Month() == datetime.Month() {
 		return "当月"

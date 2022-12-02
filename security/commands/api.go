@@ -1,13 +1,11 @@
 package commands
 
 import (
+	"github.com/go-chi/chi/v5"
 	"github.com/urfave/cli/v2"
 	"log"
 	"net/http"
-
-	"github.com/go-chi/chi/v5"
-
-	v1 "taoniu.local/gamblings/api/v1"
+	v1 "taoniu.local/security/api/v1"
 )
 
 type ApiHandler struct{}
@@ -35,10 +33,10 @@ func (h *ApiHandler) run() error {
 
 	r := chi.NewRouter()
 	r.Route("/v1", func(r chi.Router) {
-		r.Mount("/wolf", v1.NewWolfRouter())
+		r.Mount("/gfw", v1.NewGfwRouter())
 	})
 
-	http.ListenAndServe("127.0.0.1:3800", r)
+	http.ListenAndServe("127.0.0.1:3900", r)
 
 	return nil
 }
