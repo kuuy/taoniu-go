@@ -139,31 +139,37 @@ func (r *DnsRepository) Cache() error {
 
 	file.WriteString("server:\n")
 
-	var recoreds []*models.Dns
-	r.Db.Model(models.Dns{}).Select(
-		"domain",
-		"ips",
-	).Order(
-		"updated_at asc",
-	).Offset(
-		offset,
-	).Limit(
-		pageSize,
-	).Find(
-		&recoreds,
-	)
-	for _, record := range recoreds {
-		if record.Ips == "" {
-			continue
+	for {
+		var recoreds []*models.Dns
+		r.Db.Model(models.Dns{}).Select(
+			"domain",
+			"ips",
+		).Order(
+			"updated_at asc",
+		).Offset(
+			offset,
+		).Limit(
+			pageSize,
+		).Find(
+			&recoreds,
+		)
+		if len(recoreds) == 0 {
+			break
 		}
-		ips := strings.Split(record.Ips, ",")
-		for _, ip := range ips {
-			if strings.Contains(ip, ":") {
-				file.WriteString(fmt.Sprintf("  local-data: \"%s. IN AAAA %s\"\n", record.Domain, ip))
-			} else {
-				file.WriteString(fmt.Sprintf("  local-data: \"%s. IN A %s\"\n", record.Domain, ip))
+		for _, record := range recoreds {
+			if record.Ips == "" {
+				continue
+			}
+			ips := strings.Split(record.Ips, ",")
+			for _, ip := range ips {
+				if strings.Contains(ip, ":") {
+					file.WriteString(fmt.Sprintf("  local-data: \"%s. IN AAAA %s\"\n", record.Domain, ip))
+				} else {
+					file.WriteString(fmt.Sprintf("  local-data: \"%s. IN A %s\"\n", record.Domain, ip))
+				}
 			}
 		}
+		offset += pageSize
 	}
 
 	return nil
