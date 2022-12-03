@@ -25,7 +25,7 @@ func FormatDatetime(datetime time.Time) string {
 	if diff.Hours() < 3 {
 		return fmt.Sprintf("%.f小时前", diff.Hours())
 	}
-	days := math.Floor((diff.Hours() + float64(23-now.Hour())) / 24)
+	days := math.Floor((diff.Hours() - float64(23-datetime.Hour())) / 24)
 	if days < 1 {
 		return datetime.Format("15:04")
 	}
