@@ -92,44 +92,37 @@ func (r *DnsRepository) Query(domains []string) ([]string, error) {
 }
 
 func (r *DnsRepository) Flush() error {
-	offset := 0
-	pageSize := 20
-
-	for {
-		var domains []string
-		r.Db.Model(models.Dns{}).Select(
-			"domain",
-		).Order(
-			"updated_at asc",
-		).Offset(
-			offset,
-		).Limit(
-			pageSize,
-		).Find(
-			&domains,
-		)
-		if len(domains) == 0 {
-			break
-		}
-		result, err := r.Query(domains)
-		if err != nil {
-			return err
-		}
-		for i, ips := range result {
-			if ips == "" {
-				continue
-			}
-			domain := strings.TrimRight(domains[i], ".")
-			r.Save(domain, ips, 1)
-		}
-		offset += pageSize
+	var domains []string
+	r.Db.Model(models.Dns{}).Select(
+		"domain",
+	).Order(
+		"updated_at asc",
+	).Limit(
+		50,
+	).Find(
+		&domains,
+	)
+	if len(domains) == 0 {
+		return errors.New("domains empty")
 	}
+	result, err := r.Query(domains)
+	if err != nil {
+		return err
+	}
+	for i, ips := range result {
+		if ips == "" {
+			continue
+		}
+		domain := strings.TrimRight(domains[i], ".")
+		r.Save(domain, ips, 1)
+	}
+
 	return nil
 }
 
 func (r *DnsRepository) Cache() error {
 	offset := 0
-	pageSize := 50
+	pageSize := 500
 
 	file, err := os.Create("/tmp/gfw-zone.conf")
 	if err != nil {
