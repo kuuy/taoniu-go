@@ -95,6 +95,9 @@ func (r *DnsRepository) Flush() error {
 	var domains []string
 	r.Db.Model(models.Dns{}).Select(
 		"domain",
+	).Where(
+		"status IN ?",
+		[]int{0, 1},
 	).Order(
 		"updated_at asc",
 	).Limit(
@@ -111,6 +114,7 @@ func (r *DnsRepository) Flush() error {
 	}
 	for i, ips := range result {
 		if ips == "" {
+
 			continue
 		}
 		domain := strings.TrimRight(domains[i], ".")
@@ -133,8 +137,9 @@ func (r *DnsRepository) Cache() error {
 	file.WriteString("server:\n")
 
 	for {
-		var recoreds []*models.Dns
+		var records []*models.Dns
 		r.Db.Model(models.Dns{}).Select(
+			"id",
 			"domain",
 			"ips",
 		).Order(
@@ -144,13 +149,14 @@ func (r *DnsRepository) Cache() error {
 		).Limit(
 			pageSize,
 		).Find(
-			&recoreds,
+			&records,
 		)
-		if len(recoreds) == 0 {
+		if len(records) == 0 {
 			break
 		}
-		for _, record := range recoreds {
+		for _, record := range records {
 			if record.Ips == "" {
+				r.Db.Model(&models.Dns{ID: record.ID}).Update("status", 2)
 				continue
 			}
 			ips := strings.Split(record.Ips, ",")
