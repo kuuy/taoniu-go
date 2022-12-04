@@ -154,10 +154,10 @@ func (r *GridsRepository) Buy(grid *spotModels.Grid, price float64, amount float
 		return err
 	}
 
-	buyPrice, buyQuantity := r.Symbols().Filter(grid.Symbol, price, amount)
+	buyPrice, buyQuantity := r.Symbols().Adjust(grid.Symbol, price, amount)
 	sellPrice := buyPrice * (1 + grid.TakeProfitPercent)
 	sellQuantity := buyQuantity * grid.TriggerPercent
-	sellPrice, sellQuantity = r.Symbols().Filter(grid.Symbol, sellPrice, sellPrice*sellQuantity)
+	sellPrice, sellQuantity = r.Symbols().Adjust(grid.Symbol, sellPrice, sellPrice*sellQuantity)
 
 	buyAmount := buyPrice * buyQuantity
 

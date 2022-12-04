@@ -11,7 +11,7 @@ import (
 	"github.com/go-redis/redis/v8"
 
 	models "taoniu.local/cryptos/models/binance/spot"
-	spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
+	repositories "taoniu.local/cryptos/repositories/binance/spot"
 	tradingviewRepositories "taoniu.local/cryptos/repositories/tradingview"
 )
 
@@ -19,7 +19,7 @@ type DailyRepository struct {
 	Db                    *gorm.DB
 	Rdb                   *redis.Client
 	Ctx                   context.Context
-	SymbolsRepository     *spotRepositories.SymbolsRepository
+	SymbolsRepository     *repositories.SymbolsRepository
 	TradingviewRepository *tradingviewRepositories.AnalysisRepository
 }
 
@@ -34,9 +34,9 @@ func (r *DailyRepository) Tradingview() *tradingviewRepositories.AnalysisReposit
 	return r.TradingviewRepository
 }
 
-func (r *DailyRepository) Symbols() *spotRepositories.SymbolsRepository {
+func (r *DailyRepository) Symbols() *repositories.SymbolsRepository {
 	if r.SymbolsRepository == nil {
-		r.SymbolsRepository = &spotRepositories.SymbolsRepository{
+		r.SymbolsRepository = &repositories.SymbolsRepository{
 			Db:  r.Db,
 			Rdb: r.Rdb,
 			Ctx: r.Ctx,
@@ -108,7 +108,7 @@ func (r *DailyRepository) Create(signals map[string]interface{}, side int) error
 				amount += 5
 			}
 		}
-		price, quantity := r.Symbols().Filter(symbol, price, amount)
+		price, quantity := r.Symbols().Adjust(symbol, price, amount)
 		if price == 0 || quantity == 0 {
 			continue
 		}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -13,12 +14,25 @@ import (
 	"gorm.io/gorm"
 
 	models "taoniu.local/cryptos/models/binance/spot"
+	repositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
 type DailyRepository struct {
-	Db  *gorm.DB
-	Rdb *redis.Client
-	Ctx context.Context
+	Db                *gorm.DB
+	Rdb               *redis.Client
+	Ctx               context.Context
+	SymbolsRepository *repositories.SymbolsRepository
+}
+
+func (r *DailyRepository) Symbols() *repositories.SymbolsRepository {
+	if r.SymbolsRepository == nil {
+		r.SymbolsRepository = &repositories.SymbolsRepository{
+			Db:  r.Db,
+			Rdb: r.Rdb,
+			Ctx: r.Ctx,
+		}
+	}
+	return r.SymbolsRepository
 }
 
 func (r *DailyRepository) Atr(symbol string) error {
@@ -49,11 +63,11 @@ func (r *DailyRepository) Atr(symbol string) error {
 	}
 	price, _ := strconv.ParseFloat(priceVal, 64)
 
-	profitTarget := 2*price - 1.5*atr
-	stopLossPoint := price - atr
-	riskRewardRatio := (price - stopLossPoint) / (profitTarget - stopLossPoint)
-	takeProfitPrice := stopLossPoint + (profitTarget-stopLossPoint)/2
-	takeProfitRatio := price / takeProfitPrice
+	profitTarget, _ := r.Symbols().Adjust(symbol, 2*price-1.5*atr, 0)
+	stopLossPoint, _ := r.Symbols().Adjust(symbol, price-atr, 0)
+	riskRewardRatio := math.Round((price-stopLossPoint)*100/(profitTarget-stopLossPoint)) / 100
+	takeProfitPrice, _ := r.Symbols().Adjust(symbol, stopLossPoint+(profitTarget-stopLossPoint)/2, 0)
+	takeProfitRatio, _ := r.Symbols().Adjust(symbol, price/takeProfitPrice, 0)
 
 	r.Rdb.HMSet(
 		r.Ctx,

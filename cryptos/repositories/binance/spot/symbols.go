@@ -171,7 +171,7 @@ func (r *SymbolsRepository) Price(symbol string) (float64, error) {
 	return price, nil
 }
 
-func (r *SymbolsRepository) Filter(symbol string, price float64, amount float64) (float64, float64) {
+func (r *SymbolsRepository) Adjust(symbol string, price float64, amount float64) (float64, float64) {
 	var entity models.Symbol
 	result := r.Db.Select("filters").Where("symbol", symbol).Take(&entity)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
