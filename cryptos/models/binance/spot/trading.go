@@ -11,7 +11,7 @@ type TradingScalping struct {
 	SellPrice    float64   `gorm:"not null"`
 	BuyQuantity  float64   `gorm:"not null"`
 	SellQuantity float64   `gorm:"not null"`
-	Status       int64     `gorm:"size:30;not null;index;index:idx_binance_spot_tradings_scalping_symbol_status"`
+	Status       int       `gorm:"size:30;not null;index;index:idx_binance_spot_tradings_scalping_symbol_status"`
 	Remark       string    `gorm:"size:5000;not null"`
 	CreatedAt    time.Time `gorm:"not null"`
 	UpdatedAt    time.Time `gorm:"not null"`

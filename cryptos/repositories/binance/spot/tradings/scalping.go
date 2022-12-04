@@ -12,7 +12,6 @@ import (
 	"gorm.io/gorm"
 
 	models "taoniu.local/cryptos/models/binance/spot"
-	marginModels "taoniu.local/cryptos/models/binance/spot/margin"
 	spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
 	plansRepositories "taoniu.local/cryptos/repositories/binance/spot/plans"
 	tradingviewRepositories "taoniu.local/cryptos/repositories/tradingview"
@@ -110,10 +109,10 @@ func (r *ScalpingRepository) Flush() error {
 			return nil
 		}
 
-		var sellOrderId int64 = 0
 		var err error
-		var status int64 = 2
-		var remark = entity.Remark
+		sellOrderId := int64(0)
+		status := 2
+		remark := entity.Remark
 		if entity.BuyOrderId == 0 {
 			status = 3
 		} else {
@@ -139,9 +138,9 @@ func (r *ScalpingRepository) Flush() error {
 
 	buyAmount := buyPrice * buyQuantity
 
-	var buyOrderId int64 = 0
-	var status int64 = 0
-	var remark = ""
+	buyOrderId := int64(0)
+	status := 0
+	remark := ""
 	if balance < buyAmount {
 		status = 1
 	} else {
@@ -195,7 +194,7 @@ func (r *ScalpingRepository) Update() error {
 			continue
 		}
 
-		var status int64
+		status := entity.Status
 		if entity.Status == 0 {
 			if order.Status != "FILLED" {
 				status = 4
@@ -212,7 +211,7 @@ func (r *ScalpingRepository) Update() error {
 		}
 		entity.Status = status
 
-		r.Db.Model(&marginModels.Order{ID: entity.ID}).Updates(entity)
+		r.Db.Model(&models.TradingScalping{ID: entity.ID}).Updates(entity)
 	}
 
 	return nil
