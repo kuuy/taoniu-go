@@ -39,6 +39,18 @@ func (r *SymbolsRepository) Symbols() []string {
 	return symbols
 }
 
+func (r *SymbolsRepository) Get(
+	symbol string,
+) (models.Symbol, error) {
+	var entity models.Symbol
+	result := r.Db.Where("symbol = ?", symbol).Take(&entity)
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return entity, result.Error
+	}
+
+	return entity, nil
+}
+
 func (r *SymbolsRepository) Flush() error {
 	client := binance.NewClient("", "")
 	result, err := client.NewExchangeInfoService().Do(r.Ctx)

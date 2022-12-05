@@ -82,7 +82,7 @@ crontab配置
 
 # taoniu-config
 淘牛配置
-https://github.com/kuuy/taoniu-cofnig
+https://github.com/kuuy/taoniu-config
 
 相关功能（Features）
 |名称         |说明                 |
@@ -105,9 +105,6 @@ https://github.com/kuuy/taoniu-android
 
 # 免责声明
 本项目仅为个人交易测试项目，风险意识完全靠自己把握，出现任何交易失误与本项目无关，请谨慎评估交易的合理性。
-
-# USDT捐赠（TRC20）
-TTpMqd3SGckaAmuh1v5VuzJEMegRpqkWWQ
 
 # 推荐链接
 [币安](https://www.binance.com/en/activity/referral-entry/CPA?fromActivityPage=true&ref=CPA_007BCNAZTA)  
