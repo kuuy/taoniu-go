@@ -4,22 +4,124 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/rs/xid"
 	"strconv"
-	config "taoniu.local/cryptos/config/binance/spot"
-	models "taoniu.local/cryptos/models/binance/spot/margin"
 	"time"
 
 	"gorm.io/gorm"
 
 	"github.com/adshao/go-binance/v2"
 	"github.com/go-redis/redis/v8"
+	"github.com/rs/xid"
+
+	config "taoniu.local/cryptos/config/binance/spot"
+	models "taoniu.local/cryptos/models/binance/spot/margin"
+	repositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
 type OrdersRepository struct {
-	Db  *gorm.DB
-	Rdb *redis.Client
-	Ctx context.Context
+	Db                *gorm.DB
+	Rdb               *redis.Client
+	Ctx               context.Context
+	SymbolsRepository *repositories.SymbolsRepository
+}
+
+func (r *OrdersRepository) Symbols() *repositories.SymbolsRepository {
+	if r.SymbolsRepository == nil {
+		r.SymbolsRepository = &repositories.SymbolsRepository{
+			Db:  r.Db,
+			Rdb: r.Rdb,
+			Ctx: r.Ctx,
+		}
+	}
+	return r.SymbolsRepository
+}
+
+func (r *OrdersRepository) Count() int64 {
+	var total int64
+	r.Db.Model(&models.Order{}).Where("status IN ?", []string{"NEW"}).Count(&total)
+	return total
+}
+
+func (r *OrdersRepository) Listings(current int, pageSize int) []*models.Order {
+	offset := (current - 1) * pageSize
+
+	var orders []*models.Order
+	r.Db.Select(
+		"id",
+		"symbol",
+		"side",
+		"price",
+		"quantity",
+		"amount",
+		"status",
+		"created_at",
+		"updated_at",
+	).Where(
+		"status IN ?",
+		[]string{"NEW"},
+	).Order(
+		"updated_at desc",
+	).Offset(
+		offset,
+	).Limit(
+		pageSize,
+	).Find(
+		&orders,
+	)
+
+	return orders
+}
+
+func (r *OrdersRepository) Create(
+	symbol string,
+	side string,
+	price float64,
+	amount float64,
+) (int64, error) {
+	price, quantity, err := r.Symbols().Adjust(symbol, price, amount)
+	if err != nil {
+		return 0, err
+	}
+	client := binance.NewClient(config.TRADE_API_KEY, config.TRADE_SECRET_KEY)
+	result, err := client.NewCreateMarginOrderService().Symbol(
+		symbol,
+	).Side(
+		binance.SideType(side),
+	).Type(
+		binance.OrderTypeLimit,
+	).Price(
+		strconv.FormatFloat(price, 'f', -1, 64),
+	).Quantity(
+		strconv.FormatFloat(quantity, 'f', -1, 64),
+	).IsIsolated(
+		true,
+	).TimeInForce(
+		binance.TimeInForceTypeGTC,
+	).NewOrderRespType(
+		binance.NewOrderRespTypeRESULT,
+	).Do(r.Ctx)
+	if err != nil {
+		return 0, err
+	}
+	r.Flush(symbol, result.OrderID, true)
+
+	return result.OrderID, nil
+}
+
+func (r *OrdersRepository) Cancel(id string) error {
+	var order models.Order
+	result := r.Db.Where("id", id).Find(&order)
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return result.Error
+	}
+	client := binance.NewClient(config.TRADE_API_KEY, config.TRADE_SECRET_KEY)
+	response, err := client.NewCancelMarginOrderService().Symbol(order.Symbol).OrderID(order.OrderID).IsIsolated(order.IsIsolated).Do(r.Ctx)
+	if err != nil {
+		return err
+	}
+	order.Status = string(response.Status)
+	r.Db.Model(&models.Order{ID: order.ID}).Updates(order)
+	return nil
 }
 
 func (r *OrdersRepository) Flush(symbol string, orderId int64, isIsolated bool) error {
@@ -111,8 +213,8 @@ func (r *OrdersRepository) Save(order *binance.Order) error {
 			ID:               xid.New().String(),
 			Symbol:           symbol,
 			OrderID:          orderID,
-			Type:             fmt.Sprint(order.Type),
-			Side:             fmt.Sprint(order.Side),
+			Type:             string(order.Type),
+			Side:             string(order.Side),
 			Price:            price,
 			StopPrice:        stopPrice,
 			Quantity:         quantity,
@@ -120,14 +222,14 @@ func (r *OrdersRepository) Save(order *binance.Order) error {
 			OpenTime:         order.Time,
 			UpdateTime:       order.UpdateTime,
 			IsIsolated:       order.IsIsolated,
-			Status:           fmt.Sprint(order.Status),
+			Status:           string(order.Status),
 			Remark:           "",
 		}
 		r.Db.Create(&entity)
 	} else {
 		entity.ExecutedQuantity = executedQuantity
 		entity.UpdateTime = order.UpdateTime
-		entity.Status = fmt.Sprint(order.Status)
+		entity.Status = string(order.Status)
 		r.Db.Model(&models.Order{ID: entity.ID}).Updates(entity)
 	}
 

@@ -61,8 +61,9 @@ func (h *GridsHandler) Listings(
 	var pageSize int
 	if !r.URL.Query().Has("page_size") {
 		pageSize = 50
+	} else {
+		pageSize, _ = strconv.Atoi(r.URL.Query().Get("page_size"))
 	}
-	pageSize, _ = strconv.Atoi(r.URL.Query().Get("page_size"))
 	if pageSize < 1 || pageSize > 100 {
 		h.Response.Error(http.StatusForbidden, 1004, "page size not valid")
 		return

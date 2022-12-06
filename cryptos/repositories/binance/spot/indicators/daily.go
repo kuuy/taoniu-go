@@ -100,12 +100,12 @@ func (r *DailyRepository) Pivot(symbol string) error {
 	}
 
 	p := (kline.Close + kline.High + kline.Low) / 3
-	s1, _ := r.Symbols().Adjust(symbol, 2*p-kline.High, 0)
-	r1, _ := r.Symbols().Adjust(symbol, 2*p-kline.Low, 0)
-	s2, _ := r.Symbols().Adjust(symbol, p-(r1-s1), 0)
-	r2, _ := r.Symbols().Adjust(symbol, p+(r1-s1), 0)
-	s3, _ := r.Symbols().Adjust(symbol, kline.Low-2*(kline.High-p), 0)
-	r3, _ := r.Symbols().Adjust(symbol, kline.High+2*(p-kline.Low), 0)
+	s1, _, _ := r.Symbols().Adjust(symbol, 2*p-kline.High, 0)
+	r1, _, _ := r.Symbols().Adjust(symbol, 2*p-kline.Low, 0)
+	s2, _, _ := r.Symbols().Adjust(symbol, p-(r1-s1), 0)
+	r2, _, _ := r.Symbols().Adjust(symbol, p+(r1-s1), 0)
+	s3, _, _ := r.Symbols().Adjust(symbol, kline.Low-2*(kline.High-p), 0)
+	r3, _, _ := r.Symbols().Adjust(symbol, kline.High+2*(p-kline.Low), 0)
 
 	day, err := r.Day(kline.Timestamp / 1000)
 	if err != nil {

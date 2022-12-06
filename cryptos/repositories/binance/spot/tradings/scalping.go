@@ -131,10 +131,10 @@ func (r *ScalpingRepository) Flush() error {
 		return nil
 	}
 
-	buyPrice, buyQuantity := r.Symbols().Adjust(plan.Symbol, plan.Price, 10)
+	buyPrice, buyQuantity, _ := r.Symbols().Adjust(plan.Symbol, plan.Price, 10)
 	sellPrice := buyPrice * (1 + 0.05)
 	sellQuantity := buyQuantity
-	sellPrice, sellQuantity = r.Symbols().Adjust(plan.Symbol, sellPrice, sellPrice*sellQuantity)
+	sellPrice, sellQuantity, _ = r.Symbols().Adjust(plan.Symbol, sellPrice, sellPrice*sellQuantity)
 
 	buyAmount := buyPrice * buyQuantity
 

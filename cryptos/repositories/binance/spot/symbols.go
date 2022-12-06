@@ -183,11 +183,11 @@ func (r *SymbolsRepository) Price(symbol string) (float64, error) {
 	return price, nil
 }
 
-func (r *SymbolsRepository) Adjust(symbol string, price float64, amount float64) (float64, float64) {
+func (r *SymbolsRepository) Adjust(symbol string, price float64, amount float64) (float64, float64, error) {
 	var entity models.Symbol
 	result := r.Db.Select("filters").Where("symbol", symbol).Take(&entity)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return 0, 0
+		return 0, 0, result.Error
 	}
 	var data []string
 	data = strings.Split(entity.Filters["price"].(string), ",")
@@ -196,7 +196,7 @@ func (r *SymbolsRepository) Adjust(symbol string, price float64, amount float64)
 	tickSize, _ := strconv.ParseFloat(data[2], 64)
 
 	if price > maxPrice {
-		return 0, 0
+		return 0, 0, errors.New("price too high")
 	}
 	if price < minPrice {
 		price = minPrice
@@ -210,13 +210,13 @@ func (r *SymbolsRepository) Adjust(symbol string, price float64, amount float64)
 
 	quantity := math.Ceil(amount/(price*stepSize)) / math.Ceil(1/stepSize)
 	if quantity > maxQty {
-		return 0, 0
+		return 0, 0, errors.New("quantity too high")
 	}
 	if quantity < minQty {
 		quantity = minQty
 	}
 
-	return price, quantity
+	return price, quantity, nil
 }
 
 func (r *SymbolsRepository) Context(symbol string) map[string]interface{} {

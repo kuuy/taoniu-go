@@ -22,6 +22,29 @@ type KlinesRepository struct {
 	Ctx context.Context
 }
 
+func (r *KlinesRepository) Series(symbol string, interval string, timestamp int64, limit int) []interface{} {
+	var klines []*models.Kline
+	r.Db.Where(
+		"symbol=? AND interval=? AND timestamp<?",
+		symbol,
+		interval,
+		timestamp,
+	).Limit(limit).Find(&klines)
+
+	series := make([]interface{}, len(klines))
+	for i, kline := range klines {
+		series[i] = []interface{}{
+			kline.Open,
+			kline.High,
+			kline.Low,
+			kline.Close,
+			kline.Timestamp,
+		}
+	}
+
+	return series
+}
+
 func (r *KlinesRepository) Flush(symbol string, interval string, limit int) error {
 	client := binance.NewClient(config.REST_API_KEY, config.REST_SECRET_KEY)
 	klines, err := client.NewKlinesService().Symbol(

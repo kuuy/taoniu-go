@@ -63,11 +63,11 @@ func (r *DailyRepository) Atr(symbol string) error {
 	}
 	price, _ := strconv.ParseFloat(priceVal, 64)
 
-	profitTarget, _ := r.Symbols().Adjust(symbol, 2*price-1.5*atr, 0)
-	stopLossPoint, _ := r.Symbols().Adjust(symbol, price-atr, 0)
+	profitTarget, _, _ := r.Symbols().Adjust(symbol, 2*price-1.5*atr, 0)
+	stopLossPoint, _, _ := r.Symbols().Adjust(symbol, price-atr, 0)
 	riskRewardRatio := math.Round((price-stopLossPoint)*100/(profitTarget-stopLossPoint)) / 100
-	takeProfitPrice, _ := r.Symbols().Adjust(symbol, stopLossPoint+(profitTarget-stopLossPoint)/2, 0)
-	takeProfitRatio, _ := r.Symbols().Adjust(symbol, price/takeProfitPrice, 0)
+	takeProfitPrice, _, _ := r.Symbols().Adjust(symbol, stopLossPoint+(profitTarget-stopLossPoint)/2, 0)
+	takeProfitRatio, _, _ := r.Symbols().Adjust(symbol, price/takeProfitPrice, 0)
 
 	r.Rdb.HMSet(
 		r.Ctx,

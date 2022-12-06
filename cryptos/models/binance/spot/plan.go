@@ -14,7 +14,7 @@ type Plan struct {
 	Amount    float64           `gorm:"not null"`
 	Timestamp int64             `gorm:"not null;index;uniqueIndex:unq_binance_spot_plans_symbol_timestamp"`
 	Context   datatypes.JSONMap `gorm:"not null"`
-	Status    int               `gorm:"not null"`
+	Status    int               `gorm:"not null;index"`
 	Remark    string            `gorm:"size:5000;not null"`
 	CreatedAt time.Time         `gorm:"not null;index"`
 	UpdatedAt time.Time         `gorm:"not null"`

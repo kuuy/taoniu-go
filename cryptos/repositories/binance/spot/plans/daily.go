@@ -108,7 +108,7 @@ func (r *DailyRepository) Create(signals map[string]interface{}, side int) error
 				amount += 5
 			}
 		}
-		price, quantity := r.Symbols().Adjust(symbol, price, amount)
+		price, quantity, _ := r.Symbols().Adjust(symbol, price, amount)
 		if price == 0 || quantity == 0 {
 			continue
 		}
