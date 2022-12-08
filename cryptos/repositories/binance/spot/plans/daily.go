@@ -45,17 +45,19 @@ func (r *DailyRepository) Symbols() *repositories.SymbolsRepository {
 	return r.SymbolsRepository
 }
 
-func (r *DailyRepository) Count() int64 {
+func (r *DailyRepository) Count(conditions map[string]interface{}) int64 {
 	var total int64
-	r.Db.Model(&models.Plan{}).Count(&total)
+	query := r.Db.Model(&models.Plan{})
+	if _, ok := conditions["symbols"]; ok {
+		query.Where("symbol IN ?", conditions["symbols"].([]string))
+	}
+	query.Count(&total)
 	return total
 }
 
-func (r *DailyRepository) Listings(current int, pageSize int) []*models.Plan {
-	offset := (current - 1) * pageSize
-
+func (r *DailyRepository) Listings(conditions map[string]interface{}, current int, pageSize int) []*models.Plan {
 	var plans []*models.Plan
-	r.Db.Select(
+	query := r.Db.Select([]string{
 		"id",
 		"symbol",
 		"side",
@@ -63,16 +65,15 @@ func (r *DailyRepository) Listings(current int, pageSize int) []*models.Plan {
 		"quantity",
 		"amount",
 		"created_at",
-	).Order(
-		"created_at desc",
-	).Offset(
-		offset,
-	).Limit(
-		pageSize,
-	).Find(
-		&plans,
-	)
-
+	})
+	if _, ok := conditions["symbols"]; ok {
+		query.Where("symbol IN ?", conditions["symbols"].([]string))
+		query.Order("timestamp desc")
+	} else {
+		query.Order("created_at desc")
+	}
+	offset := (current - 1) * pageSize
+	query.Offset(offset).Limit(pageSize).Find(&plans)
 	return plans
 }
 

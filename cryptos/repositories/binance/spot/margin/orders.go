@@ -36,39 +36,37 @@ func (r *OrdersRepository) Symbols() *repositories.SymbolsRepository {
 	return r.SymbolsRepository
 }
 
-func (r *OrdersRepository) Count() int64 {
+func (r *OrdersRepository) Count(conditions map[string]interface{}) int64 {
 	var total int64
-	r.Db.Model(&models.Order{}).Where("status IN ?", []string{"NEW"}).Count(&total)
+	query := r.Db.Model(&models.Order{})
+	if _, ok := conditions["symbols"]; ok {
+		query.Where("symbol IN ?", conditions["symbols"].([]string))
+	}
+	query.Where("status IN ?", []string{"NEW"})
+	query.Count(&total)
 	return total
 }
 
-func (r *OrdersRepository) Listings(current int, pageSize int) []*models.Order {
+func (r *OrdersRepository) Listings(conditions map[string]interface{}, current int, pageSize int) []*models.Order {
 	offset := (current - 1) * pageSize
 
 	var orders []*models.Order
-	r.Db.Select(
+	query := r.Db.Select([]string{
 		"id",
 		"symbol",
 		"side",
 		"price",
 		"quantity",
-		"amount",
 		"status",
 		"created_at",
 		"updated_at",
-	).Where(
-		"status IN ?",
-		[]string{"NEW"},
-	).Order(
-		"updated_at desc",
-	).Offset(
-		offset,
-	).Limit(
-		pageSize,
-	).Find(
-		&orders,
-	)
-
+	})
+	if _, ok := conditions["symbols"]; ok {
+		query.Where("symbol IN ?", conditions["symbols"].([]string))
+	}
+	query.Where("status IN ?", []string{"NEW"})
+	query.Order("created_at desc")
+	query.Offset(offset).Limit(pageSize).Find(&orders)
 	return orders
 }
 

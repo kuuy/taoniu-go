@@ -2,9 +2,12 @@ package plans
 
 import (
 	"context"
-	"github.com/go-chi/chi/v5"
 	"net/http"
 	"strconv"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
+
 	"taoniu.local/cryptos/api"
 	"taoniu.local/cryptos/common"
 	repositories "taoniu.local/cryptos/repositories/binance/spot/plans"
@@ -70,8 +73,14 @@ func (h *DailyHandler) Listings(
 		return
 	}
 
-	total := h.Repository.Count()
-	plans := h.Repository.Listings(current, pageSize)
+	conditions := make(map[string]interface{})
+
+	if r.URL.Query().Get("symbols") != "" {
+		conditions["symbols"] = strings.Split(r.URL.Query().Get("symbols"), ",")
+	}
+
+	total := h.Repository.Count(conditions)
+	plans := h.Repository.Listings(conditions, current, pageSize)
 	data := make([]*DailyInfo, len(plans))
 	for i, plan := range plans {
 		data[i] = &DailyInfo{

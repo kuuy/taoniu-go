@@ -87,32 +87,33 @@ func (r *GridsRepository) Tradingview() *tradingviewRepositories.AnalysisReposit
 	return r.TradingviewRepository
 }
 
-func (r *GridsRepository) Count() int64 {
+func (r *GridsRepository) Count(conditions map[string]interface{}) int64 {
 	var total int64
-	r.Db.Model(&models.TradingGrid{}).Count(&total)
+	query := r.Db.Model(&models.TradingGrid{})
+	if _, ok := conditions["symbols"]; ok {
+		query.Where("symbol IN ?", conditions["symbols"].([]string))
+	}
+	query.Count(&total)
+
 	return total
 }
 
-func (r *GridsRepository) Listings(current int, pageSize int) []*models.TradingGrid {
-	offset := (current - 1) * pageSize
-
+func (r *GridsRepository) Listings(conditions map[string]interface{}, current int, pageSize int) []*models.TradingGrid {
 	var trades []*models.TradingGrid
-	r.Db.Select(
+	query := r.Db.Select([]string{
 		"id",
 		"symbol",
 		"buy_price",
 		"sell_price",
 		"status",
 		"created_at",
-	).Order(
-		"created_at desc",
-	).Offset(
-		offset,
-	).Limit(
-		pageSize,
-	).Find(
-		&trades,
-	)
+	})
+	if _, ok := conditions["symbols"]; ok {
+		query.Where("symbol IN ?", conditions["symbols"].([]string))
+	}
+	query.Order("created_at desc")
+	offset := (current - 1) * pageSize
+	query.Offset(offset).Limit(pageSize).Find(&trades)
 
 	return trades
 }

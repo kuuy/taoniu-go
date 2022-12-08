@@ -5,6 +5,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"net/http"
 	"strconv"
+	"strings"
 	"taoniu.local/cryptos/api"
 	"taoniu.local/cryptos/common"
 	repositories "taoniu.local/cryptos/repositories/binance/spot/margin"
@@ -18,7 +19,7 @@ type OrdersHandler struct {
 type OrderInfo struct {
 	ID              string  `json:"id"`
 	Symbol          string  `json:"symbol"`
-	Side            float64 `json:"side"`
+	Side            string  `json:"side"`
 	Price           float64 `json:"price"`
 	Quantity        float64 `json:"quantity"`
 	Status          string  `json:"status"`
@@ -70,17 +71,24 @@ func (h *OrdersHandler) Listings(
 		return
 	}
 
-	total := h.Repository.Count()
-	orders := h.Repository.Listings(current, pageSize)
+	conditions := make(map[string]interface{})
+
+	if r.URL.Query().Get("symbols") != "" {
+		conditions["symbols"] = strings.Split(r.URL.Query().Get("symbols"), ",")
+	}
+
+	total := h.Repository.Count(conditions)
+	orders := h.Repository.Listings(conditions, current, pageSize)
 	data := make([]*OrderInfo, len(orders))
 	for i, order := range orders {
 		data[i] = &OrderInfo{
 			ID:              order.ID,
 			Symbol:          order.Symbol,
+			Side:            order.Side,
 			Price:           order.Price,
 			Quantity:        order.Quantity,
 			Status:          order.Status,
-			Timestamp:       order.CreatedAt.Unix(),
+			Timestamp:       order.CreatedAt.UnixMicro(),
 			TimestampFormat: common.FormatDatetime(order.CreatedAt),
 		}
 	}
