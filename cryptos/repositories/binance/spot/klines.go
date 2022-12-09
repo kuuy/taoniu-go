@@ -29,7 +29,7 @@ func (r *KlinesRepository) Series(symbol string, interval string, timestamp int6
 		symbol,
 		interval,
 		timestamp,
-	).Limit(limit).Find(&klines)
+	).Order("timestamp desc").Limit(limit).Find(&klines)
 
 	series := make([]interface{}, len(klines))
 	for i, kline := range klines {
