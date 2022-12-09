@@ -84,6 +84,30 @@ func (r *DailyRepository) Flush() error {
 	return nil
 }
 
+func (r *DailyRepository) Fix() error {
+	var plans []*models.Plan
+	r.Db.Select([]string{
+		"id",
+		"symbol",
+		"side",
+	}).Order("symbol asc,updated_at desc").Find(&plans)
+	var symbol string
+	var side int
+	for _, plan := range plans {
+		if symbol == "" || symbol != plan.Symbol {
+			symbol = plan.Symbol
+			side = plan.Side
+		} else {
+			if side != plan.Side {
+				side = plan.Side
+			} else {
+				r.Db.Delete(&plan)
+			}
+		}
+	}
+	return nil
+}
+
 func (r *DailyRepository) Create(signals map[string]interface{}, side int) error {
 	if _, ok := signals["kdj"]; !ok {
 		return nil
@@ -114,13 +138,14 @@ func (r *DailyRepository) Create(signals map[string]interface{}, side int) error
 			continue
 		}
 		var entity models.Plan
-		result := r.Db.Where(
-			"symbol=? AND timestamp=?",
-			symbol,
-			timestamp,
-		).Take(&entity)
+		result := r.Db.Where("symbol", symbol).Order("timestamp desc").Take(&entity)
 		if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			continue
+			if timestamp == entity.Timestamp {
+				continue
+			}
+			if side == entity.Side {
+				continue
+			}
 		}
 		entity = models.Plan{
 			ID:        xid.New().String(),

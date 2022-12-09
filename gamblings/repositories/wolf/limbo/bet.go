@@ -68,7 +68,6 @@ func (r *BetRepository) Place(request *BetRequest) (string, float64, bool, error
 	req.Header.Set("X-Client-Type", "Web-Application")
 	req.Header.Set("X-Hash-Api", config.LOGIN_HASH)
 	req.Header.Set("Referer", "https://wolf.bet/casino/hilo")
-	req.Header.Set("Cookie", config.LOGIN_COOKIE)
 	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", config.LOGIN_TOKEN))
 	resp, err := httpClient.Do(req)
