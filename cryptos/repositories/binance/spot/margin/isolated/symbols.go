@@ -17,7 +17,7 @@ type SymbolsRepository struct {
 func (r *SymbolsRepository) Flush() error {
 	var symbols []string
 	r.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Find(&symbols)
-	temp, _ := r.Rdb.SMembers(r.Ctx, "binance:spot:margin:isolated:symbols").Result()
+	oldSymbols, _ := r.Rdb.SMembers(r.Ctx, "binance:spot:margin:isolated:symbols").Result()
 	var margins []string
 	for _, symbol := range symbols {
 		exists, _ := r.Rdb.Exists(
@@ -27,16 +27,14 @@ func (r *SymbolsRepository) Flush() error {
 		if exists == 0 {
 			continue
 		}
-		if !r.contains(temp, symbol) {
-			r.Rdb.SAdd(
-				r.Ctx,
-				"binance:spot:margin:isolated:symbols",
-				symbol,
-			).Result()
-		}
+		r.Rdb.SAdd(
+			r.Ctx,
+			"binance:spot:margin:isolated:symbols",
+			symbol,
+		)
 		margins = append(margins, symbol)
 	}
-	for _, symbol := range temp {
+	for _, symbol := range oldSymbols {
 		if !r.contains(margins, symbol) {
 			r.Rdb.SRem(
 				r.Ctx,

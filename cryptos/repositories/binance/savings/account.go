@@ -15,7 +15,7 @@ type AccountRepository struct {
 
 func (r *AccountRepository) Flush() error {
 	client := binance.NewClient(config.ACCOUNT_API_KEY, config.ACCOUNT_SECRET_KEY)
-	products, err := client.NewSavingFlexibleProductPositionsService().Do(r.Ctx)
+	products, err := client.NewSavingFixedProjectPositionsService().Status("HOLDING").Do(r.Ctx)
 	if err != nil {
 		log.Println("error:", err)
 		return err

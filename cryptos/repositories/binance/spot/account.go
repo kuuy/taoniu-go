@@ -24,12 +24,16 @@ func (r *AccountRepository) Flush() error {
 	if err != nil {
 		return err
 	}
+	oldCurrencies, _ := r.Rdb.SMembers(r.Ctx, "binance:spot:currencies").Result()
+	var currencies []string
 	for _, coin := range account.Balances {
 		free, _ := strconv.ParseFloat(coin.Free, 64)
 		if free <= 0.0 {
+			r.Rdb.SRem(r.Ctx, "binance:spot:currencies", coin.Asset)
 			r.Rdb.Del(r.Ctx, fmt.Sprintf("binance:spot:balances:%s", coin.Asset))
 			continue
 		}
+		r.Rdb.SAdd(r.Ctx, "binance:spot:currencies", coin.Asset)
 		r.Rdb.HMSet(
 			r.Ctx,
 			fmt.Sprintf("binance:spot:balances:%s", coin.Asset),
@@ -38,6 +42,13 @@ func (r *AccountRepository) Flush() error {
 				"locked": coin.Locked,
 			},
 		)
+		currencies = append(currencies, coin.Asset)
+	}
+	for _, currency := range oldCurrencies {
+		if !r.contains(currencies, currency) {
+			r.Rdb.SRem(r.Ctx, "binance:spot:currencies", currency)
+			r.Rdb.Del(r.Ctx, fmt.Sprintf("binance:spot:balances:%s", currency))
+		}
 	}
 
 	return nil
@@ -74,4 +85,13 @@ func (r *AccountRepository) Balance(symbol string) (float64, float64, error) {
 	}
 
 	return balance, quantity, nil
+}
+
+func (r *AccountRepository) contains(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+	return false
 }
