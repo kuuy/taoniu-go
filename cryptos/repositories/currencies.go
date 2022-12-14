@@ -16,26 +16,28 @@ type CurrenciesRepository struct {
 func (r *CurrenciesRepository) Add(
 	symbol string,
 	selectorID string,
-	supply float64,
+	totalSupply float64,
+	circulatingSupply float64,
 	price float64,
 	volume float64,
 ) error {
 	var marketCap float64
 	if price > 0 && volume > 0 {
-		marketCap = supply * price
+		marketCap = circulatingSupply * price
 	}
 	var entity *models.Currency
 	result := r.Db.Where("symbol", symbol).Take(&entity)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		entity = &models.Currency{
-			ID:        xid.New().String(),
-			Symbol:    symbol,
-			SectorID:  selectorID,
-			Supply:    supply,
-			Price:     price,
-			Volume:    volume,
-			MarketCap: marketCap,
-			Exchanges: r.JSON([]string{}),
+			ID:                xid.New().String(),
+			Symbol:            symbol,
+			SectorID:          selectorID,
+			TotalSupply:       totalSupply,
+			CirculatingSupply: circulatingSupply,
+			Price:             price,
+			Volume:            volume,
+			MarketCap:         marketCap,
+			Exchanges:         r.JSON([]string{}),
 		}
 		r.Db.Create(&entity)
 	}

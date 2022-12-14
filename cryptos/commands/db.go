@@ -43,6 +43,7 @@ func (h *DbHandler) migrate() error {
 	h.Db.AutoMigrate(
 		&models.Currency{},
 		&models.Sector{},
+		&models.Exchange{},
 	)
 	models.NewBinance().AutoMigrate(h.Db)
 	models.NewTradingView().AutoMigrate(h.Db)

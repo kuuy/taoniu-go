@@ -25,6 +25,7 @@ func main() {
 			commands.NewCronCommand(),
 			commands.NewDbCommand(),
 			commands.NewProxiesCommand(),
+			commands.NewExchangesCommand(),
 			commands.NewSectorsCommand(),
 		},
 		Version: "0.0.0",

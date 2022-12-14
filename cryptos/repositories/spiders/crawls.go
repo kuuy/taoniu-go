@@ -4,8 +4,10 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/tidwall/gjson"
 	"net"
 	"net/http"
+	"regexp"
 	"taoniu.local/cryptos/common"
 	"time"
 
@@ -27,8 +29,9 @@ type CrawlSource struct {
 }
 
 type HtmlExtractField struct {
-	Name string           `json:"name"`
-	Node *HtmlExtractNode `json:"node"`
+	Name    string           `json:"name"`
+	Node    *HtmlExtractNode `json:"node"`
+	Replace []*Replace       `json:"replace"`
 }
 
 type HtmlExtractNode struct {
@@ -37,10 +40,32 @@ type HtmlExtractNode struct {
 	Index    int    `json:"index"`
 }
 
+type Replace struct {
+	Pattern string `json:"pattern"`
+	Value   string `json:"replace"`
+}
+
 type HtmlExtractRules struct {
 	Container *HtmlExtractNode    `json:"container"`
 	List      *HtmlExtractNode    `json:"list"`
+	Json      []*JsonExtract      `json:"json"`
 	Fields    []*HtmlExtractField `json:"fields"`
+}
+
+type JsonExtract struct {
+	Node  *HtmlExtractNode  `json:"node"`
+	Rules *JsonExtractRules `json:"rules"`
+}
+
+type JsonExtractField struct {
+	Name string `json:"name"`
+	Path string `json:"path"`
+}
+
+type JsonExtractRules struct {
+	Container string              `json:"container"`
+	List      string              `json:"list"`
+	Fields    []*JsonExtractField `json:"fields"`
 }
 
 func (r *CrawlsRepository) Request(source *CrawlSource) ([]map[string]interface{}, error) {
@@ -112,6 +137,10 @@ func (r *CrawlsRepository) ExtractHtml(resp *http.Response, rules *HtmlExtractRu
 				} else {
 					data[field.Name] = selection.Text()
 				}
+				for _, replace := range field.Replace {
+					m := regexp.MustCompile(replace.Pattern)
+					data[field.Name] = m.ReplaceAllString(data[field.Name].(string), replace.Value)
+				}
 			} else {
 				if field.Node.Attr != "" {
 					data[field.Name], _ = s.Attr(field.Node.Attr)
@@ -122,6 +151,23 @@ func (r *CrawlsRepository) ExtractHtml(resp *http.Response, rules *HtmlExtractRu
 		}
 		result = append(result, data)
 	})
+
+	for _, item := range rules.Json {
+		doc.Find(item.Node.Selector).Each(func(i int, s *goquery.Selection) {
+			var container = gjson.Get(s.Text(), item.Rules.Container)
+			if container.Raw == "" {
+				return
+			}
+			container.Get(item.Rules.List).ForEach(func(_, s gjson.Result) bool {
+				var data = make(map[string]interface{})
+				for _, field := range item.Rules.Fields {
+					data[field.Name] = s.Get(field.Path).Value()
+				}
+				result = append(result, data)
+				return true
+			})
+		})
+	}
 
 	return result, nil
 }

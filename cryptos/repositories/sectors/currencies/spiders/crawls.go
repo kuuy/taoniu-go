@@ -123,10 +123,10 @@ func (r *CrawlsRepository) Request() error {
 		for _, item := range result {
 			symbol := item["symbol"].(string)
 			short := item["id"].(string)
-			supply, _ := strconv.ParseFloat(item["supply"].(string), 64)
+			circulatingSupply, _ := strconv.ParseFloat(item["supply"].(string), 64)
 			price, _ := strconv.ParseFloat(item["price"].(string), 64)
 			volume, _ := strconv.ParseFloat(item["volume"].(string), 64)
-			r.Currencies().Add(symbol, sector.ID, supply, price, volume)
+			r.Currencies().Add(symbol, sector.ID, 0, circulatingSupply, price, volume)
 			if !r.contains(shorts, short) {
 				shorts = append(shorts, short)
 			}

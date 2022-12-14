@@ -15,6 +15,7 @@ require (
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/xid v1.4.0
 	github.com/stretchr/testify v1.8.0 // indirect
+	github.com/tidwall/gjson v1.14.4
 	github.com/urfave/cli/v2 v2.5.1
 	golang.org/x/crypto v0.0.0-20220427172511-eb4f295cb31f
 	gorm.io/datatypes v1.0.7
