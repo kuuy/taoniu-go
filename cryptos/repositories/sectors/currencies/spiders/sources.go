@@ -22,17 +22,12 @@ func (r *SourcesRepository) Sources() *spiderRepositories.SourcesRepository {
 }
 
 func (r *SourcesRepository) Find(id string) (*spidersModels.Source, error) {
-	var entity *spidersModels.Source
-	result := r.Db.First(&entity, id)
-	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return nil, result.Error
-	}
-	return entity, nil
+	return r.Sources().Find(id)
 }
 
 func (r *SourcesRepository) Get() (*spidersModels.Source, error) {
 	var entity *spidersModels.Source
-	result := r.Db.Where("short", "currencies-sectors").Take(&entity)
+	result := r.Db.Where("short", "currencies-in-sectors").Take(&entity)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, result.Error
 	}
@@ -40,10 +35,13 @@ func (r *SourcesRepository) Get() (*spidersModels.Source, error) {
 }
 
 func (r *SourcesRepository) Add() error {
-	parentId := ""
-	name := "Currencies Sectors"
-	short := "currencies-sectors"
-	url := "https://www.coinlore.com/crypto-sectors"
+	parent, err := r.Sources().Get("currencies-sectors")
+	if err != nil {
+		return err
+	}
+	name := "Currencies In Sectors"
+	short := "currencies-in-sectors"
+	url := "https://www.coinlore.com/crypto/{}/all"
 	source := &spiderRepositories.CrawlSource{
 		Url: url,
 		Headers: map[string]string{
@@ -67,15 +65,39 @@ func (r *SourcesRepository) Add() error {
 					},
 				},
 				{
-					Name: "name",
+					Name: "symbol",
 					Node: &spiderRepositories.HtmlExtractNode{
-						Selector: "td.text-left > a",
+						Selector: "td span.coin-ticker",
 						Index:    0,
+					},
+				},
+				{
+					Name: "price",
+					Node: &spiderRepositories.HtmlExtractNode{
+						Selector: "td",
+						Attr:     "data-fiat",
+						Index:    3,
+					},
+				},
+				{
+					Name: "volume",
+					Node: &spiderRepositories.HtmlExtractNode{
+						Selector: "td",
+						Attr:     "data-sort",
+						Index:    5,
+					},
+				},
+				{
+					Name: "supply",
+					Node: &spiderRepositories.HtmlExtractNode{
+						Selector: "td",
+						Attr:     "data-sort",
+						Index:    6,
 					},
 				},
 			},
 		},
 	}
 
-	return r.Sources().Add(parentId, name, short, source)
+	return r.Sources().Add(parent.ID, name, short, source)
 }

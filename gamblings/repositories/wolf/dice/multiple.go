@@ -119,7 +119,8 @@ func (r *MultipleRepository) Apply(currency string) error {
 		stopBalance := math.Round(balance*10000000000*0.95) / 10000000000
 
 		if stopBalance < balance-10 {
-			targetBalance = math.Round(balance*10000000000+20000000000) / 10000000000
+			amount = math.Round(20000000000*0.00000006) / 100000000
+			targetBalance = math.Round(balance*10000000000+2000000000000*0.000008) / 10000000000
 			stopBalance = math.Round(balance*10000000000-100000000000) / 10000000000
 		}
 

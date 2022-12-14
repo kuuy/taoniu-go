@@ -11,6 +11,7 @@ func NewSectorsCommand() *cli.Command {
 		Usage: "",
 		Subcommands: []*cli.Command{
 			sectors.NewSpidersCommand(),
+			sectors.NewCurrenciesCommand(),
 		},
 	}
 }

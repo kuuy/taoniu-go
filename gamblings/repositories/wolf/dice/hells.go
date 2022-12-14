@@ -120,7 +120,8 @@ func (r *HellsRepository) Apply(currency string) error {
 		stopBalance := math.Round(balance*10000000000*0.9989) / 10000000000
 
 		if stopBalance < balance-10 {
-			targetBalance = math.Round(balance*10000000000+20000000000) / 10000000000
+			amount = math.Round(90909090909.10*0.00000001) / 100000000
+			targetBalance = math.Round(balance*10000000000+9090909090910*0.000008) / 10000000000
 			stopBalance = math.Round(balance*10000000000-100000000000) / 10000000000
 		}
 
