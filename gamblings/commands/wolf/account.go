@@ -7,6 +7,7 @@ import (
 	"github.com/urfave/cli/v2"
 	"log"
 	pool "taoniu.local/gamblings/common"
+	config "taoniu.local/gamblings/config/wolf"
 	repositories "taoniu.local/gamblings/repositories/wolf"
 )
 
@@ -54,6 +55,16 @@ func NewAccountCommand() *cli.Command {
 					return nil
 				},
 			},
+			{
+				Name:  "auth",
+				Usage: "",
+				Action: func(c *cli.Context) error {
+					if err := h.auth(); err != nil {
+						return cli.Exit(err.Error(), 1)
+					}
+					return nil
+				},
+			},
 		},
 	}
 }
@@ -65,5 +76,17 @@ func (h *AccountHandler) balance(currency string) error {
 		log.Println("wolf account balance error", err)
 	}
 	log.Println("balance", balance)
+	return nil
+}
+
+func (h *AccountHandler) auth() error {
+	log.Println("wolf account auth...")
+	h.Rdb.HMSet(h.Ctx, "wolf:auth", map[string]string{
+		"login_token":  config.LOGIN_TOKEN,
+		"login_hash":   config.LOGIN_HASH,
+		"login_cookie": config.LOGIN_COOKIE,
+	})
+	auth, _ := h.Rdb.HGetAll(h.Ctx, "wolf:auth").Result()
+	log.Println("auth", auth["login_token"], auth["login_hash"], auth["login_cookie"])
 	return nil
 }

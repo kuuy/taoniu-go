@@ -96,10 +96,10 @@ func (r *CrawlsRepository) Request() error {
 		buf, _ = parent.Result.MarshalJSON()
 		json.Unmarshal(buf, &sectors)
 	}
-	var shorts []string
+	var slugs []string
 	var buf []byte
 	buf, _ = source.Result.MarshalJSON()
-	json.Unmarshal(buf, &shorts)
+	json.Unmarshal(buf, &slugs)
 	for i := 0; i < len(sectors); i++ {
 		sector, err := r.Sectors().Get(sectors[i])
 		if err != nil {
@@ -122,13 +122,13 @@ func (r *CrawlsRepository) Request() error {
 		}
 		for _, item := range result {
 			symbol := item["symbol"].(string)
-			short := item["id"].(string)
+			slug := item["id"].(string)
 			circulatingSupply, _ := strconv.ParseFloat(item["supply"].(string), 64)
 			price, _ := strconv.ParseFloat(item["price"].(string), 64)
 			volume, _ := strconv.ParseFloat(item["volume"].(string), 64)
 			r.Currencies().Add(symbol, sector.ID, 0, circulatingSupply, price, volume)
-			if !r.contains(shorts, short) {
-				shorts = append(shorts, short)
+			if !r.contains(slugs, slug) {
+				slugs = append(slugs, slug)
 			}
 		}
 
@@ -137,7 +137,7 @@ func (r *CrawlsRepository) Request() error {
 		}
 	}
 
-	source.Result = r.JSON(shorts)
+	source.Result = r.JSON(slugs)
 	r.Db.Model(&spiderModels.Source{ID: source.ID}).Updates(source)
 
 	return nil

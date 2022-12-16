@@ -5,7 +5,7 @@ import "time"
 type Sector struct {
 	ID        string    `gorm:"size:20;primaryKey"`
 	Name      string    `gorm:"size:50;not null"`
-	Short     string    `gorm:"size:50;not null;uniqueIndex"`
+	Slug      string    `gorm:"size:50;not null;uniqueIndex"`
 	Status    int       `gorm:"not null;index"`
 	About     string    `gorm:"size:20000;not null"`
 	CreatedAt time.Time `gorm:"not null"`

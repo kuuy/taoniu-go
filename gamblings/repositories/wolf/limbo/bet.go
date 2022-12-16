@@ -61,15 +61,25 @@ func (r *BetRepository) Place(request *BetRequest) (string, float64, bool, error
 
 	body, _ := json.Marshal(request)
 
+	auth, err := r.Rdb.HGetAll(r.Ctx, "wolf:auth").Result()
+	if err != nil {
+		auth = map[string]string{
+			"login_token":  config.LOGIN_TOKEN,
+			"login_hash":   config.LOGIN_HASH,
+			"login_cookie": config.LOGIN_COOKIE,
+		}
+	}
+
 	url := "https://wolf.bet/api/v2/limbo/manual/play"
 	req, _ := http.NewRequest("POST", url, bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Requested-With", "XMLHttpRequest")
 	req.Header.Set("X-Client-Type", "Web-Application")
-	req.Header.Set("X-Hash-Api", config.LOGIN_HASH)
+	req.Header.Set("X-Hash-Api", auth["login_hash"])
 	req.Header.Set("Referer", "https://wolf.bet/casino/hilo")
+	req.Header.Set("Cookie", auth["login_cookie"])
 	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", config.LOGIN_TOKEN))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", auth["login_token"]))
 	resp, err := httpClient.Do(req)
 	if err != nil {
 		return "", 0, false, err

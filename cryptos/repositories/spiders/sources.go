@@ -24,9 +24,9 @@ func (r *SourcesRepository) Find(id string) (*models.Source, error) {
 	return entity, nil
 }
 
-func (r *SourcesRepository) Get(short string) (*models.Source, error) {
+func (r *SourcesRepository) Get(slug string) (*models.Source, error) {
 	var entity *models.Source
-	result := r.Db.Where("short", short).Take(&entity)
+	result := r.Db.Where("slug", slug).Take(&entity)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, result.Error
 	}
@@ -36,19 +36,19 @@ func (r *SourcesRepository) Get(short string) (*models.Source, error) {
 func (r *SourcesRepository) Add(
 	parentId string,
 	name string,
-	short string,
+	slug string,
 	source *CrawlSource,
 ) error {
 	hash := sha1.Sum([]byte(source.Url))
 
 	var entity *models.Source
-	result := r.Db.Where("short", short).Take(&entity)
+	result := r.Db.Where("slug", slug).Take(&entity)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		entity = &models.Source{
 			ID:        xid.New().String(),
 			ParentID:  parentId,
 			Name:      name,
-			Short:     short,
+			Slug:      slug,
 			Url:       source.Url,
 			UrlSha1:   hex.EncodeToString(hash[:]),
 			Headers:   r.JSONMap(source.Headers),

@@ -11,6 +11,7 @@ type Symbol struct {
 	BaseAsset  string            `gorm:"not null"`
 	QuoteAsset string            `gorm:"not null"`
 	Filters    datatypes.JSONMap `gorm:"not null"`
+	Depth      datatypes.JSONMap `gorm:"not null"`
 	IsSpot     bool              `gorm:"not null;"`
 	IsMargin   bool              `gorm:"not null;"`
 	Status     string            `gorm:"not null;size:20;index"`

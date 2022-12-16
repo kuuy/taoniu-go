@@ -75,7 +75,7 @@ func (r *PlansRepository) Apply(currency string) error {
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		result := r.Db.Order("updated_at desc").Take(&plan)
 		if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			if time.Now().Unix()-plan.UpdatedAt.Unix() < 55 {
+			if time.Now().Unix()-plan.UpdatedAt.Unix() < 180 {
 				return errors.New("plan next waiting")
 			}
 		}

@@ -32,7 +32,7 @@ func (r *SourcesRepository) Find(id string) (*spidersModels.Source, error) {
 
 func (r *SourcesRepository) Get() (*spidersModels.Source, error) {
 	var entity *spidersModels.Source
-	result := r.Db.Where("short", "currencies-exchanges").Take(&entity)
+	result := r.Db.Where("slug", "currencies-exchanges").Take(&entity)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, result.Error
 	}
@@ -42,7 +42,7 @@ func (r *SourcesRepository) Get() (*spidersModels.Source, error) {
 func (r *SourcesRepository) Add() error {
 	parentId := ""
 	name := "Currencies Exchanges"
-	short := "currencies-exchanges"
+	slug := "currencies-exchanges"
 	url := "https://coinmarketcap.com/rankings/exchanges/"
 	source := &spiderRepositories.CrawlSource{
 		Url: url,
@@ -114,5 +114,5 @@ func (r *SourcesRepository) Add() error {
 		},
 	}
 
-	return r.Sources().Add(parentId, name, short, source)
+	return r.Sources().Add(parentId, name, slug, source)
 }

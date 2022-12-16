@@ -90,15 +90,15 @@ func (r *CrawlsRepository) Request() error {
 		return err
 	}
 	var sectors []string
-	var shorts []string
+	var slugs []string
 	for _, item := range result {
 		name := item["name"].(string)
-		short := item["id"].(string)
-		r.Sectors().Add(name, short)
+		slug := item["id"].(string)
+		r.Sectors().Add(name, slug)
 		sectors = append(sectors, name)
-		shorts = append(shorts, short)
+		slugs = append(slugs, slug)
 	}
-	source.Result = r.JSON(shorts)
+	source.Result = r.JSON(slugs)
 	r.Db.Model(&spiderModels.Source{ID: source.ID}).Updates(source)
 
 	return nil

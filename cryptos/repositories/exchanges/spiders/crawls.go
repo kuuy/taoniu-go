@@ -106,7 +106,7 @@ func (r *CrawlsRepository) Request() error {
 		if _, ok := item["volume"].(string); ok {
 			volume, _ = strconv.ParseFloat(item["volume"].(string), 64)
 		}
-		r.Exchanges().Add(name, volume)
+		r.Exchanges().Add(name, slug, volume)
 		if !r.contains(slugs, slug) {
 			slugs = append(slugs, slug)
 		}

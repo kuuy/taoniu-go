@@ -27,7 +27,7 @@ func (r *SourcesRepository) Find(id string) (*spidersModels.Source, error) {
 
 func (r *SourcesRepository) Get() (*spidersModels.Source, error) {
 	var entity *spidersModels.Source
-	result := r.Db.Where("short", "currencies-in-sectors").Take(&entity)
+	result := r.Db.Where("slug", "currencies-in-sectors").Take(&entity)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, result.Error
 	}
@@ -40,7 +40,7 @@ func (r *SourcesRepository) Add() error {
 		return err
 	}
 	name := "Currencies In Sectors"
-	short := "currencies-in-sectors"
+	slug := "currencies-in-sectors"
 	url := "https://www.coinlore.com/crypto/{}/all"
 	source := &spiderRepositories.CrawlSource{
 		Url: url,
@@ -99,5 +99,5 @@ func (r *SourcesRepository) Add() error {
 		},
 	}
 
-	return r.Sources().Add(parent.ID, name, short, source)
+	return r.Sources().Add(parent.ID, name, slug, source)
 }

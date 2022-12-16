@@ -75,7 +75,7 @@ func (r *HellsRepository) Apply(currency string) error {
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		result := r.Db.Order("updated_at desc").Take(&hell)
 		if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			if time.Now().Unix()-hell.UpdatedAt.Unix() < 55 {
+			if time.Now().Unix()-hell.UpdatedAt.Unix() < 300 {
 				return errors.New("hell next waiting")
 			}
 		}

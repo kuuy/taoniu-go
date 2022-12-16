@@ -15,6 +15,7 @@ type ExchangesRepository struct {
 
 func (r *ExchangesRepository) Add(
 	name string,
+	slug string,
 	volume float64,
 ) error {
 	var entity *models.Exchange
@@ -23,6 +24,7 @@ func (r *ExchangesRepository) Add(
 		entity = &models.Exchange{
 			ID:     xid.New().String(),
 			Name:   name,
+			Slug:   slug,
 			Volume: volume,
 		}
 		r.Db.Create(&entity)

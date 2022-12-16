@@ -4,7 +4,8 @@ import "time"
 
 type Exchange struct {
 	ID        string    `gorm:"size:20;primaryKey"`
-	Name      string    `gorm:"size:50;not null;uniqueIndex"`
+	Name      string    `gorm:"size:50;not null"`
+	Slug      string    `gorm:"size:50;not null;uniqueIndex"`
 	Volume    float64   `gorm:"not null"`
 	Status    int       `gorm:"not null;index"`
 	About     string    `gorm:"size:20000;not null"`

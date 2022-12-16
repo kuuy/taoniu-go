@@ -118,11 +118,11 @@ func (r *MultipleRepository) Apply(currency string) error {
 		targetBalance := math.Round(balance*10000000000*1.000008) / 10000000000
 		stopBalance := math.Round(balance*10000000000*0.95) / 10000000000
 
-		if stopBalance < balance-10 {
-			amount = math.Round(20000000000*0.00000006) / 100000000
-			targetBalance = math.Round(balance*10000000000+2000000000000*0.000008) / 10000000000
-			stopBalance = math.Round(balance*10000000000-100000000000) / 10000000000
-		}
+		//if stopBalance < balance-10 {
+		//	amount = math.Round(20000000000*0.00000006) / 100000000
+		//	targetBalance = math.Round(balance*10000000000+2000000000000*0.000008) / 10000000000
+		//	stopBalance = math.Round(balance*10000000000-100000000000) / 10000000000
+		//}
 
 		multiple = models.Multiple{
 			ID:            xid.New().String(),
@@ -224,7 +224,7 @@ func (r *MultipleRepository) Place() error {
 			multiple.BufferProfit = 0
 		} else {
 			ratio := math.Round(multiple.BufferProfit / -multiple.StartAmount)
-			if ratio > 0 && int(ratio)%7 == 0 {
+			if ratio > 0 && int(ratio)%7 == 0 || multiple.StreakLossCount == 4 {
 				multiple.Amount = math.Round(multiple.StartAmount*103300000*ratio/(3*0.99*(multiplier-1))) / 100000000
 			}
 		}
@@ -293,6 +293,10 @@ func (r *MultipleRepository) Place() error {
 			time.Sleep(3 * time.Second)
 		}
 
+		if 2*multiple.WinCount < 3*multiple.LossCount {
+			time.Sleep(2 * time.Second)
+		}
+
 		score, _ := r.Rdb.ZScore(
 			r.Ctx,
 			"wolf:strategies",
@@ -320,7 +324,7 @@ func (r *MultipleRepository) Place() error {
 			multiple.BufferProfit = 0
 		} else {
 			ratio := math.Round(multiple.BufferProfit / -multiple.StartAmount)
-			if ratio > 0 && int(ratio)%7 == 0 {
+			if ratio > 0 && int(ratio)%7 == 0 || multiple.StreakLossCount == 4 {
 				multiple.Amount = math.Round(multiple.StartAmount*103300000*ratio/(3*0.99*(multiplier-1))) / 100000000
 			}
 		}

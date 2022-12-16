@@ -9,7 +9,7 @@ type Source struct {
 	ID        string            `gorm:"size:20;primaryKey"`
 	ParentID  string            `gorm:"size:20;primaryKey"`
 	Name      string            `gorm:"size:50"`
-	Short     string            `gorm:"size:50;uniqueIndex"`
+	Slug      string            `gorm:"size:50;uniqueIndex"`
 	Url       string            `gorm:"size:155;not null;"`
 	UrlSha1   string            `gorm:"size:40;not null;index"`
 	Headers   datatypes.JSONMap `gorm:"not null"`
