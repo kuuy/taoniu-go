@@ -96,14 +96,14 @@ func FlushOrders() error {
 		if err != nil {
 			continue
 		}
-		orderIds := []int64{}
+		orderIDs := []int64{}
 		for _, order := range list {
 			orderID := order.OrderID
-			orderIds = append(orderIds, orderID)
+			orderIDs = append(orderIDs, orderID)
 			saveOrder(db, order)
 		}
 
-		if len(orderIds) == 0 {
+		if len(orderIDs) == 0 {
 			db.Model(&future.Order{}).Where(
 				"symbol = ? AND status IN ?",
 				symbol,
@@ -114,7 +114,7 @@ func FlushOrders() error {
 				"symbol = ? AND status IN ? AND order_id NOT IN ?",
 				symbol,
 				[]string{"NEW", "PARTIALLY_FILLED"},
-				orderIds,
+				orderIDs,
 			).Update("status", "UNKNOW")
 		}
 	}

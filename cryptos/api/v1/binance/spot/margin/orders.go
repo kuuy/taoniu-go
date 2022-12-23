@@ -3,6 +3,8 @@ package margin
 import (
 	"context"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-redis/redis/v8"
+	"gorm.io/gorm"
 	"net/http"
 	"strconv"
 	"strings"
@@ -12,6 +14,9 @@ import (
 )
 
 type OrdersHandler struct {
+	Db         *gorm.DB
+	Rdb        *redis.Client
+	Ctx        context.Context
 	Response   *api.ResponseHandler
 	Repository *repositories.OrdersRepository
 }
@@ -28,17 +33,20 @@ type OrderInfo struct {
 }
 
 func NewOrdersRouter() http.Handler {
-	h := OrdersHandler{}
-	h.Repository = &repositories.OrdersRepository{
+	h := OrdersHandler{
 		Db:  common.NewDB(),
 		Rdb: common.NewRedis(),
 		Ctx: context.Background(),
+	}
+	h.Repository = &repositories.OrdersRepository{
+		Db:  h.Db,
+		Rdb: h.Rdb,
+		Ctx: h.Ctx,
 	}
 
 	r := chi.NewRouter()
 	r.Get("/", h.Listings)
 	r.Get("/{id:[a-z0-9]{20}}", h.Cancel)
-
 	return r
 }
 
@@ -104,24 +112,6 @@ func (h *OrdersHandler) Create(
 		Writer: w,
 	}
 
-	id := chi.URLParam(r, "id")
-	err := h.Repository.Cancel(id)
-	if err != nil {
-		h.Response.Error(http.StatusForbidden, 1004, err.Error())
-		return
-	}
-
-	h.Response.Json(nil)
-}
-
-func (h *OrdersHandler) Cancel(
-	w http.ResponseWriter,
-	r *http.Request,
-) {
-	h.Response = &api.ResponseHandler{
-		Writer: w,
-	}
-
 	symbol := r.URL.Query().Get("symbol")
 	if symbol == "" {
 		h.Response.Error(http.StatusForbidden, 1004, "symbol is empty")
@@ -142,8 +132,27 @@ func (h *OrdersHandler) Cancel(
 		return
 	}
 	amount, _ := strconv.ParseFloat(r.URL.Query().Get("amount"), 64)
+	isIsolated, _ := strconv.ParseBool(r.URL.Query().Get("is_isolated"))
 
-	_, err := h.Repository.Create(symbol, side, price, amount)
+	_, err := h.Repository.Create(symbol, side, price, amount, isIsolated)
+	if err != nil {
+		h.Response.Error(http.StatusForbidden, 1004, err.Error())
+		return
+	}
+
+	h.Response.Json(nil)
+}
+
+func (h *OrdersHandler) Cancel(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+	h.Response = &api.ResponseHandler{
+		Writer: w,
+	}
+
+	id := chi.URLParam(r, "id")
+	err := h.Repository.Cancel(id)
 	if err != nil {
 		h.Response.Error(http.StatusForbidden, 1004, err.Error())
 		return

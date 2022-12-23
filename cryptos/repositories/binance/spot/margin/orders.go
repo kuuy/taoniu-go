@@ -15,25 +15,33 @@ import (
 
 	config "taoniu.local/cryptos/config/binance/spot"
 	models "taoniu.local/cryptos/models/binance/spot/margin"
-	repositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
 type OrdersRepository struct {
-	Db                *gorm.DB
-	Rdb               *redis.Client
-	Ctx               context.Context
-	SymbolsRepository *repositories.SymbolsRepository
+	Db  *gorm.DB
+	Rdb *redis.Client
+	Ctx context.Context
 }
 
-func (r *OrdersRepository) Symbols() *repositories.SymbolsRepository {
-	if r.SymbolsRepository == nil {
-		r.SymbolsRepository = &repositories.SymbolsRepository{
-			Db:  r.Db,
-			Rdb: r.Rdb,
-			Ctx: r.Ctx,
-		}
+func (r *OrdersRepository) Lost(symbol string, price float64, timestamp int64) int64 {
+	var entity models.Order
+	result := r.Db.Where("symbol=? AND price=?", symbol, price).Order("updated_at desc").Take(&entity)
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return 0
 	}
-	return r.SymbolsRepository
+	if entity.UpdatedAt.Unix() < timestamp {
+		return 0
+	}
+	return entity.OrderID
+}
+
+func (r *OrdersRepository) Status(symbol string, orderID int64) string {
+	var entity models.Order
+	result := r.Db.Select("status").Where("symbol=? AND order_id=?", symbol, orderID).Take(&entity)
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return ""
+	}
+	return entity.Status
 }
 
 func (r *OrdersRepository) Count(conditions map[string]interface{}) int64 {
@@ -74,12 +82,9 @@ func (r *OrdersRepository) Create(
 	symbol string,
 	side string,
 	price float64,
-	amount float64,
+	quantity float64,
+	isIsolated bool,
 ) (int64, error) {
-	price, quantity, err := r.Symbols().Adjust(symbol, price, amount)
-	if err != nil {
-		return 0, err
-	}
 	client := binance.NewClient(config.TRADE_API_KEY, config.TRADE_SECRET_KEY)
 	result, err := client.NewCreateMarginOrderService().Symbol(
 		symbol,
@@ -92,7 +97,7 @@ func (r *OrdersRepository) Create(
 	).Quantity(
 		strconv.FormatFloat(quantity, 'f', -1, 64),
 	).IsIsolated(
-		true,
+		isIsolated,
 	).TimeInForce(
 		binance.TimeInForceTypeGTC,
 	).NewOrderRespType(
@@ -122,9 +127,9 @@ func (r *OrdersRepository) Cancel(id string) error {
 	return nil
 }
 
-func (r *OrdersRepository) Flush(symbol string, orderId int64, isIsolated bool) error {
+func (r *OrdersRepository) Flush(symbol string, orderID int64, isIsolated bool) error {
 	client := binance.NewClient(config.ACCOUNT_API_KEY, config.ACCOUNT_SECRET_KEY)
-	order, err := client.NewGetMarginOrderService().Symbol(symbol).OrderID(orderId).IsIsolated(isIsolated).Do(r.Ctx)
+	order, err := client.NewGetMarginOrderService().Symbol(symbol).OrderID(orderID).IsIsolated(isIsolated).Do(r.Ctx)
 	if err != nil {
 		return err
 	}
@@ -139,7 +144,7 @@ func (r *OrdersRepository) Flush(symbol string, orderId int64, isIsolated bool) 
 	r.Rdb.SRem(
 		r.Ctx,
 		"binance:spot:margin:orders:flush",
-		fmt.Sprintf("%s,%d,%d", symbol, orderId, isolated),
+		fmt.Sprintf("%s,%d,%d", symbol, orderID, isolated),
 	).Result()
 
 	return nil

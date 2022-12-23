@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
+	marginRepositories "taoniu.local/cryptos/repositories/binance/spot/margin"
 	repositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated"
 	tasks "taoniu.local/cryptos/tasks/binance/spot/margin/isolated"
 )
@@ -34,15 +35,22 @@ func (t *IsolatedTask) Account() *tasks.AccountTask {
 }
 
 func (t *IsolatedTask) Orders() *tasks.OrdersTask {
-	return &tasks.OrdersTask{
+	task := &tasks.OrdersTask{
 		Rdb: t.Rdb,
 		Ctx: t.Ctx,
-		Repository: &repositories.OrdersRepository{
-			Db:  t.Db,
-			Rdb: t.Rdb,
-			Ctx: t.Ctx,
-		},
 	}
+	task.Repository = &repositories.OrdersRepository{
+		Db:  t.Db,
+		Rdb: t.Rdb,
+		Ctx: t.Ctx,
+	}
+	parentRepository := &marginRepositories.OrdersRepository{
+		Db:  t.Db,
+		Rdb: t.Rdb,
+		Ctx: t.Ctx,
+	}
+	task.Repository.Parent = parentRepository
+	return task
 }
 
 func (t *IsolatedTask) Tradings() *tasks.TradingsTask {

@@ -29,6 +29,7 @@ func main() {
 			commands.NewApiCommand(),
 			commands.NewCronCommand(),
 			commands.NewGfwCommand(),
+			commands.NewTorCommand(),
 		},
 		Version: "0.0.0",
 	}

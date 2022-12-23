@@ -90,7 +90,7 @@ func (h *HuntHandler) place() error {
 	//		Currency:   "trx",
 	//		Game:       "hilo",
 	//		Multiplier: "1.0102",
-	//		Amount:     "0.000001",
+	//		Price:     "0.000001",
 	//		Rule:       "under",
 	//		BetValue:   98,
 	//	}

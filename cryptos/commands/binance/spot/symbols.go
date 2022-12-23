@@ -2,13 +2,18 @@ package spot
 
 import (
 	"context"
-	"github.com/urfave/cli/v2"
 	"log"
-	pool "taoniu.local/cryptos/common"
+
+	"github.com/go-redis/redis/v8"
+	"github.com/urfave/cli/v2"
+
+	"taoniu.local/cryptos/common"
 	repositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
 type SymbolsHandler struct {
+	Rdb        *redis.Client
+	Ctx        context.Context
 	Repository *repositories.SymbolsRepository
 }
 
@@ -20,8 +25,8 @@ func NewSymbolsCommand() *cli.Command {
 		Before: func(c *cli.Context) error {
 			h = SymbolsHandler{}
 			h.Repository = &repositories.SymbolsRepository{
-				Db:  pool.NewDB(),
-				Rdb: pool.NewRedis(),
+				Db:  common.NewDB(),
+				Rdb: common.NewRedis(),
 				Ctx: context.Background(),
 			}
 			return nil
@@ -31,7 +36,17 @@ func NewSymbolsCommand() *cli.Command {
 				Name:  "flush",
 				Usage: "",
 				Action: func(c *cli.Context) error {
-					if err := h.flush(); err != nil {
+					if err := h.Flush(); err != nil {
+						return cli.Exit(err.Error(), 1)
+					}
+					return nil
+				},
+			},
+			{
+				Name:  "scan",
+				Usage: "",
+				Action: func(c *cli.Context) error {
+					if err := h.Scan(); err != nil {
 						return cli.Exit(err.Error(), 1)
 					}
 					return nil
@@ -41,7 +56,7 @@ func NewSymbolsCommand() *cli.Command {
 				Name:  "count",
 				Usage: "",
 				Action: func(c *cli.Context) error {
-					if err := h.count(); err != nil {
+					if err := h.Count(); err != nil {
 						return cli.Exit(err.Error(), 1)
 					}
 					return nil
@@ -51,12 +66,19 @@ func NewSymbolsCommand() *cli.Command {
 	}
 }
 
-func (h *SymbolsHandler) flush() error {
+func (h *SymbolsHandler) Flush() error {
 	log.Println("symbols flush...")
 	return h.Repository.Flush()
 }
 
-func (h *SymbolsHandler) count() error {
+func (h *SymbolsHandler) Scan() error {
+	log.Println("symbols scan...")
+	symbols := h.Repository.Scan()
+	log.Println("symbols", symbols)
+	return nil
+}
+
+func (h *SymbolsHandler) Count() error {
 	log.Println("symbols count...")
 	return h.Repository.Count()
 }

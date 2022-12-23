@@ -94,7 +94,10 @@ func (t *TorTask) Checker() error {
 	).Result()
 	for _, item := range items {
 		port, _ := strconv.Atoi(item)
-		t.Repository.Checker(port)
+		err := t.Repository.Checker(port)
+		if err != nil {
+			t.Rdb.ZIncrBy(t.Ctx, "proxies:tor:failed", 1, strconv.Itoa(port))
+		}
 	}
 
 	return nil

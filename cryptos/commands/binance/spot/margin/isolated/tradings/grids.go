@@ -74,11 +74,11 @@ func (h *GridsHandler) flush() error {
 func (h *GridsHandler) buy() error {
 	symbol := "AVAXBUSD"
 	price := 15.427547306193494
-	orderId, err := h.Repository.Order(symbol, binance.SideTypeBuy, price, 10)
+	orderID, err := h.Repository.Order(symbol, binance.SideTypeBuy, price, 10)
 	if err != nil {
 		return err
 	}
-	log.Println("order:", symbol, orderId)
+	log.Println("order:", symbol, orderID)
 
 	return nil
 }

@@ -32,7 +32,6 @@ func (r *OrdersRepository) Open(symbol string) error {
 	for _, order := range orders {
 		r.Save(order)
 	}
-
 	return nil
 }
 
@@ -52,7 +51,6 @@ func (r *OrdersRepository) Sync(symbol string, limit int) error {
 	for _, order := range orders {
 		r.Save(order)
 	}
-
 	return nil
 }
 
@@ -76,13 +74,12 @@ func (r *OrdersRepository) Fix(time time.Time, limit int) error {
 	for _, order := range orders {
 		r.Flush(order.Symbol, order.OrderID)
 	}
-
 	return nil
 }
 
-func (r *OrdersRepository) Flush(symbol string, orderId int64) error {
+func (r *OrdersRepository) Flush(symbol string, orderID int64) error {
 	client := binance.NewFuturesClient(config.ACCOUNT_API_KEY, config.ACCOUNT_SECRET_KEY)
-	order, err := client.NewGetOrderService().Symbol(symbol).OrderID(orderId).Do(r.Ctx)
+	order, err := client.NewGetOrderService().Symbol(symbol).OrderID(orderID).Do(r.Ctx)
 	if err != nil {
 		return err
 	}
@@ -91,7 +88,7 @@ func (r *OrdersRepository) Flush(symbol string, orderId int64) error {
 	r.Rdb.SRem(
 		r.Ctx,
 		"binance:futures:orders:flush",
-		fmt.Sprintf("%s,%d,%d", symbol, orderId),
+		fmt.Sprintf("%s,%d,%d", symbol, orderID),
 	).Result()
 
 	return nil
@@ -135,6 +132,5 @@ func (r *OrdersRepository) Save(order *service.Order) error {
 		entity.Status = fmt.Sprint(order.Status)
 		r.Db.Model(&models.Order{ID: entity.ID}).Updates(entity)
 	}
-
 	return nil
 }

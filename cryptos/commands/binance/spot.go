@@ -12,6 +12,7 @@ func NewSpotCommand() *cli.Command {
 		Subcommands: []*cli.Command{
 			spot.NewSymbolsCommand(),
 			spot.NewTickersCommand(),
+			spot.NewDepthCommand(),
 			spot.NewStreamCommand(),
 			spot.NewWebsocketCommand(),
 			spot.NewKlinesCommand(),

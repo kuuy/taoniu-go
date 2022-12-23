@@ -48,10 +48,19 @@ func (h *CronHandler) run() error {
 	gfw := tasks.GfwTask{
 		Db: h.Db,
 	}
+	tor := tasks.TorTask{
+		Db: h.Db,
+	}
 
 	c := cron.New()
 	c.AddFunc("@every 30s", func() {
 		gfw.Dns().Flush()
+	})
+	c.AddFunc("@every 1h30m", func() {
+		tor.Bridges().Rescue()
+	})
+	c.AddFunc("30 2 * * *", func() {
+		tor.Bridges().Flush()
 	})
 	c.Start()
 

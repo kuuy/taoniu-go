@@ -70,6 +70,21 @@ func NewTorCommand() *cli.Command {
 				},
 			},
 			{
+				Name:  "add",
+				Usage: "",
+				Action: func(c *cli.Context) error {
+					port, _ := strconv.Atoi(c.Args().Get(0))
+					if port < 1 || port > 65535 {
+						log.Fatal("port not in 0~65535")
+						return nil
+					}
+					if err := h.add(port); err != nil {
+						return cli.Exit(err.Error(), 1)
+					}
+					return nil
+				},
+			},
+			{
 				Name:  "online",
 				Usage: "",
 				Action: func(c *cli.Context) error {
@@ -187,6 +202,11 @@ func (h *TorHandler) checker() error {
 func (h *TorHandler) failed(port int) error {
 	log.Println("tor failed processing...")
 	return h.Repository.Failed(port)
+}
+
+func (h *TorHandler) add(port int) error {
+	log.Println("tor add processing...")
+	return h.Repository.Add(port)
 }
 
 func (h *TorHandler) online(port int) error {

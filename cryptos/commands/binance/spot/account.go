@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/urfave/cli/v2"
 	"log"
-	pool "taoniu.local/cryptos/common"
+	"taoniu.local/cryptos/common"
 	repositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
@@ -20,7 +20,7 @@ func NewAccountCommand() *cli.Command {
 		Before: func(c *cli.Context) error {
 			h = AccountHandler{}
 			h.Repository = &repositories.AccountRepository{
-				Rdb: pool.NewRedis(),
+				Rdb: common.NewRedis(),
 				Ctx: context.Background(),
 			}
 			return nil

@@ -114,7 +114,6 @@ func (r *DnsRepository) Flush() error {
 	}
 	for i, ips := range result {
 		if ips == "" {
-
 			continue
 		}
 		domain := strings.TrimRight(domains[i], ".")
@@ -165,6 +164,7 @@ func (r *DnsRepository) Cache() error {
 					file.WriteString(fmt.Sprintf("  local-data: \"%s. IN AAAA %s\"\n", record.Domain, ip))
 				} else {
 					file.WriteString(fmt.Sprintf("  local-data: \"%s. IN A %s\"\n", record.Domain, ip))
+					exec.Command("ipset", "add", "gfw", ip).Run()
 				}
 			}
 		}

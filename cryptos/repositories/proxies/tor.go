@@ -39,6 +39,11 @@ func (r *TorRepository) Failed(port int) error {
 	return nil
 }
 
+func (r *TorRepository) Add(port int) error {
+	r.Rdb.SAdd(r.Ctx, "proxies:tor:pool", port)
+	return nil
+}
+
 func (r *TorRepository) Online(port int) error {
 	r.Rdb.SAdd(r.Ctx, "proxies:tor:online", port)
 	r.Rdb.SRem(r.Ctx, "proxies:tor:offline", port)
@@ -66,6 +71,12 @@ func (r *TorRepository) Start() error {
 			break
 		}
 		time.Sleep(1 * time.Second)
+	}
+	r.Rdb.Del(r.Ctx, "proxies:tor:online")
+	r.Rdb.Del(r.Ctx, "proxies:tor:offline")
+	ports, _ := r.Rdb.SMembers(r.Ctx, "proxies:tor:pool").Result()
+	for _, port := range ports {
+		r.Rdb.SAdd(r.Ctx, "proxies:tor:offline", port)
 	}
 
 	return err

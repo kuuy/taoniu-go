@@ -12,28 +12,31 @@ import (
 	repositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
-type TickersHandler struct {
+type symbolsRepository interface {
+	Scan() []string
+}
+
+type DepthHandler struct {
 	Db                *gorm.DB
 	Rdb               *redis.Client
 	Ctx               context.Context
-	Repository        *repositories.TickersRepository
-	SymbolsRepository *repositories.SymbolsRepository
+	Repository        *repositories.DepthRepository
+	SymbolsRepository symbolsRepository
 }
 
-func NewTickersCommand() *cli.Command {
-	var h TickersHandler
+func NewDepthCommand() *cli.Command {
+	var h DepthHandler
 	return &cli.Command{
-		Name:  "tickers",
+		Name:  "depth",
 		Usage: "",
 		Before: func(c *cli.Context) error {
-			h = TickersHandler{
+			h = DepthHandler{
 				Db:  common.NewDB(),
 				Rdb: common.NewRedis(),
 				Ctx: context.Background(),
 			}
-			h.Repository = &repositories.TickersRepository{
-				Rdb: h.Rdb,
-				Ctx: h.Ctx,
+			h.Repository = &repositories.DepthRepository{
+				Db: h.Db,
 			}
 			h.SymbolsRepository = &repositories.SymbolsRepository{
 				Db: h.Db,
@@ -44,8 +47,15 @@ func NewTickersCommand() *cli.Command {
 			{
 				Name:  "flush",
 				Usage: "",
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:  "proxy",
+						Value: false,
+					},
+				},
 				Action: func(c *cli.Context) error {
-					if err := h.Flush(); err != nil {
+					h.Repository.UseProxy = c.Bool("proxy")
+					if err := h.flush(); err != nil {
 						return cli.Exit(err.Error(), 1)
 					}
 					return nil
@@ -55,17 +65,14 @@ func NewTickersCommand() *cli.Command {
 	}
 }
 
-func (h *TickersHandler) Flush() error {
-	log.Println("Tickers flush...")
+func (h *DepthHandler) flush() error {
+	log.Println("symbols depth flush...")
 	symbols := h.SymbolsRepository.Scan()
-	log.Println(symbols)
-	for i := 0; i < len(symbols); i += 20 {
-		j := i + 20
-		if j > len(symbols) {
-			j = len(symbols)
+	for _, symbol := range symbols {
+		err := h.Repository.Flush(symbol)
+		if err != nil {
+			log.Println("error", err)
 		}
-		h.Repository.Flush(symbols[i:j])
 	}
-
 	return nil
 }

@@ -15,5 +15,6 @@ func (m *Isolated) AutoMigrate(db *gorm.DB) error {
 	db.AutoMigrate(
 		&isolated.TradingGrid{},
 	)
+	isolated.NewFishers().AutoMigrate(db)
 	return nil
 }

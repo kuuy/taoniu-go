@@ -2,14 +2,13 @@ package spot
 
 import (
 	"context"
+	"github.com/go-chi/chi/v5"
 	"net/http"
 	"strings"
 	"taoniu.local/cryptos/api"
-
-	"github.com/go-chi/chi/v5"
+	repositories "taoniu.local/cryptos/repositories/binance/spot"
 
 	pool "taoniu.local/cryptos/common"
-	repositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
 type TickersHandler struct {

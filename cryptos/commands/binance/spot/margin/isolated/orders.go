@@ -4,12 +4,16 @@ import (
 	"context"
 	"github.com/go-redis/redis/v8"
 	"github.com/urfave/cli/v2"
+	"gorm.io/gorm"
 	"log"
-	pool "taoniu.local/cryptos/common"
+
+	"taoniu.local/cryptos/common"
+	marginRepositories "taoniu.local/cryptos/repositories/binance/spot/margin"
 	repositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated"
 )
 
 type OrdersHandler struct {
+	Db         *gorm.DB
 	Rdb        *redis.Client
 	Ctx        context.Context
 	Repository *repositories.OrdersRepository
@@ -22,14 +26,21 @@ func NewOrdersCommand() *cli.Command {
 		Usage: "",
 		Before: func(c *cli.Context) error {
 			h = OrdersHandler{
-				Rdb: pool.NewRedis(),
+				Db:  common.NewDB(),
+				Rdb: common.NewRedis(),
 				Ctx: context.Background(),
 			}
 			h.Repository = &repositories.OrdersRepository{
-				Db:  pool.NewDB(),
+				Db:  h.Db,
 				Rdb: h.Rdb,
 				Ctx: h.Ctx,
 			}
+			parentRepository := &marginRepositories.OrdersRepository{
+				Db:  h.Db,
+				Rdb: h.Rdb,
+				Ctx: h.Ctx,
+			}
+			h.Repository.Parent = parentRepository
 			return nil
 		},
 		Subcommands: []*cli.Command{

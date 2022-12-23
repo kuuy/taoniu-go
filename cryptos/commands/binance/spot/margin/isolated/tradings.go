@@ -11,6 +11,7 @@ func NewTradingsCommand() *cli.Command {
 		Usage: "",
 		Subcommands: []*cli.Command{
 			tradings.NewGridsCommand(),
+			tradings.NewFishersCommand(),
 		},
 	}
 }

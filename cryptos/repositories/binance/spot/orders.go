@@ -79,9 +79,9 @@ func (r *OrdersRepository) Fix(time time.Time, limit int) error {
 	return nil
 }
 
-func (r *OrdersRepository) Flush(symbol string, orderId int64) error {
+func (r *OrdersRepository) Flush(symbol string, orderID int64) error {
 	client := binance.NewClient(config.ACCOUNT_API_KEY, config.ACCOUNT_SECRET_KEY)
-	order, err := client.NewGetOrderService().Symbol(symbol).OrderID(orderId).Do(r.Ctx)
+	order, err := client.NewGetOrderService().Symbol(symbol).OrderID(orderID).Do(r.Ctx)
 	if err != nil {
 		return err
 	}
@@ -90,7 +90,7 @@ func (r *OrdersRepository) Flush(symbol string, orderId int64) error {
 	r.Rdb.SRem(
 		r.Ctx,
 		"binance:spot:orders:flush",
-		fmt.Sprintf("%s,%d,%d", symbol, orderId),
+		fmt.Sprintf("%s,%d,%d", symbol, orderID),
 	).Result()
 
 	return nil

@@ -19,18 +19,22 @@ import (
 	models "taoniu.local/cryptos/models/binance/spot"
 )
 
-type SymbolsError struct {
-	Message string
-}
-
-func (m *SymbolsError) Error() string {
-	return m.Message
-}
-
 type SymbolsRepository struct {
-	Db  *gorm.DB
-	Rdb *redis.Client
-	Ctx context.Context
+	Db               *gorm.DB
+	Rdb              *redis.Client
+	Ctx              context.Context
+	MarginRepository *MarginRepository
+}
+
+func (r *SymbolsRepository) Margins() *MarginRepository {
+	if r.MarginRepository == nil {
+		r.MarginRepository = &MarginRepository{
+			Db:  r.Db,
+			Rdb: r.Rdb,
+			Ctx: r.Ctx,
+		}
+	}
+	return r.MarginRepository
 }
 
 func (r *SymbolsRepository) Symbols() []string {
@@ -136,6 +140,16 @@ func (r *SymbolsRepository) Flush() error {
 	return nil
 }
 
+func (r *SymbolsRepository) Scan() []string {
+	var symbols []string
+	for _, symbol := range r.Margins().Symbols().Scan() {
+		if !r.contains(symbols, symbol) {
+			symbols = append(symbols, symbol)
+		}
+	}
+	return symbols
+}
+
 func (r *SymbolsRepository) Count() error {
 	var count int64
 	r.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Count(&count)
@@ -165,7 +179,7 @@ func (r *SymbolsRepository) Price(symbol string) (float64, error) {
 	).Result()
 	for i := 0; i < len(fields); i++ {
 		if data[i] == nil {
-			return 0, &SymbolsError{"price not exists"}
+			return 0, errors.New("price not exists")
 		}
 	}
 
@@ -177,7 +191,7 @@ func (r *SymbolsRepository) Price(symbol string) (float64, error) {
 			float64(timestamp),
 			symbol,
 		})
-		return 0, &SymbolsError{"price long time not freshed"}
+		return 0, errors.New("price long time not freshed")
 	}
 
 	return price, nil
@@ -201,14 +215,14 @@ func (r *SymbolsRepository) Adjust(symbol string, price float64, amount float64)
 	if price < minPrice {
 		price = minPrice
 	}
-	price = math.Ceil(price/tickSize) / math.Ceil(1/tickSize)
+	price = math.Round(price/tickSize) * tickSize
 
 	data = strings.Split(entity.Filters["quote"].(string), ",")
 	maxQty, _ := strconv.ParseFloat(data[0], 64)
 	minQty, _ := strconv.ParseFloat(data[1], 64)
 	stepSize, _ := strconv.ParseFloat(data[2], 64)
 
-	quantity := math.Ceil(amount/(price*stepSize)) / math.Ceil(1/stepSize)
+	quantity := math.Ceil(amount/(price*stepSize)) * stepSize
 	if quantity > maxQty {
 		return 0, 0, errors.New("quantity too high")
 	}
@@ -247,4 +261,13 @@ func (r *SymbolsRepository) Context(symbol string) map[string]interface{} {
 	}
 
 	return context
+}
+
+func (r *SymbolsRepository) contains(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+	return false
 }

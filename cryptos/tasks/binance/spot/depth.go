@@ -2,26 +2,25 @@ package spot
 
 import (
 	"context"
-	"time"
-
 	"github.com/go-redis/redis/v8"
+	"time"
 
 	"taoniu.local/cryptos/common"
 	repositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
-type TickersTask struct {
+type DepthTask struct {
 	Rdb               *redis.Client
 	Ctx               context.Context
-	Repository        *repositories.TickersRepository
+	Repository        *repositories.DepthRepository
 	SymbolsRepository *repositories.SymbolsRepository
 }
 
-func (t *TickersTask) Flush() error {
+func (t *DepthTask) Flush() error {
 	mutex := common.NewMutex(
 		t.Rdb,
 		t.Ctx,
-		"locks:binance:spot:tickers:flush",
+		"locks:binance:spot:depth:flush",
 	)
 	if mutex.Lock(10 * time.Second) {
 		return nil
@@ -29,12 +28,8 @@ func (t *TickersTask) Flush() error {
 	defer mutex.Unlock()
 
 	symbols := t.SymbolsRepository.Scan()
-	for i := 0; i < len(symbols); i += 20 {
-		j := i + 20
-		if j > len(symbols) {
-			j = len(symbols)
-		}
-		t.Repository.Flush(symbols[i:j])
+	for _, symbol := range symbols {
+		t.Repository.Flush(symbol)
 	}
 
 	return nil
