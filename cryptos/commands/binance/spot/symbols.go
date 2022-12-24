@@ -2,10 +2,9 @@ package spot
 
 import (
 	"context"
-	"log"
-
 	"github.com/go-redis/redis/v8"
 	"github.com/urfave/cli/v2"
+	"log"
 
 	"taoniu.local/cryptos/common"
 	repositories "taoniu.local/cryptos/repositories/binance/spot"
@@ -62,6 +61,26 @@ func NewSymbolsCommand() *cli.Command {
 					return nil
 				},
 			},
+			{
+				Name:  "slippage",
+				Usage: "",
+				Action: func(c *cli.Context) error {
+					if err := h.Slippage(); err != nil {
+						return cli.Exit(err.Error(), 1)
+					}
+					return nil
+				},
+			},
+			{
+				Name:  "adjust",
+				Usage: "",
+				Action: func(c *cli.Context) error {
+					if err := h.Adjust(); err != nil {
+						return cli.Exit(err.Error(), 1)
+					}
+					return nil
+				},
+			},
 		},
 	}
 }
@@ -81,4 +100,21 @@ func (h *SymbolsHandler) Scan() error {
 func (h *SymbolsHandler) Count() error {
 	log.Println("symbols count...")
 	return h.Repository.Count()
+}
+
+func (h *SymbolsHandler) Slippage() error {
+	log.Println("symbols depth...")
+	for _, symbol := range h.Repository.Symbols() {
+		h.Repository.Slippage(symbol)
+	}
+	return nil
+}
+
+func (h *SymbolsHandler) Adjust() error {
+	log.Println("symbols adjust...")
+	symbol := "AVAXBUSD"
+	price := 11.81 * 1.02
+	price, quantity, err := h.Repository.Adjust(symbol, price, 20)
+	log.Println("price", price, quantity, err)
+	return nil
 }

@@ -2,9 +2,11 @@ package isolated
 
 import (
 	"context"
-	"github.com/urfave/cli/v2"
 	"log"
-	pool "taoniu.local/cryptos/common"
+
+	"github.com/urfave/cli/v2"
+
+	"taoniu.local/cryptos/common"
 	repositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated"
 )
 
@@ -20,8 +22,8 @@ func NewSymbolsCommand() *cli.Command {
 		Before: func(c *cli.Context) error {
 			h = SymbolsHandler{}
 			h.Repository = &repositories.SymbolsRepository{
-				Db:  pool.NewDB(),
-				Rdb: pool.NewRedis(),
+				Db:  common.NewDB(),
+				Rdb: common.NewRedis(),
 				Ctx: context.Background(),
 			}
 			return nil
@@ -31,7 +33,7 @@ func NewSymbolsCommand() *cli.Command {
 				Name:  "flush",
 				Usage: "",
 				Action: func(c *cli.Context) error {
-					if err := h.flush(); err != nil {
+					if err := h.Flush(); err != nil {
 						return cli.Exit(err.Error(), 1)
 					}
 					return nil
@@ -41,7 +43,7 @@ func NewSymbolsCommand() *cli.Command {
 	}
 }
 
-func (h *SymbolsHandler) flush() error {
+func (h *SymbolsHandler) Flush() error {
 	log.Println("symbols flush processing...")
 	return h.Repository.Flush()
 }

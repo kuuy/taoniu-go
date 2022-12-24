@@ -2,11 +2,12 @@ package spiders
 
 import (
 	"encoding/json"
+	"strconv"
+
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
-	"strconv"
-	spiderModels "taoniu.local/cryptos/models/spiders"
 
+	spiderModels "taoniu.local/cryptos/models/spiders"
 	"taoniu.local/cryptos/repositories"
 	spiderRepositories "taoniu.local/cryptos/repositories/spiders"
 )
@@ -118,9 +119,8 @@ func (r *CrawlsRepository) Request() error {
 }
 
 func (r *CrawlsRepository) JSON(in interface{}) datatypes.JSON {
-	buf, _ := json.Marshal(in)
-
 	var out datatypes.JSON
+	buf, _ := json.Marshal(in)
 	json.Unmarshal(buf, &out)
 	return out
 }

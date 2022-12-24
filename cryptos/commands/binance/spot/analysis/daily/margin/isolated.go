@@ -2,14 +2,18 @@ package margin
 
 import (
 	"context"
+	"log"
+
 	"github.com/go-redis/redis/v8"
 	"github.com/urfave/cli/v2"
-	"log"
-	pool "taoniu.local/cryptos/common"
+	"gorm.io/gorm"
+
+	"taoniu.local/cryptos/common"
 	repositories "taoniu.local/cryptos/repositories/binance/spot/analysis/daily/margin"
 )
 
 type IsolatedHandler struct {
+	Db         *gorm.DB
 	Rdb        *redis.Client
 	Ctx        context.Context
 	Repository *repositories.IsolatedRepository
@@ -22,11 +26,12 @@ func NewIsolatedCommand() *cli.Command {
 		Usage: "",
 		Before: func(c *cli.Context) error {
 			h = IsolatedHandler{
-				Rdb: pool.NewRedis(),
+				Db:  common.NewDB(),
+				Rdb: common.NewRedis(),
 				Ctx: context.Background(),
 			}
 			h.Repository = &repositories.IsolatedRepository{
-				Db:  pool.NewDB(),
+				Db:  h.Db,
 				Rdb: h.Rdb,
 				Ctx: h.Ctx,
 			}
@@ -37,7 +42,7 @@ func NewIsolatedCommand() *cli.Command {
 				Name:  "flush",
 				Usage: "",
 				Action: func(c *cli.Context) error {
-					if err := h.flush(); err != nil {
+					if err := h.Flush(); err != nil {
 						return cli.Exit(err.Error(), 1)
 					}
 					return nil
@@ -47,7 +52,7 @@ func NewIsolatedCommand() *cli.Command {
 	}
 }
 
-func (h *IsolatedHandler) flush() error {
+func (h *IsolatedHandler) Flush() error {
 	log.Println("analysis daily margin Isolated flush...")
 	h.Repository.Grids()
 

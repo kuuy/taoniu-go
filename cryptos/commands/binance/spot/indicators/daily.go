@@ -2,16 +2,19 @@ package indicators
 
 import (
 	"context"
+	"github.com/go-redis/redis/v8"
 	"github.com/urfave/cli/v2"
 	"gorm.io/gorm"
 	"log"
-	pool "taoniu.local/cryptos/common"
+	"taoniu.local/cryptos/common"
 	models "taoniu.local/cryptos/models/binance/spot"
 	repositories "taoniu.local/cryptos/repositories/binance/spot/indicators"
 )
 
 type DailyHandler struct {
 	Db         *gorm.DB
+	Rdb        *redis.Client
+	Ctx        context.Context
 	Repository *repositories.DailyRepository
 }
 
@@ -22,12 +25,14 @@ func NewDailyCommand() *cli.Command {
 		Usage: "",
 		Before: func(c *cli.Context) error {
 			h = DailyHandler{
-				Db: pool.NewDB(),
+				Db:  common.NewDB(),
+				Rdb: common.NewRedis(),
+				Ctx: context.Background(),
 			}
 			h.Repository = &repositories.DailyRepository{
 				Db:  h.Db,
-				Rdb: pool.NewRedis(),
-				Ctx: context.Background(),
+				Rdb: h.Rdb,
+				Ctx: h.Ctx,
 			}
 			return nil
 		},

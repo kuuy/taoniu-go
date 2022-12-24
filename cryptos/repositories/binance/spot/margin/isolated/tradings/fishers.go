@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"math"
+
 	"github.com/go-redis/redis/v8"
 	"github.com/rs/xid"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
-	"math"
 
 	models "taoniu.local/cryptos/models/binance/spot/margin/isolated/fishers"
 )
@@ -26,6 +27,7 @@ type OrdersRepository interface {
 	Status(symbol string, orderID int64) string
 	Create(symbol string, side string, price float64, quantity float64, isIsolated bool) (int64, error)
 	Lost(symbol string, price float64, timestamp int64) int64
+	Flush(symbol string, orderID int64, isIsolated bool) error
 }
 
 type FishersRepository struct {
@@ -117,11 +119,12 @@ func (r *FishersRepository) Flush(symbol string) error {
 	r.Take(&fisher, price)
 
 	var grids []*models.Grid
-	r.Db.Where("symbol=? AND status=?", fisher.Symbol, []int{0, 2}).Find(&grids)
+	r.Db.Where("symbol=? AND status IN ?", fisher.Symbol, []int{0, 2}).Find(&grids)
 	for _, grid := range grids {
 		if grid.Status == 0 {
 			status := r.OrdersRepository.Status(symbol, grid.BuyOrderId)
 			if status == "NEW" || status == "PARTIALLY_FILLED" {
+				r.OrdersRepository.Flush(symbol, grid.BuyOrderId, true)
 				continue
 			}
 			r.Db.Transaction(func(tx *gorm.DB) error {
@@ -149,6 +152,9 @@ func (r *FishersRepository) Flush(symbol string) error {
 					grid.Status = 3
 				} else {
 					fisher.Balance -= grid.SellPrice * grid.SellQuantity
+					if err := tx.Model(&models.Fisher{ID: fisher.ID}).Updates(fisher).Error; err != nil {
+						return err
+					}
 					grid.Status = 5
 				}
 				if err := tx.Model(&models.Grid{ID: grid.ID}).Updates(grid).Error; err != nil {

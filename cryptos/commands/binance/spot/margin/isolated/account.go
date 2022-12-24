@@ -2,9 +2,11 @@ package isolated
 
 import (
 	"context"
-	"github.com/urfave/cli/v2"
 	"log"
-	pool "taoniu.local/cryptos/common"
+
+	"github.com/urfave/cli/v2"
+
+	"taoniu.local/cryptos/common"
 	repositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated"
 )
 
@@ -20,7 +22,7 @@ func NewAccountCommand() *cli.Command {
 		Before: func(c *cli.Context) error {
 			h = AccountHandler{}
 			h.Repository = &repositories.AccountRepository{
-				Rdb: pool.NewRedis(),
+				Rdb: common.NewRedis(),
 				Ctx: context.Background(),
 			}
 			return nil
@@ -30,7 +32,7 @@ func NewAccountCommand() *cli.Command {
 				Name:  "flush",
 				Usage: "",
 				Action: func(c *cli.Context) error {
-					if err := h.flush(); err != nil {
+					if err := h.Flush(); err != nil {
 						return cli.Exit(err.Error(), 1)
 					}
 					return nil
@@ -40,7 +42,7 @@ func NewAccountCommand() *cli.Command {
 	}
 }
 
-func (h *AccountHandler) flush() error {
+func (h *AccountHandler) Flush() error {
 	log.Println("margin isolated account flush processing...")
 	return h.Repository.Flush()
 }

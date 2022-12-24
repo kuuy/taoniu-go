@@ -2,6 +2,7 @@ package spot
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -51,7 +52,6 @@ func (r *SymbolsRepository) Get(
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return entity, result.Error
 	}
-
 	return entity, nil
 }
 
@@ -164,6 +164,76 @@ func (r *SymbolsRepository) Count() error {
 	return nil
 }
 
+func (r *SymbolsRepository) Slippage(symbol string) error {
+	depth, err := r.Depth(symbol)
+	if err != nil {
+		return err
+	}
+	asks := depth["asks"].([]interface{})
+	bids := depth["bids"].([]interface{})
+	data := make(map[string]float64)
+	data["depth,1%"] = 0
+	data["depth,-1%"] = 0
+	data["depth,2%"] = 0
+	data["depth,-2%"] = 0
+	var stop1, stop2 float64
+	for i, item := range asks {
+		price, _ := strconv.ParseFloat(item.([]interface{})[0].(string), 64)
+		volume, _ := strconv.ParseFloat(item.([]interface{})[1].(string), 64)
+		if i == 0 {
+			stop1 = price * 1.01
+			stop2 = price * 1.02
+		}
+		if price <= stop1 {
+			data["depth,1%"] += volume
+		}
+		if price > stop2 {
+			break
+		}
+		data["depth,2%"] += volume
+	}
+	for i, item := range bids {
+		price, _ := strconv.ParseFloat(item.([]interface{})[0].(string), 64)
+		volume, _ := strconv.ParseFloat(item.([]interface{})[1].(string), 64)
+		if i == 0 {
+			stop1 = price * 0.99
+			stop2 = price * 0.98
+		}
+		if price >= stop1 {
+			data["depth,-1%"] += volume
+		}
+		if price < stop2 {
+			break
+		}
+		data["depth,-2%"] += volume
+	}
+	r.Rdb.HMSet(
+		r.Ctx,
+		fmt.Sprintf("binance:spot:realtime:%s", symbol),
+		map[string]interface{}{
+			"depth,1%":  data["depth,1%"],
+			"depth,-1%": data["depth,-1%"],
+			"depth,2%":  data["depth,2%"],
+			"depth,-2%": data["depth,-2%"],
+		},
+	)
+	return nil
+}
+
+func (r *SymbolsRepository) Depth(symbol string) (map[string]interface{}, error) {
+	var data map[string]interface{}
+	result := r.Db.Model(&models.Symbol{}).Select("depth").Where("symbol", symbol).Take(&data)
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return nil, result.Error
+	}
+	if depth, ok := data["depth"]; ok {
+		var out map[string]interface{}
+		json.Unmarshal([]byte(depth.(string)), &out)
+		return out, nil
+	}
+	return nil, errors.New("depth empty")
+}
+
 func (r *SymbolsRepository) Price(symbol string) (float64, error) {
 	fields := []string{
 		"price",
@@ -215,14 +285,14 @@ func (r *SymbolsRepository) Adjust(symbol string, price float64, amount float64)
 	if price < minPrice {
 		price = minPrice
 	}
-	price = math.Round(price/tickSize) * tickSize
+	price = math.Ceil(price*math.Ceil(1/tickSize)) / math.Ceil(1/tickSize)
 
 	data = strings.Split(entity.Filters["quote"].(string), ",")
 	maxQty, _ := strconv.ParseFloat(data[0], 64)
 	minQty, _ := strconv.ParseFloat(data[1], 64)
 	stepSize, _ := strconv.ParseFloat(data[2], 64)
 
-	quantity := math.Ceil(amount/(price*stepSize)) * stepSize
+	quantity := math.Ceil(amount*math.Ceil(1/stepSize)/price) / math.Ceil(1/stepSize)
 	if quantity > maxQty {
 		return 0, 0, errors.New("quantity too high")
 	}

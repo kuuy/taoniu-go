@@ -87,7 +87,12 @@ func NewFishersCommand() *cli.Command {
 
 func (h *FishersHandler) Flush() error {
 	symbols := h.Repository.Scan()
-	log.Println("symbols", symbols)
+	for _, symbol := range symbols {
+		err := h.Repository.Flush(symbol)
+		if err != nil {
+			log.Println("fishers flush error", err)
+		}
+	}
 	return nil
 }
 

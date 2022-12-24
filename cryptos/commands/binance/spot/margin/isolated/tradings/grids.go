@@ -2,15 +2,19 @@ package tradings
 
 import (
 	"context"
-	"github.com/adshao/go-binance/v2"
+	"log"
+
+	"gorm.io/gorm"
+
 	"github.com/go-redis/redis/v8"
 	"github.com/urfave/cli/v2"
-	"log"
-	pool "taoniu.local/cryptos/common"
+
+	"taoniu.local/cryptos/common"
 	repositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated/tradings"
 )
 
 type GridsHandler struct {
+	Db         *gorm.DB
 	Rdb        *redis.Client
 	Ctx        context.Context
 	Repository *repositories.GridsRepository
@@ -23,11 +27,12 @@ func NewGridsCommand() *cli.Command {
 		Usage: "",
 		Before: func(c *cli.Context) error {
 			h = GridsHandler{
-				Rdb: pool.NewRedis(),
+				Db:  common.NewDB(),
+				Rdb: common.NewRedis(),
 				Ctx: context.Background(),
 			}
 			h.Repository = &repositories.GridsRepository{
-				Db:  pool.NewDB(),
+				Db:  h.Db,
 				Rdb: h.Rdb,
 				Ctx: h.Ctx,
 			}
@@ -38,17 +43,7 @@ func NewGridsCommand() *cli.Command {
 				Name:  "flush",
 				Usage: "",
 				Action: func(c *cli.Context) error {
-					if err := h.flush(); err != nil {
-						return cli.Exit(err.Error(), 1)
-					}
-					return nil
-				},
-			},
-			{
-				Name:  "buy",
-				Usage: "",
-				Action: func(c *cli.Context) error {
-					if err := h.buy(); err != nil {
+					if err := h.Flush(); err != nil {
 						return cli.Exit(err.Error(), 1)
 					}
 					return nil
@@ -58,7 +53,7 @@ func NewGridsCommand() *cli.Command {
 	}
 }
 
-func (h *GridsHandler) flush() error {
+func (h *GridsHandler) Flush() error {
 	log.Println("spot margin isolated tradings grids flush...")
 	symbols, _ := h.Rdb.SMembers(h.Ctx, "binance:spot:margin:isolated:symbols").Result()
 	for _, symbol := range symbols {
@@ -67,18 +62,5 @@ func (h *GridsHandler) flush() error {
 			log.Println("error", err)
 		}
 	}
-
-	return nil
-}
-
-func (h *GridsHandler) buy() error {
-	symbol := "AVAXBUSD"
-	price := 15.427547306193494
-	orderID, err := h.Repository.Order(symbol, binance.SideTypeBuy, price, 10)
-	if err != nil {
-		return err
-	}
-	log.Println("order:", symbol, orderID)
-
 	return nil
 }

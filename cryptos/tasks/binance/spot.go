@@ -78,7 +78,9 @@ func (t *SpotTask) Depth() *tasks.DepthTask {
 			Db: t.Db,
 		}
 		t.DepthTask.SymbolsRepository = &repositories.SymbolsRepository{
-			Db: t.Db,
+			Db:  t.Db,
+			Rdb: t.Rdb,
+			Ctx: t.Ctx,
 		}
 	}
 	return t.DepthTask

@@ -30,6 +30,7 @@ func (t *DepthTask) Flush() error {
 	symbols := t.SymbolsRepository.Scan()
 	for _, symbol := range symbols {
 		t.Repository.Flush(symbol)
+		t.SymbolsRepository.Slippage(symbol)
 	}
 
 	return nil

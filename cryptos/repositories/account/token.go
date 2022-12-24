@@ -30,7 +30,6 @@ func (r *TokenRepository) PrivateKey() *rsa.PrivateKey {
 		}
 		r.privateKey = privateKey.(*rsa.PrivateKey)
 	}
-
 	return r.privateKey
 }
 
