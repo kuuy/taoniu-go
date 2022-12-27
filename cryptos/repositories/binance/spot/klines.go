@@ -41,7 +41,6 @@ func (r *KlinesRepository) Series(symbol string, interval string, timestamp int6
 			kline.Timestamp,
 		}
 	}
-
 	return series
 }
 
@@ -104,6 +103,5 @@ func (r *KlinesRepository) Flush(symbol string, interval string, limit int) erro
 func (r *KlinesRepository) Clean() error {
 	timestamp := time.Now().AddDate(0, 0, -101).Unix()
 	r.Db.Where("timestamp < ?", timestamp).Delete(&models.Kline{})
-
 	return nil
 }

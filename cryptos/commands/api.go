@@ -33,6 +33,7 @@ func (h *ApiHandler) run() error {
 
 	r := chi.NewRouter()
 	r.Route("/v1", func(r chi.Router) {
+		r.Mount("/currencies", v1.NewCurrenciesRouter())
 		r.Mount("/binance", v1.NewBinanceRouter())
 		r.Mount("/tradingview", v1.NewTradingviewRouter())
 	})

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	config "taoniu.local/cryptos/config/binance/spot"
 	"time"
 
 	"github.com/adshao/go-binance/v2"
@@ -13,6 +12,7 @@ import (
 	"github.com/rs/xid"
 	"gorm.io/gorm"
 
+	config "taoniu.local/cryptos/config/binance/spot"
 	models "taoniu.local/cryptos/models/binance/spot"
 )
 
@@ -31,7 +31,6 @@ func (r *OrdersRepository) Open(symbol string) error {
 	for _, order := range orders {
 		r.Save(order)
 	}
-
 	return nil
 }
 
@@ -51,7 +50,6 @@ func (r *OrdersRepository) Sync(symbol string, limit int) error {
 	for _, order := range orders {
 		r.Save(order)
 	}
-
 	return nil
 }
 
@@ -75,7 +73,6 @@ func (r *OrdersRepository) Fix(time time.Time, limit int) error {
 	for _, order := range orders {
 		r.Flush(order.Symbol, order.OrderID)
 	}
-
 	return nil
 }
 

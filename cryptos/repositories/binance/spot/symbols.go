@@ -38,6 +38,12 @@ func (r *SymbolsRepository) Margins() *MarginRepository {
 	return r.MarginRepository
 }
 
+func (r *SymbolsRepository) Currencies() []string {
+	var currencies []string
+	r.Db.Model(models.Symbol{}).Where("status=? AND is_spot=True", "TRADING").Distinct().Pluck("base_asset", &currencies)
+	return currencies
+}
+
 func (r *SymbolsRepository) Symbols() []string {
 	var symbols []string
 	r.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Find(&symbols)

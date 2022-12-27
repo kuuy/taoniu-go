@@ -44,6 +44,20 @@ func (r *CurrenciesRepository) Add(
 	return nil
 }
 
+func (r *CurrenciesRepository) About(symbol string) (string, error) {
+	var about string
+	result := r.Db.Model(&models.Currency{}).Select("about").Where("symbol", symbol).Take(&about)
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return "", result.Error
+	}
+	return about, nil
+}
+
+func (r *CurrenciesRepository) SetAbout(symbol string, about string) error {
+	r.Db.Model(&models.Currency{}).Where("symbol", symbol).Update("about", about)
+	return nil
+}
+
 func (r *CurrenciesRepository) JSON(in interface{}) datatypes.JSON {
 	buf, _ := json.Marshal(in)
 

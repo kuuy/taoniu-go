@@ -145,7 +145,7 @@ func (r *OrdersRepository) Flush(symbol string, orderID int64, isIsolated bool) 
 		r.Ctx,
 		"binance:spot:margin:orders:flush",
 		fmt.Sprintf("%s,%d,%d", symbol, orderID, isolated),
-	).Result()
+	)
 
 	return nil
 }

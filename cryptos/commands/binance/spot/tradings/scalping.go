@@ -2,10 +2,12 @@ package tradings
 
 import (
 	"context"
+	"log"
+
 	"github.com/go-redis/redis/v8"
 	"github.com/urfave/cli/v2"
-	"log"
-	pool "taoniu.local/cryptos/common"
+
+	"taoniu.local/cryptos/common"
 	repositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
 )
 
@@ -22,11 +24,11 @@ func NewScalpingCommand() *cli.Command {
 		Usage: "",
 		Before: func(c *cli.Context) error {
 			h = ScalpingHandler{
-				Rdb: pool.NewRedis(),
+				Rdb: common.NewRedis(),
 				Ctx: context.Background(),
 			}
 			h.Repository = &repositories.ScalpingRepository{
-				Db:  pool.NewDB(),
+				Db:  common.NewDB(),
 				Rdb: h.Rdb,
 				Ctx: h.Ctx,
 			}

@@ -32,6 +32,16 @@ func NewSymbolsCommand() *cli.Command {
 		},
 		Subcommands: []*cli.Command{
 			{
+				Name:  "currencies",
+				Usage: "",
+				Action: func(c *cli.Context) error {
+					if err := h.Currencies(); err != nil {
+						return cli.Exit(err.Error(), 1)
+					}
+					return nil
+				},
+			},
+			{
 				Name:  "flush",
 				Usage: "",
 				Action: func(c *cli.Context) error {
@@ -83,6 +93,13 @@ func NewSymbolsCommand() *cli.Command {
 			},
 		},
 	}
+}
+
+func (h *SymbolsHandler) Currencies() error {
+	log.Println("symbols currencies...")
+	currencies := h.Repository.Currencies()
+	log.Println("currencies", currencies)
+	return nil
 }
 
 func (h *SymbolsHandler) Flush() error {

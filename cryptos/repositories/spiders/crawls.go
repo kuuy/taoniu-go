@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/tidwall/gjson"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"regexp"
@@ -58,8 +59,9 @@ type JsonExtract struct {
 }
 
 type JsonExtractField struct {
-	Name string `json:"name"`
-	Path string `json:"path"`
+	Name  string `json:"name"`
+	Path  string `json:"path"`
+	Match string `json:"match"`
 }
 
 type JsonExtractRules struct {
@@ -74,7 +76,7 @@ func (r *CrawlsRepository) Request(source *CrawlSource) ([]map[string]interface{
 	}
 	if source.UseProxy {
 		session := &common.ProxySession{
-			Proxy: "socks5://127.0.0.1:1080?timeout=2s",
+			Proxy: fmt.Sprintf("socks5://127.0.0.1:1080?timeout=%ds", source.Timeout),
 		}
 		tr.DialContext = session.DialContext
 	} else {
@@ -116,57 +118,86 @@ func (r *CrawlsRepository) Request(source *CrawlSource) ([]map[string]interface{
 }
 
 func (r *CrawlsRepository) ExtractHtml(resp *http.Response, rules *HtmlExtractRules) ([]map[string]interface{}, error) {
-	doc, err := goquery.NewDocumentFromReader(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	var container = doc.Find(rules.Container.Selector).First()
-	if container.Nodes == nil {
-		return nil, errors.New("container not exists")
-	}
-
 	var result []map[string]interface{}
-	container.Find(rules.List.Selector).Each(func(i int, s *goquery.Selection) {
-		var data = make(map[string]interface{})
-		for _, field := range rules.Fields {
-			if field.Node.Selector != "" {
-				selection := s.Find(field.Node.Selector).Eq(field.Node.Index)
-				if field.Node.Attr != "" {
-					data[field.Name], _ = selection.Attr(field.Node.Attr)
+
+	var body []byte
+	var doc *goquery.Document
+
+	if rules.Container != nil {
+		doc, err := goquery.NewDocumentFromReader(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		var container = doc.Find(rules.Container.Selector).First()
+		if container.Nodes == nil {
+			return nil, errors.New("container not exists")
+		}
+
+		container.Find(rules.List.Selector).Each(func(i int, s *goquery.Selection) {
+			var data = make(map[string]interface{})
+			for _, field := range rules.Fields {
+				if field.Node.Selector != "" {
+					selection := s.Find(field.Node.Selector).Eq(field.Node.Index)
+					if field.Node.Attr != "" {
+						data[field.Name], _ = selection.Attr(field.Node.Attr)
+					} else {
+						data[field.Name] = selection.Text()
+					}
+					for _, replace := range field.Replace {
+						m := regexp.MustCompile(replace.Pattern)
+						data[field.Name] = m.ReplaceAllString(data[field.Name].(string), replace.Value)
+					}
 				} else {
-					data[field.Name] = selection.Text()
-				}
-				for _, replace := range field.Replace {
-					m := regexp.MustCompile(replace.Pattern)
-					data[field.Name] = m.ReplaceAllString(data[field.Name].(string), replace.Value)
-				}
-			} else {
-				if field.Node.Attr != "" {
-					data[field.Name], _ = s.Attr(field.Node.Attr)
-				} else {
-					data[field.Name] = s.Text()
+					if field.Node.Attr != "" {
+						data[field.Name], _ = s.Attr(field.Node.Attr)
+					} else {
+						data[field.Name] = s.Text()
+					}
 				}
 			}
-		}
-		result = append(result, data)
-	})
+			result = append(result, data)
+		})
+	} else {
+		body, _ = ioutil.ReadAll(resp.Body)
+	}
 
 	for _, item := range rules.Json {
-		doc.Find(item.Node.Selector).Each(func(i int, s *goquery.Selection) {
-			var container = gjson.Get(s.Text(), item.Rules.Container)
+		if item.Node != nil {
+			doc.Find(item.Node.Selector).Each(func(i int, s *goquery.Selection) {
+				var container = gjson.Get(s.Text(), item.Rules.Container)
+				if container.Raw == "" {
+					return
+				}
+				container.Get(item.Rules.List).ForEach(func(_, s gjson.Result) bool {
+					var data = make(map[string]interface{})
+					for _, field := range item.Rules.Fields {
+						if field.Match != "" && field.Match != s.Get(field.Path).Value() {
+							return false
+						}
+						data[field.Name] = s.Get(field.Path).Value()
+					}
+					result = append(result, data)
+					return true
+				})
+			})
+		} else {
+			var container = gjson.Get(string(body), item.Rules.Container)
 			if container.Raw == "" {
-				return
+				return nil, errors.New("json parse failed")
 			}
 			container.Get(item.Rules.List).ForEach(func(_, s gjson.Result) bool {
 				var data = make(map[string]interface{})
 				for _, field := range item.Rules.Fields {
+					if field.Match != "" && field.Match != s.Get(field.Path).Value() {
+						return false
+					}
 					data[field.Name] = s.Get(field.Path).Value()
 				}
 				result = append(result, data)
 				return true
 			})
-		})
+		}
 	}
 
 	return result, nil
