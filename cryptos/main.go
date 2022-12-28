@@ -27,6 +27,7 @@ func main() {
 			commands.NewProxiesCommand(),
 			commands.NewExchangesCommand(),
 			commands.NewSectorsCommand(),
+			commands.NewTradingviewCommand(),
 		},
 		Version: "0.0.0",
 	}

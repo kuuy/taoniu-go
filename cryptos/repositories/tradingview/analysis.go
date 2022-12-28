@@ -12,9 +12,42 @@ import (
 )
 
 type AnalysisRepository struct {
-	Db  *gorm.DB
-	Rdb *redis.Client
-	Ctx context.Context
+	Db                *gorm.DB
+	Rdb               *redis.Client
+	Ctx               context.Context
+	ScannerRepository *ScannerRepository
+}
+
+func (r *AnalysisRepository) Scanner() *ScannerRepository {
+	if r.ScannerRepository == nil {
+		r.ScannerRepository = &ScannerRepository{}
+	}
+	return r.ScannerRepository
+}
+
+func (r *AnalysisRepository) Flush(exchange string, symbol string, interval string) error {
+	analysis, err := r.Scanner().Scan(exchange, symbol, interval)
+	if err != nil {
+		return err
+	}
+
+	var entity models.Analysis
+	result := r.Db.Where(
+		"exchange=? AND symbol=? AND interval=?",
+		exchange,
+		symbol,
+		interval,
+	).Take(&entity)
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return result.Error
+	}
+	entity.Summary["BUY"] = analysis.BuyCount
+	entity.Summary["SELL"] = analysis.SellCount
+	entity.Summary["NEUTRAL"] = analysis.NeutralCount
+	entity.Summary["RECOMMENDATION"] = analysis.Recommend.Summary
+	r.Db.Model(&models.Analysis{ID: entity.ID}).Updates(entity)
+
+	return nil
 }
 
 func (r *AnalysisRepository) Count(conditions map[string]interface{}) int64 {

@@ -49,6 +49,12 @@ func (h *CronHandler) run() error {
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 
+	tradingview := tasks.TradingviewTask{
+		Db:  h.Db,
+		Rdb: h.Rdb,
+		Ctx: h.Ctx,
+	}
+
 	binance := tasks.BinanceTask{
 		Db:  h.Db,
 		Rdb: h.Rdb,
@@ -68,7 +74,8 @@ func (h *CronHandler) run() error {
 		binance.Spot().Margin().Isolated().Tradings().Grids().Update()
 		binance.Spot().Tradings().Scalping().Flush()
 		binance.Spot().Tradings().Scalping().Update()
-		binance.Futures().Flush()
+		tradingview.Analysis().Flush()
+		//binance.Futures().Flush()
 	})
 	c.AddFunc("@every 3m", func() {
 		binance.Spot().Margin().Orders().Fix()
@@ -78,12 +85,12 @@ func (h *CronHandler) run() error {
 		binance.Spot().Indicators().Daily().Flush()
 		binance.Spot().Strategies().Daily().Flush()
 		binance.Spot().Analysis().Daily().Flush()
-		binance.Futures().Indicators().Daily().Flush()
-		binance.Futures().Strategies().Daily().Flush()
+		//binance.Futures().Indicators().Daily().Flush()
+		//binance.Futures().Strategies().Daily().Flush()
 	})
 	c.AddFunc("@hourly", func() {
 		binance.Spot().Cron().Hourly()
-		binance.Futures().Cron().Hourly()
+		//binance.Futures().Cron().Hourly()
 	})
 	c.AddFunc("30 23 * * *", func() {
 		binance.Spot().Clean()

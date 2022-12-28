@@ -6,6 +6,7 @@ require (
 	github.com/PuerkitoBio/goquery v1.8.0
 	github.com/adshao/go-binance/v2 v2.3.10
 	github.com/bitly/go-simplejson v0.5.0
+	github.com/dematron/go-tvscanner v0.0.0-20210304194119-a1190286f75f
 	github.com/gammazero/workerpool v1.1.3
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/go-redis/redis/v8 v8.11.5
