@@ -2,7 +2,7 @@ package currencies
 
 import (
 	"github.com/urfave/cli/v2"
-	spiders2 "taoniu.local/cryptos/commands/binance/currencies/spiders"
+	"taoniu.local/cryptos/commands/binance/currencies/spiders"
 )
 
 func NewSpidersCommand() *cli.Command {
@@ -10,8 +10,8 @@ func NewSpidersCommand() *cli.Command {
 		Name:  "spiders",
 		Usage: "",
 		Subcommands: []*cli.Command{
-			spiders2.NewSourcesCommand(),
-			spiders2.NewCrawlsCommand(),
+			spiders.NewSourcesCommand(),
+			spiders.NewCrawlsCommand(),
 		},
 	}
 }

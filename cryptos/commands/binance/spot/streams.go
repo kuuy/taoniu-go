@@ -15,7 +15,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/urfave/cli/v2"
 
-	pool "taoniu.local/cryptos/common"
+	"taoniu.local/cryptos/common"
 	models "taoniu.local/cryptos/models/binance/spot"
 )
 
@@ -35,8 +35,8 @@ func NewStreamCommand() *cli.Command {
 		Before: func(c *cli.Context) error {
 			h = StreamsHandler{
 				ID:      1,
-				Db:      pool.NewDB(),
-				Rdb:     pool.NewRedis(),
+				Db:      common.NewDB(),
+				Rdb:     common.NewRedis(),
 				Ctx:     context.Background(),
 				Symbols: []string{},
 			}
@@ -152,7 +152,7 @@ func (h *StreamsHandler) start() error {
 }
 
 func (h *StreamsHandler) append(symbol string) error {
-	mutex := pool.NewMutex(
+	mutex := common.NewMutex(
 		h.Rdb,
 		h.Ctx,
 		fmt.Sprintf("locks:binance:spot:streams:symbols:%s", symbol),
