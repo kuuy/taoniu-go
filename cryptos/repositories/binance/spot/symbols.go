@@ -51,7 +51,7 @@ func (r *SymbolsRepository) Symbols() []string {
 }
 
 func (r *SymbolsRepository) Get(
-	symbol string,
+		symbol string,
 ) (models.Symbol, error) {
 	var entity models.Symbol
 	result := r.Db.Where("symbol = ?", symbol).Take(&entity)
@@ -178,10 +178,10 @@ func (r *SymbolsRepository) Slippage(symbol string) error {
 	asks := depth["asks"].([]interface{})
 	bids := depth["bids"].([]interface{})
 	data := make(map[string]float64)
-	data["depth,1%"] = 0
-	data["depth,-1%"] = 0
-	data["depth,2%"] = 0
-	data["depth,-2%"] = 0
+	data["slippage@1%"] = 0
+	data["slippage@-1%"] = 0
+	data["slippage@2%"] = 0
+	data["slippage@-2%"] = 0
 	var stop1, stop2 float64
 	for i, item := range asks {
 		price, _ := strconv.ParseFloat(item.([]interface{})[0].(string), 64)
@@ -191,12 +191,12 @@ func (r *SymbolsRepository) Slippage(symbol string) error {
 			stop2 = price * 1.02
 		}
 		if price <= stop1 {
-			data["depth,1%"] += volume
+			data["slippage@1%"] += volume
 		}
 		if price > stop2 {
 			break
 		}
-		data["depth,2%"] += volume
+		data["slippage@2%"] += volume
 	}
 	for i, item := range bids {
 		price, _ := strconv.ParseFloat(item.([]interface{})[0].(string), 64)
@@ -206,21 +206,21 @@ func (r *SymbolsRepository) Slippage(symbol string) error {
 			stop2 = price * 0.98
 		}
 		if price >= stop1 {
-			data["depth,-1%"] += volume
+			data["slippage@-1%"] += volume
 		}
 		if price < stop2 {
 			break
 		}
-		data["depth,-2%"] += volume
+		data["slippage@-2%"] += volume
 	}
 	r.Rdb.HMSet(
 		r.Ctx,
 		fmt.Sprintf("binance:spot:realtime:%s", symbol),
 		map[string]interface{}{
-			"depth,1%":  data["depth,1%"],
-			"depth,-1%": data["depth,-1%"],
-			"depth,2%":  data["depth,2%"],
-			"depth,-2%": data["depth,-2%"],
+			"slippage@1%":  data["slippage@1%"],
+			"slippage@-1%": data["slippage@-1%"],
+			"slippage@2%":  data["slippage@2%"],
+			"slippage@-2%": data["slippage@-2%"],
 		},
 	)
 	return nil

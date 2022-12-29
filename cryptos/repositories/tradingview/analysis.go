@@ -88,6 +88,24 @@ func (r *AnalysisRepository) Listings(
 	return analysis
 }
 
+func (r *AnalysisRepository) Summary(
+	exchange string,
+	symbol string,
+	interval string,
+) (map[string]interface{}, error) {
+	var entity models.Analysis
+	result := r.Db.Model(&models.Analysis{}).Select("summary").Where(
+		"exchange=? AND symbol=? AND interval=?",
+		exchange,
+		symbol,
+		interval,
+	).Take(&entity)
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return nil, result.Error
+	}
+	return entity.Summary, nil
+}
+
 func (r *AnalysisRepository) Signal(symbol string) (int64, bool, error) {
 	var entity models.Analysis
 	result := r.Db.Where(

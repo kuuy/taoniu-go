@@ -11,6 +11,7 @@ func NewTradingviewRouter() http.Handler {
 	r := chi.NewRouter()
 	r.Use(api.Authenticator)
 	r.Mount("/analysis", tradingview.NewAnalysisRouter())
+	r.Mount("/summary/{exchange:[A-Z0-9]{1,20}},{symbol:[A-Z0-9]{1,20}},{interval:[a-zA-Z0-9]{2}}", tradingview.NewSummaryRouter())
 
 	return r
 }

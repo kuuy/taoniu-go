@@ -46,6 +46,16 @@ func NewAnalysisCommand() *cli.Command {
 					return nil
 				},
 			},
+			{
+				Name:  "summary",
+				Usage: "",
+				Action: func(c *cli.Context) error {
+					if err := h.Summary(); err != nil {
+						return cli.Exit(err.Error(), 1)
+					}
+					return nil
+				},
+			},
 		},
 	}
 }
@@ -56,5 +66,14 @@ func (h *AnalysisHandler) Flush() error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (h *AnalysisHandler) Summary() error {
+	summary, err := h.Repository.Summary("BINANCE", "AVAXBUSD", "1m")
+	if err != nil {
+		return err
+	}
+	log.Println("summary", summary)
 	return nil
 }
