@@ -14,6 +14,10 @@ import (
 	models "taoniu.local/cryptos/models/binance/spot/margin/isolated/fishers"
 )
 
+type AnalysisRepository interface {
+	Summary(exchange string, symbol string, interval string) (map[string]interface{}, error)
+}
+
 type SymbolsRepository interface {
 	Price(symbol string) (float64, error)
 	Adjust(symbol string, price float64, amount float64) (float64, float64, error)
@@ -31,12 +35,13 @@ type OrdersRepository interface {
 }
 
 type FishersRepository struct {
-	Db                *gorm.DB
-	Rdb               *redis.Client
-	Ctx               context.Context
-	SymbolsRepository SymbolsRepository
-	AccountRepository AccountRepository
-	OrdersRepository  OrdersRepository
+	Db                 *gorm.DB
+	Rdb                *redis.Client
+	Ctx                context.Context
+	AnalysisRepository AnalysisRepository
+	SymbolsRepository  SymbolsRepository
+	AccountRepository  AccountRepository
+	OrdersRepository   OrdersRepository
 }
 
 func (r *FishersRepository) Scan() []string {
@@ -210,6 +215,14 @@ func (r *FishersRepository) Place(symbol string) error {
 		return errors.New("fishers place waiting")
 	}
 
+	summary, err := r.AnalysisRepository.Summary("BINANCE", symbol, "1m")
+	if err != nil {
+		return err
+	}
+	if summary["RECOMMENDATION"] != "BUY" && summary["RECOMMENDATION"] != "STRONG_BUY" {
+		return errors.New("tradginview recommendation not for buy")
+	}
+
 	if side == 1 {
 		if !r.CanBuy(symbol, price, minPrice, maxPrice) {
 			return errors.New("can not buy now")
@@ -229,7 +242,7 @@ func (r *FishersRepository) Place(symbol string) error {
 		if balance < buyPrice*buyQuantity {
 			return errors.New("balance not enough")
 		}
-		sellPrice := buyPrice * 1.02
+		sellPrice := buyPrice * 1.003
 		sellPrice, sellQuantity, err := r.SymbolsRepository.Adjust(symbol, sellPrice, amount)
 		if err != nil {
 			return err
@@ -278,7 +291,7 @@ func (r *FishersRepository) CanBuy(
 	var grid models.Grid
 	result := r.Db.Where("symbol=? AND status IN ?", symbol, []int{0, 1, 2}).Order("buy_price asc").Take(&grid)
 	if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		if minPrice <= grid.BuyPrice {
+		if minPrice*maxPrice == 0 {
 			return false
 		}
 		if maxPrice >= grid.BuyPrice {

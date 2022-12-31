@@ -8,6 +8,7 @@ import (
 
 	spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
 	repositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated/tradings"
+	tvRepositories "taoniu.local/cryptos/repositories/tradingview"
 	tasks "taoniu.local/cryptos/tasks/binance/spot/margin/isolated/tradings"
 )
 
@@ -31,6 +32,9 @@ func (t *TradingsTask) Fishers() *tasks.FIshersTask {
 			Db:  t.Db,
 			Rdb: t.Rdb,
 			Ctx: t.Ctx,
+		}
+		t.FishersTask.Repository.AnalysisRepository = &tvRepositories.AnalysisRepository{
+			Db: t.Db,
 		}
 		marginRepository := &spotRepositories.MarginRepository{
 			Db:  t.Db,
