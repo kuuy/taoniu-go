@@ -63,7 +63,7 @@ func (r *MultipleRepository) Account() *repositories.AccountRepository {
 func (r *MultipleRepository) Apply(currency string) error {
 	score, _ := r.Rdb.ZScore(
 		r.Ctx,
-		"wolf:bet",
+		"wolf:bet:multiple",
 		"dice",
 	).Result()
 	if int64(score) == 0 {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"gorm.io/datatypes"
@@ -35,6 +36,7 @@ func NewAnalysisRouter() http.Handler {
 
 	r := chi.NewRouter()
 	r.Get("/", h.Listings)
+	r.Get("/gets", h.Gets)
 
 	return r
 }
@@ -93,4 +95,43 @@ func (h *AnalysisHandler) Listings(
 	}
 
 	h.Response.Pagenate(data, total, current, pageSize)
+}
+
+func (h *AnalysisHandler) Gets(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+	h.Response = &api.ResponseHandler{
+		Writer: w,
+	}
+
+	if r.URL.Query().Get("exchange") == "" {
+		h.Response.Error(http.StatusForbidden, 1004, "exchange is empty")
+		return
+	}
+	if r.URL.Query().Get("symbols") == "" {
+		h.Response.Error(http.StatusForbidden, 1004, "symbols is empty")
+		return
+	}
+	if r.URL.Query().Get("interval") == "" {
+		h.Response.Error(http.StatusForbidden, 1004, "interval is empty")
+		return
+	}
+
+	exchange := r.URL.Query().Get("exchange")
+	symbols := strings.Split(r.URL.Query().Get("symbols"), ",")
+	interval := r.URL.Query().Get("interval")
+
+	analysis := h.Repository.Gets(exchange, symbols, interval)
+	data := make([]*AnalysisInfo, len(analysis))
+	for i, item := range analysis {
+		data[i] = &AnalysisInfo{
+			ID:        item.ID,
+			Symbol:    item.Symbol,
+			Summary:   item.Summary,
+			Timestamp: item.UpdatedAt.Unix(),
+		}
+	}
+
+	h.Response.Json(data)
 }

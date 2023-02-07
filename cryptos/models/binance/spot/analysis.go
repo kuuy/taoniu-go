@@ -12,6 +12,6 @@ func NewAnalysis() *Analysis {
 }
 
 func (m *Analysis) AutoMigrate(db *gorm.DB) error {
-	analysis.NewDaily().AutoMigrate(db)
+	analysis.NewMargin().AutoMigrate(db)
 	return nil
 }

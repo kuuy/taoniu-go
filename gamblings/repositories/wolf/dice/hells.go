@@ -63,7 +63,7 @@ func (r *HellsRepository) Account() *repositories.AccountRepository {
 func (r *HellsRepository) Apply(currency string) error {
 	score, _ := r.Rdb.ZScore(
 		r.Ctx,
-		"wolf:bet",
+		"wolf:bet:hells",
 		"dice",
 	).Result()
 	if int64(score) == 0 {

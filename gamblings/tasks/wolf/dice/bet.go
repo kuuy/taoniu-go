@@ -6,10 +6,10 @@ type BetTask struct {
 	Repository *repositories.BetRepository
 }
 
-func (t *BetTask) Start() {
-	t.Repository.Start()
+func (t *BetTask) Start(strategy string) {
+	t.Repository.Start(strategy)
 }
 
-func (t *BetTask) Stop() {
-	t.Repository.Stop()
+func (t *BetTask) Stop(strategy string) {
+	t.Repository.Stop(strategy)
 }

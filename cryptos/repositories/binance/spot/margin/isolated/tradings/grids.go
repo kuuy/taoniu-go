@@ -5,6 +5,7 @@ import (
 	"errors"
 	"gorm.io/gorm"
 	"strconv"
+	models "taoniu.local/cryptos/models/binance/spot/margin/isolated/tradings"
 
 	"github.com/adshao/go-binance/v2"
 	"github.com/go-redis/redis/v8"
@@ -12,7 +13,6 @@ import (
 	config "taoniu.local/cryptos/config/binance/spot"
 	spotModels "taoniu.local/cryptos/models/binance/spot"
 	marginModels "taoniu.local/cryptos/models/binance/spot/margin"
-	models "taoniu.local/cryptos/models/binance/spot/margin/isolated"
 	//spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
 	//marginRepositories "taoniu.local/cryptos/repositories/binance/spot/margin"
 	//isolatedRepositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated"
@@ -103,7 +103,7 @@ func (r *GridsRepository) Margin() MarginInterface {
 
 func (r *GridsRepository) Count(conditions map[string]interface{}) int64 {
 	var total int64
-	query := r.Db.Model(&models.TradingGrid{})
+	query := r.Db.Model(&models.Grid{})
 	if _, ok := conditions["symbols"]; ok {
 		query.Where("symbol IN ?", conditions["symbols"].([]string))
 	}
@@ -112,8 +112,8 @@ func (r *GridsRepository) Count(conditions map[string]interface{}) int64 {
 	return total
 }
 
-func (r *GridsRepository) Listings(conditions map[string]interface{}, current int, pageSize int) []*models.TradingGrid {
-	var trades []*models.TradingGrid
+func (r *GridsRepository) Listings(conditions map[string]interface{}, current int, pageSize int) []*models.Grid {
+	var trades []*models.Grid
 	query := r.Db.Select([]string{
 		"id",
 		"symbol",
@@ -191,8 +191,8 @@ func (r *GridsRepository) Flush(symbol string) error {
 //		r.Db.Model(&spotModels.Grid{ID: grid.ID}).Updates(grid)
 //	}
 //
-//	var entity *models.TradingGrid
-//	entity = &models.TradingGrid{
+//	var entity *models.Grid
+//	entity = &models.Grid{
 //		ID:           xid.New().String(),
 //		Symbol:       grid.Symbol,
 //		GridID:       grid.ID,
@@ -214,13 +214,13 @@ func (r *GridsRepository) Flush(symbol string) error {
 //			entity.BuyOrderId = buyOrderId
 //			entity.Status = 1
 //		}
-//		r.Db.Model(&models.TradingGrid{ID: grid.ID}).Updates(entity)
+//		r.Db.Model(&models.Grid{ID: grid.ID}).Updates(entity)
 //	}
 //
 //	return nil
 //}
 //
-//func (r *GridsRepository) Sell(grid *spotModels.Grid, entities []*models.TradingGrid) error {
+//func (r *GridsRepository) Sell(grid *spotModels.Grid, entities []*models.Grid) error {
 //	for _, entity := range entities {
 //		sellAmount := entity.SellPrice * entity.SellQuantity
 //
@@ -237,7 +237,7 @@ func (r *GridsRepository) Flush(symbol string) error {
 //		entity.SellOrderId = sellOrderId
 //		entity.Status = status
 //		entity.Remark = remark
-//		r.Db.Model(&models.TradingGrid{ID: entity.ID}).Updates(entity)
+//		r.Db.Model(&models.Grid{ID: entity.ID}).Updates(entity)
 //
 //		if entity.Status == 2 {
 //			sellOrderId, err = r.Order(entity.Symbol, binance.SideTypeSell, entity.SellPrice, entity.SellQuantity)
@@ -247,7 +247,7 @@ func (r *GridsRepository) Flush(symbol string) error {
 //				entity.SellOrderId = sellOrderId
 //				entity.Status = 3
 //			}
-//			r.Db.Model(&models.TradingGrid{ID: entity.ID}).Updates(entity)
+//			r.Db.Model(&models.Grid{ID: entity.ID}).Updates(entity)
 //		}
 //	}
 //
@@ -255,7 +255,7 @@ func (r *GridsRepository) Flush(symbol string) error {
 //}
 
 func (r *GridsRepository) Update() error {
-	var entities []*models.TradingGrid
+	var entities []*models.Grid
 	r.Db.Where(
 		"status IN ?",
 		[]int64{0, 2},
@@ -302,16 +302,16 @@ func (r *GridsRepository) Update() error {
 	return nil
 }
 
-func (r *GridsRepository) FilterGrid(grid *spotModels.Grid, price float64, signal int64) ([]*models.TradingGrid, error) {
+func (r *GridsRepository) FilterGrid(grid *spotModels.Grid, price float64, signal int64) ([]*models.Grid, error) {
 	var entryPrice float64
 	var takePrice float64
-	var entities []*models.TradingGrid
+	var entities []*models.Grid
 	r.Db.Where(
 		"grid_id=? AND status IN ?",
 		grid.ID,
 		[]int64{0, 1},
 	).Find(&entities)
-	var sellItems []*models.TradingGrid
+	var sellItems []*models.Grid
 	for _, entity := range entities {
 		if entryPrice == 0 || entryPrice > entity.BuyPrice*(1-grid.TakeProfitPercent) {
 			entryPrice = entity.BuyPrice / (1 + grid.TakeProfitPercent)

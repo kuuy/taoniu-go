@@ -63,6 +63,26 @@ func (r *AnalysisRepository) Count(conditions map[string]interface{}) int64 {
 	return total
 }
 
+func (r *AnalysisRepository) Gets(
+	exchange string,
+	symbols []string,
+	interval string,
+) []*models.Analysis {
+	var analysis []*models.Analysis
+	r.Db.Select([]string{
+		"id",
+		"symbol",
+		"summary",
+		"updated_at",
+	}).Where(
+		"exchange=? AND symbol IN ? AND interval=?",
+		exchange,
+		symbols,
+		interval,
+	).Find(&analysis)
+	return analysis
+}
+
 func (r *AnalysisRepository) Listings(
 	current int,
 	pageSize int,

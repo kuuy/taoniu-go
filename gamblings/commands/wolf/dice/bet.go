@@ -2,6 +2,7 @@ package dice
 
 import (
 	"context"
+	"errors"
 	"log"
 
 	"github.com/urfave/cli/v2"
@@ -32,7 +33,11 @@ func NewBetCommand() *cli.Command {
 				Name:  "start",
 				Usage: "",
 				Action: func(c *cli.Context) error {
-					if err := h.start(); err != nil {
+					strategy := c.Args().Get(0)
+					if strategy == "" {
+						return errors.New("strategy is empty")
+					}
+					if err := h.start(strategy); err != nil {
 						return cli.Exit(err.Error(), 1)
 					}
 					return nil
@@ -42,7 +47,11 @@ func NewBetCommand() *cli.Command {
 				Name:  "stop",
 				Usage: "",
 				Action: func(c *cli.Context) error {
-					if err := h.stop(); err != nil {
+					strategy := c.Args().Get(0)
+					if strategy == "" {
+						return errors.New("strategy is empty")
+					}
+					if err := h.stop(strategy); err != nil {
 						return cli.Exit(err.Error(), 1)
 					}
 					return nil
@@ -52,14 +61,14 @@ func NewBetCommand() *cli.Command {
 	}
 }
 
-func (h *BetHandler) start() error {
+func (h *BetHandler) start(strategy string) error {
 	log.Println("wolf dice bet starting...")
-	h.Repository.Start()
+	h.Repository.Start(strategy)
 	return nil
 }
 
-func (h *BetHandler) stop() error {
+func (h *BetHandler) stop(strategy string) error {
 	log.Println("wolf dice bet stopping...")
-	h.Repository.Stop()
+	h.Repository.Stop(strategy)
 	return nil
 }

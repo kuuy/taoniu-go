@@ -9,5 +9,6 @@ import (
 func NewIsolatedRouter() http.Handler {
 	r := chi.NewRouter()
 	r.Mount("/tradings", isolated.NewTradingsRouter())
+	r.Mount("/symbols", isolated.NewSymbolsRouter())
 	return r
 }

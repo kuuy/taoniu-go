@@ -9,6 +9,7 @@ import (
 	"taoniu.local/cryptos/common"
 	models "taoniu.local/cryptos/models/binance/spot"
 	repositories "taoniu.local/cryptos/repositories/binance/spot/indicators"
+	"time"
 )
 
 type DailyHandler struct {
@@ -97,6 +98,16 @@ func NewDailyCommand() *cli.Command {
 					return nil
 				},
 			},
+			{
+				Name:  "test",
+				Usage: "",
+				Action: func(c *cli.Context) error {
+					if err := h.test(); err != nil {
+						return cli.Exit(err.Error(), 1)
+					}
+					return nil
+				},
+			},
 		},
 	}
 }
@@ -158,5 +169,16 @@ func (h *DailyHandler) pivot() error {
 	for _, symbol := range symbols {
 		h.Repository.Pivot(symbol)
 	}
+	return nil
+}
+
+func (h *DailyHandler) test() error {
+	log.Println("daily indicator test..")
+	timestamp := time.Now().Unix()
+	day, err := h.Repository.Day(timestamp)
+	if err != nil {
+		return err
+	}
+	log.Println("day", day)
 	return nil
 }

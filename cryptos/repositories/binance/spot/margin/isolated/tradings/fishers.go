@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"math"
+	"taoniu.local/cryptos/models/binance/spot/margin/isolated"
+	"taoniu.local/cryptos/models/binance/spot/margin/isolated/tradings/fishers"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/rs/xid"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
-
-	models "taoniu.local/cryptos/models/binance/spot/margin/isolated/fishers"
 )
 
 type AnalysisRepository interface {
@@ -46,7 +46,7 @@ type FishersRepository struct {
 
 func (r *FishersRepository) Scan() []string {
 	var symbols []string
-	r.Db.Model(&models.Fisher{}).Where("status", []int{1, 3}).Distinct().Pluck("symbol", &symbols)
+	r.Db.Model(&isolated.Fisher{}).Where("status", []int{1, 3}).Distinct().Pluck("symbol", &symbols)
 	return symbols
 }
 
@@ -58,13 +58,13 @@ func (r *FishersRepository) Apply(
 	stopBalance float64,
 	tickers [][]float64,
 ) error {
-	var fisher models.Fisher
+	var fisher isolated.Fisher
 	result := r.Db.Where("symbol=? AND status IN ?", symbol, []int{1, 3, 4}).Take(&fisher)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		fisher = models.Fisher{
+		fisher = isolated.Fisher{
 			ID:            xid.New().String(),
 			Symbol:        symbol,
-			Price:         amount,
+			Price:         0,
 			Balance:       balance,
 			Tickers:       r.JSON(tickers),
 			StartAmount:   amount,
@@ -87,14 +87,14 @@ func (r *FishersRepository) Apply(
 }
 
 func (r *FishersRepository) Flush(symbol string) error {
-	var fisher models.Fisher
+	var fisher isolated.Fisher
 	result := r.Db.Where("symbol=? AND status IN ?", symbol, []int{1, 3}).Take(&fisher)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return errors.New("fishers empty")
 	}
 
 	if fisher.Status == 3 {
-		var grid models.Grid
+		var grid fishers.Grid
 		result := r.Db.Where("symbol=? AND price=? AND status=0", symbol, fisher.Price).Take(&grid)
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return errors.New("grid not exists")
@@ -104,11 +104,11 @@ func (r *FishersRepository) Flush(symbol string) error {
 		if orderID > 0 {
 			r.Db.Transaction(func(tx *gorm.DB) error {
 				fisher.Status = 1
-				if err := tx.Model(&models.Fisher{ID: fisher.ID}).Updates(fisher).Error; err != nil {
+				if err := tx.Model(&isolated.Fisher{ID: fisher.ID}).Updates(fisher).Error; err != nil {
 					return err
 				}
 				grid.BuyOrderId = orderID
-				if err := tx.Model(&models.Grid{ID: grid.ID}).Updates(grid).Error; err != nil {
+				if err := tx.Model(&fishers.Grid{ID: grid.ID}).Updates(grid).Error; err != nil {
 					return err
 				}
 				return nil
@@ -123,7 +123,7 @@ func (r *FishersRepository) Flush(symbol string) error {
 	}
 	r.Take(&fisher, price)
 
-	var grids []*models.Grid
+	var grids []*fishers.Grid
 	r.Db.Where("symbol=? AND status IN ?", fisher.Symbol, []int{0, 2}).Find(&grids)
 	for _, grid := range grids {
 		if grid.Status == 0 {
@@ -137,12 +137,12 @@ func (r *FishersRepository) Flush(symbol string) error {
 					grid.Status = 1
 				} else {
 					fisher.Balance += grid.BuyPrice * grid.BuyQuantity
-					if err := tx.Model(&models.Fisher{ID: fisher.ID}).Updates(fisher).Error; err != nil {
+					if err := tx.Model(&isolated.Fisher{ID: fisher.ID}).Updates(fisher).Error; err != nil {
 						return err
 					}
 					grid.Status = 4
 				}
-				if err := tx.Model(&models.Grid{ID: grid.ID}).Updates(grid).Error; err != nil {
+				if err := tx.Model(&fishers.Grid{ID: grid.ID}).Updates(grid).Error; err != nil {
 					return err
 				}
 				return nil
@@ -157,12 +157,12 @@ func (r *FishersRepository) Flush(symbol string) error {
 					grid.Status = 3
 				} else {
 					fisher.Balance -= grid.SellPrice * grid.SellQuantity
-					if err := tx.Model(&models.Fisher{ID: fisher.ID}).Updates(fisher).Error; err != nil {
+					if err := tx.Model(&isolated.Fisher{ID: fisher.ID}).Updates(fisher).Error; err != nil {
 						return err
 					}
 					grid.Status = 5
 				}
-				if err := tx.Model(&models.Grid{ID: grid.ID}).Updates(grid).Error; err != nil {
+				if err := tx.Model(&fishers.Grid{ID: grid.ID}).Updates(grid).Error; err != nil {
 					return err
 				}
 				return nil
@@ -174,7 +174,7 @@ func (r *FishersRepository) Flush(symbol string) error {
 }
 
 func (r *FishersRepository) Place(symbol string) error {
-	var fisher models.Fisher
+	var fisher isolated.Fisher
 	result := r.Db.Where("symbol=? AND status IN ?", symbol, []int{1, 3}).Take(&fisher)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return errors.New("fishers empty")
@@ -242,7 +242,7 @@ func (r *FishersRepository) Place(symbol string) error {
 		if balance < buyPrice*buyQuantity {
 			return errors.New("balance not enough")
 		}
-		sellPrice := buyPrice * 1.003
+		sellPrice := buyPrice * 1.0035
 		sellPrice, sellQuantity, err := r.SymbolsRepository.Adjust(symbol, sellPrice, amount)
 		if err != nil {
 			return err
@@ -251,17 +251,17 @@ func (r *FishersRepository) Place(symbol string) error {
 			return errors.New("reached stop balance")
 		}
 		r.Db.Transaction(func(tx *gorm.DB) error {
-			fisher.Price = buyPrice * buyQuantity
+			fisher.Price = buyPrice
 			fisher.Balance -= buyPrice * buyQuantity
 			orderID, err := r.OrdersRepository.Create(symbol, "BUY", buyPrice, buyQuantity, true)
 			if err != nil {
 				fisher.Status = 3
 				fisher.Remark = err.Error()
 			}
-			if err := tx.Model(&models.Fisher{ID: fisher.ID}).Updates(fisher).Error; err != nil {
+			if err := tx.Model(&isolated.Fisher{ID: fisher.ID}).Updates(fisher).Error; err != nil {
 				return err
 			}
-			grid := models.Grid{
+			grid := fishers.Grid{
 				ID:           xid.New().String(),
 				Symbol:       symbol,
 				FisherID:     fisher.ID,
@@ -288,12 +288,13 @@ func (r *FishersRepository) CanBuy(
 	minPrice float64,
 	maxPrice float64,
 ) bool {
-	var grid models.Grid
+	if minPrice*maxPrice == 0 {
+		return false
+	}
+
+	var grid fishers.Grid
 	result := r.Db.Where("symbol=? AND status IN ?", symbol, []int{0, 1, 2}).Order("buy_price asc").Take(&grid)
 	if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		if minPrice*maxPrice == 0 {
-			return false
-		}
 		if maxPrice >= grid.BuyPrice {
 			return false
 		}
@@ -304,8 +305,8 @@ func (r *FishersRepository) CanBuy(
 	return true
 }
 
-func (r *FishersRepository) Take(fisher *models.Fisher, price float64) error {
-	var grid models.Grid
+func (r *FishersRepository) Take(fisher *isolated.Fisher, price float64) error {
+	var grid fishers.Grid
 	result := r.Db.Where("symbol=? AND status=?", fisher.Symbol, 1).Order("sell_price asc").Take(&grid)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return errors.New("empty grid")
@@ -320,12 +321,12 @@ func (r *FishersRepository) Take(fisher *models.Fisher, price float64) error {
 			fisher.Status = 3
 			fisher.Remark = err.Error()
 		}
-		if err := tx.Model(&models.Fisher{ID: fisher.ID}).Updates(fisher).Error; err != nil {
+		if err := tx.Model(&isolated.Fisher{ID: fisher.ID}).Updates(fisher).Error; err != nil {
 			return err
 		}
 		grid.SellOrderId = orderID
 		grid.Status = 2
-		if err := tx.Model(&models.Grid{ID: grid.ID}).Updates(grid).Error; err != nil {
+		if err := tx.Model(&fishers.Grid{ID: grid.ID}).Updates(grid).Error; err != nil {
 			return err
 		}
 		return nil

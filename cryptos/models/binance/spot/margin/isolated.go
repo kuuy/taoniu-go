@@ -8,13 +8,13 @@ import (
 type Isolated struct{}
 
 func NewIsolated() *Isolated {
-	return &Isolated{}
+  return &Isolated{}
 }
 
 func (m *Isolated) AutoMigrate(db *gorm.DB) error {
-	db.AutoMigrate(
-		&isolated.TradingGrid{},
-	)
-	isolated.NewFishers().AutoMigrate(db)
-	return nil
+  db.AutoMigrate(
+    &isolated.Fisher{},
+  )
+  isolated.NewTradings().AutoMigrate(db)
+  return nil
 }

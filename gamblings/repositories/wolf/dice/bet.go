@@ -57,16 +57,16 @@ func (r *BetRepository) Multiplier(rule string, betValue float64) float64 {
 	return 0
 }
 
-func (r *BetRepository) Start() {
+func (r *BetRepository) Start(strategy string) {
 	timestamp := time.Now().Unix()
-	r.Rdb.ZAdd(r.Ctx, "wolf:bet", &redis.Z{
+	r.Rdb.ZAdd(r.Ctx, fmt.Sprintf("wolf:bet:%s", strategy), &redis.Z{
 		Score:  float64(timestamp),
 		Member: "dice",
 	})
 }
 
-func (r *BetRepository) Stop() {
-	r.Rdb.ZRem(r.Ctx, "wolf:bet", "dice")
+func (r *BetRepository) Stop(strategy string) {
+	r.Rdb.ZRem(r.Ctx, fmt.Sprintf("wolf:bet:%s", strategy), "dice")
 }
 
 func (r *BetRepository) Place(currency string, rule string, amount float64, multiplier float64) (string, float64, float64, error) {

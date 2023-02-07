@@ -97,10 +97,18 @@ func (h *CronHandler) run() error {
 		wolf.Dice().Hells().Rescue()
 	})
 	c.AddFunc("45 7,15 * * *", func() {
-		wolf.Dice().Bet().Start()
+		wolf.Dice().Bet().Start("multiple")
+	})
+	c.AddFunc("45 15 * * *", func() {
+		wolf.Dice().Bet().Start("plans")
+		wolf.Dice().Bet().Start("hells")
 	})
 	c.AddFunc("15 1,11,19 * * *", func() {
-		wolf.Dice().Bet().Stop()
+		wolf.Dice().Bet().Stop("multiple")
+	})
+	c.AddFunc("15 1,17 * * *", func() {
+		wolf.Dice().Bet().Stop("plans")
+		wolf.Dice().Bet().Stop("hells")
 	})
 	c.Start()
 
