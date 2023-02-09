@@ -184,14 +184,32 @@ func (h *FishersHandler) Apply() error {
   //  tickers,
   //)
 
-  symbol := "ZECBUSD"
+  //symbol := "ZECBUSD"
+  //amount := 10.0
+  //balance := 500.0
+  //targetBalance := 900.0
+  //stopBalance := 100.0
+  //tickers := make([][]float64, 4)
+  //tickers[0] = []float64{48.4, 47.4, 46.4, 45.7, 44.8, 44.3, 43.5, 42.5, 41.4}
+  //tickers[1] = []float64{40.5, 39.7, 38.9, 38.2, 37.6, 36.7, 35.4}
+  //return h.Repository.Apply(
+  //  symbol,
+  //  amount,
+  //  balance,
+  //  targetBalance,
+  //  stopBalance,
+  //  tickers,
+  //)
+
+  symbol := "UNIBUSD"
   amount := 10.0
   balance := 500.0
   targetBalance := 900.0
   stopBalance := 100.0
   tickers := make([][]float64, 4)
-  tickers[0] = []float64{48.4, 47.4, 46.4, 45.7, 44.8, 44.3, 43.5, 42.5, 41.4}
-  tickers[1] = []float64{40.5, 39.7, 38.9, 38.2, 37.6, 36.7, 35.4}
+  tickers[0] = []float64{6.765, 6.649, 6.533, 6.407, 6.295, 6.198, 6.046, 5.921, 5.847}
+  tickers[1] = []float64{5.723, 5.628, 5.512, 5.429, 5.296, 5.210, 5.152, 5.082, 4.964}
+  tickers[2] = []float64{4.893, 4.764, 4.683}
   return h.Repository.Apply(
     symbol,
     amount,
