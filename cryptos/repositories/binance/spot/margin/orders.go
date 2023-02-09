@@ -13,6 +13,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"github.com/adshao/go-binance/v2/common"
 	"net"
 	"net/http"
 	"net/url"
@@ -147,6 +148,14 @@ func (r *OrdersRepository) Create(
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode >= http.StatusBadRequest {
+		apiErr := new(common.APIError)
+		err = json.NewDecoder(resp.Body).Decode(&apiErr)
+		if err == nil {
+			return 0, apiErr
+		}
+	}
+
 	if resp.StatusCode != http.StatusOK {
 		err = errors.New(
 			fmt.Sprintf(
@@ -223,6 +232,14 @@ func (r *OrdersRepository) Cancel(id string) error {
 		return err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode >= http.StatusBadRequest {
+		apiErr := new(common.APIError)
+		err = json.NewDecoder(resp.Body).Decode(&apiErr)
+		if err == nil {
+			return apiErr
+		}
+	}
 
 	if resp.StatusCode != http.StatusOK {
 		return errors.New(
