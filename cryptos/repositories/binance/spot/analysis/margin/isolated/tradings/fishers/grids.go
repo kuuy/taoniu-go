@@ -39,7 +39,8 @@ func (r *GridsRepository) Flush() error {
 	analysis.BuysAmount = 0
 	analysis.SellsCount = 0
 	analysis.SellsAmount = 0
-	analysis.Profit = 0
+	analysis.ProfitAmount = 0
+	analysis.ProfitQuantity = 0
 	analysis.Data = make(datatypes.JSONMap)
 	analysis.Data["today"] = []string{}
 	analysis.Data["history"] = []string{}
@@ -60,7 +61,8 @@ func (r *GridsRepository) Flush() error {
 		if entity.Status == 3 {
 			analysis.SellsCount += 1
 			analysis.SellsAmount += entity.SellPrice * entity.SellQuantity
-			analysis.Profit += entity.SellPrice*entity.SellQuantity - entity.BuyPrice*entity.BuyQuantity
+			analysis.ProfitAmount += entity.SellPrice*entity.SellQuantity - entity.BuyPrice*entity.BuyQuantity
+			analysis.ProfitQuantity += entity.BuyQuantity - entity.SellQuantity
 		}
 	}
 
