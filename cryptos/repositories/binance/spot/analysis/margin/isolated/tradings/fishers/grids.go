@@ -22,7 +22,7 @@ type GridsRepository struct {
 }
 
 func (r *GridsRepository) Flush() error {
-	now := time.Now().Add(time.Minute * -5)
+	now := time.Now().Add(time.Minute * -6)
 	duration := time.Hour*time.Duration(-now.Hour()) + time.Minute*time.Duration(-now.Minute()) + time.Second*time.Duration(-now.Second())
 	datetime := now.Add(duration)
 
@@ -78,9 +78,67 @@ func (r *GridsRepository) Flush() error {
 		analysis.Data["history"] = append(analysis.Data["history"].([]string), entity.ID)
 	}
 
+	r.Db.Where(
+		"status=3 AND created_at<? AND updated_at>=?",
+		datetime,
+		datetime,
+	).Find(&entities)
+	for _, entity := range entities {
+		analysis.SellsCount += 1
+		analysis.SellsAmount += entity.SellPrice * entity.SellQuantity
+		analysis.Profit += entity.SellPrice*entity.SellQuantity - entity.BuyPrice*entity.BuyQuantity
+		if _, ok := analysis.Data["quantity"].(map[string]float64)[entity.Symbol]; ok {
+			analysis.Data["quantity"].(map[string]float64)[entity.Symbol] += entity.BuyQuantity - entity.SellQuantity
+		} else {
+			analysis.Data["quantity"].(map[string]float64)[entity.Symbol] = entity.BuyQuantity - entity.SellQuantity
+		}
+	}
+
 	r.Db.Save(&analysis)
 
 	return nil
+}
+
+func (r *GridsRepository) Count() int64 {
+	var total int64
+	r.Db.Model(&models.Grid{}).Count(&total)
+	return total
+}
+
+func (r *GridsRepository) Listings(current int, pageSize int) []*models.Grid {
+	var plans []*models.Grid
+	r.Db.Select([]string{
+		"id",
+		"day",
+		"buys_count",
+		"sells_count",
+		"buys_amount",
+		"sells_amount",
+		"profit",
+		"data",
+	}).Order(
+		"day desc",
+	).Offset(
+		(current - 1) * pageSize,
+	).Limit(
+		pageSize,
+	).Find(&plans)
+	return plans
+}
+
+func (r *GridsRepository) Series(limit int) []interface{} {
+	var grids []*models.Grid
+	r.Db.Order("day desc").Limit(limit).Find(&grids)
+
+	series := make([]interface{}, len(grids))
+	for i, grid := range grids {
+		series[i] = []interface{}{
+			grid.BuysCount,
+			grid.SellsCount,
+			time.Time(grid.Day).Format("01/02"),
+		}
+	}
+	return series
 }
 
 func (r *GridsRepository) JSONMap(in interface{}) datatypes.JSONMap {

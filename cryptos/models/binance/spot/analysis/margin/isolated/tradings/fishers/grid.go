@@ -8,8 +8,8 @@ import (
 type Grid struct {
 	ID          string            `gorm:"size:20;primaryKey"`
 	Day         datatypes.Date    `gorm:"not null;uniqueIndex"`
-	BuysCount   float64           `gorm:"not null"`
-	SellsCount  float64           `gorm:"not null"`
+	BuysCount   int               `gorm:"not null"`
+	SellsCount  int               `gorm:"not null"`
 	BuysAmount  float64           `gorm:"not null"`
 	SellsAmount float64           `gorm:"not null"`
 	Profit      float64           `gorm:"not null"`

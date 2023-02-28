@@ -6,7 +6,7 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	pool "taoniu.local/cryptos/common"
+	"taoniu.local/cryptos/common"
 	repositories "taoniu.local/cryptos/repositories/binance/spot/plans"
 )
 
@@ -22,8 +22,8 @@ func NewDailyCommand() *cli.Command {
 		Before: func(c *cli.Context) error {
 			h = DailyHandler{}
 			h.Repository = &repositories.DailyRepository{
-				Db:  pool.NewDB(),
-				Rdb: pool.NewRedis(),
+				Db:  common.NewDB(),
+				Rdb: common.NewRedis(),
 				Ctx: context.Background(),
 			}
 			return nil
