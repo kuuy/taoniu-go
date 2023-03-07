@@ -1,10 +1,10 @@
 package tdx
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
+	"github.com/alecthomas/repr"
 	"github.com/urfave/cli/v2"
 	"log"
 	"os"
@@ -60,15 +60,6 @@ func (h *TdxHandler) test() error {
 	if err != nil {
 		return err
 	}
-	data, err := json.Marshal(program)
-	if err != nil {
-		return err
-	}
-	out, err := os.Create("/tmp/parse.json")
-	if err != nil {
-		return err
-	}
-	out.WriteString(string(data))
-	//repr.Println(program, repr.Indent("  "), repr.OmitEmpty(true))
+	repr.Println(program, repr.Indent("  "), repr.OmitEmpty(true))
 	return nil
 }
