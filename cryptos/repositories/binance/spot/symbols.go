@@ -51,10 +51,10 @@ func (r *SymbolsRepository) Symbols() []string {
 }
 
 func (r *SymbolsRepository) Get(
-		symbol string,
+	symbol string,
 ) (models.Symbol, error) {
 	var entity models.Symbol
-	result := r.Db.Where("symbol = ?", symbol).Take(&entity)
+	result := r.Db.Where("symbol", symbol).Take(&entity)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return entity, result.Error
 	}

@@ -8,13 +8,17 @@ import (
 )
 
 type AnalysisTask struct {
-	Db  *gorm.DB
-	Rdb *redis.Client
-	Ctx context.Context
+	Db         *gorm.DB
+	Rdb        *redis.Client
+	Ctx        context.Context
+	MarginTask *tasks.MarginTask
 }
 
 func (t *AnalysisTask) Margin() *tasks.MarginTask {
-	return &tasks.MarginTask{
-		Db: t.Db,
+	if t.MarginTask == nil {
+		t.MarginTask = &tasks.MarginTask{
+			Db: t.Db,
+		}
 	}
+	return t.MarginTask
 }

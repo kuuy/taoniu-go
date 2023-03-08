@@ -1,18 +1,40 @@
 package isolated
 
 import (
+	"bytes"
 	"context"
+	"crypto"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/sha256"
+	"crypto/x509"
+	"encoding/base64"
+	"encoding/json"
+	"encoding/pem"
 	"errors"
 	"fmt"
-	"github.com/adshao/go-binance/v2"
-	"github.com/go-redis/redis/v8"
+	"gorm.io/gorm"
+	"log"
+	"net"
+	"net/http"
+	"net/url"
 	"strconv"
+	"time"
+
+	"github.com/adshao/go-binance/v2"
+	"github.com/adshao/go-binance/v2/common"
+	"github.com/go-redis/redis/v8"
+
+	binanceConfig "taoniu.local/cryptos/config/binance"
 	config "taoniu.local/cryptos/config/binance/spot"
+	binanceModels "taoniu.local/cryptos/models/binance/spot"
 )
 
 type AccountRepository struct {
-	Rdb *redis.Client
-	Ctx context.Context
+	Db                *gorm.DB
+	Rdb               *redis.Client
+	Ctx               context.Context
+	SymbolsRepository *SymbolsRepository
 }
 
 func (r *AccountRepository) Flush() error {
@@ -75,4 +97,118 @@ func (r *AccountRepository) Balance(symbol string) (float64, float64, error) {
 	quantity, _ := strconv.ParseFloat(data[1].(string), 64)
 
 	return balance, quantity, nil
+}
+
+func (r *AccountRepository) Collect() error {
+	symbols := r.SymbolsRepository.Scan()
+	for _, symbol := range symbols {
+		var entity *binanceModels.Symbol
+		result := r.Db.Select([]string{"base_asset", "quote_asset"}).Where("symbol", symbol).Take(&entity)
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			continue
+		}
+		var quantity float64 = 0
+		val, err := r.Rdb.HGet(
+			r.Ctx,
+			fmt.Sprintf("binance:spot:balances:%s", entity.BaseAsset),
+			"free",
+		).Result()
+		if err == nil {
+			quantity, _ = strconv.ParseFloat(val, 64)
+		}
+		if quantity <= 0 {
+			continue
+		}
+		transferId, err := r.Transfer(
+			entity.BaseAsset,
+			symbol,
+			"SPOT",
+			"ISOLATED_MARGIN",
+			quantity,
+		)
+		if err != nil {
+			return err
+		}
+		log.Println("transferId", transferId)
+	}
+	return nil
+}
+
+func (r *AccountRepository) Transfer(
+	asset string,
+	symbol string,
+	from string,
+	to string,
+	quantity float64,
+) (int64, error) {
+	tr := &http.Transport{
+		DisableKeepAlives: true,
+	}
+	session := &net.Dialer{}
+	tr.DialContext = session.DialContext
+
+	httpClient := &http.Client{
+		Transport: tr,
+		Timeout:   time.Duration(5) * time.Second,
+	}
+
+	params := url.Values{}
+	params.Add("asset", asset)
+	params.Add("symbol", symbol)
+	params.Add("transFrom", from)
+	params.Add("transTo", to)
+	params.Add("amount", strconv.FormatFloat(quantity, 'f', -1, 64))
+	params.Add("recvWindow", "60000")
+
+	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
+	payload := fmt.Sprintf("%s&timestamp=%v", params.Encode(), timestamp)
+
+	block, _ := pem.Decode([]byte(binanceConfig.FUND_SECRET_KEY))
+	privateKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+	if err != nil {
+		return 0, err
+	}
+	hashed := sha256.Sum256([]byte(payload))
+	signature, _ := rsa.SignPKCS1v15(rand.Reader, privateKey.(*rsa.PrivateKey), crypto.SHA256, hashed[:])
+
+	data := url.Values{}
+	data.Add("signature", base64.StdEncoding.EncodeToString(signature))
+
+	body := bytes.NewBufferString(fmt.Sprintf("%s&%s", payload, data.Encode()))
+
+	url := "https://api.binance.com/sapi/v1/margin/isolated/transfer"
+	req, _ := http.NewRequest("POST", url, body)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("X-MBX-APIKEY", binanceConfig.FUND_API_KEY)
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return 0, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= http.StatusBadRequest {
+		apiErr := new(common.APIError)
+		err = json.NewDecoder(resp.Body).Decode(&apiErr)
+		if err == nil {
+			return 0, apiErr
+		}
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		err = errors.New(
+			fmt.Sprintf(
+				"request error: status[%s] code[%d]",
+				resp.Status,
+				resp.StatusCode,
+			),
+		)
+		return 0, err
+	}
+
+	var response binance.TransactionResponse
+	err = json.NewDecoder(resp.Body).Decode(&response)
+	if err != nil {
+		return 0, err
+	}
+	return response.TranID, nil
 }

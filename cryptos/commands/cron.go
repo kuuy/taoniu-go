@@ -2,10 +2,9 @@ package commands
 
 import (
 	"context"
+	"gorm.io/gorm"
 	"log"
 	"sync"
-
-	"gorm.io/gorm"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/robfig/cron/v3"
@@ -91,6 +90,13 @@ func (h *CronHandler) run() error {
 	c.AddFunc("@hourly", func() {
 		binance.Spot().Cron().Hourly()
 		//binance.Futures().Cron().Hourly()
+		binance.Savings().Products().Flush()
+	})
+	c.AddFunc("15 1,11,19 * * *", func() {
+		binance.Spot().Margin().Isolated().Account().Collect()
+	})
+	c.AddFunc("15 1,17 * * *", func() {
+		binance.Spot().Margin().Isolated().Tradings().Fishers().Grids().Collect()
 	})
 	c.AddFunc("30 23 * * *", func() {
 		binance.Spot().Clean()

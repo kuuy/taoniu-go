@@ -13,6 +13,7 @@ type BinanceTask struct {
 	Ctx         context.Context
 	SpotTask    *tasks.SpotTask
 	FuturesTask *tasks.FuturesTask
+	SavingsTask *tasks.SavingsTask
 }
 
 func (t *BinanceTask) Spot() *tasks.SpotTask {
@@ -35,4 +36,14 @@ func (t *BinanceTask) Futures() *tasks.FuturesTask {
 		}
 	}
 	return t.FuturesTask
+}
+
+func (t *BinanceTask) Savings() *tasks.SavingsTask {
+	if t.SavingsTask == nil {
+		t.SavingsTask = &tasks.SavingsTask{
+			Db:  t.Db,
+			Ctx: t.Ctx,
+		}
+	}
+	return t.SavingsTask
 }

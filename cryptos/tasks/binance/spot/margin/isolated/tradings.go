@@ -2,6 +2,7 @@ package isolated
 
 import (
 	"context"
+	"taoniu.local/cryptos/repositories/binance/spot/margin/isolated/tradings/fishers"
 
 	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
@@ -16,14 +17,18 @@ type TradingsTask struct {
 	Db          *gorm.DB
 	Rdb         *redis.Client
 	Ctx         context.Context
-	FishersTask *tasks.FIshersTask
+	FishersTask *tasks.FishersTask
 	GridsTask   *tasks.GridsTask
 }
 
-func (t *TradingsTask) Fishers() *tasks.FIshersTask {
-	if t.GridsTask == nil {
-		t.FishersTask = &tasks.FIshersTask{}
-		t.FishersTask.Repository = &repositories.FishersRepository{
+func (t *TradingsTask) Fishers() *tasks.FishersTask {
+	if t.FishersTask == nil {
+		t.FishersTask = &tasks.FishersTask{
+			Db:  t.Db,
+			Rdb: t.Rdb,
+			Ctx: t.Ctx,
+		}
+		t.FishersTask.Repository = &fishers.FishersRepository{
 			Db:  t.Db,
 			Rdb: t.Rdb,
 			Ctx: t.Ctx,

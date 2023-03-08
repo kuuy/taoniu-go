@@ -10,53 +10,71 @@ import (
 )
 
 type IsolatedTask struct {
-	Db  *gorm.DB
-	Rdb *redis.Client
-	Ctx context.Context
+	Db           *gorm.DB
+	Rdb          *redis.Client
+	Ctx          context.Context
+	SymbolsTask  *tasks.SymbolsTask
+	AccountTask  *tasks.AccountTask
+	OrdersTask   *tasks.OrdersTask
+	TradingsTask *tasks.TradingsTask
 }
 
 func (t *IsolatedTask) Symbols() *tasks.SymbolsTask {
-	return &tasks.SymbolsTask{
-		Repository: &repositories.SymbolsRepository{
-			Db:  t.Db,
-			Rdb: t.Rdb,
-			Ctx: t.Ctx,
-		},
+	if t.SymbolsTask == nil {
+		t.SymbolsTask = &tasks.SymbolsTask{
+			Repository: &repositories.SymbolsRepository{
+				Db:  t.Db,
+				Rdb: t.Rdb,
+				Ctx: t.Ctx,
+			},
+		}
 	}
+	return t.SymbolsTask
 }
 
 func (t *IsolatedTask) Account() *tasks.AccountTask {
-	return &tasks.AccountTask{
-		Repository: &repositories.AccountRepository{
-			Rdb: t.Rdb,
-			Ctx: t.Ctx,
-		},
+	if t.AccountTask == nil {
+		t.AccountTask = &tasks.AccountTask{
+			Repository: &repositories.AccountRepository{
+				Db:  t.Db,
+				Rdb: t.Rdb,
+				Ctx: t.Ctx,
+			},
+		}
+		t.AccountTask.Repository.SymbolsRepository = &repositories.SymbolsRepository{
+			Db: t.Db,
+		}
 	}
+	return t.AccountTask
 }
 
 func (t *IsolatedTask) Orders() *tasks.OrdersTask {
-	task := &tasks.OrdersTask{
-		Rdb: t.Rdb,
-		Ctx: t.Ctx,
+	if t.OrdersTask == nil {
+		t.OrdersTask = &tasks.OrdersTask{
+			Rdb: t.Rdb,
+			Ctx: t.Ctx,
+		}
+		t.OrdersTask.Repository = &repositories.OrdersRepository{
+			Db:  t.Db,
+			Rdb: t.Rdb,
+			Ctx: t.Ctx,
+		}
+		t.OrdersTask.Repository.Parent = &marginRepositories.OrdersRepository{
+			Db:  t.Db,
+			Rdb: t.Rdb,
+			Ctx: t.Ctx,
+		}
 	}
-	task.Repository = &repositories.OrdersRepository{
-		Db:  t.Db,
-		Rdb: t.Rdb,
-		Ctx: t.Ctx,
-	}
-	parentRepository := &marginRepositories.OrdersRepository{
-		Db:  t.Db,
-		Rdb: t.Rdb,
-		Ctx: t.Ctx,
-	}
-	task.Repository.Parent = parentRepository
-	return task
+	return t.OrdersTask
 }
 
 func (t *IsolatedTask) Tradings() *tasks.TradingsTask {
-	return &tasks.TradingsTask{
-		Db:  t.Db,
-		Rdb: t.Rdb,
-		Ctx: t.Ctx,
+	if t.TradingsTask == nil {
+		t.TradingsTask = &tasks.TradingsTask{
+			Db:  t.Db,
+			Rdb: t.Rdb,
+			Ctx: t.Ctx,
+		}
 	}
+	return t.TradingsTask
 }

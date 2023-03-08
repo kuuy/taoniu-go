@@ -1,17 +1,18 @@
-package tradings
+package fishers
 
 import (
 	"context"
 	"encoding/json"
 	"errors"
 	"math"
-	"taoniu.local/cryptos/models/binance/spot/margin/isolated"
-	"taoniu.local/cryptos/models/binance/spot/margin/isolated/tradings/fishers"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/rs/xid"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
+
+	"taoniu.local/cryptos/models/binance/spot/margin/isolated"
+	"taoniu.local/cryptos/models/binance/spot/margin/isolated/tradings/fishers"
 )
 
 type AnalysisRepository interface {
@@ -25,6 +26,7 @@ type SymbolsRepository interface {
 
 type AccountRepository interface {
 	Balance(symbol string) (float64, float64, error)
+	Transfer(asset string, symbol string, from string, to string, amount float64) (int64, error)
 }
 
 type OrdersRepository interface {

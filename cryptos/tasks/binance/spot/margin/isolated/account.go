@@ -11,3 +11,7 @@ type AccountTask struct {
 func (t *AccountTask) Flush() error {
 	return t.Repository.Flush()
 }
+
+func (t *AccountTask) Collect() error {
+	return t.Repository.Collect()
+}
