@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math"
+	"github.com/shopspring/decimal"
 	"strconv"
 	"strings"
 	"time"
@@ -283,7 +283,7 @@ func (r *SymbolsRepository) Adjust(symbol string, price float64, amount float64)
 	data = strings.Split(entity.Filters["price"].(string), ",")
 	maxPrice, _ := strconv.ParseFloat(data[0], 64)
 	minPrice, _ := strconv.ParseFloat(data[1], 64)
-	tickSize, _ := strconv.ParseFloat(data[2], 64)
+	tickSize, _ := decimal.NewFromString(data[2])
 
 	if price > maxPrice {
 		return 0, 0, errors.New("price too high")
@@ -291,14 +291,15 @@ func (r *SymbolsRepository) Adjust(symbol string, price float64, amount float64)
 	if price < minPrice {
 		price = minPrice
 	}
-	price = math.Ceil(price*math.Ceil(1/tickSize)) / math.Ceil(1/tickSize)
+
+	price, _ = decimal.NewFromFloat(price).Div(tickSize).Ceil().Mul(tickSize).Float64()
 
 	data = strings.Split(entity.Filters["quote"].(string), ",")
 	maxQty, _ := strconv.ParseFloat(data[0], 64)
 	minQty, _ := strconv.ParseFloat(data[1], 64)
-	stepSize, _ := strconv.ParseFloat(data[2], 64)
+	stepSize, _ := decimal.NewFromString(data[2])
 
-	quantity := math.Ceil(amount*math.Ceil(1/stepSize)/price) / math.Ceil(1/stepSize)
+	quantity, _ := decimal.NewFromFloat(amount).Div(decimal.NewFromFloat(price)).Div(stepSize).Ceil().Mul(stepSize).Float64()
 	if quantity > maxQty {
 		return 0, 0, errors.New("quantity too high")
 	}

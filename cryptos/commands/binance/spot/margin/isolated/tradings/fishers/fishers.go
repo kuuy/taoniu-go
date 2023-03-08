@@ -112,25 +112,25 @@ func (h *FishersHandler) Place() error {
 }
 
 func (h *FishersHandler) Apply() error {
-	//symbol := "AVAXBUSD"
-	//amount := 10.0
-	//balance := 500.0
-	//targetBalance := 900.0
-	//stopBalance := 100.0
-	//tickers := make([][]float64, 5)
-	//tickers[0] = []float64{21.95, 20.65, 20.08, 19.58, 19.28, 18.84, 17.69, 17.38, 17.26}
-	//tickers[1] = []float64{16.95, 16.57, 16.43, 16.25, 16.02, 15.73, 15.41, 15.23, 15.00}
-	//tickers[2] = []float64{14.88, 14.58, 14.38, 14.15, 14.03, 13.62, 13.33, 13.1, 12.60}
-	//tickers[3] = []float64{12.52, 12.25, 12.06, 11.8, 11.61, 11.55, 11.42, 11.35, 11.28}
-	//tickers[4] = []float64{11.14, 10.97, 10.89, 10.72, 10.61, 10.55}
-	//return h.Repository.Apply(
-	//	symbol,
-	//	amount,
-	//	balance,
-	//	targetBalance,
-	//	stopBalance,
-	//	tickers,
-	//)
+	symbol := "AVAXBUSD"
+	amount := 10.0
+	balance := 500.0
+	targetBalance := 900.0
+	stopBalance := 100.0
+	tickers := make([][]float64, 5)
+	tickers[0] = []float64{21.95, 20.65, 20.08, 19.58, 19.28, 18.84, 17.69, 17.38, 17.26}
+	tickers[1] = []float64{16.95, 16.57, 16.43, 16.25, 16.15, 16.06, 15.96, 15.88, 15.73}
+	tickers[2] = []float64{15.41, 15.23, 15.00, 14.88, 14.58, 14.38, 14.15, 14.03, 13.62}
+	tickers[3] = []float64{13.33, 13.1, 12.60, 12.52, 12.25, 12.06, 11.8, 11.61, 11.55}
+	tickers[4] = []float64{11.42, 11.35, 11.28, 11.14, 10.97, 10.89, 10.72, 10.61, 10.55}
+	return h.Repository.Apply(
+		symbol,
+		amount,
+		balance,
+		targetBalance,
+		stopBalance,
+		tickers,
+	)
 
 	//symbol := "LAZIOBUSD"
 	//amount := 10.0
@@ -459,21 +459,21 @@ func (h *FishersHandler) Apply() error {
 	//	tickers,
 	//)
 
-	symbol := "SOLBUSD"
-	amount := 10.0
-	balance := 1500.0
-	targetBalance := 2900.0
-	stopBalance := 100.0
-	var tickers [][]float64
-	tickers = append(tickers, []float64{36.00, 30.91, 28.23, 26.37, 25.06, 23.54, 21.94, 20.40, 19.28})
-	tickers = append(tickers, []float64{18.27, 17.28, 16.35, 15.44, 14.55, 13.73, 12.97, 12.53, 11.90})
-	tickers = append(tickers, []float64{11.41, 11.01, 9.77, 8.75})
-	return h.Repository.Apply(
-		symbol,
-		amount,
-		balance,
-		targetBalance,
-		stopBalance,
-		tickers,
-	)
+	//symbol := "SOLBUSD"
+	//amount := 10.0
+	//balance := 1500.0
+	//targetBalance := 2900.0
+	//stopBalance := 100.0
+	//var tickers [][]float64
+	//tickers = append(tickers, []float64{36.00, 30.91, 28.23, 26.37, 25.06, 23.54, 21.94, 20.40, 19.28})
+	//tickers = append(tickers, []float64{18.27, 17.28, 16.35, 15.44, 14.55, 13.73, 12.97, 12.53, 11.90})
+	//tickers = append(tickers, []float64{11.41, 11.01, 9.77, 8.75})
+	//return h.Repository.Apply(
+	//	symbol,
+	//	amount,
+	//	balance,
+	//	targetBalance,
+	//	stopBalance,
+	//	tickers,
+	//)
 }
