@@ -36,6 +36,7 @@ func (t *MarginTask) Orders() *tasks.OrdersTask {
 
 func (t *MarginTask) Flush() {
 	t.Isolated().Account().Flush()
+	t.Isolated().Account().Liquidate()
 	t.Isolated().Orders().Open()
 	t.Isolated().Symbols().Flush()
 	t.Orders().Flush()

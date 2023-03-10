@@ -134,6 +134,50 @@ func (r *AccountRepository) Collect() error {
 	return nil
 }
 
+func (r *AccountRepository) Liquidate() error {
+	symbols := r.SymbolsRepository.Scan()
+	for _, symbol := range symbols {
+		var entity *binanceModels.Symbol
+		result := r.Db.Select([]string{"quote_asset"}).Where("symbol", symbol).Take(&entity)
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			continue
+		}
+		var free float64 = 0
+		var borrowed float64 = 0
+		var interest float64 = 0
+		data, err := r.Rdb.HMGet(
+			r.Ctx,
+			fmt.Sprintf("binance:spot:margin:isolated:balances:%s", symbol),
+			"quote_free",
+			"quote_borrowed",
+			"quote_interest",
+		).Result()
+		if data[0] == nil || data[1] == nil || data[2] == nil {
+			continue
+		}
+		free, _ = strconv.ParseFloat(data[0].(string), 64)
+		borrowed, _ = strconv.ParseFloat(data[1].(string), 64)
+		interest, _ = strconv.ParseFloat(data[2].(string), 64)
+		if borrowed <= 0 {
+			continue
+		}
+		if free < borrowed+interest {
+			continue
+		}
+		transferId, err := r.Repay(
+			entity.QuoteAsset,
+			symbol,
+			borrowed+interest,
+			true,
+		)
+		if err != nil {
+			return err
+		}
+		log.Println("transferId", transferId)
+	}
+	return nil
+}
+
 func (r *AccountRepository) Transfer(
 	asset string,
 	symbol string,
@@ -177,6 +221,164 @@ func (r *AccountRepository) Transfer(
 	body := bytes.NewBufferString(fmt.Sprintf("%s&%s", payload, data.Encode()))
 
 	url := "https://api.binance.com/sapi/v1/margin/isolated/transfer"
+	req, _ := http.NewRequest("POST", url, body)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("X-MBX-APIKEY", binanceConfig.FUND_API_KEY)
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return 0, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= http.StatusBadRequest {
+		apiErr := new(common.APIError)
+		err = json.NewDecoder(resp.Body).Decode(&apiErr)
+		if err == nil {
+			return 0, apiErr
+		}
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		err = errors.New(
+			fmt.Sprintf(
+				"request error: status[%s] code[%d]",
+				resp.Status,
+				resp.StatusCode,
+			),
+		)
+		return 0, err
+	}
+
+	var response binance.TransactionResponse
+	err = json.NewDecoder(resp.Body).Decode(&response)
+	if err != nil {
+		return 0, err
+	}
+	return response.TranID, nil
+}
+
+func (r *AccountRepository) Loan(
+	asset string,
+	symbol string,
+	amount float64,
+	isIsolated bool,
+) (int64, error) {
+	tr := &http.Transport{
+		DisableKeepAlives: true,
+	}
+	session := &net.Dialer{}
+	tr.DialContext = session.DialContext
+
+	httpClient := &http.Client{
+		Transport: tr,
+		Timeout:   time.Duration(5) * time.Second,
+	}
+
+	params := url.Values{}
+	params.Add("asset", asset)
+	params.Add("symbol", symbol)
+	params.Add("amount", strconv.FormatFloat(amount, 'f', -1, 64))
+	if isIsolated {
+		params.Add("isIsolated", "TRUE")
+	}
+	params.Add("recvWindow", "60000")
+
+	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
+	payload := fmt.Sprintf("%s&timestamp=%v", params.Encode(), timestamp)
+
+	block, _ := pem.Decode([]byte(binanceConfig.FUND_SECRET_KEY))
+	privateKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+	if err != nil {
+		return 0, err
+	}
+	hashed := sha256.Sum256([]byte(payload))
+	signature, _ := rsa.SignPKCS1v15(rand.Reader, privateKey.(*rsa.PrivateKey), crypto.SHA256, hashed[:])
+
+	data := url.Values{}
+	data.Add("signature", base64.StdEncoding.EncodeToString(signature))
+
+	body := bytes.NewBufferString(fmt.Sprintf("%s&%s", payload, data.Encode()))
+
+	url := "https://api.binance.com/sapi/v1/margin/loan"
+	req, _ := http.NewRequest("POST", url, body)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("X-MBX-APIKEY", binanceConfig.FUND_API_KEY)
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return 0, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= http.StatusBadRequest {
+		apiErr := new(common.APIError)
+		err = json.NewDecoder(resp.Body).Decode(&apiErr)
+		if err == nil {
+			return 0, apiErr
+		}
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		err = errors.New(
+			fmt.Sprintf(
+				"request error: status[%s] code[%d]",
+				resp.Status,
+				resp.StatusCode,
+			),
+		)
+		return 0, err
+	}
+
+	var response binance.TransactionResponse
+	err = json.NewDecoder(resp.Body).Decode(&response)
+	if err != nil {
+		return 0, err
+	}
+	return response.TranID, nil
+}
+
+func (r *AccountRepository) Repay(
+	asset string,
+	symbol string,
+	amount float64,
+	isIsolated bool,
+) (int64, error) {
+	tr := &http.Transport{
+		DisableKeepAlives: true,
+	}
+	session := &net.Dialer{}
+	tr.DialContext = session.DialContext
+
+	httpClient := &http.Client{
+		Transport: tr,
+		Timeout:   time.Duration(5) * time.Second,
+	}
+
+	params := url.Values{}
+	params.Add("asset", asset)
+	params.Add("symbol", symbol)
+	params.Add("amount", strconv.FormatFloat(amount, 'f', -1, 64))
+	if isIsolated {
+		params.Add("isIsolated", "TRUE")
+	}
+	params.Add("recvWindow", "60000")
+
+	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
+	payload := fmt.Sprintf("%s&timestamp=%v", params.Encode(), timestamp)
+
+	block, _ := pem.Decode([]byte(binanceConfig.FUND_SECRET_KEY))
+	privateKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+	if err != nil {
+		return 0, err
+	}
+	hashed := sha256.Sum256([]byte(payload))
+	signature, _ := rsa.SignPKCS1v15(rand.Reader, privateKey.(*rsa.PrivateKey), crypto.SHA256, hashed[:])
+
+	data := url.Values{}
+	data.Add("signature", base64.StdEncoding.EncodeToString(signature))
+
+	body := bytes.NewBufferString(fmt.Sprintf("%s&%s", payload, data.Encode()))
+
+	url := "https://api.binance.com/sapi/v1/margin/repay"
 	req, _ := http.NewRequest("POST", url, body)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("X-MBX-APIKEY", binanceConfig.FUND_API_KEY)

@@ -15,3 +15,7 @@ func (t *AccountTask) Flush() error {
 func (t *AccountTask) Collect() error {
 	return t.Repository.Collect()
 }
+
+func (t *AccountTask) Liquidate() error {
+	return t.Repository.Liquidate()
+}
