@@ -161,7 +161,7 @@ func (r *AccountRepository) Liquidate() error {
 		if borrowed <= 0 {
 			continue
 		}
-		if free < borrowed+interest {
+		if free < interest {
 			continue
 		}
 		transferId, err := r.Repay(
