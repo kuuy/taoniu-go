@@ -68,7 +68,7 @@ func (r *SymbolsRepository) Flush() error {
 		return err
 	}
 	for _, item := range result.Symbols {
-		if item.QuoteAsset != "BUSD" {
+		if item.QuoteAsset != "USDT" {
 			continue
 		}
 		var filters = make(datatypes.JSONMap)
