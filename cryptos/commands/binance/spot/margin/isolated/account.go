@@ -4,6 +4,7 @@ import (
 	"context"
 	"gorm.io/gorm"
 	"log"
+	"taoniu.local/cryptos/tasks"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/urfave/cli/v2"
@@ -101,6 +102,16 @@ func NewAccountCommand() *cli.Command {
 					return nil
 				},
 			},
+			{
+				Name:  "test",
+				Usage: "",
+				Action: func(c *cli.Context) error {
+					if err := h.Test(); err != nil {
+						return cli.Exit(err.Error(), 1)
+					}
+					return nil
+				},
+			},
 		},
 	}
 }
@@ -157,4 +168,14 @@ func (h *AccountHandler) Collect() error {
 func (h *AccountHandler) Liquidate() error {
 	log.Println("margin isolated account liquidate...")
 	return h.Repository.Liquidate()
+}
+
+func (h *AccountHandler) Test() error {
+	binance := tasks.BinanceTask{
+		Db:  h.Db,
+		Rdb: h.Rdb,
+		Ctx: h.Ctx,
+	}
+	binance.Spot().Cron().Hourly()
+	return nil
 }

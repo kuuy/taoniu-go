@@ -114,15 +114,12 @@ func (h *FishersHandler) Place() error {
 func (h *FishersHandler) Apply() error {
 	//symbol := "AVAXUSDT"
 	//amount := 10.0
-	//balance := 500.0
-	//targetBalance := 900.0
+	//balance := 1500.0
+	//targetBalance := 2900.0
 	//stopBalance := 100.0
-	//tickers := make([][]float64, 5)
-	//tickers[0] = []float64{21.95, 20.65, 20.08, 19.58, 19.28, 18.84, 17.69, 17.38, 17.26}
-	//tickers[1] = []float64{16.95, 16.57, 16.43, 16.25, 16.15, 16.06, 15.96, 15.88, 15.73}
-	//tickers[2] = []float64{15.41, 15.23, 15.00, 14.88, 14.58, 14.38, 14.15, 14.03, 13.62}
-	//tickers[3] = []float64{13.33, 13.1, 12.60, 12.52, 12.25, 12.06, 11.8, 11.61, 11.55}
-	//tickers[4] = []float64{11.42, 11.35, 11.28, 11.14, 10.97, 10.89, 10.72, 10.61, 10.55}
+	//var tickers [][]float64
+	//tickers = append(tickers, []float64{41.22, 35.53, 29.58, 26.20, 23.33, 20.98, 19.12, 17.54, 16.30})
+	//tickers = append(tickers, []float64{15.40, 14.56, 13.83, 13.10, 12.13, 11.12, 9.55})
 	//return h.Repository.Apply(
 	//	symbol,
 	//	amount,
@@ -134,14 +131,12 @@ func (h *FishersHandler) Apply() error {
 
 	//symbol := "LAZIOUSDT"
 	//amount := 10.0
-	//balance := 500.0
-	//targetBalance := 900.0
+	//balance := 1500.0
+	//targetBalance := 2900.0
 	//stopBalance := 100.0
-	//tickers := make([][]float64, 4)
-	//tickers[0] = []float64{4.2617, 4.1064, 3.9549, 3.7801, 3.6636, 3.5588, 3.5467, 3.4661, 3.3892}
-	//tickers[1] = []float64{3.3269, 3.272, 3.2243, 3.1731, 3.1401, 3.0888, 2.9936, 2.9496}
-	//tickers[2] = []float64{2.9166, 2.88, 2.7774, 2.4477, 2.2756, 2.162, 2.0741, 2.0265, 1.9678}
-	//tickers[3] = []float64{1.6345, 1.5576, 1.0557}
+	//var tickers [][]float64
+	//tickers = append(tickers, []float64{17.2781, 12.9592, 10.0692, 7.7945, 6.2292, 5.0049, 4.2636, 3.6513, 3.2275})
+	//tickers = append(tickers, []float64{2.8906, 2.6432, 2.4600, 2.2821, 2.1204, 1.9504, 1.7825, 1.5473, 1.3049})
 	//return h.Repository.Apply(
 	//	symbol,
 	//	amount,
@@ -153,13 +148,12 @@ func (h *FishersHandler) Apply() error {
 
 	//symbol := "DOGEUSDT"
 	//amount := 10.0
-	//balance := 500.0
-	//targetBalance := 900.0
+	//balance := 1500.0
+	//targetBalance := 2900.0
 	//stopBalance := 100.0
-	//tickers := make([][]float64, 3)
-	//tickers[0] = []float64{0.11767, 0.11264, 0.10808, 0.10328, 0.09567, 0.09215, 0.08958, 0.08758, 0.08579, 0.08369}
-	//tickers[1] = []float64{0.08084, 0.07999, 0.07742, 0.07515, 0.07286, 0.07049, 0.06765, 0.06546, 0.06309, 0.05977}
-	//tickers[2] = []float64{0.05787, 0.05692, 0.05521, 0.05407, 0.05274, 0.05189, 0.05027}
+	//var tickers [][]float64
+	//tickers = append(tickers, []float64{0.14219, 0.12445, 0.11767, 0.11146, 0.10096, 0.09447, 0.08958, 0.08817, 0.08178})
+	//tickers = append(tickers, []float64{0.07502, 0.06877, 0.06474, 0.06012, 0.05550, 0.05029})
 	//return h.Repository.Apply(
 	//	symbol,
 	//	amount,
@@ -171,13 +165,12 @@ func (h *FishersHandler) Apply() error {
 
 	//symbol := "ALGOUSDT"
 	//amount := 10.0
-	//balance := 500.0
-	//targetBalance := 900.0
+	//balance := 1500.0
+	//targetBalance := 2900.0
 	//stopBalance := 100.0
 	//var tickers [][]float64
-	//tickers = append(tickers, []float64{0.3243, 0.3148, 0.3054, 0.2951, 0.2853, 0.2800, 0.2734, 0.2659, 0.2584})
-	//tickers = append(tickers, []float64{0.2508, 0.241, 0.2355, 0.217, 0.2088, 0.2025, 0.1976, 0.1923, 0.1886})
-	//tickers = append(tickers, []float64{0.182, 0.1769, 0.1686, 0.1609})
+	//tickers = append(tickers, []float64{2.0438, 1.4962, 1.0609, 0.8820, 0.7661, 0.5744, 0.4341, 0.3655, 0.3155})
+	//tickers = append(tickers, []float64{0.2879, 0.2442, 0.2218, 0.2082, 0.1962, 0.1804, 0.1619, 0.1373, 0.1060})
 	//return h.Repository.Apply(
 	//	symbol,
 	//	amount,
@@ -189,13 +182,12 @@ func (h *FishersHandler) Apply() error {
 
 	//symbol := "ZECUSDT"
 	//amount := 10.0
-	//balance := 500.0
-	//targetBalance := 900.0
+	//balance := 1500.0
+	//targetBalance := 2900.0
 	//stopBalance := 100.0
-	//tickers := make([][]float64, 3)
-	//tickers[0] = []float64{53.0, 51.6, 50.1, 48.4, 47.4, 46.4, 45.7, 44.8, 44.3}
-	//tickers[1] = []float64{43.5, 42.5, 41.4, 40.5, 39.7, 38.9, 38.2, 37.6, 36.7}
-	//tickers[2] = []float64{35.4}
+	//var tickers [][]float64
+	//tickers = append(tickers, []float64{113.5, 92.8, 77.6, 67.8, 59.3, 52.5, 48.9, 46.1, 43.5})
+	//tickers = append(tickers, []float64{41.4, 39.4, 37.6, 35.6, 33.2, 30.6, 27.4, 23.9, 19.5})
 	//return h.Repository.Apply(
 	//	symbol,
 	//	amount,
@@ -207,13 +199,12 @@ func (h *FishersHandler) Apply() error {
 
 	//symbol := "UNIUSDT"
 	//amount := 10.0
-	//balance := 500.0
-	//targetBalance := 900.0
+	//balance := 1500.0
+	//targetBalance := 2900.0
 	//stopBalance := 100.0
-	//tickers := make([][]float64, 3)
-	//tickers[0] = []float64{7.949, 7.618, 7.359, 7.118, 6.927, 6.765, 6.649, 6.533, 6.407}
-	//tickers[1] = []float64{6.295, 6.198, 6.046, 5.921, 5.847, 5.723, 5.628, 5.512, 5.429}
-	//tickers[2] = []float64{5.296, 5.210, 5.152, 5.082, 4.964, 4.893, 4.764, 4.683}
+	//var tickers [][]float64
+	//tickers = append(tickers, []float64{16.097, 13.871, 11.770, 9.985, 8.687, 7.833, 7.256, 6.832, 6.481})
+	//tickers = append(tickers, []float64{6.189, 5.868, 5.560, 5.264, 4.860, 3.666, 2.944, 1.801})
 	//return h.Repository.Apply(
 	//	symbol,
 	//	amount,
@@ -261,13 +252,12 @@ func (h *FishersHandler) Apply() error {
 
 	//symbol := "LTCUSDT"
 	//amount := 10.0
-	//balance := 500.0
-	//targetBalance := 900.0
+	//balance := 1500.0
+	//targetBalance := 2900.0
 	//stopBalance := 100.0
-	//tickers := make([][]float64, 3)
-	//tickers[0] = []float64{111.35, 109.32, 106.99, 104.09, 101.05, 98.50, 95.81, 94.17, 92.29}
-	//tickers[1] = []float64{90.42, 89.11, 86.90, 85.19, 83.07, 80.37, 77.92, 75.47, 71.14}
-	//tickers[2] = []float64{68.86, 66.08, 62.32, 59.95, 58.40, 55.54, 53.26, 50.56}
+	//var tickers [][]float64
+	//tickers = append(tickers, []float64{273.64, 231.12, 197.25, 165.96, 144.94, 129.35, 116.12, 105.33, 94.27})
+	//tickers = append(tickers, []float64{84.45, 75.66, 65.80, 49.16})
 	//return h.Repository.Apply(
 	//	symbol,
 	//	amount,
@@ -279,12 +269,12 @@ func (h *FishersHandler) Apply() error {
 
 	//symbol := "STPTUSDT"
 	//amount := 10.0
-	//balance := 500.0
-	//targetBalance := 900.0
+	//balance := 1500.0
+	//targetBalance := 2900.0
 	//stopBalance := 100.0
 	//tickers := make([][]float64, 2)
-	//tickers[0] = []float64{0.05748, 0.05459, 0.05143, 0.04890, 0.04637, 0.04491, 0.04291, 0.04078, 0.03919}
-	//tickers[1] = []float64{0.03732, 0.03586, 0.03413, 0.03280, 0.03093, 0.02960, 0.02787, 0.02654, 0.02473}
+	//tickers[0] = []float64{0.07403, 0.05917, 0.05465, 0.05143, 0.04890, 0.04637, 0.04323, 0.03984, 0.03577}
+	//tickers[1] = []float64{0.03014, 0.02471, 0.01395}
 	//return h.Repository.Apply(
 	//	symbol,
 	//	amount,
@@ -296,13 +286,12 @@ func (h *FishersHandler) Apply() error {
 
 	//symbol := "AAVEUSDT"
 	//amount := 10.0
-	//balance := 500.0
-	//targetBalance := 900.0
+	//balance := 1500.0
+	//targetBalance := 2900.0
 	//stopBalance := 100.0
-	//tickers := make([][]float64, 3)
-	//tickers[0] = []float64{104.8, 100.5, 96.0, 92.2, 88.5, 85.3, 83.2, 81.3, 79.8}
-	//tickers[1] = []float64{77.8, 76.1, 74.5, 72.2, 70.0, 67.9, 63.9, 62.2, 60.4}
-	//tickers[2] = []float64{58.6, 56.3, 54.3, 52.4, 50.6, 48.6, 46.9}
+	//var tickers [][]float64
+	//tickers = append(tickers, []float64{178.0, 156.2, 138.3, 123.7, 112.2, 101.2, 94.1, 86.8})
+	//tickers = append(tickers, []float64{80.0, 74.6, 64.2, 53.0, 41.7, 26.3})
 	//return h.Repository.Apply(
 	//	symbol,
 	//	amount,
@@ -318,10 +307,9 @@ func (h *FishersHandler) Apply() error {
 	//targetBalance := 900.0
 	//stopBalance := 100.0
 	//var tickers [][]float64
-	//tickers = append(tickers, []float64{151.6, 145.9, 140.0, 136.5, 132.1, 130.4, 129.0, 127.2, 125.6})
-	//tickers = append(tickers, []float64{123.8, 122.0, 120.5, 118.8, 116.8, 115.1, 113.0, 111.3, 109.3})
-	//tickers = append(tickers, []float64{107.8, 106.0, 104.3, 102.0, 100.0, 98.4, 96.4, 94.4, 92.6})
-	//tickers = append(tickers, []float64{91.0, 89.0})
+	//tickers = append(tickers, []float64{263.7, 213.3, 194.2, 176.7, 163.8, 158.8, 153.2, 144.2, 136.8})
+	//tickers = append(tickers, []float64{132.0, 129.0, 126.1, 123.8, 121.5, 119.2, 116.8, 113.0, 111.3})
+	//tickers = append(tickers, []float64{109.3, 102.0, 94.4, 83.4})
 	//
 	//return h.Repository.Apply(
 	//	symbol,
@@ -354,13 +342,13 @@ func (h *FishersHandler) Apply() error {
 
 	//symbol := "ATOMUSDT"
 	//amount := 10.0
-	//balance := 500.0
-	//targetBalance := 900.0
+	//balance := 1500.0
+	//targetBalance := 2900.0
 	//stopBalance := 100.0
-	//tickers := make([][]float64, 5)
-	//tickers[0] = []float64{15.374, 14.857, 14.530, 14.114, 13.870, 13.540, 13.310, 13.098, 13.066}
-	//tickers[1] = []float64{12.870, 12.718, 12.446, 12.213, 11.985, 11.772, 11.536, 11.244, 10.953}
-	//tickers[2] = []float64{10.626, 10.232, 9.818, 9.343, 8.585}
+	//var tickers [][]float64
+	//tickers = append(tickers, []float64{16.405, 15.374, 14.857, 14.436, 14.114, 13.811, 13.540, 13.310, 13.066})
+	//tickers = append(tickers, []float64{12.875, 12.689, 12.496, 12.221, 11.948, 11.548, 11.189, 10.953, 10.239})
+	//tickers = append(tickers, []float64{9.345, 8.292})
 	//return h.Repository.Apply(
 	//	symbol,
 	//	amount,
@@ -372,13 +360,12 @@ func (h *FishersHandler) Apply() error {
 
 	//symbol := "ANKRUSDT"
 	//amount := 10.0
-	//balance := 500.0
-	//targetBalance := 900.0
+	//balance := 1500.0
+	//targetBalance := 2900.0
 	//stopBalance := 100.0
 	//var tickers [][]float64
-	//tickers = append(tickers, []float64{0.05919, 0.05045, 0.04476, 0.04049, 0.03728, 0.03602, 0.03470, 0.03344, 0.03212})
-	//tickers = append(tickers, []float64{0.03087, 0.02997, 0.02911, 0.02823, 0.02762, 0.02715, 0.02705, 0.02636, 0.02571})
-	//tickers = append(tickers, []float64{0.02499, 0.02426, 0.02343, 0.02266, 0.02125, 0.02064, 0.02011, 0.01960})
+	//tickers = append(tickers, []float64{0.17395, 0.13905, 0.11244, 0.09151, 0.07463, 0.06178, 0.05162, 0.04465, 0.03976})
+	//tickers = append(tickers, []float64{0.03656, 0.03315, 0.02931, 0.02931, 0.02428, 0.01962, 0.01473})
 	//
 	//return h.Repository.Apply(
 	//	symbol,
@@ -389,23 +376,22 @@ func (h *FishersHandler) Apply() error {
 	//	tickers,
 	//)
 
-	symbol := "QTUMUSDT"
-	amount := 10.0
-	balance := 500.0
-	targetBalance := 900.0
-	stopBalance := 100.0
-	var tickers [][]float64
-	tickers = append(tickers, []float64{5.489, 4.809, 4.262, 3.631, 3.302, 3.153, 3.031, 2.894, 2.815})
-	tickers = append(tickers, []float64{2.741, 2.633, 2.542, 2.450, 2.368, 2.290, 2.225, 2.151, 2.055})
-	tickers = append(tickers, []float64{1.964, 1.873, 1.782})
-	return h.Repository.Apply(
-		symbol,
-		amount,
-		balance,
-		targetBalance,
-		stopBalance,
-		tickers,
-	)
+	//symbol := "QTUMUSDT"
+	//amount := 10.0
+	//balance := 1500.0
+	//targetBalance := 2900.0
+	//stopBalance := 100.0
+	//var tickers [][]float64
+	//tickers = append(tickers, []float64{7.297, 6.442, 5.727, 5.058, 4.491, 4.057, 3.641, 3.206, 2.979})
+	//tickers = append(tickers, []float64{2.852, 2.745, 2.668, 2.585, 2.519, 2.449, 2.198, 1.899, 1.310})
+	//return h.Repository.Apply(
+	//	symbol,
+	//	amount,
+	//	balance,
+	//	targetBalance,
+	//	stopBalance,
+	//	tickers,
+	//)
 
 	//symbol := "BNBUSDT"
 	//amount := 10.0
@@ -440,22 +426,22 @@ func (h *FishersHandler) Apply() error {
 	//	tickers,
 	//)
 
-	//symbol := "WOOUSDT"
-	//amount := 10.0
-	//balance := 1500.0
-	//targetBalance := 2900.0
-	//stopBalance := 100.0
-	//var tickers [][]float64
-	//tickers = append(tickers, []float64{0.2602, 0.2517, 0.2420, 0.2312, 0.2193, 0.2081, 0.1962, 0.1853, 0.1735})
-	//tickers = append(tickers, []float64{0.1620, 0.1489, 0.1379, 0.1291, 0.1212, 0.1153, 0.1095, 0.1034})
-	//return h.Repository.Apply(
-	//	symbol,
-	//	amount,
-	//	balance,
-	//	targetBalance,
-	//	stopBalance,
-	//	tickers,
-	//)
+	symbol := "WOOUSDT"
+	amount := 10.0
+	balance := 1500.0
+	targetBalance := 2900.0
+	stopBalance := 100.0
+	var tickers [][]float64
+	tickers = append(tickers, []float64{0.3366, 0.2989, 0.2728, 0.2515, 0.2346, 0.2202, 0.2081, 0.1962, 0.1842})
+	tickers = append(tickers, []float64{0.1691, 0.1497, 0.1224, 0.0879})
+	return h.Repository.Apply(
+		symbol,
+		amount,
+		balance,
+		targetBalance,
+		stopBalance,
+		tickers,
+	)
 
 	//symbol := "SOLUSDT"
 	//amount := 10.0
@@ -463,9 +449,8 @@ func (h *FishersHandler) Apply() error {
 	//targetBalance := 2900.0
 	//stopBalance := 100.0
 	//var tickers [][]float64
-	//tickers = append(tickers, []float64{36.00, 30.91, 28.23, 26.37, 25.06, 23.54, 21.94, 20.40, 19.28})
-	//tickers = append(tickers, []float64{18.27, 17.28, 16.35, 15.44, 14.55, 13.73, 12.97, 12.53, 11.90})
-	//tickers = append(tickers, []float64{11.41, 11.01, 9.77, 8.75})
+	//tickers = append(tickers, []float64{63.55, 55.44, 45.61, 39.84, 34.94, 31.05, 27.92, 25.10, 23.19})
+	//tickers = append(tickers, []float64{21.22, 19.19, 18.27, 14.13, 8.75})
 	//return h.Repository.Apply(
 	//	symbol,
 	//	amount,

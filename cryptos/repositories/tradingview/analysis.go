@@ -123,6 +123,7 @@ func (r *AnalysisRepository) Summary(
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, result.Error
 	}
+
 	return entity.Summary, nil
 }
 

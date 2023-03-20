@@ -29,9 +29,7 @@ func NewAnalysisCommand() *cli.Command {
 				Ctx: context.Background(),
 			}
 			h.Repository = &repositories.AnalysisRepository{
-				Db:  h.Db,
-				Rdb: h.Rdb,
-				Ctx: h.Ctx,
+				Db: h.Db,
 			}
 			return nil
 		},
@@ -70,7 +68,10 @@ func (h *AnalysisHandler) Flush() error {
 }
 
 func (h *AnalysisHandler) Summary() error {
-	summary, err := h.Repository.Summary("BINANCE", "AVAXBUSD", "1m")
+	exchange := "BINANCE"
+	interval := "1m"
+	symbol := "AVAXBUSD"
+	summary, err := h.Repository.Summary(exchange, symbol, interval)
 	if err != nil {
 		return err
 	}

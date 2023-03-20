@@ -4,12 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"math"
-
+	"fmt"
 	"github.com/go-redis/redis/v8"
 	"github.com/rs/xid"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
+	"math"
+	"strings"
+	"time"
 
 	"taoniu.local/cryptos/models/binance/spot/margin/isolated"
 	"taoniu.local/cryptos/models/binance/spot/margin/isolated/tradings/fishers"
@@ -217,11 +219,30 @@ func (r *FishersRepository) Place(symbol string) error {
 		return errors.New("fishers place waiting")
 	}
 
-	summary, err := r.AnalysisRepository.Summary("BINANCE", symbol, "1m")
+	exchange := "BINANCE"
+	interval := "1m"
+	summary, err := r.AnalysisRepository.Summary(exchange, symbol, interval)
 	if err != nil {
 		return err
 	}
+
+	timestamp := time.Now().Unix()
+	redisKey := fmt.Sprintf("binance:spot:margin:isolated:tradings:fishers:recommendation")
+	item, err := r.Rdb.HGet(r.Ctx, redisKey, symbol).Result()
+	if err == nil {
+		data := strings.Split(item, ",")
+		if summary["RECOMMENDATION"] == data[0] {
+			return errors.New("recommendation not changed")
+		}
+	}
+
 	if summary["RECOMMENDATION"] != "BUY" && summary["RECOMMENDATION"] != "STRONG_BUY" {
+		r.Rdb.HSet(
+			r.Ctx,
+			redisKey,
+			symbol,
+			fmt.Sprintf("%s:%v", summary["RECOMMENDATION"], timestamp),
+		)
 		return errors.New("tradginview recommendation not for buy")
 	}
 
@@ -231,7 +252,7 @@ func (r *FishersRepository) Place(symbol string) error {
 		}
 		amount := fisher.StartAmount * math.Pow(2, float64(step))
 		if amount > fisher.Balance {
-			return errors.New("balance not enough")
+			return errors.New(fmt.Sprintf("[%s] balance not enough", symbol))
 		}
 		buyPrice, buyQuantity, err := r.SymbolsRepository.Adjust(symbol, price, amount)
 		if err != nil {
@@ -242,7 +263,7 @@ func (r *FishersRepository) Place(symbol string) error {
 			return err
 		}
 		if balance < buyPrice*buyQuantity {
-			return errors.New("balance not enough")
+			return errors.New(fmt.Sprintf("[%s] balance not enough", symbol))
 		}
 		sellPrice := buyPrice * 1.0035
 		sellPrice, sellQuantity, err := r.SymbolsRepository.Adjust(symbol, sellPrice, amount)
@@ -279,6 +300,13 @@ func (r *FishersRepository) Place(symbol string) error {
 			}
 			return nil
 		})
+
+		r.Rdb.HSet(
+			r.Ctx,
+			redisKey,
+			symbol,
+			fmt.Sprintf("%s:%v", summary["RECOMMENDATION"], timestamp),
+		)
 	}
 
 	return nil
