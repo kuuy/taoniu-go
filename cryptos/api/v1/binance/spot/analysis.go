@@ -8,6 +8,7 @@ import (
 
 func NewAnalysisRouter() http.Handler {
 	r := chi.NewRouter()
+	r.Mount("/tradings", analysis.NewTradingsRouter())
 	r.Mount("/margin", analysis.NewMarginRouter())
 	return r
 }

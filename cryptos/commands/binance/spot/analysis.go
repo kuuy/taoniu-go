@@ -10,6 +10,7 @@ func NewAnalysisCommand() *cli.Command {
 		Name:  "analysis",
 		Usage: "",
 		Subcommands: []*cli.Command{
+			analysis.NewTradingsCommand(),
 			analysis.NewMarginCommand(),
 		},
 	}
