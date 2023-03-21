@@ -19,8 +19,9 @@ func (m *Spot) AutoMigrate(db *gorm.DB) error {
 		&spot.Strategy{},
 		&spot.Plan{},
 		&spot.Grid{},
-		&spot.TradingScalping{},
+		&spot.Fisher{},
 	)
+	spot.NewTradings().AutoMigrate(db)
 	spot.NewMargin().AutoMigrate(db)
 	spot.NewAnalysis().AutoMigrate(db)
 

@@ -36,6 +36,26 @@ func NewOrdersCommand() *cli.Command {
 		},
 		Subcommands: []*cli.Command{
 			{
+				Name:  "create",
+				Usage: "",
+				Action: func(c *cli.Context) error {
+					if err := h.create(); err != nil {
+						return cli.Exit(err.Error(), 1)
+					}
+					return nil
+				},
+			},
+			{
+				Name:  "cancel",
+				Usage: "",
+				Action: func(c *cli.Context) error {
+					if err := h.cancel(); err != nil {
+						return cli.Exit(err.Error(), 1)
+					}
+					return nil
+				},
+			},
+			{
 				Name:  "open",
 				Usage: "",
 				Action: func(c *cli.Context) error {
@@ -57,6 +77,29 @@ func NewOrdersCommand() *cli.Command {
 			},
 		},
 	}
+}
+
+func (h *OrdersHandler) create() error {
+	log.Println("orders create...")
+	symbol := "MATICUSDT"
+	price := 0.99
+	quantity := 10.10
+	orderId, err := h.Repository.Create(symbol, "BUY", price, quantity)
+	if err != nil {
+		return err
+	}
+	log.Println("orderId", orderId)
+	return nil
+}
+
+func (h *OrdersHandler) cancel() error {
+	log.Println("orders cancel...")
+	id := "cgcjd60v5lf88ugnccqg"
+	err := h.Repository.Cancel(id)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (h *OrdersHandler) open() error {

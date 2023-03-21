@@ -1,4 +1,4 @@
-package margin
+package spot
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 
 	"taoniu.local/cryptos/api"
 	"taoniu.local/cryptos/common"
-	repositories "taoniu.local/cryptos/repositories/binance/spot/margin"
+	repositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
 type OrdersHandler struct {
@@ -134,9 +134,8 @@ func (h *OrdersHandler) Create(
 		return
 	}
 	amount, _ := strconv.ParseFloat(r.URL.Query().Get("amount"), 64)
-	isIsolated, _ := strconv.ParseBool(r.URL.Query().Get("is_isolated"))
 
-	_, err := h.Repository.Create(symbol, side, price, amount, isIsolated)
+	_, err := h.Repository.Create(symbol, side, price, amount)
 	if err != nil {
 		h.Response.Error(http.StatusForbidden, 1004, err.Error())
 		return

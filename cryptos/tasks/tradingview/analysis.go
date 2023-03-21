@@ -23,7 +23,7 @@ func (t *AnalysisTask) Flush() error {
 	mutex := common.NewMutex(
 		t.Rdb,
 		t.Ctx,
-		"locks:tradginview:analysis:flush",
+		"locks:tradingview:analysis:flush",
 	)
 	if mutex.Lock(10 * time.Second) {
 		return nil

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strconv"
 	config "taoniu.local/cryptos/config/binance/spot"
+	"taoniu.local/cryptos/models/binance/spot/tradings"
 
 	"github.com/adshao/go-binance/v2"
 	"github.com/go-redis/redis/v8"
@@ -88,9 +89,9 @@ func (r *ScalpingRepository) Flush() error {
 	if err != nil {
 		return err
 	}
-	var entity *models.TradingScalping
+	var entity *tradings.Scalping
 	result := r.Db.Model(
-		&models.TradingScalping{},
+		&tradings.Scalping{},
 	).Where(
 		"symbol=? AND status=0",
 		plan.Symbol,
@@ -126,7 +127,7 @@ func (r *ScalpingRepository) Flush() error {
 		entity.Status = status
 		entity.Remark = remark
 
-		r.Db.Model(&models.TradingScalping{ID: entity.ID}).Updates(entity)
+		r.Db.Model(&tradings.Scalping{ID: entity.ID}).Updates(entity)
 
 		return nil
 	}
@@ -150,7 +151,7 @@ func (r *ScalpingRepository) Flush() error {
 		}
 	}
 
-	entity = &models.TradingScalping{
+	entity = &tradings.Scalping{
 		ID:           xid.New().String(),
 		Symbol:       plan.Symbol,
 		BuyOrderId:   buyOrderId,
@@ -170,7 +171,7 @@ func (r *ScalpingRepository) Flush() error {
 }
 
 func (r *ScalpingRepository) Update() error {
-	var entities []*models.TradingScalping
+	var entities []*tradings.Scalping
 	r.Db.Where(
 		"status IN ?",
 		[]int64{0, 2},
@@ -211,7 +212,7 @@ func (r *ScalpingRepository) Update() error {
 		}
 		entity.Status = status
 
-		r.Db.Model(&models.TradingScalping{ID: entity.ID}).Updates(entity)
+		r.Db.Model(&tradings.Scalping{ID: entity.ID}).Updates(entity)
 	}
 
 	return nil

@@ -1,8 +1,8 @@
-package spot
+package tradings
 
 import "time"
 
-type TradingScalping struct {
+type Scalping struct {
 	ID           string    `gorm:"size:20;primaryKey"`
 	Symbol       string    `gorm:"size:20;not null;index:idx_binance_spot_tradings_scalping_symbol_status"`
 	BuyOrderId   int64     `gorm:"not null"`
@@ -17,6 +17,6 @@ type TradingScalping struct {
 	UpdatedAt    time.Time `gorm:"not null"`
 }
 
-func (m *TradingScalping) TableName() string {
+func (m *Scalping) TableName() string {
 	return "binance_spot_tradings_scalping"
 }

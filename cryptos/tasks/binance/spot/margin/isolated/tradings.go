@@ -2,13 +2,13 @@ package isolated
 
 import (
 	"context"
-	"taoniu.local/cryptos/repositories/binance/spot/margin/isolated/tradings/fishers"
 
 	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
 
 	spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
 	repositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated/tradings"
+	fishersRepositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated/tradings/fishers"
 	tvRepositories "taoniu.local/cryptos/repositories/tradingview"
 	tasks "taoniu.local/cryptos/tasks/binance/spot/margin/isolated/tradings"
 )
@@ -28,7 +28,7 @@ func (t *TradingsTask) Fishers() *tasks.FishersTask {
 			Rdb: t.Rdb,
 			Ctx: t.Ctx,
 		}
-		t.FishersTask.Repository = &fishers.FishersRepository{
+		t.FishersTask.Repository = &fishersRepositories.FishersRepository{
 			Db:  t.Db,
 			Rdb: t.Rdb,
 			Ctx: t.Ctx,

@@ -2,12 +2,13 @@ package fishers
 
 import (
 	"errors"
-	"github.com/shopspring/decimal"
-	"gorm.io/gorm"
 	"log"
 
+	"github.com/shopspring/decimal"
+	"gorm.io/gorm"
+
 	savingsModels "taoniu.local/cryptos/models/binance/savings"
-	binanceModels "taoniu.local/cryptos/models/binance/spot"
+	spotModels "taoniu.local/cryptos/models/binance/spot"
 	models "taoniu.local/cryptos/models/binance/spot/margin/isolated/tradings/fishers"
 )
 
@@ -47,7 +48,7 @@ func (r *GridsRepository) Collect() error {
 		if err != nil {
 			continue
 		}
-		var entity *binanceModels.Symbol
+		var entity *spotModels.Symbol
 		result := r.Db.Select([]string{"base_asset", "quote_asset"}).Where("symbol", symbol).Take(&entity)
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			continue

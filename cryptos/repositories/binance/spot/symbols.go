@@ -21,10 +21,11 @@ import (
 )
 
 type SymbolsRepository struct {
-	Db               *gorm.DB
-	Rdb              *redis.Client
-	Ctx              context.Context
-	MarginRepository *MarginRepository
+	Db                 *gorm.DB
+	Rdb                *redis.Client
+	Ctx                context.Context
+	MarginRepository   *MarginRepository
+	TradingsRepository *TradingsRepository
 }
 
 func (r *SymbolsRepository) Margins() *MarginRepository {
@@ -36,6 +37,17 @@ func (r *SymbolsRepository) Margins() *MarginRepository {
 		}
 	}
 	return r.MarginRepository
+}
+
+func (r *SymbolsRepository) Tradings() *TradingsRepository {
+	if r.TradingsRepository == nil {
+		r.TradingsRepository = &TradingsRepository{
+			Db:  r.Db,
+			Rdb: r.Rdb,
+			Ctx: r.Ctx,
+		}
+	}
+	return r.TradingsRepository
 }
 
 func (r *SymbolsRepository) Currencies() []string {
@@ -148,6 +160,11 @@ func (r *SymbolsRepository) Flush() error {
 
 func (r *SymbolsRepository) Scan() []string {
 	var symbols []string
+	for _, symbol := range r.Tradings().Fishers().Scan() {
+		if !r.contains(symbols, symbol) {
+			symbols = append(symbols, symbol)
+		}
+	}
 	for _, symbol := range r.Margins().Symbols().Scan() {
 		if !r.contains(symbols, symbol) {
 			symbols = append(symbols, symbol)

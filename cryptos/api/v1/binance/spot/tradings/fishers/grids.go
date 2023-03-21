@@ -7,7 +7,7 @@ import (
 
 	"taoniu.local/cryptos/api"
 	"taoniu.local/cryptos/common"
-	repositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated/tradings/fishers"
+	repositories "taoniu.local/cryptos/repositories/binance/spot/tradings/fishers"
 )
 
 type GridsHandler struct {

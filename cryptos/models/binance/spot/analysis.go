@@ -13,5 +13,6 @@ func NewAnalysis() *Analysis {
 
 func (m *Analysis) AutoMigrate(db *gorm.DB) error {
 	analysis.NewMargin().AutoMigrate(db)
+	analysis.NewTradings().AutoMigrate(db)
 	return nil
 }
