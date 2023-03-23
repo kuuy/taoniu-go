@@ -7,3 +7,8 @@ import (
 type GridsTask struct {
 	Repository *repositories.GridsRepository
 }
+
+func (t *GridsTask) Collect() error {
+	t.Repository.Collect()
+	return nil
+}

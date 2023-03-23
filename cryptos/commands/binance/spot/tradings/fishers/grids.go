@@ -56,6 +56,16 @@ func NewGridsCommand() *cli.Command {
 					return nil
 				},
 			},
+			{
+				Name:  "collect",
+				Usage: "",
+				Action: func(c *cli.Context) error {
+					if err := h.Collect(); err != nil {
+						return cli.Exit(err.Error(), 1)
+					}
+					return nil
+				},
+			},
 		},
 	}
 }
@@ -65,4 +75,9 @@ func (h *GridsHandler) Pending() error {
 	data := h.Repository.Pending()
 	log.Println(data)
 	return nil
+}
+
+func (h *GridsHandler) Collect() error {
+	log.Println("spot tradings fishers grids collect...")
+	return h.Repository.Collect()
 }

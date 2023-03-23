@@ -100,6 +100,7 @@ func (h *CronHandler) run() error {
 		binance.Spot().Margin().Isolated().Account().Collect()
 	})
 	c.AddFunc("45 1,17 * * *", func() {
+		binance.Spot().Tradings().Fishers().Grids().Collect()
 		binance.Spot().Margin().Isolated().Tradings().Fishers().Grids().Collect()
 	})
 	c.AddFunc("30 23 * * *", func() {

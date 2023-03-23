@@ -133,7 +133,7 @@ func (r *FishersRepository) Flush(symbol string) error {
 	for _, grid := range grids {
 		if grid.Status == 0 {
 			status := r.OrdersRepository.Status(symbol, grid.BuyOrderId)
-			if status == "NEW" || status == "PARTIALLY_FILLED" {
+			if status == "" || status == "NEW" || status == "PARTIALLY_FILLED" {
 				r.OrdersRepository.Flush(symbol, grid.BuyOrderId)
 				continue
 			}
@@ -154,7 +154,8 @@ func (r *FishersRepository) Flush(symbol string) error {
 			})
 		} else if grid.Status == 2 {
 			status := r.OrdersRepository.Status(symbol, grid.SellOrderId)
-			if status == "NEW" || status == "PARTIALLY_FILLED" {
+			if status == "" || status == "NEW" || status == "PARTIALLY_FILLED" {
+				r.OrdersRepository.Flush(symbol, grid.BuyOrderId)
 				continue
 			}
 			r.Db.Transaction(func(tx *gorm.DB) error {
