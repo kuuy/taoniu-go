@@ -24,6 +24,7 @@ func main() {
 			commands.NewBinanceCommand(),
 			commands.NewCronCommand(),
 			commands.NewDbCommand(),
+			commands.NewQueueCommand(),
 			commands.NewProxiesCommand(),
 			commands.NewExchangesCommand(),
 			commands.NewSectorsCommand(),

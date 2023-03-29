@@ -15,5 +15,6 @@ func NewSpotRouter() http.Handler {
 	r.Mount("/plans", spot.NewPlansRouter())
 	r.Mount("/margin", spot.NewMarginRouter())
 	r.Mount("/analysis", spot.NewAnalysisRouter())
+	r.Mount("/tradings", spot.NewTradingsRouter())
 	return r
 }
