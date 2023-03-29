@@ -13,8 +13,8 @@ import (
 type BinanceTask struct {
 	Db          *gorm.DB
 	Rdb         *redis.Client
-	Asynq       *asynq.Client
 	Ctx         context.Context
+	Asynq       *asynq.Client
 	SpotTask    *tasks.SpotTask
 	FuturesTask *tasks.FuturesTask
 	SavingsTask *tasks.SavingsTask
@@ -25,8 +25,8 @@ func (t *BinanceTask) Spot() *tasks.SpotTask {
 		t.SpotTask = &tasks.SpotTask{
 			Db:    t.Db,
 			Rdb:   t.Rdb,
-			Asynq: t.Asynq,
 			Ctx:   t.Ctx,
+			Asynq: t.Asynq,
 		}
 	}
 	return t.SpotTask

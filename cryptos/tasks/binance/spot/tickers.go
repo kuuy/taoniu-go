@@ -3,6 +3,7 @@ package spot
 import (
 	"context"
 	"math/rand"
+	"taoniu.local/cryptos/common"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -23,6 +24,16 @@ type TickersTask struct {
 }
 
 func (t *TickersTask) Flush() error {
+	mutex := common.NewMutex(
+		t.Rdb,
+		t.Ctx,
+		"locks:binance:spot:tickers:flush",
+	)
+	if mutex.Lock(10 * time.Second) {
+		return nil
+	}
+	defer mutex.Unlock()
+
 	symbols := t.SymbolsRepository.Scan()
 	for i := 0; i < len(symbols); i += 20 {
 		j := i + 20
@@ -52,7 +63,7 @@ func (t *TickersTask) FlushDelay() error {
 			task,
 			asynq.Queue(config.BINANCE_SPOT_TICKERS),
 			asynq.MaxRetry(0),
-			asynq.Timeout(5*time.Second),
+			asynq.Timeout(8*time.Second),
 		)
 	}
 

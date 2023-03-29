@@ -34,7 +34,7 @@ func (r *DepthRepository) Request(symbol string) (map[string]interface{}, error)
 	}
 	if r.UseProxy {
 		session := &common.ProxySession{
-			Proxy: "socks5://127.0.0.1:1088?timeout=5s",
+			Proxy: "socks5://127.0.0.1:1088?timeout=8s",
 		}
 		tr.DialContext = session.DialContext
 	} else {
@@ -44,7 +44,7 @@ func (r *DepthRepository) Request(symbol string) (map[string]interface{}, error)
 
 	httpClient := &http.Client{
 		Transport: tr,
-		Timeout:   time.Duration(5) * time.Second,
+		Timeout:   time.Duration(8) * time.Second,
 	}
 
 	url := "https://api.binance.com/api/v3/depth"

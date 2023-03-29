@@ -2,6 +2,7 @@ package common
 
 import (
 	"context"
+	"errors"
 	"github.com/hibiken/asynq"
 	config "taoniu.local/cryptos/config/queue"
 	"time"
@@ -52,6 +53,9 @@ func NewDB() *gorm.DB {
 	db, err := gorm.Open(postgres.New(postgres.Config{
 		Conn: NewDBPool(),
 	}), &gorm.Config{})
+	if errors.Is(err, context.DeadlineExceeded) {
+		return NewDB()
+	}
 	if err != nil {
 		panic(err)
 	}

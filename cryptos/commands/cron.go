@@ -59,8 +59,8 @@ func (h *CronHandler) run() error {
 	binance := tasks.BinanceTask{
 		Db:    h.Db,
 		Rdb:   h.Rdb,
-		Asynq: h.Asynq,
 		Ctx:   h.Ctx,
+		Asynq: h.Asynq,
 	}
 
 	c := cron.New()
@@ -91,6 +91,7 @@ func (h *CronHandler) run() error {
 		binance.Spot().Indicators().Daily().Flush()
 		binance.Spot().Strategies().Daily().Flush()
 		binance.Spot().Analysis().Flush()
+		binance.Spot().Depth().FlushDelay()
 		binance.Spot().Tickers().FlushDelay()
 		//binance.Futures().Indicators().Daily().Flush()
 		//binance.Futures().Strategies().Daily().Flush()

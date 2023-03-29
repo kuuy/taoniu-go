@@ -13,8 +13,8 @@ import (
 type SpotTask struct {
 	Db             *gorm.DB
 	Rdb            *redis.Client
-	Asynq          *asynq.Client
 	Ctx            context.Context
+	Asynq          *asynq.Client
 	CronTask       *tasks.CronTask
 	SymbolsTask    *tasks.SymbolsTask
 	TickersTask    *tasks.TickersTask
@@ -58,8 +58,8 @@ func (t *SpotTask) Tickers() *tasks.TickersTask {
 	if t.TickersTask == nil {
 		t.TickersTask = &tasks.TickersTask{
 			Rdb:   t.Rdb,
-			Asynq: t.Asynq,
 			Ctx:   t.Ctx,
+			Asynq: t.Asynq,
 		}
 		t.TickersTask.Job = &jobs.Tickers{}
 		t.TickersTask.Repository = &repositories.TickersRepository{
@@ -76,9 +76,11 @@ func (t *SpotTask) Tickers() *tasks.TickersTask {
 func (t *SpotTask) Depth() *tasks.DepthTask {
 	if t.DepthTask == nil {
 		t.DepthTask = &tasks.DepthTask{
-			Rdb: t.Rdb,
-			Ctx: t.Ctx,
+			Rdb:   t.Rdb,
+			Ctx:   t.Ctx,
+			Asynq: t.Asynq,
 		}
+		t.DepthTask.Job = &jobs.Depth{}
 		t.DepthTask.Repository = &repositories.DepthRepository{
 			Db: t.Db,
 		}

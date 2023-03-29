@@ -1,8 +1,6 @@
 package commands
 
 import (
-	"context"
-	"fmt"
 	"github.com/hibiken/asynq"
 	"github.com/urfave/cli/v2"
 	"log"
@@ -40,9 +38,9 @@ func (h *QueueHandler) run() error {
 	worker := asynq.NewServer(rdb, asynq.Config{
 		Concurrency: 10,
 		Queues: map[string]int{
-			config.BINANCE_SPOT_TICKERS: 10,
+			config.BINANCE_SPOT_DEPTH:   5,
+			config.BINANCE_SPOT_TICKERS: 5,
 		},
-		ErrorHandler: asynq.ErrorHandlerFunc(h.reportError),
 	})
 
 	mux := asynq.NewServeMux()
@@ -52,13 +50,4 @@ func (h *QueueHandler) run() error {
 	}
 
 	return nil
-}
-
-func (h *QueueHandler) reportError(ctx context.Context, task *asynq.Task, err error) {
-	retried, _ := asynq.GetRetryCount(ctx)
-	maxRetry, _ := asynq.GetMaxRetry(ctx)
-	if retried >= maxRetry {
-		err = fmt.Errorf("retry exhausted for task %s: %w", task.Type, err)
-	}
-	log.Println("err", err)
 }
