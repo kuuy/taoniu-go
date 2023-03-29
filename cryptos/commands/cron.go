@@ -2,22 +2,23 @@ package commands
 
 import (
 	"context"
+	"github.com/go-redis/redis/v8"
+	"github.com/hibiken/asynq"
+	"github.com/robfig/cron/v3"
+	"github.com/urfave/cli/v2"
 	"gorm.io/gorm"
 	"log"
 	"sync"
 
-	"github.com/go-redis/redis/v8"
-	"github.com/robfig/cron/v3"
-	"github.com/urfave/cli/v2"
-
-	pool "taoniu.local/cryptos/common"
+	"taoniu.local/cryptos/common"
 	"taoniu.local/cryptos/tasks"
 )
 
 type CronHandler struct {
-	Db  *gorm.DB
-	Rdb *redis.Client
-	Ctx context.Context
+	Db    *gorm.DB
+	Rdb   *redis.Client
+	Asynq *asynq.Client
+	Ctx   context.Context
 }
 
 func NewCronCommand() *cli.Command {
@@ -27,9 +28,10 @@ func NewCronCommand() *cli.Command {
 		Usage: "",
 		Before: func(c *cli.Context) error {
 			h = CronHandler{
-				Db:  pool.NewDB(),
-				Rdb: pool.NewRedis(),
-				Ctx: context.Background(),
+				Db:    common.NewDB(),
+				Rdb:   common.NewRedis(),
+				Asynq: common.NewAsynq(),
+				Ctx:   context.Background(),
 			}
 			return nil
 		},
@@ -55,9 +57,10 @@ func (h *CronHandler) run() error {
 	}
 
 	binance := tasks.BinanceTask{
-		Db:  h.Db,
-		Rdb: h.Rdb,
-		Ctx: h.Ctx,
+		Db:    h.Db,
+		Rdb:   h.Rdb,
+		Asynq: h.Asynq,
+		Ctx:   h.Ctx,
 	}
 
 	c := cron.New()
@@ -88,6 +91,7 @@ func (h *CronHandler) run() error {
 		binance.Spot().Indicators().Daily().Flush()
 		binance.Spot().Strategies().Daily().Flush()
 		binance.Spot().Analysis().Flush()
+		binance.Spot().Tickers().FlushDelay()
 		//binance.Futures().Indicators().Daily().Flush()
 		//binance.Futures().Strategies().Daily().Flush()
 	})

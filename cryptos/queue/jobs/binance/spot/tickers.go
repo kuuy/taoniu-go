@@ -5,13 +5,13 @@ import (
 	"github.com/hibiken/asynq"
 )
 
-type TickersTask struct{}
+type Tickers struct{}
 
 type TickersFlushPayload struct {
 	Symbols []string
 }
 
-func (h *TickersTask) Flush(symbols []string) (*asynq.Task, error) {
+func (h *Tickers) Flush(symbols []string) (*asynq.Task, error) {
 	payload, err := json.Marshal(TickersFlushPayload{symbols})
 	if err != nil {
 		return nil, err

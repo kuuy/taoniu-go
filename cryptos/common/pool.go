@@ -2,6 +2,8 @@ package common
 
 import (
 	"context"
+	"github.com/hibiken/asynq"
+	config "taoniu.local/cryptos/config/queue"
 	"time"
 
 	"database/sql"
@@ -13,9 +15,7 @@ import (
 )
 
 var (
-	rdb    *redis.Client
 	dbPool *sql.DB
-	db     *gorm.DB
 )
 
 type Mutex struct {
@@ -26,13 +26,11 @@ type Mutex struct {
 }
 
 func NewRedis() *redis.Client {
-	rdb = redis.NewClient(&redis.Options{
+	return redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
 		Password: "",
 		DB:       8,
 	})
-
-	return rdb
 }
 
 func NewDBPool() *sql.DB {
@@ -47,7 +45,6 @@ func NewDBPool() *sql.DB {
 		pool.SetConnMaxLifetime(5 * time.Minute)
 		dbPool = pool
 	}
-
 	return dbPool
 }
 
@@ -58,8 +55,14 @@ func NewDB() *gorm.DB {
 	if err != nil {
 		panic(err)
 	}
-
 	return db
+}
+
+func NewAsynq() *asynq.Client {
+	return asynq.NewClient(asynq.RedisClientOpt{
+		Addr: config.REDIS_ADDR,
+		DB:   config.REDIS_DB,
+	})
 }
 
 func NewMutex(

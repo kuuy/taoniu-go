@@ -4,7 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/hibiken/asynq"
-	"log"
+	"taoniu.local/cryptos/common"
+	repositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
 type Tickers struct{}
@@ -17,10 +18,15 @@ type TickersFlushPayload struct {
 	Symbols []string
 }
 
-func (h *Tickers) Flush(_ context.Context, t *asynq.Task) error {
-	log.Println("Tickers flush...", t.Payload())
+func (h *Tickers) Flush(ctx context.Context, t *asynq.Task) error {
 	var payload TickersFlushPayload
 	json.Unmarshal(t.Payload(), &payload)
-	log.Println("symbols", payload.Symbols)
+	repository := &repositories.TickersRepository{
+		Rdb:      common.NewRedis(),
+		Ctx:      ctx,
+		UseProxy: true,
+	}
+	repository.Flush(payload.Symbols)
+
 	return nil
 }

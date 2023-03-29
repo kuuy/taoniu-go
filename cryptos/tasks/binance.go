@@ -2,14 +2,18 @@ package tasks
 
 import (
 	"context"
+
 	"github.com/go-redis/redis/v8"
+	"github.com/hibiken/asynq"
 	"gorm.io/gorm"
+
 	tasks "taoniu.local/cryptos/tasks/binance"
 )
 
 type BinanceTask struct {
 	Db          *gorm.DB
 	Rdb         *redis.Client
+	Asynq       *asynq.Client
 	Ctx         context.Context
 	SpotTask    *tasks.SpotTask
 	FuturesTask *tasks.FuturesTask
@@ -19,9 +23,10 @@ type BinanceTask struct {
 func (t *BinanceTask) Spot() *tasks.SpotTask {
 	if t.SpotTask == nil {
 		t.SpotTask = &tasks.SpotTask{
-			Db:  t.Db,
-			Rdb: t.Rdb,
-			Ctx: t.Ctx,
+			Db:    t.Db,
+			Rdb:   t.Rdb,
+			Asynq: t.Asynq,
+			Ctx:   t.Ctx,
 		}
 	}
 	return t.SpotTask

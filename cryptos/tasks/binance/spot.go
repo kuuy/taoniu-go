@@ -3,7 +3,9 @@ package binance
 import (
 	"context"
 	"github.com/go-redis/redis/v8"
+	"github.com/hibiken/asynq"
 	"gorm.io/gorm"
+	jobs "taoniu.local/cryptos/queue/jobs/binance/spot"
 	repositories "taoniu.local/cryptos/repositories/binance/spot"
 	tasks "taoniu.local/cryptos/tasks/binance/spot"
 )
@@ -11,6 +13,7 @@ import (
 type SpotTask struct {
 	Db             *gorm.DB
 	Rdb            *redis.Client
+	Asynq          *asynq.Client
 	Ctx            context.Context
 	CronTask       *tasks.CronTask
 	SymbolsTask    *tasks.SymbolsTask
@@ -54,9 +57,11 @@ func (t *SpotTask) Symbols() *tasks.SymbolsTask {
 func (t *SpotTask) Tickers() *tasks.TickersTask {
 	if t.TickersTask == nil {
 		t.TickersTask = &tasks.TickersTask{
-			Rdb: t.Rdb,
-			Ctx: t.Ctx,
+			Rdb:   t.Rdb,
+			Asynq: t.Asynq,
+			Ctx:   t.Ctx,
 		}
+		t.TickersTask.Job = &jobs.Tickers{}
 		t.TickersTask.Repository = &repositories.TickersRepository{
 			Rdb: t.Rdb,
 			Ctx: t.Ctx,

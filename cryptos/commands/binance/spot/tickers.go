@@ -12,7 +12,7 @@ import (
 	"gorm.io/gorm"
 
 	"taoniu.local/cryptos/common"
-	tasks "taoniu.local/cryptos/queue/tasks/binance/spot"
+	tasks "taoniu.local/cryptos/queue/jobs/binance/spot"
 	repositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
@@ -20,7 +20,7 @@ type TickersHandler struct {
 	Db                *gorm.DB
 	Rdb               *redis.Client
 	Ctx               context.Context
-	Task              *tasks.TickersTask
+	Task              *tasks.Tickers
 	Repository        *repositories.TickersRepository
 	SymbolsRepository *repositories.SymbolsRepository
 }
@@ -36,7 +36,7 @@ func NewTickersCommand() *cli.Command {
 				Rdb: common.NewRedis(),
 				Ctx: context.Background(),
 			}
-			h.Task = &tasks.TickersTask{}
+			h.Task = &tasks.Tickers{}
 			h.Repository = &repositories.TickersRepository{
 				Rdb: h.Rdb,
 				Ctx: h.Ctx,
@@ -86,7 +86,7 @@ func (h *TickersHandler) Flush() error {
 		task,
 		asynq.Queue(config.BINANCE_SPOT_TICKERS),
 		asynq.MaxRetry(0),
-		asynq.Timeout(3*time.Minute),
+		asynq.Timeout(5*time.Second),
 	)
 	if err != nil {
 		return nil
