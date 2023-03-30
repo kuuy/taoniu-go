@@ -37,7 +37,7 @@ func (t *TickersTask) Flush() error {
 			task,
 			asynq.Queue(config.BINANCE_SPOT_TICKERS),
 			asynq.MaxRetry(0),
-			asynq.Timeout(5*time.Second),
+			asynq.Timeout(5*time.Minute),
 		)
 	}
 
@@ -61,7 +61,7 @@ func (t *TickersTask) FlushDelay() error {
 			task,
 			asynq.Queue(config.BINANCE_SPOT_TICKERS_DELAY),
 			asynq.MaxRetry(0),
-			asynq.Timeout(5*time.Second),
+			asynq.Timeout(5*time.Minute),
 		)
 	}
 

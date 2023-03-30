@@ -29,7 +29,7 @@ func (t *DepthTask) Flush() error {
 			task,
 			asynq.Queue(config.BINANCE_SPOT_DEPTH),
 			asynq.MaxRetry(0),
-			asynq.Timeout(5*time.Second),
+			asynq.Timeout(5*time.Minute),
 		)
 	}
 
@@ -49,7 +49,7 @@ func (t *DepthTask) FlushDelay() error {
 			task,
 			asynq.Queue(config.BINANCE_SPOT_DEPTH_DELAY),
 			asynq.MaxRetry(0),
-			asynq.Timeout(8*time.Second),
+			asynq.Timeout(5*time.Minute),
 		)
 	}
 

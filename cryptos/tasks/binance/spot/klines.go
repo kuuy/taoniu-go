@@ -29,7 +29,7 @@ func (t *KlinesTask) Flush(interval string, limit int) error {
 			task,
 			asynq.Queue(config.BINANCE_SPOT_KLINES),
 			asynq.MaxRetry(0),
-			asynq.Timeout(5*time.Second),
+			asynq.Timeout(5*time.Minute),
 		)
 		t.Repository.Flush(symbol, interval, limit)
 	}
@@ -49,7 +49,7 @@ func (t *KlinesTask) FlushDelay(interval string, limit int) error {
 			task,
 			asynq.Queue(config.BINANCE_SPOT_KLINES_DELAY),
 			asynq.MaxRetry(0),
-			asynq.Timeout(8*time.Second),
+			asynq.Timeout(5*time.Minute),
 		)
 	}
 	return nil
