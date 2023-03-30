@@ -3,16 +3,16 @@ package common
 import (
 	"context"
 	"errors"
-	"github.com/hibiken/asynq"
-	config "taoniu.local/cryptos/config/queue"
 	"time"
 
 	"database/sql"
+	"github.com/go-redis/redis/v8"
+	"github.com/hibiken/asynq"
+	"github.com/rs/xid"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/go-redis/redis/v8"
-	"github.com/rs/xid"
+	config "taoniu.local/cryptos/config/queue"
 )
 
 var (
@@ -28,9 +28,14 @@ type Mutex struct {
 
 func NewRedis() *redis.Client {
 	return redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "",
-		DB:       8,
+		Addr:         "localhost:6379",
+		Password:     "",
+		DB:           8,
+		ReadTimeout:  time.Millisecond * time.Duration(500),
+		WriteTimeout: time.Millisecond * time.Duration(500),
+		IdleTimeout:  time.Second * time.Duration(60),
+		PoolSize:     300,
+		MinIdleConns: 50,
 	})
 }
 
