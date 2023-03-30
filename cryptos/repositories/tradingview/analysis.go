@@ -15,12 +15,15 @@ type AnalysisRepository struct {
 	Db                *gorm.DB
 	Rdb               *redis.Client
 	Ctx               context.Context
+	UseProxy          bool
 	ScannerRepository *ScannerRepository
 }
 
 func (r *AnalysisRepository) Scanner() *ScannerRepository {
 	if r.ScannerRepository == nil {
-		r.ScannerRepository = &ScannerRepository{}
+		r.ScannerRepository = &ScannerRepository{
+			UseProxy: r.UseProxy,
+		}
 	}
 	return r.ScannerRepository
 }

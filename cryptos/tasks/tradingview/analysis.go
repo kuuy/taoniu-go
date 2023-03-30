@@ -2,40 +2,59 @@ package tradingview
 
 import (
 	"context"
-	"log"
+	"math/rand"
+	config "taoniu.local/cryptos/config/queue"
 	"time"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/hibiken/asynq"
 
-	"taoniu.local/cryptos/common"
+	jobs "taoniu.local/cryptos/queue/jobs/tradingview"
 	spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
 	repositories "taoniu.local/cryptos/repositories/tradingview"
 )
 
 type AnalysisTask struct {
-	Rdb              *redis.Client
-	Ctx              context.Context
-	Repository       *repositories.AnalysisRepository
-	SymbolRepository *spotRepositories.SymbolsRepository
+	Rdb               *redis.Client
+	Ctx               context.Context
+	Asynq             *asynq.Client
+	Job               *jobs.Analysis
+	Repository        *repositories.AnalysisRepository
+	SymbolsRepository *spotRepositories.SymbolsRepository
 }
 
 func (t *AnalysisTask) Flush() error {
-	mutex := common.NewMutex(
-		t.Rdb,
-		t.Ctx,
-		"locks:tradingview:analysis:flush",
-	)
-	if mutex.Lock(10 * time.Second) {
-		return nil
-	}
-	defer mutex.Unlock()
-
-	symbols := t.SymbolRepository.Scan()
+	symbols := t.SymbolsRepository.Scan()
 	for _, symbol := range symbols {
-		err := t.Repository.Flush("BINANCE", symbol, "1m")
+		task, err := t.Job.Flush("BINANCE", symbol, "1m", false)
 		if err != nil {
-			log.Println("analysis flush error", err)
+			return err
 		}
+		t.Asynq.Enqueue(
+			task,
+			asynq.Queue(config.TRADINGVIEW_ANALYSIS),
+			asynq.MaxRetry(0),
+			asynq.Timeout(5*time.Second),
+		)
+	}
+	return nil
+}
+
+func (t *AnalysisTask) FlushDelay() error {
+	symbols := t.SymbolsRepository.Symbols()
+	rand.Seed(time.Now().UnixNano())
+	rand.Shuffle(len(symbols), func(i, j int) { symbols[i], symbols[j] = symbols[j], symbols[i] })
+	for _, symbol := range symbols {
+		task, err := t.Job.Flush("BINANCE", symbol, "1m", true)
+		if err != nil {
+			return err
+		}
+		t.Asynq.Enqueue(
+			task,
+			asynq.Queue(config.TRADINGVIEW_ANALYSIS_DELAY),
+			asynq.MaxRetry(0),
+			asynq.Timeout(8*time.Second),
+		)
 	}
 	return nil
 }

@@ -8,11 +8,12 @@ import (
 type Depth struct{}
 
 type DepthFlushPayload struct {
-	Symbol string
+	Symbol   string
+	UseProxy bool
 }
 
-func (h *Depth) Flush(symbol string) (*asynq.Task, error) {
-	payload, err := json.Marshal(DepthFlushPayload{symbol})
+func (h *Depth) Flush(symbol string, useProxy bool) (*asynq.Task, error) {
+	payload, err := json.Marshal(DepthFlushPayload{symbol, useProxy})
 	if err != nil {
 		return nil, err
 	}

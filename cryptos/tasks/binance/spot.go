@@ -76,8 +76,6 @@ func (t *SpotTask) Tickers() *tasks.TickersTask {
 func (t *SpotTask) Depth() *tasks.DepthTask {
 	if t.DepthTask == nil {
 		t.DepthTask = &tasks.DepthTask{
-			Rdb:   t.Rdb,
-			Ctx:   t.Ctx,
 			Asynq: t.Asynq,
 		}
 		t.DepthTask.Job = &jobs.Depth{}
@@ -96,13 +94,14 @@ func (t *SpotTask) Depth() *tasks.DepthTask {
 func (t *SpotTask) Klines() *tasks.KlinesTask {
 	if t.KlinesTask == nil {
 		t.KlinesTask = &tasks.KlinesTask{
-			Rdb: t.Rdb,
-			Ctx: t.Ctx,
+			Asynq: t.Asynq,
 		}
+		t.KlinesTask.Job = &jobs.Klines{}
 		t.KlinesTask.Repository = &repositories.KlinesRepository{
-			Db:  t.Db,
-			Rdb: t.Rdb,
-			Ctx: t.Ctx,
+			Db: t.Db,
+		}
+		t.KlinesTask.SymbolsRepository = &repositories.SymbolsRepository{
+			Db: t.Db,
 		}
 	}
 	return t.KlinesTask

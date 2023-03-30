@@ -8,11 +8,12 @@ import (
 type Tickers struct{}
 
 type TickersFlushPayload struct {
-	Symbols []string
+	Symbols  []string
+	UseProxy bool
 }
 
-func (h *Tickers) Flush(symbols []string) (*asynq.Task, error) {
-	payload, err := json.Marshal(TickersFlushPayload{symbols})
+func (h *Tickers) Flush(symbols []string, useProxy bool) (*asynq.Task, error) {
+	payload, err := json.Marshal(TickersFlushPayload{symbols, useProxy})
 	if err != nil {
 		return nil, err
 	}

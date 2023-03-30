@@ -78,7 +78,7 @@ func (h *TickersHandler) Flush() error {
 	}
 	client := asynq.NewClient(rdb)
 	defer client.Close()
-	task, err := h.Task.Flush([]string{"ADAUSDT", "AVAXUSDT"})
+	task, err := h.Task.Flush([]string{"ADAUSDT", "AVAXUSDT"}, false)
 	if err != nil {
 		return err
 	}

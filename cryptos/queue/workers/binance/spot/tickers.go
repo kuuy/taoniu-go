@@ -3,30 +3,44 @@ package spot
 import (
 	"context"
 	"encoding/json"
+	"github.com/go-redis/redis/v8"
 	"github.com/hibiken/asynq"
 	"taoniu.local/cryptos/common"
 	repositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
-type Tickers struct{}
+type Tickers struct {
+	Rdb        *redis.Client
+	Ctx        context.Context
+	Repository *repositories.TickersRepository
+}
 
 func NewTickers() *Tickers {
-	return &Tickers{}
+	h := &Tickers{
+		Rdb: common.NewRedis(),
+		Ctx: context.Background(),
+	}
+	h.Repository = &repositories.TickersRepository{
+		Rdb: h.Rdb,
+		Ctx: h.Ctx,
+	}
+	return h
 }
 
 type TickersFlushPayload struct {
-	Symbols []string
+	Symbols  []string
+	UseProxy bool
 }
 
 func (h *Tickers) Flush(ctx context.Context, t *asynq.Task) error {
 	var payload TickersFlushPayload
 	json.Unmarshal(t.Payload(), &payload)
-	repository := &repositories.TickersRepository{
-		Rdb:      common.NewRedis(),
-		Ctx:      ctx,
-		UseProxy: true,
+
+	if payload.UseProxy {
+		h.Repository.UseProxy = true
 	}
-	repository.Flush(payload.Symbols)
+
+	h.Repository.Flush(payload.Symbols)
 
 	return nil
 }

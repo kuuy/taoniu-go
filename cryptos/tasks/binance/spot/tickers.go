@@ -3,7 +3,6 @@ package spot
 import (
 	"context"
 	"math/rand"
-	"taoniu.local/cryptos/common"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -24,23 +23,22 @@ type TickersTask struct {
 }
 
 func (t *TickersTask) Flush() error {
-	mutex := common.NewMutex(
-		t.Rdb,
-		t.Ctx,
-		"locks:binance:spot:tickers:flush",
-	)
-	if mutex.Lock(10 * time.Second) {
-		return nil
-	}
-	defer mutex.Unlock()
-
 	symbols := t.SymbolsRepository.Scan()
 	for i := 0; i < len(symbols); i += 20 {
 		j := i + 20
 		if j > len(symbols) {
 			j = len(symbols)
 		}
-		t.Repository.Flush(symbols[i:j])
+		task, err := t.Job.Flush(symbols[i:j], false)
+		if err != nil {
+			return err
+		}
+		t.Asynq.Enqueue(
+			task,
+			asynq.Queue(config.BINANCE_SPOT_TICKERS),
+			asynq.MaxRetry(0),
+			asynq.Timeout(5*time.Second),
+		)
 	}
 
 	return nil
@@ -55,15 +53,15 @@ func (t *TickersTask) FlushDelay() error {
 		if j > len(symbols) {
 			j = len(symbols)
 		}
-		task, err := t.Job.Flush(symbols[i:j])
+		task, err := t.Job.Flush(symbols[i:j], true)
 		if err != nil {
 			return err
 		}
 		t.Asynq.Enqueue(
 			task,
-			asynq.Queue(config.BINANCE_SPOT_TICKERS),
+			asynq.Queue(config.BINANCE_SPOT_TICKERS_DELAY),
 			asynq.MaxRetry(0),
-			asynq.Timeout(8*time.Second),
+			asynq.Timeout(5*time.Second),
 		)
 	}
 

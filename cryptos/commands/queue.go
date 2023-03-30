@@ -36,10 +36,16 @@ func (h *QueueHandler) run() error {
 		DB:   config.REDIS_DB,
 	}
 	worker := asynq.NewServer(rdb, asynq.Config{
-		Concurrency: 10,
+		Concurrency: 30,
 		Queues: map[string]int{
-			config.BINANCE_SPOT_DEPTH:   5,
-			config.BINANCE_SPOT_TICKERS: 5,
+			config.BINANCE_SPOT_DEPTH:         5,
+			config.BINANCE_SPOT_DEPTH_DELAY:   5,
+			config.BINANCE_SPOT_TICKERS:       3,
+			config.BINANCE_SPOT_TICKERS_DELAY: 3,
+			config.BINANCE_SPOT_KLINES:        5,
+			config.BINANCE_SPOT_KLINES_DELAY:  5,
+			config.TRADINGVIEW_ANALYSIS:       8,
+			config.TRADINGVIEW_ANALYSIS_DELAY: 8,
 		},
 	})
 

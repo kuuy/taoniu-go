@@ -34,7 +34,7 @@ func (r *DepthRepository) Request(symbol string) (map[string]interface{}, error)
 	}
 	if r.UseProxy {
 		session := &common.ProxySession{
-			Proxy: "socks5://127.0.0.1:1088?timeout=8s",
+			Proxy: "socks5://127.0.0.1:1088?timeout=5s",
 		}
 		tr.DialContext = session.DialContext
 	} else {

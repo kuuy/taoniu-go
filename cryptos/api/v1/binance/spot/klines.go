@@ -1,7 +1,6 @@
 package spot
 
 import (
-	"context"
 	"github.com/go-chi/chi/v5"
 	"net/http"
 	"strconv"
@@ -19,9 +18,7 @@ type KlinesHandler struct {
 func NewKlinesRouter() http.Handler {
 	h := KlinesHandler{}
 	h.Repository = &repositories.KlinesRepository{
-		Db:  common.NewDB(),
-		Rdb: common.NewRedis(),
-		Ctx: context.Background(),
+		Db: common.NewDB(),
 	}
 
 	r := chi.NewRouter()

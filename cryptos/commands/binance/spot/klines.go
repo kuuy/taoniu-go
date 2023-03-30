@@ -33,9 +33,7 @@ func NewKlinesCommand() *cli.Command {
 				Ctx: context.Background(),
 			}
 			h.Repository = &repositories.KlinesRepository{
-				Db:  h.Db,
-				Rdb: h.Rdb,
-				Ctx: h.Ctx,
+				Db: h.Db,
 			}
 			return nil
 		},

@@ -1,25 +1,24 @@
 package spot
 
 import (
-	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/rs/xid"
+	"net"
+	"net/http"
 	"strconv"
-	config "taoniu.local/cryptos/config/binance/spot"
+	"taoniu.local/cryptos/common"
 	"time"
 
 	"gorm.io/gorm"
-
-	"github.com/adshao/go-binance/v2"
-	"github.com/go-redis/redis/v8"
-	"github.com/rs/xid"
 
 	models "taoniu.local/cryptos/models/binance/spot"
 )
 
 type KlinesRepository struct {
-	Db  *gorm.DB
-	Rdb *redis.Client
-	Ctx context.Context
+	Db       *gorm.DB
+	UseProxy bool
 }
 
 func (r *KlinesRepository) Series(symbol string, interval string, timestamp int64, limit int) []interface{} {
@@ -45,25 +44,18 @@ func (r *KlinesRepository) Series(symbol string, interval string, timestamp int6
 }
 
 func (r *KlinesRepository) Flush(symbol string, interval string, limit int) error {
-	client := binance.NewClient(config.REST_API_KEY, config.REST_SECRET_KEY)
-	klines, err := client.NewKlinesService().Symbol(
-		symbol,
-	).Interval(
-		interval,
-	).Limit(
-		limit,
-	).Do(r.Ctx)
+	klines, err := r.Request(symbol, interval, limit)
 	if err != nil {
 		return err
 	}
 	for _, kline := range klines {
-		open, _ := strconv.ParseFloat(kline.Open, 64)
-		close, _ := strconv.ParseFloat(kline.Close, 64)
-		high, _ := strconv.ParseFloat(kline.High, 64)
-		low, _ := strconv.ParseFloat(kline.Low, 64)
-		volume, _ := strconv.ParseFloat(kline.Volume, 64)
-		quota, _ := strconv.ParseFloat(kline.QuoteAssetVolume, 64)
-		timestamp := kline.OpenTime
+		open, _ := strconv.ParseFloat(kline[1].(string), 64)
+		close, _ := strconv.ParseFloat(kline[4].(string), 64)
+		high, _ := strconv.ParseFloat(kline[2].(string), 64)
+		low, _ := strconv.ParseFloat(kline[3].(string), 64)
+		volume, _ := strconv.ParseFloat(kline[5].(string), 64)
+		quota, _ := strconv.ParseFloat(kline[7].(string), 64)
+		timestamp := int64(kline[0].(float64))
 		var entity models.Kline
 		result := r.Db.Where(
 			"symbol=? AND interval=? AND timestamp=?",
@@ -98,6 +90,53 @@ func (r *KlinesRepository) Flush(symbol string, interval string, limit int) erro
 	}
 
 	return nil
+}
+
+func (r *KlinesRepository) Request(symbol string, interval string, limit int) ([][]interface{}, error) {
+	tr := &http.Transport{
+		DisableKeepAlives: true,
+	}
+	if r.UseProxy {
+		session := &common.ProxySession{
+			Proxy: "socks5://127.0.0.1:1088?timeout=5s",
+		}
+		tr.DialContext = session.DialContext
+	} else {
+		session := &net.Dialer{}
+		tr.DialContext = session.DialContext
+	}
+
+	httpClient := &http.Client{
+		Transport: tr,
+		Timeout:   time.Duration(8) * time.Second,
+	}
+
+	url := "https://api.binance.com/api/v3/klines"
+	req, _ := http.NewRequest("GET", url, nil)
+	q := req.URL.Query()
+	q.Add("symbol", symbol)
+	q.Add("interval", interval)
+	q.Add("limit", fmt.Sprintf("%v", limit))
+	req.URL.RawQuery = q.Encode()
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New(
+			fmt.Sprintf(
+				"request error: status[%s] code[%d]",
+				resp.Status,
+				resp.StatusCode,
+			),
+		)
+	}
+
+	var result [][]interface{}
+	json.NewDecoder(resp.Body).Decode(&result)
+	return result, nil
 }
 
 func (r *KlinesRepository) Clean() error {
