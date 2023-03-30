@@ -1,7 +1,6 @@
 package workers
 
 import (
-	"context"
 	"github.com/hibiken/asynq"
 	"taoniu.local/cryptos/queue/workers/tradingview"
 )
@@ -13,8 +12,6 @@ func NewTradingview() *Tradingview {
 }
 
 func (h *Tradingview) Register(mux *asynq.ServeMux) error {
-	mux.HandleFunc("tradingview:analysis:flush", func(ctx context.Context, t *asynq.Task) error {
-		return tradingview.NewAnalysis().Flush(ctx, t)
-	})
+	mux.HandleFunc("tradingview:analysis:flush", tradingview.NewAnalysis().Flush)
 	return nil
 }

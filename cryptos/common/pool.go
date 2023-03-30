@@ -28,14 +28,9 @@ type Mutex struct {
 
 func NewRedis() *redis.Client {
 	return redis.NewClient(&redis.Options{
-		Addr:         "localhost:6379",
-		Password:     "",
-		DB:           8,
-		ReadTimeout:  time.Millisecond * time.Duration(500),
-		WriteTimeout: time.Millisecond * time.Duration(500),
-		IdleTimeout:  time.Second * time.Duration(60),
-		PoolSize:     300,
-		MinIdleConns: 50,
+		Addr:     "localhost:6379",
+		Password: "",
+		DB:       8,
 	})
 }
 
