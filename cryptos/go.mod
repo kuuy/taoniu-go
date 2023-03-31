@@ -8,10 +8,11 @@ require (
 	github.com/alecthomas/participle/v2 v2.0.0-beta.5
 	github.com/alecthomas/repr v0.1.0
 	github.com/bitly/go-simplejson v0.5.0
-	github.com/dematron/go-tvscanner v0.0.0-20210304194119-a1190286f75f
 	github.com/gammazero/workerpool v1.1.3
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/go-redis/redis/v8 v8.11.5
+	github.com/hibiken/asynq v0.24.0
+	github.com/kuuy/go-tvscanner v0.0.1
 	github.com/lestrrat/go-jwx v0.9.1
 	github.com/markcheno/go-talib v0.0.0-20190307022042-cd53a9264d70
 	github.com/robfig/cron/v3 v3.0.1
@@ -39,7 +40,6 @@ require (
 	github.com/google/go-cmp v0.5.8 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
-	github.com/hibiken/asynq v0.24.0 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.12.0 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect

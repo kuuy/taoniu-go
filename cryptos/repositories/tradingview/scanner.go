@@ -1,11 +1,12 @@
 package tradingview
 
 import (
-	scanner "github.com/dematron/go-tvscanner"
 	"net"
 	"net/http"
-	"taoniu.local/cryptos/common"
 	"time"
+
+	scanner "github.com/kuuy/go-tvscanner"
+	"taoniu.local/cryptos/common"
 )
 
 type ScannerRepository struct {

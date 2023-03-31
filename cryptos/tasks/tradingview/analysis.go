@@ -53,7 +53,7 @@ func (t *AnalysisTask) FlushDelay() error {
 			task,
 			asynq.Queue(config.TRADINGVIEW_ANALYSIS_DELAY),
 			asynq.MaxRetry(0),
-			asynq.Timeout(5*time.Minute),
+			asynq.Timeout(10*time.Minute),
 		)
 	}
 	return nil
