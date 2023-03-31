@@ -229,6 +229,9 @@ func (r *FishersRepository) Place(symbol string) error {
   item, err := r.Rdb.HGet(r.Ctx, redisKey, symbol).Result()
   if err == nil {
     data := strings.Split(item, ",")
+    if data[0] == "BUY" || data[0] == "STRONG_BUY" {
+      return errors.New("recommendation not changed")
+    }
     if summary["RECOMMENDATION"] == data[0] {
       return errors.New("recommendation not changed")
     }
