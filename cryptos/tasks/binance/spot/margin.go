@@ -3,22 +3,25 @@ package spot
 import (
 	"context"
 	"github.com/go-redis/redis/v8"
+	"github.com/hibiken/asynq"
 	"gorm.io/gorm"
 	repositories "taoniu.local/cryptos/repositories/binance/spot/margin"
 	tasks "taoniu.local/cryptos/tasks/binance/spot/margin"
 )
 
 type MarginTask struct {
-	Db  *gorm.DB
-	Rdb *redis.Client
-	Ctx context.Context
+	Db    *gorm.DB
+	Rdb   *redis.Client
+	Ctx   context.Context
+	Asynq *asynq.Client
 }
 
 func (t *MarginTask) Isolated() *tasks.IsolatedTask {
 	return &tasks.IsolatedTask{
-		Db:  t.Db,
-		Rdb: t.Rdb,
-		Ctx: t.Ctx,
+		Db:    t.Db,
+		Rdb:   t.Rdb,
+		Ctx:   t.Ctx,
+		Asynq: t.Asynq,
 	}
 }
 

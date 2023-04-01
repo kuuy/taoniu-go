@@ -3,6 +3,7 @@ package margin
 import (
 	"context"
 	"github.com/go-redis/redis/v8"
+	"github.com/hibiken/asynq"
 	"gorm.io/gorm"
 	marginRepositories "taoniu.local/cryptos/repositories/binance/spot/margin"
 	repositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated"
@@ -13,6 +14,7 @@ type IsolatedTask struct {
 	Db           *gorm.DB
 	Rdb          *redis.Client
 	Ctx          context.Context
+	Asynq        *asynq.Client
 	SymbolsTask  *tasks.SymbolsTask
 	AccountTask  *tasks.AccountTask
 	OrdersTask   *tasks.OrdersTask
@@ -71,9 +73,10 @@ func (t *IsolatedTask) Orders() *tasks.OrdersTask {
 func (t *IsolatedTask) Tradings() *tasks.TradingsTask {
 	if t.TradingsTask == nil {
 		t.TradingsTask = &tasks.TradingsTask{
-			Db:  t.Db,
-			Rdb: t.Rdb,
-			Ctx: t.Ctx,
+			Db:    t.Db,
+			Rdb:   t.Rdb,
+			Ctx:   t.Ctx,
+			Asynq: t.Asynq,
 		}
 	}
 	return t.TradingsTask

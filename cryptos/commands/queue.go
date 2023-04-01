@@ -38,14 +38,16 @@ func (h *QueueHandler) run() error {
 	worker := asynq.NewServer(rdb, asynq.Config{
 		Concurrency: 30,
 		Queues: map[string]int{
-			config.BINANCE_SPOT_DEPTH:         5,
-			config.BINANCE_SPOT_DEPTH_DELAY:   5,
-			config.BINANCE_SPOT_TICKERS:       3,
-			config.BINANCE_SPOT_TICKERS_DELAY: 3,
-			config.BINANCE_SPOT_KLINES:        5,
-			config.BINANCE_SPOT_KLINES_DELAY:  5,
-			config.TRADINGVIEW_ANALYSIS:       8,
-			config.TRADINGVIEW_ANALYSIS_DELAY: 8,
+			config.BINANCE_SPOT_DEPTH:                            3,
+			config.BINANCE_SPOT_DEPTH_DELAY:                      3,
+			config.BINANCE_SPOT_TICKERS:                          10,
+			config.BINANCE_SPOT_TICKERS_DELAY:                    3,
+			config.BINANCE_SPOT_KLINES:                           3,
+			config.BINANCE_SPOT_KLINES_DELAY:                     3,
+			config.BINANCE_SPOT_TRADINGS_FISHERS:                 9,
+			config.BINANCE_SPOT_MARGIN_ISOLATED_TRADINGS_FISHERS: 9,
+			config.TRADINGVIEW_ANALYSIS:                          10,
+			config.TRADINGVIEW_ANALYSIS_DELAY:                    6,
 		},
 	})
 

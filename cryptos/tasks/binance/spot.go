@@ -143,9 +143,10 @@ func (t *SpotTask) Plans() *tasks.PlansTask {
 func (t *SpotTask) Tradings() *tasks.TradingsTask {
 	if t.TradingsTask == nil {
 		t.TradingsTask = &tasks.TradingsTask{
-			Db:  t.Db,
-			Rdb: t.Rdb,
-			Ctx: t.Ctx,
+			Db:    t.Db,
+			Rdb:   t.Rdb,
+			Ctx:   t.Ctx,
+			Asynq: t.Asynq,
 		}
 	}
 	return t.TradingsTask
@@ -208,9 +209,10 @@ func (t *SpotTask) Analysis() *tasks.AnalysisTask {
 func (t *SpotTask) Margin() *tasks.MarginTask {
 	if t.MarginTask == nil {
 		t.MarginTask = &tasks.MarginTask{
-			Db:  t.Db,
-			Rdb: t.Rdb,
-			Ctx: t.Ctx,
+			Db:    t.Db,
+			Rdb:   t.Rdb,
+			Ctx:   t.Ctx,
+			Asynq: t.Asynq,
 		}
 	}
 	return t.MarginTask

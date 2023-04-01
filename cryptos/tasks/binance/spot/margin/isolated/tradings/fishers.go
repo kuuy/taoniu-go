@@ -2,11 +2,14 @@ package tradings
 
 import (
 	"context"
-	"log"
+	"time"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/hibiken/asynq"
 	"gorm.io/gorm"
 
+	config "taoniu.local/cryptos/config/queue"
+	jobs "taoniu.local/cryptos/queue/jobs/binance/spot/margin/isolated/tradings"
 	savingsRepositories "taoniu.local/cryptos/repositories/binance/savings"
 	isolatedRepositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated"
 	repositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated/tradings/fishers"
@@ -17,6 +20,8 @@ type FishersTask struct {
 	Db         *gorm.DB
 	Rdb        *redis.Client
 	Ctx        context.Context
+	Asynq      *asynq.Client
+	Job        *jobs.Fishers
 	Repository *repositories.FishersRepository
 	GridsTask  *tasks.GridsTask
 }
@@ -42,10 +47,16 @@ func (t *FishersTask) Grids() *tasks.GridsTask {
 func (t *FishersTask) Flush() error {
 	symbols := t.Repository.Scan()
 	for _, symbol := range symbols {
-		err := t.Repository.Flush(symbol)
+		task, err := t.Job.Flush(symbol)
 		if err != nil {
-			log.Println("fishers flush error", err)
+			return err
 		}
+		t.Asynq.Enqueue(
+			task,
+			asynq.Queue(config.BINANCE_SPOT_MARGIN_ISOLATED_TRADINGS_FISHERS),
+			asynq.MaxRetry(0),
+			asynq.Timeout(5*time.Minute),
+		)
 	}
 	return nil
 }
@@ -53,10 +64,16 @@ func (t *FishersTask) Flush() error {
 func (t *FishersTask) Place() error {
 	symbols := t.Repository.Scan()
 	for _, symbol := range symbols {
-		err := t.Repository.Place(symbol)
+		task, err := t.Job.Place(symbol)
 		if err != nil {
-			log.Println("fishers Place error", err)
+			return err
 		}
+		t.Asynq.Enqueue(
+			task,
+			asynq.Queue(config.BINANCE_SPOT_MARGIN_ISOLATED_TRADINGS_FISHERS),
+			asynq.MaxRetry(0),
+			asynq.Timeout(5*time.Minute),
+		)
 	}
 	return nil
 }
