@@ -214,25 +214,12 @@ func (r *DailyRepository) Filter() (*models.Plan, error) {
 		timestamp,
 	).Find(&entities)
 	for _, entity := range entities {
-		if entity.Side == 1 && entity.Amount < 20 {
+		if entity.Side != 1 {
 			continue
 		}
-		signal, _, err := r.Tradingview().Signal(entity.Symbol)
-		if err != nil {
+		if entity.Side == 1 && entity.Amount < 15 {
 			continue
 		}
-		if entity.Side == 2 && signal != 2 {
-			continue
-		}
-
-		price, err := r.Symbols().Price(entity.Symbol)
-		if err != nil {
-			continue
-		}
-		if entity.Side == 2 && price < entity.Price {
-			continue
-		}
-
 		return entity, nil
 	}
 

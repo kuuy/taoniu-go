@@ -35,7 +35,7 @@ type AccountRepository interface {
 type OrdersRepository interface {
 	Status(symbol string, orderID int64) string
 	Create(symbol string, side string, price float64, quantity float64) (int64, error)
-	Lost(symbol string, price float64, timestamp int64) int64
+	Lost(symbol string, side string, price float64, timestamp int64) int64
 	Flush(symbol string, orderID int64) error
 }
 
@@ -94,34 +94,9 @@ func (r *FishersRepository) Apply(
 
 func (r *FishersRepository) Flush(symbol string) error {
 	var fisher spotModels.Fisher
-	result := r.Db.Where("symbol=? AND status IN ?", symbol, []int{1, 3}).Take(&fisher)
+	result := r.Db.Where("symbol=?", symbol).Take(&fisher)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return errors.New("fishers empty")
-	}
-
-	if fisher.Status == 3 {
-		var grid models.Grid
-		result := r.Db.Where("symbol=? AND price=? AND status=0", symbol, fisher.Price).Take(&grid)
-		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return errors.New("grid not exists")
-		}
-		timestamp := grid.CreatedAt.Unix()
-		orderID := r.OrdersRepository.Lost(symbol, fisher.Price, timestamp-30)
-		if orderID > 0 {
-			r.Db.Transaction(func(tx *gorm.DB) error {
-				fisher.Status = 1
-				if err := tx.Model(&spotModels.Fisher{ID: fisher.ID}).Updates(fisher).Error; err != nil {
-					return err
-				}
-				grid.BuyOrderId = orderID
-				if err := tx.Model(&models.Grid{ID: grid.ID}).Updates(grid).Error; err != nil {
-					return err
-				}
-				return nil
-			})
-		}
-
-		return errors.New("error occurs")
 	}
 
 	price, err := r.SymbolsRepository.Price(symbol)
@@ -134,6 +109,21 @@ func (r *FishersRepository) Flush(symbol string) error {
 	r.Db.Where("symbol=? AND status IN ?", fisher.Symbol, []int{0, 2}).Find(&grids)
 	for _, grid := range grids {
 		if grid.Status == 0 {
+			timestamp := grid.CreatedAt.Unix()
+			if grid.BuyOrderId == 0 {
+				orderID := r.OrdersRepository.Lost(symbol, "BUY", grid.BuyPrice, timestamp-30)
+				if orderID > 0 {
+					grid.BuyOrderId = orderID
+					if err := r.Db.Model(&models.Grid{ID: grid.ID}).Updates(grid).Error; err != nil {
+						return err
+					}
+				} else {
+					if timestamp > time.Now().Unix()-300 {
+						r.Db.Model(&models.Grid{ID: grid.ID}).Update("status", 4)
+					}
+					return nil
+				}
+			}
 			status := r.OrdersRepository.Status(symbol, grid.BuyOrderId)
 			if status == "" || status == "NEW" || status == "PARTIALLY_FILLED" {
 				r.OrdersRepository.Flush(symbol, grid.BuyOrderId)
@@ -155,9 +145,24 @@ func (r *FishersRepository) Flush(symbol string) error {
 				return nil
 			})
 		} else if grid.Status == 2 {
+			timestamp := grid.UpdatedAt.Unix()
+			if grid.SellOrderId == 0 {
+				orderID := r.OrdersRepository.Lost(symbol, "SELL", grid.SellPrice, timestamp-30)
+				if orderID > 0 {
+					grid.SellOrderId = orderID
+					if err := r.Db.Model(&models.Grid{ID: grid.ID}).Updates(grid).Error; err != nil {
+						return err
+					}
+				} else {
+					if timestamp > time.Now().Unix()-300 {
+						r.Db.Model(&models.Grid{ID: grid.ID}).Update("status", 1)
+					}
+					return nil
+				}
+			}
 			status := r.OrdersRepository.Status(symbol, grid.SellOrderId)
 			if status == "" || status == "NEW" || status == "PARTIALLY_FILLED" {
-				r.OrdersRepository.Flush(symbol, grid.BuyOrderId)
+				r.OrdersRepository.Flush(symbol, grid.SellOrderId)
 				continue
 			}
 			r.Db.Transaction(func(tx *gorm.DB) error {
@@ -183,12 +188,9 @@ func (r *FishersRepository) Flush(symbol string) error {
 
 func (r *FishersRepository) Place(symbol string) error {
 	var fisher spotModels.Fisher
-	result := r.Db.Where("symbol=? AND status IN ?", symbol, []int{1, 3}).Take(&fisher)
+	result := r.Db.Where("symbol=? AND status=?", symbol, 1).Take(&fisher)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return errors.New("fishers empty")
-	}
-	if fisher.Status == 3 {
-		return errors.New("error occurs")
 	}
 	price, err := r.SymbolsRepository.Price(symbol)
 	if err != nil {
@@ -288,7 +290,6 @@ func (r *FishersRepository) Place(symbol string) error {
 			fisher.Balance -= buyPrice * buyQuantity
 			orderID, err := r.OrdersRepository.Create(symbol, "BUY", buyPrice, buyQuantity)
 			if err != nil {
-				fisher.Status = 3
 				fisher.Remark = err.Error()
 			}
 			if err := tx.Model(&spotModels.Fisher{ID: fisher.ID}).Updates(fisher).Error; err != nil {
@@ -362,7 +363,6 @@ func (r *FishersRepository) Take(fisher *spotModels.Fisher, price float64) error
 		fisher.Balance += grid.SellPrice * grid.SellQuantity
 		orderID, err := r.OrdersRepository.Create(grid.Symbol, "SELL", grid.SellPrice, grid.SellQuantity)
 		if err != nil {
-			fisher.Status = 3
 			fisher.Remark = err.Error()
 		}
 		if err := tx.Model(&spotModels.Fisher{ID: fisher.ID}).Updates(fisher).Error; err != nil {

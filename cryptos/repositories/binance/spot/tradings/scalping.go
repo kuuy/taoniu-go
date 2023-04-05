@@ -3,30 +3,25 @@ package tradings
 import (
 	"context"
 	"errors"
-	"strconv"
-	config "taoniu.local/cryptos/config/binance/spot"
-	"taoniu.local/cryptos/models/binance/spot/tradings"
-
-	"github.com/adshao/go-binance/v2"
 	"github.com/go-redis/redis/v8"
 	"github.com/rs/xid"
 	"gorm.io/gorm"
+	"time"
 
-	models "taoniu.local/cryptos/models/binance/spot"
+	spotModels "taoniu.local/cryptos/models/binance/spot"
+	models "taoniu.local/cryptos/models/binance/spot/tradings"
 	spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
 	plansRepositories "taoniu.local/cryptos/repositories/binance/spot/plans"
-	tradingviewRepositories "taoniu.local/cryptos/repositories/tradingview"
 )
 
 type ScalpingRepository struct {
-	Db                    *gorm.DB
-	Rdb                   *redis.Client
-	Ctx                   context.Context
-	SymbolsRepository     *spotRepositories.SymbolsRepository
-	OrdersRepository      *spotRepositories.OrdersRepository
-	AccountRepository     *spotRepositories.AccountRepository
-	PlansRepository       *plansRepositories.DailyRepository
-	TradingviewRepository *tradingviewRepositories.AnalysisRepository
+	Db                *gorm.DB
+	Rdb               *redis.Client
+	Ctx               context.Context
+	SymbolsRepository *spotRepositories.SymbolsRepository
+	OrdersRepository  *spotRepositories.OrdersRepository
+	AccountRepository *spotRepositories.AccountRepository
+	PlansRepository   *plansRepositories.DailyRepository
 }
 
 func (r *ScalpingRepository) Symbols() *spotRepositories.SymbolsRepository {
@@ -73,173 +68,134 @@ func (r *ScalpingRepository) Plans() *plansRepositories.DailyRepository {
 	return r.PlansRepository
 }
 
-func (r *ScalpingRepository) Tradingview() *tradingviewRepositories.AnalysisRepository {
-	if r.TradingviewRepository == nil {
-		r.TradingviewRepository = &tradingviewRepositories.AnalysisRepository{
-			Db:  r.Db,
-			Rdb: r.Rdb,
-			Ctx: r.Ctx,
-		}
-	}
-	return r.TradingviewRepository
-}
-
 func (r *ScalpingRepository) Flush() error {
-	plan, err := r.Plans().Filter()
-	if err != nil {
-		return err
-	}
-	var entity *tradings.Scalping
-	result := r.Db.Model(
-		&tradings.Scalping{},
-	).Where(
-		"symbol=? AND status=0",
-		plan.Symbol,
-	).Take(&entity)
-	if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return nil
-	}
-
-	balance, _, err := r.Account().Balance(plan.Symbol)
-	if err != nil {
-		return err
-	}
-
-	if plan.Side != 1 {
-		if plan.Price < entity.SellPrice {
-			return nil
-		}
-
-		var err error
-		sellOrderId := int64(0)
-		status := 2
-		remark := entity.Remark
-		if entity.BuyOrderId == 0 {
-			status = 3
-		} else {
-			sellOrderId, err = r.Order(entity.Symbol, binance.SideTypeSell, entity.SellPrice, entity.SellQuantity)
-			if err != nil {
-				remark = err.Error()
-			}
-		}
-
-		entity.SellOrderId = sellOrderId
-		entity.Status = status
-		entity.Remark = remark
-
-		r.Db.Model(&tradings.Scalping{ID: entity.ID}).Updates(entity)
-
-		return nil
-	}
-
-	buyPrice, buyQuantity, _ := r.Symbols().Adjust(plan.Symbol, plan.Price, 10)
-	sellPrice := buyPrice * (1 + 0.05)
-	sellQuantity := buyQuantity
-	sellPrice, sellQuantity, _ = r.Symbols().Adjust(plan.Symbol, sellPrice, sellPrice*sellQuantity)
-
-	buyAmount := buyPrice * buyQuantity
-
-	buyOrderId := int64(0)
-	status := 0
-	remark := ""
-	if balance < buyAmount {
-		status = 1
-	} else {
-		buyOrderId, err = r.Order(plan.Symbol, binance.SideTypeBuy, plan.Price, buyQuantity)
-		if err != nil {
-			remark = err.Error()
-		}
-	}
-
-	entity = &tradings.Scalping{
-		ID:           xid.New().String(),
-		Symbol:       plan.Symbol,
-		BuyOrderId:   buyOrderId,
-		BuyPrice:     buyPrice,
-		BuyQuantity:  buyQuantity,
-		SellPrice:    sellPrice,
-		SellQuantity: sellQuantity,
-		Status:       status,
-		Remark:       remark,
-	}
-	r.Db.Create(&entity)
-
-	plan.Status = 1
-	r.Db.Model(&models.Plan{ID: plan.ID}).Updates(plan)
-
-	return nil
-}
-
-func (r *ScalpingRepository) Update() error {
-	var entities []*tradings.Scalping
+	var entities []*models.Scalping
 	r.Db.Where(
 		"status IN ?",
 		[]int64{0, 2},
 	).Find(&entities)
 	for _, entity := range entities {
-		orderID := entity.BuyOrderId
-		if entity.Status == 2 {
-			orderID = entity.SellOrderId
-		}
-
-		var order models.Order
-		result := r.Db.Where(
-			"symbol=? AND order_id=?",
-			entity.Symbol,
-			orderID,
-		).Take(&order)
-		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			continue
-		}
-		if order.Status == "NEW" || order.Status == "PARTIALLY_FILLED" {
-			continue
-		}
-
-		status := entity.Status
 		if entity.Status == 0 {
-			if order.Status != "FILLED" {
-				status = 4
-			} else {
-				status = 1
+			timestamp := entity.CreatedAt.Unix()
+			if entity.BuyOrderId == 0 {
+				orderID := r.Orders().Lost(entity.Symbol, "BUY", entity.BuyPrice, timestamp-30)
+				if orderID > 0 {
+					entity.BuyOrderId = orderID
+					if err := r.Db.Model(&models.Scalping{ID: entity.ID}).Updates(entity).Error; err != nil {
+						return err
+					}
+				} else {
+					if timestamp > time.Now().Unix()-300 {
+						r.Db.Model(&models.Scalping{ID: entity.ID}).Update("status", 1)
+					}
+					return nil
+				}
 			}
-		}
-		if entity.Status == 2 {
-			if order.Status != "FILLED" {
-				status = 5
-			} else {
-				status = 3
+			if entity.BuyOrderId > 0 {
+				status := r.Orders().Status(entity.Symbol, entity.BuyOrderId)
+				if status == "" || status == "NEW" || status == "PARTIALLY_FILLED" {
+					r.Orders().Flush(entity.Symbol, entity.BuyOrderId)
+					continue
+				}
+				if status == "FILLED" {
+					entity.Status = 1
+				} else {
+					entity.Status = 4
+				}
 			}
+			r.Db.Model(&models.Scalping{ID: entity.ID}).Updates(entity)
+		} else if entity.Status == 2 {
+			timestamp := entity.UpdatedAt.Unix()
+			if entity.SellOrderId == 0 {
+				orderID := r.Orders().Lost(entity.Symbol, "SELL", entity.BuyPrice, timestamp-30)
+				if orderID > 0 {
+					entity.SellOrderId = orderID
+					if err := r.Db.Model(&models.Scalping{ID: entity.ID}).Updates(entity).Error; err != nil {
+						return err
+					}
+				} else {
+					if timestamp > time.Now().Unix()-300 {
+						r.Db.Model(&models.Scalping{ID: entity.ID}).Update("status", 1)
+					}
+					return nil
+				}
+			}
+			if entity.SellOrderId > 0 {
+				status := r.Orders().Status(entity.Symbol, entity.SellOrderId)
+				if status == "" || status == "NEW" || status == "PARTIALLY_FILLED" {
+					r.Orders().Flush(entity.Symbol, entity.SellOrderId)
+					continue
+				}
+				if status == "FILLED" {
+					entity.Status = 3
+				} else {
+					entity.Status = 5
+				}
+			}
+			r.Db.Model(&models.Scalping{ID: entity.ID}).Updates(entity)
 		}
-		entity.Status = status
-
-		r.Db.Model(&tradings.Scalping{ID: entity.ID}).Updates(entity)
 	}
 
 	return nil
 }
 
-func (r *ScalpingRepository) Order(symbol string, side binance.SideType, price float64, quantity float64) (int64, error) {
-	client := binance.NewClient(config.TRADE_API_KEY, config.TRADE_SECRET_KEY)
-	result, err := client.NewCreateOrderService().Symbol(
-		symbol,
-	).Side(
-		side,
-	).Type(
-		binance.OrderTypeLimit,
-	).Price(
-		strconv.FormatFloat(price, 'f', -1, 64),
-	).Quantity(
-		strconv.FormatFloat(quantity, 'f', -1, 64),
-	).TimeInForce(
-		binance.TimeInForceTypeGTC,
-	).NewOrderRespType(
-		binance.NewOrderRespTypeRESULT,
-	).Do(r.Ctx)
+func (r *ScalpingRepository) Place() error {
+	plan, err := r.Plans().Filter()
 	if err != nil {
-		return 0, err
+		return err
 	}
 
-	r.Orders().Flush(symbol, result.OrderID)
+	buyPrice, buyQuantity, err := r.Symbols().Adjust(plan.Symbol, plan.Price, plan.Amount)
+	if err != nil {
+		return err
+	}
+	balance, _, err := r.Account().Balance(plan.Symbol)
+	if err != nil {
+		return err
+	}
+	if balance < buyPrice*buyQuantity {
+		return errors.New("balance not enough")
+	}
+	var sellPrice float64
+	if plan.Amount > 15 {
+		sellPrice = buyPrice * 1.02
+	} else {
+		sellPrice = buyPrice * 1.015
+	}
+	sellPrice, sellQuantity, err := r.Symbols().Adjust(plan.Symbol, sellPrice, plan.Amount)
+	if err != nil {
+		return err
+	}
 
-	return result.OrderID, nil
+	r.Db.Transaction(func(tx *gorm.DB) error {
+		var remark string
+		orderID, err := r.Orders().Create(plan.Symbol, "BUY", buyPrice, buyQuantity)
+		if err != nil {
+			remark = err.Error()
+		}
+		entity := &models.Scalping{
+			ID:           xid.New().String(),
+			Symbol:       plan.Symbol,
+			BuyOrderId:   orderID,
+			BuyPrice:     buyPrice,
+			BuyQuantity:  buyQuantity,
+			SellPrice:    sellPrice,
+			SellQuantity: sellQuantity,
+			Status:       0,
+			Remark:       remark,
+		}
+		if err := tx.Create(&entity).Error; err != nil {
+			return err
+		}
+
+		if err := tx.Model(&spotModels.Plan{ID: plan.ID}).Update("status", 1).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	r.Account().Flush()
+
+	return nil
 }

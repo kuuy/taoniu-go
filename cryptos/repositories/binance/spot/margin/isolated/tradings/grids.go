@@ -358,7 +358,7 @@ func (r *GridsRepository) Order(symbol string, side binance.SideType, price floa
 	if err != nil {
 		return 0, err
 	}
-	//r.Orders().Flush(symbol, result.OrderID, true)
+	//r.Orders().Place(symbol, result.OrderID, true)
 
 	return result.OrderID, nil
 }

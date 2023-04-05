@@ -70,7 +70,7 @@ func (h *TickersHandler) Flush() error {
 	//	if j > len(symbols) {
 	//		j = len(symbols)
 	//	}
-	//	h.Repository.Flush(symbols[i:j])
+	//	h.Repository.Place(symbols[i:j])
 	//}
 	rdb := asynq.RedisClientOpt{
 		Addr: config.REDIS_ADDR,

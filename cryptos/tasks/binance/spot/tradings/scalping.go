@@ -6,10 +6,10 @@ type ScalpingTask struct {
 	Repository *repositories.ScalpingRepository
 }
 
-func (t *ScalpingTask) Flush() error {
-	return t.Repository.Flush()
+func (t *ScalpingTask) Place() error {
+	return t.Repository.Place()
 }
 
-func (t *ScalpingTask) Update() error {
-	return t.Repository.Update()
+func (t *ScalpingTask) Flush() error {
+	return t.Repository.Flush()
 }

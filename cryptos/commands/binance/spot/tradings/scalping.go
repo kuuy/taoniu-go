@@ -36,10 +36,10 @@ func NewScalpingCommand() *cli.Command {
 		},
 		Subcommands: []*cli.Command{
 			{
-				Name:  "flush",
+				Name:  "place",
 				Usage: "",
 				Action: func(c *cli.Context) error {
-					if err := h.flush(); err != nil {
+					if err := h.place(); err != nil {
 						return cli.Exit(err.Error(), 1)
 					}
 					return nil
@@ -49,8 +49,8 @@ func NewScalpingCommand() *cli.Command {
 	}
 }
 
-func (h *ScalpingHandler) flush() error {
-	log.Println("spot tradings scalping flush...")
-	h.Repository.Flush()
+func (h *ScalpingHandler) place() error {
+	log.Println("spot tradings scalping place...")
+	h.Repository.Place()
 	return nil
 }

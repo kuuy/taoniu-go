@@ -69,9 +69,9 @@ func (r *OrdersRepository) Listings(conditions map[string]interface{}, current i
 	return orders
 }
 
-func (r *OrdersRepository) Lost(symbol string, price float64, timestamp int64) int64 {
+func (r *OrdersRepository) Lost(symbol string, side string, price float64, timestamp int64) int64 {
 	var entity models.Order
-	result := r.Db.Where("symbol=? AND price=?", symbol, price).Order("updated_at desc").Take(&entity)
+	result := r.Db.Where("symbol=? AND side=? AND price=?", symbol, side, price).Order("updated_at desc").Take(&entity)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return 0
 	}
