@@ -6,8 +6,9 @@ import (
 )
 
 type SymbolsRepository struct {
-	Db                *gorm.DB
-	FishersRepository *fishersRepositories.FishersRepository
+	Db                 *gorm.DB
+	FishersRepository  *fishersRepositories.FishersRepository
+	ScalpingRepository *ScalpingRepository
 }
 
 func (r *SymbolsRepository) Fishers() *fishersRepositories.FishersRepository {
@@ -19,9 +20,23 @@ func (r *SymbolsRepository) Fishers() *fishersRepositories.FishersRepository {
 	return r.FishersRepository
 }
 
+func (r *SymbolsRepository) Scalping() *ScalpingRepository {
+	if r.ScalpingRepository == nil {
+		r.ScalpingRepository = &ScalpingRepository{
+			Db: r.Db,
+		}
+	}
+	return r.ScalpingRepository
+}
+
 func (r *SymbolsRepository) Scan() []string {
 	var symbols []string
 	for _, symbol := range r.Fishers().Scan() {
+		if !r.contains(symbols, symbol) {
+			symbols = append(symbols, symbol)
+		}
+	}
+	for _, symbol := range r.Scalping().Scan() {
 		if !r.contains(symbols, symbol) {
 			symbols = append(symbols, symbol)
 		}

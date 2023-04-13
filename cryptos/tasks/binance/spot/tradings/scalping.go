@@ -1,6 +1,8 @@
 package tradings
 
-import repositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
+import (
+	repositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
+)
 
 type ScalpingTask struct {
 	Repository *repositories.ScalpingRepository
@@ -11,5 +13,9 @@ func (t *ScalpingTask) Place() error {
 }
 
 func (t *ScalpingTask) Flush() error {
-	return t.Repository.Flush()
+	symbols := t.Repository.Scan()
+	for _, symbol := range symbols {
+		t.Repository.Flush(symbol)
+	}
+	return nil
 }

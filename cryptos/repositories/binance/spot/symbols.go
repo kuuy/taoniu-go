@@ -5,17 +5,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/shopspring/decimal"
 	"strconv"
 	"strings"
 	"time"
 
-	"gorm.io/gorm"
-
 	"github.com/adshao/go-binance/v2"
 	"github.com/go-redis/redis/v8"
 	"github.com/rs/xid"
+	"github.com/shopspring/decimal"
 	"gorm.io/datatypes"
+	"gorm.io/gorm"
 
 	models "taoniu.local/cryptos/models/binance/spot"
 )
@@ -37,17 +36,6 @@ func (r *SymbolsRepository) Margins() *MarginRepository {
 		}
 	}
 	return r.MarginRepository
-}
-
-func (r *SymbolsRepository) Tradings() *TradingsRepository {
-	if r.TradingsRepository == nil {
-		r.TradingsRepository = &TradingsRepository{
-			Db:  r.Db,
-			Rdb: r.Rdb,
-			Ctx: r.Ctx,
-		}
-	}
-	return r.TradingsRepository
 }
 
 func (r *SymbolsRepository) Currencies() []string {
@@ -160,7 +148,12 @@ func (r *SymbolsRepository) Flush() error {
 
 func (r *SymbolsRepository) Scan() []string {
 	var symbols []string
-	for _, symbol := range r.Tradings().Fishers().Scan() {
+	for _, symbol := range r.TradingsRepository.Scalping().Scan() {
+		if !r.contains(symbols, symbol) {
+			symbols = append(symbols, symbol)
+		}
+	}
+	for _, symbol := range r.TradingsRepository.Fishers().Scan() {
 		if !r.contains(symbols, symbol) {
 			symbols = append(symbols, symbol)
 		}

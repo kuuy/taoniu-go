@@ -3,6 +3,7 @@ package spot
 import (
 	"context"
 	"log"
+	tradingsRepositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/urfave/cli/v2"
@@ -21,7 +22,7 @@ type DepthHandler struct {
 	Rdb               *redis.Client
 	Ctx               context.Context
 	Repository        *repositories.DepthRepository
-	SymbolsRepository symbolsRepository
+	SymbolsRepository *repositories.SymbolsRepository
 }
 
 func NewDepthCommand() *cli.Command {
@@ -39,6 +40,12 @@ func NewDepthCommand() *cli.Command {
 				Db: h.Db,
 			}
 			h.SymbolsRepository = &repositories.SymbolsRepository{
+				Db: h.Db,
+			}
+			h.SymbolsRepository.TradingsRepository = &repositories.TradingsRepository{
+				Db: h.Db,
+			}
+			h.SymbolsRepository.TradingsRepository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
 				Db: h.Db,
 			}
 			return nil

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/adshao/go-binance/v2/common"
 	"github.com/go-redis/redis/v8"
 	"github.com/rs/xid"
 	"gorm.io/datatypes"
@@ -292,6 +293,12 @@ func (r *FishersRepository) Place(symbol string) error {
 			fisher.Balance -= buyPrice * buyQuantity
 			orderID, err := r.OrdersRepository.Create(symbol, "BUY", buyPrice, buyQuantity, true)
 			if err != nil {
+				apiError, ok := err.(common.APIError)
+				if ok {
+					if apiError.Code == -2010 {
+						return err
+					}
+				}
 				fisher.Remark = err.Error()
 			}
 			if err := tx.Model(&isolatedModels.Fisher{ID: fisher.ID}).Updates(fisher).Error; err != nil {

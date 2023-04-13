@@ -2,13 +2,14 @@ package spot
 
 import (
 	"context"
-	"github.com/hibiken/asynq"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/hibiken/asynq"
 	"gorm.io/gorm"
 
 	tradingsJobs "taoniu.local/cryptos/queue/jobs/binance/spot/tradings"
-	repositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
+	repositories "taoniu.local/cryptos/repositories/binance/spot"
+	tradingsRepositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
 	fishersRepositories "taoniu.local/cryptos/repositories/binance/spot/tradings/fishers"
 	tasks "taoniu.local/cryptos/tasks/binance/spot/tradings"
 )
@@ -41,7 +42,12 @@ func (t *TradingsTask) Fishers() *tasks.FishersTask {
 func (t *TradingsTask) Scalping() *tasks.ScalpingTask {
 	if t.ScalpingTask == nil {
 		t.ScalpingTask = &tasks.ScalpingTask{}
-		t.ScalpingTask.Repository = &repositories.ScalpingRepository{
+		t.ScalpingTask.Repository = &tradingsRepositories.ScalpingRepository{
+			Db:  t.Db,
+			Rdb: t.Rdb,
+			Ctx: t.Ctx,
+		}
+		t.ScalpingTask.Repository.SymbolsRepository = &repositories.SymbolsRepository{
 			Db:  t.Db,
 			Rdb: t.Rdb,
 			Ctx: t.Ctx,

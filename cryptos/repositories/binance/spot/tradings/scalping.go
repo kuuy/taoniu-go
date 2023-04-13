@@ -24,17 +24,6 @@ type ScalpingRepository struct {
 	PlansRepository   *plansRepositories.DailyRepository
 }
 
-func (r *ScalpingRepository) Symbols() *spotRepositories.SymbolsRepository {
-	if r.SymbolsRepository == nil {
-		r.SymbolsRepository = &spotRepositories.SymbolsRepository{
-			Db:  r.Db,
-			Rdb: r.Rdb,
-			Ctx: r.Ctx,
-		}
-	}
-	return r.SymbolsRepository
-}
-
 func (r *ScalpingRepository) Orders() *spotRepositories.OrdersRepository {
 	if r.OrdersRepository == nil {
 		r.OrdersRepository = &spotRepositories.OrdersRepository{
@@ -68,12 +57,21 @@ func (r *ScalpingRepository) Plans() *plansRepositories.DailyRepository {
 	return r.PlansRepository
 }
 
-func (r *ScalpingRepository) Flush() error {
+func (r *ScalpingRepository) Scan() []string {
+	var symbols []string
+	r.Db.Model(&models.Scalping{}).Where("status", []int{0, 1}).Distinct().Pluck("symbol", &symbols)
+	return symbols
+}
+
+func (r *ScalpingRepository) Flush(symbol string) error {
+	price, err := r.SymbolsRepository.Price(symbol)
+	if err != nil {
+		return err
+	}
+	r.Take(symbol, price)
+
 	var entities []*models.Scalping
-	r.Db.Where(
-		"status IN ?",
-		[]int64{0, 2},
-	).Find(&entities)
+	r.Db.Where("symbol=? AND status IN ?", symbol, []int{0, 2}).Find(&entities)
 	for _, entity := range entities {
 		if entity.Status == 0 {
 			timestamp := entity.CreatedAt.Unix()
@@ -145,7 +143,7 @@ func (r *ScalpingRepository) Place() error {
 		return err
 	}
 
-	buyPrice, buyQuantity, err := r.Symbols().Adjust(plan.Symbol, plan.Price, plan.Amount)
+	buyPrice, buyQuantity, err := r.SymbolsRepository.Adjust(plan.Symbol, plan.Price, plan.Amount)
 	if err != nil {
 		return err
 	}
@@ -162,7 +160,7 @@ func (r *ScalpingRepository) Place() error {
 	} else {
 		sellPrice = buyPrice * 1.015
 	}
-	sellPrice, sellQuantity, err := r.Symbols().Adjust(plan.Symbol, sellPrice, plan.Amount)
+	sellPrice, sellQuantity, err := r.SymbolsRepository.Adjust(plan.Symbol, sellPrice, plan.Amount)
 	if err != nil {
 		return err
 	}
@@ -196,6 +194,28 @@ func (r *ScalpingRepository) Place() error {
 	})
 
 	r.Account().Flush()
+
+	return nil
+}
+
+func (r *ScalpingRepository) Take(symbol string, price float64) error {
+	var scalping models.Scalping
+	result := r.Db.Where("symbol=? AND status=?", symbol, 1).Order("sell_price asc").Take(&scalping)
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return errors.New("empty scalping")
+	}
+	if price < scalping.SellPrice {
+		return errors.New("price too low")
+	}
+	orderID, err := r.OrdersRepository.Create(symbol, "SELL", scalping.SellPrice, scalping.SellQuantity)
+	if err != nil {
+		scalping.Remark = err.Error()
+	}
+	scalping.SellOrderId = orderID
+	scalping.Status = 2
+	if err := r.Db.Model(&models.Scalping{ID: scalping.ID}).Updates(scalping).Error; err != nil {
+		return err
+	}
 
 	return nil
 }

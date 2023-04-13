@@ -2,9 +2,12 @@ package binance
 
 import (
 	"context"
+	tradingsRepositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
+
 	"github.com/go-redis/redis/v8"
 	"github.com/hibiken/asynq"
 	"gorm.io/gorm"
+
 	jobs "taoniu.local/cryptos/queue/jobs/binance/spot"
 	repositories "taoniu.local/cryptos/repositories/binance/spot"
 	tasks "taoniu.local/cryptos/tasks/binance/spot"
@@ -69,6 +72,12 @@ func (t *SpotTask) Tickers() *tasks.TickersTask {
 		t.TickersTask.SymbolsRepository = &repositories.SymbolsRepository{
 			Db: t.Db,
 		}
+		t.TickersTask.SymbolsRepository.TradingsRepository = &repositories.TradingsRepository{
+			Db: t.Db,
+		}
+		t.TickersTask.SymbolsRepository.TradingsRepository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
+			Db: t.Db,
+		}
 	}
 	return t.TickersTask
 }
@@ -83,9 +92,13 @@ func (t *SpotTask) Depth() *tasks.DepthTask {
 			Db: t.Db,
 		}
 		t.DepthTask.SymbolsRepository = &repositories.SymbolsRepository{
-			Db:  t.Db,
-			Rdb: t.Rdb,
-			Ctx: t.Ctx,
+			Db: t.Db,
+		}
+		t.DepthTask.SymbolsRepository.TradingsRepository = &repositories.TradingsRepository{
+			Db: t.Db,
+		}
+		t.DepthTask.SymbolsRepository.TradingsRepository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
+			Db: t.Db,
 		}
 	}
 	return t.DepthTask
@@ -101,6 +114,12 @@ func (t *SpotTask) Klines() *tasks.KlinesTask {
 			Db: t.Db,
 		}
 		t.KlinesTask.SymbolsRepository = &repositories.SymbolsRepository{
+			Db: t.Db,
+		}
+		t.KlinesTask.SymbolsRepository.TradingsRepository = &repositories.TradingsRepository{
+			Db: t.Db,
+		}
+		t.KlinesTask.SymbolsRepository.TradingsRepository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
 			Db: t.Db,
 		}
 	}

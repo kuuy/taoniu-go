@@ -1,17 +1,22 @@
 package spot
 
 import (
-  "context"
-  "github.com/go-redis/redis/v8"
-  "gorm.io/gorm"
-  fishersRepositories "taoniu.local/cryptos/repositories/binance/spot/tradings/fishers"
+	"context"
+	"github.com/go-redis/redis/v8"
+	"gorm.io/gorm"
+	fishersRepositories "taoniu.local/cryptos/repositories/binance/spot/tradings/fishers"
 )
 
 type TradingsRepository struct {
-	Db                *gorm.DB
-	Rdb               *redis.Client
-	Ctx               context.Context
-	FishersRepository *fishersRepositories.FishersRepository
+	Db                 *gorm.DB
+	Rdb                *redis.Client
+	Ctx                context.Context
+	ScalpingRepository ScalpingRepository
+	FishersRepository  *fishersRepositories.FishersRepository
+}
+
+type ScalpingRepository interface {
+	Scan() []string
 }
 
 func (r *TradingsRepository) Fishers() *fishersRepositories.FishersRepository {
@@ -23,4 +28,8 @@ func (r *TradingsRepository) Fishers() *fishersRepositories.FishersRepository {
 		}
 	}
 	return r.FishersRepository
+}
+
+func (r *TradingsRepository) Scalping() ScalpingRepository {
+	return r.ScalpingRepository
 }

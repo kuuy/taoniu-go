@@ -176,6 +176,7 @@ func (h *AccountHandler) Test() error {
 		Rdb: h.Rdb,
 		Ctx: h.Ctx,
 	}
-	binance.Spot().Cron().Hourly()
+	binance.Spot().Tradings().Scalping().Flush()
+	//binance.Spot().Cron().Hourly()
 	return nil
 }

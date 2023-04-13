@@ -2,15 +2,19 @@ package spot
 
 import (
 	"context"
+	"gorm.io/gorm"
+	"log"
+
 	"github.com/go-redis/redis/v8"
 	"github.com/urfave/cli/v2"
-	"log"
 
 	"taoniu.local/cryptos/common"
 	repositories "taoniu.local/cryptos/repositories/binance/spot"
+	tradingsRepositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
 )
 
 type SymbolsHandler struct {
+	Db         *gorm.DB
 	Rdb        *redis.Client
 	Ctx        context.Context
 	Repository *repositories.SymbolsRepository
@@ -22,11 +26,21 @@ func NewSymbolsCommand() *cli.Command {
 		Name:  "symbols",
 		Usage: "",
 		Before: func(c *cli.Context) error {
-			h = SymbolsHandler{}
-			h.Repository = &repositories.SymbolsRepository{
+			h = SymbolsHandler{
 				Db:  common.NewDB(),
 				Rdb: common.NewRedis(),
 				Ctx: context.Background(),
+			}
+			h.Repository = &repositories.SymbolsRepository{
+				Db:  h.Db,
+				Rdb: h.Rdb,
+				Ctx: h.Ctx,
+			}
+			h.Repository.TradingsRepository = &repositories.TradingsRepository{
+				Db: h.Db,
+			}
+			h.Repository.TradingsRepository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
+				Db: h.Db,
 			}
 			return nil
 		},
