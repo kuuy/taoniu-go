@@ -38,7 +38,7 @@ func (h *ApiHandler) run() error {
 		r.Mount("/tradingview", v1.NewTradingviewRouter())
 	})
 
-	http.ListenAndServe("127.0.0.1:3000", r)
+	http.ListenAndServe("127.0.0.1:5000", r)
 
 	return nil
 }

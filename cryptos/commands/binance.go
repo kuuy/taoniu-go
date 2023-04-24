@@ -15,6 +15,7 @@ func NewBinanceCommand() *cli.Command {
 			binance.NewSpotCommand(),
 			binance.NewFutoresCommand(),
 			binance.NewSavingsCommand(),
+			binance.NewServerCommand(),
 		},
 	}
 }

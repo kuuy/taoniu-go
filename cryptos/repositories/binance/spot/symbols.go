@@ -272,6 +272,7 @@ func (r *SymbolsRepository) Price(symbol string) (float64, error) {
 	timestamp := time.Now().Unix()
 	price, _ := strconv.ParseFloat(data[0].(string), 64)
 	lasttime, _ := strconv.ParseInt(data[1].(string), 10, 64)
+
 	if timestamp-lasttime > 30 {
 		r.Rdb.ZAdd(r.Ctx, "binance:spot:tickers:flush", &redis.Z{
 			float64(timestamp),

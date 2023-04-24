@@ -65,6 +65,9 @@ func (h *CronHandler) run() error {
 	}
 
 	c := cron.New()
+	c.AddFunc("@every 1s", func() {
+		binance.Server().Time()
+	})
 	c.AddFunc("@every 15s", func() {
 		binance.Spot().Tickers().Flush()
 	})

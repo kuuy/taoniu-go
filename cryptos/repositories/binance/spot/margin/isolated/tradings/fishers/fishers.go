@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"math"
 	"strings"
 	"time"
@@ -103,7 +104,10 @@ func (r *FishersRepository) Flush(symbol string) error {
 	if err != nil {
 		return err
 	}
-	r.Take(&fisher, price)
+	err = r.Take(&fisher, price)
+	if err != nil {
+		log.Println("take error", err)
+	}
 
 	var grids []*models.Grid
 	r.Db.Where("symbol=? AND status IN ?", fisher.Symbol, []int{0, 2}).Find(&grids)
@@ -368,6 +372,13 @@ func (r *FishersRepository) Take(fisher *isolatedModels.Fisher, price float64) e
 		fisher.Balance += grid.SellPrice * grid.SellQuantity
 		orderID, err := r.OrdersRepository.Create(grid.Symbol, "SELL", grid.SellPrice, grid.SellQuantity, true)
 		if err != nil {
+			apiError, ok := err.(common.APIError)
+			if ok {
+				if apiError.Code == -2010 {
+					tx.Model(&isolatedModels.Fisher{ID: fisher.ID}).Update("remark", err.Error())
+					return nil
+				}
+			}
 			fisher.Remark = err.Error()
 		}
 		if err := tx.Model(&isolatedModels.Fisher{ID: fisher.ID}).Updates(fisher).Error; err != nil {

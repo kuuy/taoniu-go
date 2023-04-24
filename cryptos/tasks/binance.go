@@ -7,6 +7,7 @@ import (
 	"github.com/hibiken/asynq"
 	"gorm.io/gorm"
 
+	repositories "taoniu.local/cryptos/repositories/binance"
 	tasks "taoniu.local/cryptos/tasks/binance"
 )
 
@@ -18,6 +19,7 @@ type BinanceTask struct {
 	SpotTask    *tasks.SpotTask
 	FuturesTask *tasks.FuturesTask
 	SavingsTask *tasks.SavingsTask
+	ServerTask  *tasks.ServerTask
 }
 
 func (t *BinanceTask) Spot() *tasks.SpotTask {
@@ -51,4 +53,18 @@ func (t *BinanceTask) Savings() *tasks.SavingsTask {
 		}
 	}
 	return t.SavingsTask
+}
+
+func (t *BinanceTask) Server() *tasks.ServerTask {
+	if t.ServerTask == nil {
+		t.ServerTask = &tasks.ServerTask{
+			Rdb: t.Rdb,
+			Ctx: t.Ctx,
+		}
+		t.ServerTask.Repository = &repositories.ServerRepository{
+			Rdb: t.Rdb,
+			Ctx: t.Ctx,
+		}
+	}
+	return t.ServerTask
 }

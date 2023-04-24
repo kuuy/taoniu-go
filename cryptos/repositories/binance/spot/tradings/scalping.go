@@ -3,10 +3,13 @@ package tradings
 import (
 	"context"
 	"errors"
+	"log"
+	"time"
+
+	"github.com/adshao/go-binance/v2/common"
 	"github.com/go-redis/redis/v8"
 	"github.com/rs/xid"
 	"gorm.io/gorm"
-	"time"
 
 	spotModels "taoniu.local/cryptos/models/binance/spot"
 	models "taoniu.local/cryptos/models/binance/spot/tradings"
@@ -68,7 +71,10 @@ func (r *ScalpingRepository) Flush(symbol string) error {
 	if err != nil {
 		return err
 	}
-	r.Take(symbol, price)
+	err = r.Take(symbol, price)
+	if err != nil {
+		log.Println("take error", err)
+	}
 
 	var entities []*models.Scalping
 	r.Db.Where("symbol=? AND status IN ?", symbol, []int{0, 2}).Find(&entities)
@@ -183,6 +189,16 @@ func (r *ScalpingRepository) Place() error {
 			Remark:       remark,
 		}
 		if err := tx.Create(&entity).Error; err != nil {
+			apiError, ok := err.(common.APIError)
+			if ok {
+				if apiError.Code == -2010 {
+					tx.Model(&spotModels.Plan{ID: plan.ID}).Updates(map[string]interface{}{
+						"remark": err.Error(),
+						"status": 4,
+					})
+					return nil
+				}
+			}
 			return err
 		}
 
@@ -209,6 +225,13 @@ func (r *ScalpingRepository) Take(symbol string, price float64) error {
 	}
 	orderID, err := r.OrdersRepository.Create(symbol, "SELL", scalping.SellPrice, scalping.SellQuantity)
 	if err != nil {
+		apiError, ok := err.(common.APIError)
+		if ok {
+			if apiError.Code == -2010 {
+				r.Db.Model(&models.Scalping{ID: scalping.ID}).Update("remark", err.Error())
+				return err
+			}
+		}
 		scalping.Remark = err.Error()
 	}
 	scalping.SellOrderId = orderID
