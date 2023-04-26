@@ -3,6 +3,8 @@ package common
 import (
 	"context"
 	"errors"
+	"strconv"
+	"strings"
 	"time"
 
 	"database/sql"
@@ -11,8 +13,6 @@ import (
 	"github.com/rs/xid"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-
-	config "taoniu.local/cryptos/config/queue"
 )
 
 var (
@@ -28,15 +28,15 @@ type Mutex struct {
 
 func NewRedis() *redis.Client {
 	return redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "",
-		DB:       8,
+		Addr:     GetEnvString("REDIS_HOST"),
+		Password: GetEnvString("REDIS_PASSWORD"),
+		DB:       GetEnvInt("REDIS_DB"),
 	})
 }
 
 func NewDBPool() *sql.DB {
 	if dbPool == nil {
-		dsn := "postgres://taoniu:64EQJMn1O9JrZ2G4@localhost/taoniu"
+		dsn := GetEnvString("DB_DSN")
 		pool, err := sql.Open("pgx", dsn)
 		if err != nil {
 			panic(err)
@@ -62,10 +62,27 @@ func NewDB() *gorm.DB {
 	return db
 }
 
-func NewAsynq() *asynq.Client {
+func NewAsynqServer() *asynq.Server {
+	rdb := asynq.RedisClientOpt{
+		Addr: GetEnvString("ASYNQ_REDIS_ADDR"),
+		DB:   GetEnvInt("ASYNQ_REDIS_DB"),
+	}
+	queues := make(map[string]int)
+	for _, item := range GetEnvArray("ASYNQ_QUEUE") {
+		data := strings.Split(item, ",")
+		weight, _ := strconv.Atoi(data[1])
+		queues[data[0]] = weight
+	}
+	return asynq.NewServer(rdb, asynq.Config{
+		Concurrency: GetEnvInt("ASYNQ_CONCURRENCY"),
+		Queues:      queues,
+	})
+}
+
+func NewAsynqClient() *asynq.Client {
 	return asynq.NewClient(asynq.RedisClientOpt{
-		Addr: config.REDIS_ADDR,
-		DB:   config.REDIS_DB,
+		Addr: GetEnvString("ASYNQ_REDIS_ADDR"),
+		DB:   GetEnvInt("ASYNQ_REDIS_DB"),
 	})
 }
 

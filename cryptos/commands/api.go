@@ -1,10 +1,12 @@
 package commands
 
 import (
+	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/urfave/cli/v2"
 	"log"
 	"net/http"
+	"os"
 	v1 "taoniu.local/cryptos/api/v1"
 )
 
@@ -38,7 +40,10 @@ func (h *ApiHandler) run() error {
 		r.Mount("/tradingview", v1.NewTradingviewRouter())
 	})
 
-	http.ListenAndServe("127.0.0.1:5000", r)
+	http.ListenAndServe(
+		fmt.Sprintf("127.0.0.1:%v", os.Getenv("CRYPTOS_API_PORT")),
+		r,
+	)
 
 	return nil
 }

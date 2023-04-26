@@ -1,13 +1,21 @@
 package main
 
 import (
-	"github.com/urfave/cli/v2"
+	"github.com/joho/godotenv"
 	"log"
 	"os"
+
+	"github.com/urfave/cli/v2"
+
 	"taoniu.local/cryptos/commands"
 )
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
 	app := &cli.App{
 		Name:  "cryptos commands",
 		Usage: "",
@@ -34,7 +42,7 @@ func main() {
 		Version: "0.0.0",
 	}
 
-	err := app.Run(os.Args)
+	err = app.Run(os.Args)
 	if err != nil {
 		log.Fatalln("error", err)
 	}

@@ -30,7 +30,7 @@ func NewCronCommand() *cli.Command {
 			h = CronHandler{
 				Db:    common.NewDB(),
 				Rdb:   common.NewRedis(),
-				Asynq: common.NewAsynq(),
+				Asynq: common.NewAsynqClient(),
 				Ctx:   context.Background(),
 			}
 			return nil

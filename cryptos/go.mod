@@ -12,6 +12,7 @@ require (
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/hibiken/asynq v0.24.0
+	github.com/joho/godotenv v1.5.1
 	github.com/kuuy/go-tvscanner v0.0.1
 	github.com/lestrrat/go-jwx v0.9.1
 	github.com/markcheno/go-talib v0.0.0-20190307022042-cd53a9264d70

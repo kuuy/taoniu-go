@@ -2,14 +2,10 @@ package spot
 
 import (
 	"context"
-	"github.com/hibiken/asynq"
-	"log"
-	config "taoniu.local/cryptos/config/queue"
-	"time"
-
 	"github.com/go-redis/redis/v8"
 	"github.com/urfave/cli/v2"
 	"gorm.io/gorm"
+	"log"
 
 	"taoniu.local/cryptos/common"
 	tasks "taoniu.local/cryptos/queue/jobs/binance/spot"
@@ -72,26 +68,6 @@ func (h *TickersHandler) Flush() error {
 	//	}
 	//	h.Repository.Place(symbols[i:j])
 	//}
-	rdb := asynq.RedisClientOpt{
-		Addr: config.REDIS_ADDR,
-		DB:   config.REDIS_DB,
-	}
-	client := asynq.NewClient(rdb)
-	defer client.Close()
-	task, err := h.Task.Flush([]string{"ADAUSDT", "AVAXUSDT"}, false)
-	if err != nil {
-		return err
-	}
-	info, err := client.Enqueue(
-		task,
-		asynq.Queue(config.BINANCE_SPOT_TICKERS),
-		asynq.MaxRetry(0),
-		asynq.Timeout(5*time.Second),
-	)
-	if err != nil {
-		return nil
-	}
-	log.Println("task", task.Type(), info.ID, info.Queue)
 
 	return nil
 }
