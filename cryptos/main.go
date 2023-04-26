@@ -4,6 +4,7 @@ import (
 	"github.com/joho/godotenv"
 	"log"
 	"os"
+	"path"
 
 	"github.com/urfave/cli/v2"
 
@@ -11,9 +12,13 @@ import (
 )
 
 func main() {
-	err := godotenv.Load()
+	home, err := os.UserHomeDir()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Fatal(err)
+	}
+	err = godotenv.Load(path.Join(home, "taoniu-go", ".env"))
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	app := &cli.App{
