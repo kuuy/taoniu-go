@@ -223,7 +223,7 @@ func (r *ScalpingRepository) Take(symbol string, price float64) error {
 	if price < scalping.SellPrice {
 		return errors.New("price too low")
 	}
-	orderID, err := r.OrdersRepository.Create(symbol, "SELL", scalping.SellPrice, scalping.SellQuantity)
+	orderID, err := r.Orders().Create(symbol, "SELL", scalping.SellPrice, scalping.SellQuantity)
 	if err != nil {
 		apiError, ok := err.(common.APIError)
 		if ok {
