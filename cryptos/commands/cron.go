@@ -68,21 +68,21 @@ func (h *CronHandler) run() error {
 	c.AddFunc("@every 1s", func() {
 		binance.Server().Time()
 	})
-	c.AddFunc("@every 15s", func() {
+	c.AddFunc("@every 5s", func() {
 		binance.Spot().Tickers().Flush()
+		binance.Spot().Tradings().Scalping().Place()
+		binance.Spot().Tradings().Fishers().Place()
+		binance.Spot().Margin().Isolated().Tradings().Fishers().Place()
+	})
+	c.AddFunc("@every 15s", func() {
+		binance.Spot().Tradings().Fishers().Flush()
+		binance.Spot().Tradings().Scalping().Flush()
+		binance.Spot().Margin().Isolated().Tradings().Fishers().Flush()
+		tradingview.Analysis().Flush()
 	})
 	c.AddFunc("@every 30s", func() {
 		binance.Spot().Flush()
 		binance.Spot().Depth().Flush()
-		binance.Spot().Tradings().Fishers().Flush()
-		binance.Spot().Tradings().Fishers().Place()
-		binance.Spot().Margin().Isolated().Tradings().Fishers().Flush()
-		binance.Spot().Margin().Isolated().Tradings().Fishers().Place()
-		binance.Spot().Margin().Isolated().Tradings().Grids().Flush()
-		binance.Spot().Margin().Isolated().Tradings().Grids().Update()
-		binance.Spot().Tradings().Scalping().Place()
-		binance.Spot().Tradings().Scalping().Flush()
-		tradingview.Analysis().Flush()
 	})
 	c.AddFunc("@every 1m", func() {
 		binance.Spot().Klines().Flush("1d", 1)

@@ -2,22 +2,24 @@ package tradings
 
 import (
 	"context"
-	"gorm.io/gorm"
 	"log"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/urfave/cli/v2"
+	"gorm.io/gorm"
 
 	"taoniu.local/cryptos/common"
 	spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
+	plansRepositories "taoniu.local/cryptos/repositories/binance/spot/plans"
 	repositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
 )
 
 type ScalpingHandler struct {
-	Db         *gorm.DB
-	Rdb        *redis.Client
-	Ctx        context.Context
-	Repository *repositories.ScalpingRepository
+	Db              *gorm.DB
+	Rdb             *redis.Client
+	Ctx             context.Context
+	Repository      *repositories.ScalpingRepository
+	PlansRepository *plansRepositories.DailyRepository
 }
 
 func NewScalpingCommand() *cli.Command {
@@ -40,6 +42,19 @@ func NewScalpingCommand() *cli.Command {
 				Db:  h.Db,
 				Rdb: h.Rdb,
 				Ctx: h.Ctx,
+			}
+			h.Repository.AccountRepository = &spotRepositories.AccountRepository{
+				Db:  h.Db,
+				Rdb: h.Rdb,
+				Ctx: h.Ctx,
+			}
+			h.Repository.OrdersRepository = &spotRepositories.OrdersRepository{
+				Db:  h.Db,
+				Rdb: h.Rdb,
+				Ctx: h.Ctx,
+			}
+			h.PlansRepository = &plansRepositories.DailyRepository{
+				Db: h.Db,
 			}
 			return nil
 		},
@@ -70,7 +85,11 @@ func NewScalpingCommand() *cli.Command {
 
 func (h *ScalpingHandler) Place() error {
 	log.Println("spot tradings scalping place...")
-	h.Repository.Place()
+	plan, err := h.PlansRepository.Filter()
+	if err != nil {
+		return err
+	}
+	h.Repository.Place(plan)
 	return nil
 }
 

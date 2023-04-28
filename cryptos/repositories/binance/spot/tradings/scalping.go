@@ -13,51 +13,32 @@ import (
 
 	spotModels "taoniu.local/cryptos/models/binance/spot"
 	models "taoniu.local/cryptos/models/binance/spot/tradings"
-	spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
-	plansRepositories "taoniu.local/cryptos/repositories/binance/spot/plans"
 )
 
 type ScalpingRepository struct {
 	Db                *gorm.DB
 	Rdb               *redis.Client
 	Ctx               context.Context
-	SymbolsRepository *spotRepositories.SymbolsRepository
-	OrdersRepository  *spotRepositories.OrdersRepository
-	AccountRepository *spotRepositories.AccountRepository
-	PlansRepository   *plansRepositories.DailyRepository
+	SymbolsRepository SpotSymbolsRepository
+	OrdersRepository  OrdersRepository
+	AccountRepository AccountRepository
 }
 
-func (r *ScalpingRepository) Orders() *spotRepositories.OrdersRepository {
-	if r.OrdersRepository == nil {
-		r.OrdersRepository = &spotRepositories.OrdersRepository{
-			Db:  r.Db,
-			Rdb: r.Rdb,
-			Ctx: r.Ctx,
-		}
-	}
-	return r.OrdersRepository
+type SpotSymbolsRepository interface {
+	Price(symbol string) (float64, error)
+	Adjust(symbol string, price float64, amount float64) (float64, float64, error)
 }
 
-func (r *ScalpingRepository) Account() *spotRepositories.AccountRepository {
-	if r.AccountRepository == nil {
-		r.AccountRepository = &spotRepositories.AccountRepository{
-			Db:  r.Db,
-			Rdb: r.Rdb,
-			Ctx: r.Ctx,
-		}
-	}
-	return r.AccountRepository
+type AccountRepository interface {
+	Balance(symbol string) (float64, float64, error)
+	Flush() error
 }
 
-func (r *ScalpingRepository) Plans() *plansRepositories.DailyRepository {
-	if r.PlansRepository == nil {
-		r.PlansRepository = &plansRepositories.DailyRepository{
-			Db:  r.Db,
-			Rdb: r.Rdb,
-			Ctx: r.Ctx,
-		}
-	}
-	return r.PlansRepository
+type OrdersRepository interface {
+	Status(symbol string, orderID int64) string
+	Create(symbol string, side string, price float64, quantity float64) (int64, error)
+	Lost(symbol string, side string, price float64, timestamp int64) int64
+	Flush(symbol string, orderID int64) error
 }
 
 func (r *ScalpingRepository) Scan() []string {
@@ -82,7 +63,7 @@ func (r *ScalpingRepository) Flush(symbol string) error {
 		if entity.Status == 0 {
 			timestamp := entity.CreatedAt.Unix()
 			if entity.BuyOrderId == 0 {
-				orderID := r.Orders().Lost(entity.Symbol, "BUY", entity.BuyPrice, timestamp-30)
+				orderID := r.OrdersRepository.Lost(entity.Symbol, "BUY", entity.BuyPrice, timestamp-30)
 				if orderID > 0 {
 					entity.BuyOrderId = orderID
 					if err := r.Db.Model(&models.Scalping{ID: entity.ID}).Updates(entity).Error; err != nil {
@@ -96,9 +77,9 @@ func (r *ScalpingRepository) Flush(symbol string) error {
 				}
 			}
 			if entity.BuyOrderId > 0 {
-				status := r.Orders().Status(entity.Symbol, entity.BuyOrderId)
+				status := r.OrdersRepository.Status(entity.Symbol, entity.BuyOrderId)
 				if status == "" || status == "NEW" || status == "PARTIALLY_FILLED" {
-					r.Orders().Flush(entity.Symbol, entity.BuyOrderId)
+					r.OrdersRepository.Flush(entity.Symbol, entity.BuyOrderId)
 					continue
 				}
 				if status == "FILLED" {
@@ -111,7 +92,7 @@ func (r *ScalpingRepository) Flush(symbol string) error {
 		} else if entity.Status == 2 {
 			timestamp := entity.UpdatedAt.Unix()
 			if entity.SellOrderId == 0 {
-				orderID := r.Orders().Lost(entity.Symbol, "SELL", entity.BuyPrice, timestamp-30)
+				orderID := r.OrdersRepository.Lost(entity.Symbol, "SELL", entity.BuyPrice, timestamp-30)
 				if orderID > 0 {
 					entity.SellOrderId = orderID
 					if err := r.Db.Model(&models.Scalping{ID: entity.ID}).Updates(entity).Error; err != nil {
@@ -125,9 +106,9 @@ func (r *ScalpingRepository) Flush(symbol string) error {
 				}
 			}
 			if entity.SellOrderId > 0 {
-				status := r.Orders().Status(entity.Symbol, entity.SellOrderId)
+				status := r.OrdersRepository.Status(entity.Symbol, entity.SellOrderId)
 				if status == "" || status == "NEW" || status == "PARTIALLY_FILLED" {
-					r.Orders().Flush(entity.Symbol, entity.SellOrderId)
+					r.OrdersRepository.Flush(entity.Symbol, entity.SellOrderId)
 					continue
 				}
 				if status == "FILLED" {
@@ -143,17 +124,12 @@ func (r *ScalpingRepository) Flush(symbol string) error {
 	return nil
 }
 
-func (r *ScalpingRepository) Place() error {
-	plan, err := r.Plans().Filter()
-	if err != nil {
-		return err
-	}
-
+func (r *ScalpingRepository) Place(plan *spotModels.Plan) error {
 	buyPrice, buyQuantity, err := r.SymbolsRepository.Adjust(plan.Symbol, plan.Price, plan.Amount)
 	if err != nil {
 		return err
 	}
-	balance, _, err := r.Account().Balance(plan.Symbol)
+	balance, _, err := r.AccountRepository.Balance(plan.Symbol)
 	if err != nil {
 		return err
 	}
@@ -173,7 +149,7 @@ func (r *ScalpingRepository) Place() error {
 
 	r.Db.Transaction(func(tx *gorm.DB) error {
 		var remark string
-		orderID, err := r.Orders().Create(plan.Symbol, "BUY", buyPrice, buyQuantity)
+		orderID, err := r.OrdersRepository.Create(plan.Symbol, "BUY", buyPrice, buyQuantity)
 		if err != nil {
 			remark = err.Error()
 		}
@@ -209,7 +185,7 @@ func (r *ScalpingRepository) Place() error {
 		return nil
 	})
 
-	r.Account().Flush()
+	r.AccountRepository.Flush()
 
 	return nil
 }
@@ -223,7 +199,7 @@ func (r *ScalpingRepository) Take(symbol string, price float64) error {
 	if price < scalping.SellPrice {
 		return errors.New("price too low")
 	}
-	orderID, err := r.Orders().Create(symbol, "SELL", scalping.SellPrice, scalping.SellQuantity)
+	orderID, err := r.OrdersRepository.Create(symbol, "SELL", scalping.SellPrice, scalping.SellQuantity)
 	if err != nil {
 		apiError, ok := err.(common.APIError)
 		if ok {
