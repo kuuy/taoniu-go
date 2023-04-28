@@ -22,6 +22,7 @@ type TradingsTask struct {
 	Asynq        *asynq.Client
 	FishersTask  *tasks.FishersTask
 	ScalpingTask *tasks.ScalpingTask
+	TriggersTask *tasks.TriggersTask
 }
 
 func (t *TradingsTask) Fishers() *tasks.FishersTask {
@@ -61,4 +62,24 @@ func (t *TradingsTask) Scalping() *tasks.ScalpingTask {
 		}
 	}
 	return t.ScalpingTask
+}
+
+func (t *TradingsTask) Triggers() *tasks.TriggersTask {
+	if t.TriggersTask == nil {
+		t.TriggersTask = &tasks.TriggersTask{
+			Asynq: t.Asynq,
+		}
+		t.TriggersTask.Repository = &tradingsRepositories.TriggersRepository{
+			Db:  t.Db,
+			Rdb: t.Rdb,
+			Ctx: t.Ctx,
+		}
+		t.TriggersTask.Job = &tradingsJobs.Triggers{}
+		t.TriggersTask.Repository.SymbolsRepository = &repositories.SymbolsRepository{
+			Db:  t.Db,
+			Rdb: t.Rdb,
+			Ctx: t.Ctx,
+		}
+	}
+	return t.TriggersTask
 }

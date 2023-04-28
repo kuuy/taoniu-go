@@ -13,21 +13,21 @@ import (
 	repositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
 )
 
-type Scalping struct {
+type Triggers struct {
 	Db                *gorm.DB
 	Rdb               *redis.Client
 	Ctx               context.Context
-	Repository        *repositories.ScalpingRepository
+	Repository        *repositories.TriggersRepository
 	SymbolsRepository *spotRepositories.SymbolsRepository
 }
 
-func NewScalping() *Scalping {
-	h := &Scalping{
+func NewTriggers() *Triggers {
+	h := &Triggers{
 		Db:  common.NewDB(),
 		Rdb: common.NewRedis(),
 		Ctx: context.Background(),
 	}
-	h.Repository = &repositories.ScalpingRepository{
+	h.Repository = &repositories.TriggersRepository{
 		Db:  h.Db,
 		Rdb: h.Rdb,
 		Ctx: h.Ctx,
@@ -51,12 +51,25 @@ func NewScalping() *Scalping {
 	return h
 }
 
-type ScalpingFlushPayload struct {
+type TriggersPlacePayload struct {
 	Symbol string
 }
 
-func (h *Scalping) Flush(ctx context.Context, t *asynq.Task) error {
-	var payload ScalpingFlushPayload
+type TriggersFlushPayload struct {
+	Symbol string
+}
+
+func (h *Triggers) Place(ctx context.Context, t *asynq.Task) error {
+	var payload TriggersPlacePayload
+	json.Unmarshal(t.Payload(), &payload)
+
+	h.Repository.Place(payload.Symbol)
+
+	return nil
+}
+
+func (h *Triggers) Flush(ctx context.Context, t *asynq.Task) error {
+	var payload TriggersFlushPayload
 	json.Unmarshal(t.Payload(), &payload)
 
 	h.Repository.Flush(payload.Symbol)

@@ -1,17 +1,17 @@
 package tradings
 
 import (
-  "context"
-  "encoding/json"
+	"context"
+	"encoding/json"
 
-  "github.com/go-redis/redis/v8"
-  "github.com/hibiken/asynq"
-  "gorm.io/gorm"
+	"github.com/go-redis/redis/v8"
+	"github.com/hibiken/asynq"
+	"gorm.io/gorm"
 
-  "taoniu.local/cryptos/common"
-  spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
-  fishersRepositories "taoniu.local/cryptos/repositories/binance/spot/tradings/fishers"
-  tvRepositories "taoniu.local/cryptos/repositories/tradingview"
+	"taoniu.local/cryptos/common"
+	spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
+	fishersRepositories "taoniu.local/cryptos/repositories/binance/spot/tradings/fishers"
+	tvRepositories "taoniu.local/cryptos/repositories/tradingview"
 )
 
 type Fishers struct {
@@ -55,21 +55,12 @@ func NewFishers() *Fishers {
 	return h
 }
 
-type FishersFlushPayload struct {
-	Symbol string
-}
-
 type FishersPlacePayload struct {
 	Symbol string
 }
 
-func (h *Fishers) Flush(ctx context.Context, t *asynq.Task) error {
-	var payload FishersFlushPayload
-	json.Unmarshal(t.Payload(), &payload)
-
-	h.Repository.Flush(payload.Symbol)
-
-	return nil
+type FishersFlushPayload struct {
+	Symbol string
 }
 
 func (h *Fishers) Place(ctx context.Context, t *asynq.Task) error {
@@ -77,6 +68,15 @@ func (h *Fishers) Place(ctx context.Context, t *asynq.Task) error {
 	json.Unmarshal(t.Payload(), &payload)
 
 	h.Repository.Place(payload.Symbol)
+
+	return nil
+}
+
+func (h *Fishers) Flush(ctx context.Context, t *asynq.Task) error {
+	var payload FishersFlushPayload
+	json.Unmarshal(t.Payload(), &payload)
+
+	h.Repository.Flush(payload.Symbol)
 
 	return nil
 }

@@ -256,83 +256,80 @@ func (r *FishersRepository) Place(symbol string) error {
 		return errors.New("tradingview recommendation not for buy")
 	}
 
-	if side == 0 {
+	if side != 1 {
 		return errors.New("fishers place waiting")
 	}
 
-	if side == 1 {
-		if !r.CanBuy(symbol, price, minPrice, maxPrice) {
-			return errors.New("can not buy now")
-		}
+	if !r.CanBuy(symbol, price, minPrice, maxPrice) {
+		return errors.New("can not buy now")
 	}
 
-	if side == 1 {
-		amount := fisher.StartAmount * math.Pow(2, float64(step))
-		if amount > fisher.Balance {
-			return errors.New(fmt.Sprintf("[%s] balance not enough", symbol))
-		}
-		buyPrice, buyQuantity, err := r.SymbolsRepository.Adjust(symbol, price, amount)
+	amount := fisher.StartAmount * math.Pow(2, float64(step))
+	if amount > fisher.Balance {
+		return errors.New(fmt.Sprintf("[%s] balance not enough", symbol))
+	}
+	buyPrice, buyQuantity, err := r.SymbolsRepository.Adjust(symbol, price, amount)
+	if err != nil {
+		return err
+	}
+	balance, _, err := r.AccountRepository.Balance(symbol)
+	if err != nil {
+		return err
+	}
+	if balance < buyPrice*buyQuantity {
+		return errors.New(fmt.Sprintf("[%s] balance not enough", symbol))
+	}
+	sellPrice := buyPrice * 1.0035
+	sellPrice, sellQuantity, err := r.SymbolsRepository.Adjust(symbol, sellPrice, amount)
+	if err != nil {
+		return err
+	}
+	if fisher.Balance <= fisher.StopBalance-buyPrice*buyQuantity {
+		return errors.New("reached stop balance")
+	}
+
+	r.Db.Transaction(func(tx *gorm.DB) error {
+		fisher.Price = buyPrice
+		fisher.Balance -= buyPrice * buyQuantity
+		orderID, err := r.OrdersRepository.Create(symbol, "BUY", buyPrice, buyQuantity)
 		if err != nil {
-			return err
-		}
-		balance, _, err := r.AccountRepository.Balance(symbol)
-		if err != nil {
-			return err
-		}
-		if balance < buyPrice*buyQuantity {
-			return errors.New(fmt.Sprintf("[%s] balance not enough", symbol))
-		}
-		sellPrice := buyPrice * 1.0035
-		sellPrice, sellQuantity, err := r.SymbolsRepository.Adjust(symbol, sellPrice, amount)
-		if err != nil {
-			return err
-		}
-		if fisher.Balance <= fisher.StopBalance-buyPrice*buyQuantity {
-			return errors.New("reached stop balance")
-		}
-		r.Db.Transaction(func(tx *gorm.DB) error {
-			fisher.Price = buyPrice
-			fisher.Balance -= buyPrice * buyQuantity
-			orderID, err := r.OrdersRepository.Create(symbol, "BUY", buyPrice, buyQuantity)
-			if err != nil {
-				apiError, ok := err.(common.APIError)
-				if ok {
-					if apiError.Code == -2010 {
-						return err
-					}
+			apiError, ok := err.(common.APIError)
+			if ok {
+				if apiError.Code == -2010 {
+					return err
 				}
-				fisher.Remark = err.Error()
 			}
-			if err := tx.Model(&spotModels.Fisher{ID: fisher.ID}).Updates(fisher).Error; err != nil {
-				return err
-			}
-			grid := models.Grid{
-				ID:           xid.New().String(),
-				Symbol:       symbol,
-				FisherID:     fisher.ID,
-				BuyOrderId:   orderID,
-				BuyPrice:     buyPrice,
-				BuyQuantity:  buyQuantity,
-				SellPrice:    sellPrice,
-				SellQuantity: sellQuantity,
-				Status:       0,
-			}
-			if err := tx.Create(&grid).Error; err != nil {
-				return err
-			}
+			fisher.Remark = err.Error()
+		}
+		if err := tx.Model(&spotModels.Fisher{ID: fisher.ID}).Updates(fisher).Error; err != nil {
+			return err
+		}
+		grid := models.Grid{
+			ID:           xid.New().String(),
+			Symbol:       symbol,
+			FisherID:     fisher.ID,
+			BuyOrderId:   orderID,
+			BuyPrice:     buyPrice,
+			BuyQuantity:  buyQuantity,
+			SellPrice:    sellPrice,
+			SellQuantity: sellQuantity,
+			Status:       0,
+		}
+		if err := tx.Create(&grid).Error; err != nil {
+			return err
+		}
 
-			return nil
-		})
+		return nil
+	})
 
-		r.Rdb.HSet(
-			r.Ctx,
-			redisKey,
-			symbol,
-			fmt.Sprintf("%s:%v", summary["RECOMMENDATION"], timestamp),
-		)
+	r.Rdb.HSet(
+		r.Ctx,
+		redisKey,
+		symbol,
+		fmt.Sprintf("%s:%v", summary["RECOMMENDATION"], timestamp),
+	)
 
-		r.AccountRepository.Flush()
-	}
+	r.AccountRepository.Flush()
 
 	return nil
 }

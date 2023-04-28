@@ -9,6 +9,7 @@ const (
 	BINANCE_SPOT_KLINES_DELAY                     = "cryptos.jobs.binance.spot.klines.delay"
 	BINANCE_SPOT_TRADINGS_FISHERS                 = "cryptos.jobs.binance.spot.tradings.fishers"
 	BINANCE_SPOT_TRADINGS_SCALPING                = "cryptos.jobs.binance.spot.tradings.scalping"
+	BINANCE_SPOT_TRADINGS_TRIGGERS                = "cryptos.jobs.binance.spot.tradings.triggers"
 	BINANCE_SPOT_MARGIN_ISOLATED_TRADINGS_FISHERS = "cryptos.jobs.binance.spot.margin.isolated.tradings.fishers"
 	TRADINGVIEW_ANALYSIS                          = "tradingview.jobs.analysis"
 	TRADINGVIEW_ANALYSIS_DELAY                    = "tradingview.jobs.analysis.delay"

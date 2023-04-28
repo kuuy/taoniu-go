@@ -71,6 +71,7 @@ func (h *CronHandler) run() error {
 	c.AddFunc("@every 5s", func() {
 		binance.Spot().Tickers().Flush()
 		binance.Spot().Tradings().Scalping().Place()
+		binance.Spot().Tradings().Triggers().Place()
 		binance.Spot().Tradings().Fishers().Place()
 		binance.Spot().Margin().Isolated().Tradings().Fishers().Place()
 	})
