@@ -3,9 +3,8 @@ package v1
 import (
 	"net/http"
 
-	"gorm.io/gorm"
-
 	"github.com/go-chi/chi/v5"
+	"gorm.io/gorm"
 
 	"taoniu.local/account/api"
 	"taoniu.local/account/common"
@@ -52,8 +51,8 @@ func (h *LoginHandler) Token() *repositories.TokenRepository {
 }
 
 func (h *LoginHandler) Do(
-		w http.ResponseWriter,
-		r *http.Request,
+	w http.ResponseWriter,
+	r *http.Request,
 ) {
 	h.Response = &api.ResponseHandler{
 		Writer: w,

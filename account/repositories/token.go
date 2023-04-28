@@ -1,4 +1,4 @@
-package account
+package repositories
 
 import (
 	"bytes"
@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"os"
+	"path"
 	"time"
 
 	"github.com/lestrrat/go-jwx/jwa"
@@ -20,7 +21,11 @@ type TokenRepository struct {
 
 func (r *TokenRepository) PrivateKey() *rsa.PrivateKey {
 	if r.privateKey == nil {
-		bytes, err := ioutil.ReadFile(os.Getenv("HOME") + "/.ssh/id_rsa")
+		home, err := os.UserHomeDir()
+		if err != nil {
+			panic(err)
+		}
+		bytes, err := ioutil.ReadFile(path.Join(home, ".ssh/id_rsa"))
 		if err != nil {
 			panic(err)
 		}

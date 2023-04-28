@@ -134,5 +134,10 @@ https://github.com/kuuy/taoniu-android
 # 免责声明
 本项目仅为个人交易测试项目，风险意识完全靠自己把握，出现任何交易失误与本项目无关，请谨慎评估交易的合理性。
 
+# 相关项目
+[淘牛客户端（android）](https://github.com/kuuy/taoniu-android)
+[淘牛后台（vue）](https://github.com/kuuy/taoniu-admin-web)
+[淘牛后台（golang）](https://github.com/kuuy/taoniu-admin-go)
+
 # 推荐链接
 [core.app](https://core.app/)

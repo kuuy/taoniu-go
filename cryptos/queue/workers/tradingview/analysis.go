@@ -3,8 +3,10 @@ package tradingview
 import (
 	"context"
 	"encoding/json"
+
 	"github.com/hibiken/asynq"
 	"gorm.io/gorm"
+
 	"taoniu.local/cryptos/common"
 	spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
 	repositories "taoniu.local/cryptos/repositories/tradingview"

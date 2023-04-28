@@ -1,11 +1,11 @@
 package main
 
 import (
-	"github.com/joho/godotenv"
 	"log"
 	"os"
 	"path"
 
+	"github.com/joho/godotenv"
 	"github.com/urfave/cli/v2"
 
 	"taoniu.local/cryptos/commands"
@@ -14,7 +14,7 @@ import (
 func main() {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	err = godotenv.Load(path.Join(home, "taoniu-go", ".env"))
 	if err != nil {
