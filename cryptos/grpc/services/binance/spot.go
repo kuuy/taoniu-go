@@ -18,5 +18,6 @@ func NewSpot(db *gorm.DB) *Spot {
 
 func (srv *Spot) Register(s *grpc.Server) error {
   spot.NewAnalysis(srv.Db).Register(s)
+  spot.NewTradings(srv.Db).Register(s)
   return nil
 }

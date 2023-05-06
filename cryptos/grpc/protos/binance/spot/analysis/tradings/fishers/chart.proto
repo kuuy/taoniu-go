@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 package taoniu.local.cryptos.grpc.binance.spot.analysis.tradings.fishers.chart;
+option go_package = "taoniu.local/cryptos/grpc/binance/spot/analysis/tradings/fishers/chart";
 
 service Chart {
   rpc Series (SeriesRequest) returns (SeriesReply) {}
