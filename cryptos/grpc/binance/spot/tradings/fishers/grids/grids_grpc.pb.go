@@ -35,7 +35,7 @@ func NewGridsClient(cc grpc.ClientConnInterface) GridsClient {
 
 func (c *gridsClient) Pagenate(ctx context.Context, in *PagenateRequest, opts ...grpc.CallOption) (*PagenateReply, error) {
 	out := new(PagenateReply)
-	err := c.cc.Invoke(ctx, "/taoniu.local.cryptos.grpc.binance.spot.analysis.tradings.fishers.grids.Grids/Pagenate", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/taoniu.local.cryptos.grpc.binance.spot.tradings.fishers.grids.Grids/Pagenate", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func _Grids_Pagenate_Handler(srv interface{}, ctx context.Context, dec func(inte
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/taoniu.local.cryptos.grpc.binance.spot.analysis.tradings.fishers.grids.Grids/Pagenate",
+		FullMethod: "/taoniu.local.cryptos.grpc.binance.spot.tradings.fishers.grids.Grids/Pagenate",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(GridsServer).Pagenate(ctx, req.(*PagenateRequest))
@@ -92,7 +92,7 @@ func _Grids_Pagenate_Handler(srv interface{}, ctx context.Context, dec func(inte
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Grids_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "taoniu.local.cryptos.grpc.binance.spot.analysis.tradings.fishers.grids.Grids",
+	ServiceName: "taoniu.local.cryptos.grpc.binance.spot.tradings.fishers.grids.Grids",
 	HandlerType: (*GridsServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

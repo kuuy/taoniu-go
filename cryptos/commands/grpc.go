@@ -1,11 +1,13 @@
 package commands
 
 import (
+  "context"
   "fmt"
   "log"
   "net"
   "os"
 
+  "github.com/go-redis/redis/v8"
   "github.com/urfave/cli/v2"
   "google.golang.org/grpc"
   "gorm.io/gorm"
@@ -15,7 +17,9 @@ import (
 )
 
 type GrpcHandler struct {
-  Db *gorm.DB
+  Db  *gorm.DB
+  Rdb *redis.Client
+  Ctx context.Context
 }
 
 func NewGrpcCommand() *cli.Command {
@@ -25,7 +29,9 @@ func NewGrpcCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = GrpcHandler{
-        Db: common.NewDB(),
+        Db:  common.NewDB(),
+        Rdb: common.NewRedis(),
+        Ctx: context.Background(),
       }
       return nil
     },
@@ -48,7 +54,7 @@ func (h *GrpcHandler) run() error {
     log.Fatalf("net.Listen err: %v", err)
   }
 
-  services.NewBinance(h.Db).Register(s)
+  services.NewBinance(h.Db, h.Rdb, h.Ctx).Register(s)
 
   s.Serve(lis)
 

@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package taoniu.local.cryptos.grpc.binance.spot.analysis.tradings.fishers.grids;
+package taoniu.local.cryptos.grpc.binance.spot.tradings.fishers.grids;
 option go_package = "taoniu.local/cryptos/grpc/binance/spot/tradings/fishers/grids";
 
 import "google/protobuf/timestamp.proto";
@@ -22,8 +22,10 @@ message GridInfo {
 }
 
 message PagenateRequest {
-  int32 page = 1;
-  int32 pageSize = 2;
+  string symbol = 1;
+  repeated uint32 status = 2;
+  int32 page = 3;
+  int32 pageSize = 4;
 }
 
 message PagenateReply {

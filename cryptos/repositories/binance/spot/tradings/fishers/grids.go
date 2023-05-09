@@ -28,15 +28,24 @@ type AnalysisInfo struct {
   Quantity float64
 }
 
-func (r *GridsRepository) Count() int64 {
+func (r *GridsRepository) Count(conditions map[string]interface{}) int64 {
   var total int64
-  r.Db.Model(&models.Grid{}).Where("status IN ?", []int{0, 1, 2, 3}).Count(&total)
+  query := r.Db.Model(&models.Grid{})
+  if _, ok := conditions["symbol"]; ok {
+    query.Where("symbol", conditions["symbol"].(string))
+  }
+  if _, ok := conditions["status"]; ok {
+    query.Where("status IN ?", conditions["status"].([]int))
+  } else {
+    query.Where("status IN ?", []int{0, 1, 2, 3})
+  }
+  query.Count(&total)
   return total
 }
 
-func (r *GridsRepository) Listings(current int, pageSize int) []*models.Grid {
+func (r *GridsRepository) Listings(conditions map[string]interface{}, current int, pageSize int) []*models.Grid {
   var grids []*models.Grid
-  r.Db.Select([]string{
+  query := r.Db.Select([]string{
     "id",
     "symbol",
     "buy_price",
@@ -46,15 +55,17 @@ func (r *GridsRepository) Listings(current int, pageSize int) []*models.Grid {
     "status",
     "created_at",
     "updated_at",
-  }).Where(
-    "status IN ?", []int{0, 1, 2, 3},
-  ).Order(
-    "updated_at desc",
-  ).Offset(
-    (current - 1) * pageSize,
-  ).Limit(
-    pageSize,
-  ).Find(&grids)
+  })
+  if _, ok := conditions["symbol"]; ok {
+    query.Where("symbol", conditions["symbol"].(string))
+  }
+  if _, ok := conditions["status"]; ok {
+    query.Where("status IN ?", conditions["status"].([]int))
+  } else {
+    query.Where("status IN ?", []int{0, 1, 2, 3})
+  }
+  query.Order("updated_at desc")
+  query.Offset((current - 1) * pageSize).Limit(pageSize).Find(&grids)
   return grids
 }
 

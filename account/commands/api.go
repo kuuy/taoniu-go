@@ -1,8 +1,10 @@
 package commands
 
 import (
+  "fmt"
   "log"
   "net/http"
+  "os"
 
   "github.com/go-chi/chi/v5"
   "github.com/urfave/cli/v2"
@@ -41,7 +43,10 @@ func (h *ApiHandler) run() error {
     r.Mount("/profile", v1.NewProfileRouter())
   })
 
-  http.ListenAndServe("127.0.0.1:3600", r)
+  http.ListenAndServe(
+    fmt.Sprintf("127.0.0.1:%v", os.Getenv("ACCOUNT_API_PORT")),
+    r,
+  )
 
   return nil
 }

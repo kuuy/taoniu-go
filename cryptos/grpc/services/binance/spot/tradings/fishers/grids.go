@@ -23,9 +23,25 @@ func NewGrids(db *gorm.DB) *Grids {
 }
 
 func (srv *Grids) Pagenate(ctx context.Context, request *pb.PagenateRequest) (*pb.PagenateReply, error) {
+  conditions := make(map[string]interface{})
+  if request.Symbol != "" {
+    conditions["symbol"] = request.Symbol
+  }
+  if len(request.Status) > 0 {
+    var status []int
+    for _, item := range request.Status {
+      status = append(status, int(item))
+    }
+    conditions["status"] = status
+  }
+
   reply := &pb.PagenateReply{}
-  reply.Total = srv.Repository.Count()
-  grids := srv.Repository.Listings(int(request.Page), int(request.PageSize))
+  reply.Total = srv.Repository.Count(conditions)
+  grids := srv.Repository.Listings(
+    conditions,
+    int(request.Page),
+    int(request.PageSize),
+  )
   for _, grid := range grids {
     reply.Data = append(reply.Data, &pb.GridInfo{
       Id:           grid.ID,
