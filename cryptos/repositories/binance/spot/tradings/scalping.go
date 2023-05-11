@@ -30,6 +30,47 @@ func (r *ScalpingRepository) Scan() []string {
   return symbols
 }
 
+func (r *ScalpingRepository) Count(conditions map[string]interface{}) int64 {
+  var total int64
+  query := r.Db.Model(&models.Scalping{})
+  if _, ok := conditions["symbol"]; ok {
+    query.Where("symbol", conditions["symbol"].(string))
+  }
+  if _, ok := conditions["status"]; ok {
+    query.Where("status IN ?", conditions["status"].([]int))
+  } else {
+    query.Where("status IN ?", []int{0, 1, 2, 3})
+  }
+  query.Count(&total)
+  return total
+}
+
+func (r *ScalpingRepository) Listings(conditions map[string]interface{}, current int, pageSize int) []*models.Scalping {
+  var grids []*models.Scalping
+  query := r.Db.Select([]string{
+    "id",
+    "symbol",
+    "buy_price",
+    "buy_quantity",
+    "sell_price",
+    "sell_quantity",
+    "status",
+    "created_at",
+    "updated_at",
+  })
+  if _, ok := conditions["symbol"]; ok {
+    query.Where("symbol", conditions["symbol"].(string))
+  }
+  if _, ok := conditions["status"]; ok {
+    query.Where("status IN ?", conditions["status"].([]int))
+  } else {
+    query.Where("status IN ?", []int{0, 1, 2, 3})
+  }
+  query.Order("updated_at desc")
+  query.Offset((current - 1) * pageSize).Limit(pageSize).Find(&grids)
+  return grids
+}
+
 func (r *ScalpingRepository) Flush(symbol string) error {
   price, err := r.SymbolsRepository.Price(symbol)
   if err != nil {

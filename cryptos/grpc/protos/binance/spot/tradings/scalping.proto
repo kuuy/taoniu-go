@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package taoniu.local.cryptos.grpc.binance.spot.tradings.scalping;
+option go_package = "taoniu.local/cryptos/grpc/binance/spot/tradings/scalping";
+
+import "google/protobuf/timestamp.proto";
+
+service Scalping {
+  rpc Pagenate (PagenateRequest) returns (PagenateReply) {}
+}
+
+message ScalpingInfo {
+  string id = 1;
+  string symbol = 2;
+  float buyPrice = 3;
+  float buyQuantity = 4;
+  float sellPrice = 5;
+  float sellQuantity = 6;
+  int32 status = 7;
+  google.protobuf.Timestamp createdAt = 8;
+  google.protobuf.Timestamp updatedAt = 9;
+}
+
+message PagenateRequest {
+  string symbol = 1;
+  repeated uint32 status = 2;
+  int32 page = 3;
+  int32 pageSize = 4;
+}
+
+message PagenateReply {
+  int64 total = 1;
+  repeated ScalpingInfo data = 2;
+}

@@ -3,14 +3,16 @@ package spot
 import (
   "context"
   "fmt"
+  "log"
+  "time"
+
   "github.com/go-redis/redis/v8"
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
-  "log"
+
   "taoniu.local/cryptos/common"
   tasks "taoniu.local/cryptos/queue/jobs/binance/spot"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
-  "time"
 )
 
 type TickersHandler struct {
@@ -87,7 +89,7 @@ func (h *TickersHandler) Flush() error {
 }
 
 func (h *TickersHandler) fix() error {
-  timestamp := time.Now().Unix() - 300
+  timestamp := time.Now().Unix() - 900
   symbols, _ := h.Rdb.ZRangeByScore(
     h.Ctx,
     "binance:spot:tickers:flush",
