@@ -8,7 +8,6 @@ import (
   "time"
 
   "database/sql"
-  "github.com/go-redis/redis/v8"
   "github.com/hibiken/asynq"
   "github.com/rs/xid"
   "gorm.io/driver/postgres"

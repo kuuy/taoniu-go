@@ -9,10 +9,11 @@ import (
   "net/http"
   "strconv"
   "strings"
-  "taoniu.local/cryptos/common"
   "time"
 
   "github.com/go-redis/redis/v8"
+
+  "taoniu.local/cryptos/common"
 )
 
 type TickersRepository struct {

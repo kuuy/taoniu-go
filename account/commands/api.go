@@ -2,12 +2,11 @@ package commands
 
 import (
   "fmt"
+  "github.com/go-chi/chi/v5"
+  "github.com/urfave/cli/v2"
   "log"
   "net/http"
   "os"
-
-  "github.com/go-chi/chi/v5"
-  "github.com/urfave/cli/v2"
 
   "taoniu.local/account/api/v1"
 )

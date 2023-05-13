@@ -46,23 +46,30 @@ func (t *TickersTask) Flush() error {
 }
 
 func (t *TickersTask) Fix() error {
+  symbols := t.SymbolsRepository.Symbols()
+  var items []string
   timestamp := time.Now().Unix() - 900
-  symbols, _ := t.Rdb.ZRangeByScore(
+  whites, _ := t.Rdb.ZRangeByScore(
     t.Ctx,
     "binance:spot:tickers:flush",
     &redis.ZRangeBy{
-      Min: "-inf",
-      Max: fmt.Sprintf("(%v", timestamp),
+      Min: fmt.Sprintf("%v", timestamp),
+      Max: "+inf",
     },
   ).Result()
-  rand.Seed(time.Now().UnixNano())
-  rand.Shuffle(len(symbols), func(i, j int) { symbols[i], symbols[j] = symbols[j], symbols[i] })
-  for i := 0; i < len(symbols); i += 20 {
-    j := i + 20
-    if j > len(symbols) {
-      j = len(symbols)
+  for _, symbol := range symbols {
+    if !t.contains(whites, symbol) {
+      items = append(items, symbol)
     }
-    task, err := t.Job.Flush(symbols[i:j], true)
+  }
+  rand.Seed(time.Now().UnixNano())
+  rand.Shuffle(len(items), func(i, j int) { items[i], items[j] = items[j], items[i] })
+  for i := 0; i < len(items); i += 20 {
+    j := i + 20
+    if j > len(items) {
+      j = len(items)
+    }
+    task, err := t.Job.Flush(items[i:j], true)
     if err != nil {
       return err
     }
@@ -99,4 +106,13 @@ func (t *TickersTask) FlushDelay() error {
   }
 
   return nil
+}
+
+func (t *TickersTask) contains(s []string, str string) bool {
+  for _, v := range s {
+    if v == str {
+      return true
+    }
+  }
+  return false
 }
