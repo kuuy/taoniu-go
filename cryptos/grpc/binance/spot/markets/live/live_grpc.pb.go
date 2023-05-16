@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v3.12.4
-// source: live.proto
+// source: binance/spot/markets/live/live.proto
 
 package live
 
@@ -101,5 +101,5 @@ var Live_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "live.proto",
+	Metadata: "binance/spot/markets/live/live.proto",
 }

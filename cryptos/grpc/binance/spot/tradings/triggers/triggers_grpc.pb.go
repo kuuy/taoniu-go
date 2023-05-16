@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v3.12.4
-// source: triggers.proto
+// source: binance/spot/tradings/triggers/triggers.proto
 
 package triggers
 
@@ -101,5 +101,5 @@ var Triggers_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "triggers.proto",
+	Metadata: "binance/spot/tradings/triggers/triggers.proto",
 }

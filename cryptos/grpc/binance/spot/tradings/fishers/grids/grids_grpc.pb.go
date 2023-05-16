@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v3.12.4
-// source: grids.proto
+// source: binance/spot/tradings/fishers/grids/grids.proto
 
 package grids
 
@@ -101,5 +101,5 @@ var Grids_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "grids.proto",
+	Metadata: "binance/spot/tradings/fishers/grids/grids.proto",
 }

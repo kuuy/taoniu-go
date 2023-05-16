@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v3.12.4
-// source: scalping.proto
+// source: binance/spot/tradings/scalping/scalping.proto
 
 package scalping
 
@@ -101,5 +101,5 @@ var Scalping_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "scalping.proto",
+	Metadata: "binance/spot/tradings/scalping/scalping.proto",
 }

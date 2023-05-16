@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v3.12.4
-// source: chart.proto
+// source: binance/spot/analysis/tradings/fishers/chart/chart.proto
 
 package chart
 
@@ -101,5 +101,5 @@ var Chart_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "chart.proto",
+	Metadata: "binance/spot/analysis/tradings/fishers/chart/chart.proto",
 }
