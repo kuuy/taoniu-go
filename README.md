@@ -74,11 +74,13 @@ where summary->>'RECOMMENDATION' = 'STRONG_BUY'
 # Quick Start
 ```bash
 git clone https://github.com/kuuy/taoniu-go
-cd taoniu/cryptos
 
+cd taoniu/cryptos/grpc/protos
 protoc --go_out=../ --go_opt=paths=source_relative \
     --go-grpc_out=../ --go-grpc_opt=paths=source_relative \
     **/*.proto
+
+cd taoniu/cryptos
 
 go run main.go db migrate
 go run main.go binance spot klines daily flush
@@ -86,6 +88,8 @@ go run main.go binance spot grids open AVAXBUSD 50
 go run main.go cron
 go run main.go api
 go run main.go grpc
+
+go build -ldflags "-s -w" -o cryptos
 ```
 
 # taoniu-scripts

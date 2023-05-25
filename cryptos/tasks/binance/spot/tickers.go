@@ -4,13 +4,13 @@ import (
   "context"
   "fmt"
   "math/rand"
+  jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/spot"
   "time"
 
   "github.com/go-redis/redis/v8"
   "github.com/hibiken/asynq"
 
   config "taoniu.local/cryptos/config/queue"
-  jobs "taoniu.local/cryptos/queue/jobs/binance/spot"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 

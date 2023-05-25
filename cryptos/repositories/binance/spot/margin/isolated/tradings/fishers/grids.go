@@ -23,7 +23,7 @@ type GridsRepository struct {
   ProductsRepository ProductsRepository
 }
 
-type AnalysisInfo struct {
+type PendingInfo struct {
   Symbol   string
   Quantity float64
 }
@@ -70,7 +70,7 @@ func (r *GridsRepository) Listings(conditions map[string]interface{}, current in
 }
 
 func (r *GridsRepository) Pending() map[string]float64 {
-  var result []*AnalysisInfo
+  var result []*PendingInfo
   r.Db.Model(&models.Grid{}).Select(
     "symbol",
     "sum(sell_quantity) as quantity",

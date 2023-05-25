@@ -7,11 +7,10 @@ import (
   "github.com/hibiken/asynq"
   "gorm.io/gorm"
 
-  tradingsJobs "taoniu.local/cryptos/queue/jobs/binance/spot/tradings"
+  "taoniu.local/cryptos/queue/asynq/jobs/binance/spot/tradings"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
   plansRepositories "taoniu.local/cryptos/repositories/binance/spot/plans"
   tradingsRepositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
-  fishersRepositories "taoniu.local/cryptos/repositories/binance/spot/tradings/fishers"
   tasks "taoniu.local/cryptos/tasks/binance/spot/tradings"
 )
 
@@ -23,6 +22,7 @@ type TradingsTask struct {
   FishersTask  *tasks.FishersTask
   ScalpingTask *tasks.ScalpingTask
   TriggersTask *tasks.TriggersTask
+  Repository   *repositories.TradingsRepository
 }
 
 func (t *TradingsTask) Fishers() *tasks.FishersTask {
@@ -33,8 +33,8 @@ func (t *TradingsTask) Fishers() *tasks.FishersTask {
       Ctx:   t.Ctx,
       Asynq: t.Asynq,
     }
-    t.FishersTask.Job = &tradingsJobs.Fishers{}
-    t.FishersTask.Repository = &fishersRepositories.FishersRepository{
+    t.FishersTask.Job = &tradings.Fishers{}
+    t.FishersTask.Repository = &tradingsRepositories.FishersRepository{
       Db: t.Db,
     }
   }
@@ -51,7 +51,7 @@ func (t *TradingsTask) Scalping() *tasks.ScalpingTask {
       Rdb: t.Rdb,
       Ctx: t.Ctx,
     }
-    t.ScalpingTask.Job = &tradingsJobs.Scalping{}
+    t.ScalpingTask.Job = &tradings.Scalping{}
     t.ScalpingTask.Repository.SymbolsRepository = &repositories.SymbolsRepository{
       Db:  t.Db,
       Rdb: t.Rdb,
@@ -79,7 +79,7 @@ func (t *TradingsTask) Triggers() *tasks.TriggersTask {
       Rdb: t.Rdb,
       Ctx: t.Ctx,
     }
-    t.TriggersTask.Job = &tradingsJobs.Triggers{}
+    t.TriggersTask.Job = &tradings.Triggers{}
     t.TriggersTask.Repository.SymbolsRepository = &repositories.SymbolsRepository{
       Db:  t.Db,
       Rdb: t.Rdb,
@@ -87,4 +87,8 @@ func (t *TradingsTask) Triggers() *tasks.TriggersTask {
     }
   }
   return t.TriggersTask
+}
+
+func (t *TradingsTask) Collect() error {
+  return t.Repository.Collect()
 }

@@ -255,3 +255,16 @@ func (r *TriggersRepository) Take(symbol string, price float64) error {
 
   return nil
 }
+
+func (r *TriggersRepository) Pending() map[string]float64 {
+  var result []*PendingInfo
+  r.Db.Model(&models.Scalping{}).Select(
+    "symbol",
+    "sum(sell_quantity) as quantity",
+  ).Where("status", 1).Group("symbol").Find(&result)
+  data := make(map[string]float64)
+  for _, item := range result {
+    data[item.Symbol] = item.Quantity
+  }
+  return data
+}
