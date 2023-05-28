@@ -185,9 +185,12 @@ func (h *DailyHandler) pivot() error {
 func (h *DailyHandler) volumeProfile() error {
   log.Println("daily volume profile indicator...")
   var symbols []string
-  h.Db.Model(models.Symbol{}).Select("symbol").Where("symbol=? AND status=? AND is_spot=True", "DOGEUSDT", "TRADING").Find(&symbols)
+  h.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Find(&symbols)
   for _, symbol := range symbols {
-    h.Repository.VolumeProfile(symbol, 1440)
+    err := h.Repository.VolumeProfile(symbol, 1440)
+    if err != nil {
+      log.Println("error", symbol, err)
+    }
   }
   return nil
 }

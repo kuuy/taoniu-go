@@ -536,6 +536,9 @@ func (r *DailyRepository) VolumeProfile(symbol string, limit int) error {
   data := make([]map[string]interface{}, 100)
   for i, price := range prices {
     index, _ := decimal.NewFromFloat(maxPrice - price).Div(value).Floor().Float64()
+    if index > 99.0 {
+      index = 99.0
+    }
     item := data[int(index)]
     if len(item) == 0 {
       item = map[string]interface{}{
@@ -575,6 +578,9 @@ func (r *DailyRepository) VolumeProfile(symbol string, limit int) error {
 
   bestVolume := 0.0
   for i := 0; i < len(data); i++ {
+    if len(data[i]) == 0 {
+      continue
+    }
     areaVolume := 0.0
     for j := i; j < len(data); j++ {
       if len(data[j]) == 0 {
@@ -595,6 +601,10 @@ func (r *DailyRepository) VolumeProfile(symbol string, limit int) error {
   day, err := r.Day(klines[0].Timestamp / 1000)
   if err != nil {
     return err
+  }
+
+  if len(data[startIndex]) == 0 || len(data[endIndex]) == 0 {
+    return errors.New("invalid data")
   }
 
   content, _ := json.Marshal(map[string]interface{}{

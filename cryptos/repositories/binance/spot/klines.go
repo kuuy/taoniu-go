@@ -47,6 +47,12 @@ func (r *KlinesRepository) Series(symbol string, interval string, timestamp int6
   return series
 }
 
+func (r *KlinesRepository) Count(symbol string, interval string) int64 {
+  var total int64
+  r.Db.Model(&models.Kline{}).Where("symbol=? AND interval=?", symbol, interval).Count(&total)
+  return total
+}
+
 func (r *KlinesRepository) Flush(symbol string, interval string, limit int) error {
   klines, err := r.Request(symbol, interval, limit)
   if err != nil {
