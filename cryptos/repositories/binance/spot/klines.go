@@ -159,7 +159,13 @@ func (r *KlinesRepository) Request(symbol string, interval string, limit int) ([
 }
 
 func (r *KlinesRepository) Clean() error {
-  timestamp := time.Now().AddDate(0, 0, -101).Unix()
-  r.Db.Where("timestamp < ?", timestamp).Delete(&models.Kline{})
+  var timestamp int64
+
+  timestamp = time.Now().AddDate(0, 0, -101).Unix()
+  r.Db.Where("interval = ? && timestamp < ?", "1d", timestamp).Delete(&models.Kline{})
+
+  timestamp = time.Now().AddDate(0, 0, -3).Unix()
+  r.Db.Where("interval = ? && timestamp < ?", "1m", timestamp).Delete(&models.Kline{})
+
   return nil
 }

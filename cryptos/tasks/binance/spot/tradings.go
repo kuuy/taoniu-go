@@ -62,6 +62,11 @@ func (t *TradingsTask) Scalping() *tasks.ScalpingTask {
       Rdb: t.Rdb,
       Ctx: t.Ctx,
     }
+    t.ScalpingTask.Repository.OrdersRepository = &repositories.OrdersRepository{
+      Db:  t.Db,
+      Rdb: t.Rdb,
+      Ctx: t.Ctx,
+    }
     t.ScalpingTask.PlansRepository = &plansRepositories.DailyRepository{
       Db: t.Db,
     }

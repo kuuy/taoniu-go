@@ -86,10 +86,12 @@ func (h *CronHandler) run() error {
     binance.Spot().Depth().Flush()
   })
   c.AddFunc("@every 1m", func() {
+    binance.Spot().Klines().Flush("1m", 5)
     binance.Spot().Klines().Flush("1d", 1)
   })
   c.AddFunc("@every 3m", func() {
     binance.Spot().Tickers().Fix()
+    binance.Spot().Klines().Fix("1m", 30, 270)
     binance.Spot().Klines().Fix("1d", 2, 2700)
     binance.Spot().Margin().Orders().Fix()
     binance.Spot().Orders().Fix()
@@ -101,6 +103,7 @@ func (h *CronHandler) run() error {
     binance.Spot().Depth().FlushDelay()
     binance.Spot().Tickers().FlushDelay()
     tradingview.Analysis().FlushDelay()
+    binance.Spot().Klines().FlushDelay("1m", 30)
     //binance.Futures().Indicators().Daily().Place()
     //binance.Futures().Strategies().Daily().Place()
   })

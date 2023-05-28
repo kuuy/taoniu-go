@@ -50,8 +50,12 @@ func NewKlinesCommand() *cli.Command {
             return nil
           }
           limit, _ := strconv.Atoi(c.Args().Get(1))
-          if limit < 1 || limit > 100 {
+          if interval == "1d" && (limit < 1 || limit > 100) {
             log.Fatal("limit not in 1~100")
+            return nil
+          }
+          if interval == "1m" && (limit < 1 || limit > 1000) {
+            log.Fatal("limit not in 1~1000")
             return nil
           }
           if err := h.flush(interval, limit); err != nil {
