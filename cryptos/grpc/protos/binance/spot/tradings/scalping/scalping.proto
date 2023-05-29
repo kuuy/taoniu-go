@@ -24,7 +24,7 @@ message ScalpingInfo {
 message PagenateRequest {
   string symbol = 1;
   repeated uint32 status = 2;
-  int32 page = 3;
+  int32 current = 3;
   int32 pageSize = 4;
 }
 

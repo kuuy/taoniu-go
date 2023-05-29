@@ -9,7 +9,6 @@ import (
   "taoniu.local/cryptos/common"
   models "taoniu.local/cryptos/models/binance/spot"
   repositories "taoniu.local/cryptos/repositories/binance/spot/indicators"
-  "time"
 )
 
 type DailyHandler struct {
@@ -197,11 +196,18 @@ func (h *DailyHandler) volumeProfile() error {
 
 func (h *DailyHandler) test() error {
   log.Println("daily indicator test..")
-  timestamp := time.Now().Unix()
-  day, err := h.Repository.Day(timestamp)
-  if err != nil {
-    return err
-  }
-  log.Println("day", day)
+  //timestamp := time.Now().Unix()
+  //day, err := h.Repository.Day(timestamp)
+  //if err != nil {
+  //  return err
+  //}
+  symbol := "ARPAUSDT"
+  fields := []string{"profit_target", "stop_loss_point", "risk_reward_ratio"}
+  sortField := "risk_reward_ratio"
+  sortType := -1
+  current := 1
+  pageSize := 20
+  rank := h.Repository.Ranking(symbol, fields, sortField, sortType, current, pageSize)
+  log.Println("rank", rank)
   return nil
 }

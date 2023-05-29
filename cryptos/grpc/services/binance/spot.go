@@ -29,6 +29,7 @@ func NewSpot(
 func (srv *Spot) Register(s *grpc.Server) error {
   spot.NewMarkets(srv.Db, srv.Rdb, srv.Ctx).Register(s)
   spot.NewAnalysis(srv.Db).Register(s)
+  spot.NewIndicators(srv.Db, srv.Rdb, srv.Ctx).Register(s)
   spot.NewTradings(srv.Db).Register(s)
   spot.NewMargin(srv.Db).Register(s)
   return nil

@@ -2,10 +2,10 @@ package indicators
 
 import (
   "context"
-  "encoding/json"
   "errors"
   "fmt"
   "github.com/shopspring/decimal"
+  "sort"
   "strconv"
   "strings"
   "time"
@@ -24,6 +24,17 @@ type DailyRepository struct {
   Rdb               *redis.Client
   Ctx               context.Context
   SymbolsRepository *repositories.SymbolsRepository
+}
+
+type RankingScore struct {
+  Symbol string
+  Value  float64
+  Data   []string
+}
+
+type RankingResult struct {
+  Total int
+  Data  []string
 }
 
 func (r *DailyRepository) Symbols() *repositories.SymbolsRepository {
@@ -86,6 +97,119 @@ func (r *DailyRepository) Gets(symbols []string, fields []string) []string {
   }
 
   return indicators
+}
+
+func (r *DailyRepository) Ranking(
+  symbol string,
+  fields []string,
+  sortField string,
+  sortType int,
+  current int,
+  pageSize int,
+) *RankingResult {
+  var script = redis.NewScript(`
+	local hmget = function (key)
+		local hash = {}
+		local data = redis.call('HMGET', key, unpack(ARGV))
+		for i = 1, #ARGV do
+			hash[i] = data[i]
+		end
+		return hash
+	end
+	local data = {}
+	for i = 1, #KEYS do
+		local key = 'binance:spot:indicators:' .. KEYS[i]
+		if redis.call('EXISTS', key) == 0 then
+			data[i] = false
+		else
+			data[i] = hmget(key)
+		end
+	end
+	return data
+  `)
+
+  var symbols []string
+  if symbol == "" {
+    symbols = r.Symbols().Symbols()
+  } else {
+    symbols = append(symbols, symbol)
+  }
+
+  sortIdx := -1
+  day := time.Now().Format("0102")
+
+  var keys []string
+  for _, symbol := range symbols {
+    keys = append(keys, fmt.Sprintf("%s:%s", symbol, day))
+  }
+
+  var args []interface{}
+  for i, field := range fields {
+    if field == sortField {
+      sortIdx = i
+    }
+    args = append(args, field)
+  }
+
+  if sortIdx == -1 {
+    return nil
+  }
+
+  result, _ := script.Run(r.Ctx, r.Rdb, keys, args...).Result()
+
+  var scores []*RankingScore
+  for i := 0; i < len(symbols); i++ {
+    item := result.([]interface{})[i]
+    if item == nil {
+      continue
+    }
+    if item.([]interface{})[sortIdx] == nil {
+      continue
+    }
+    data := make([]string, len(fields))
+    for j := 0; j < len(fields); j++ {
+      if item.([]interface{})[j] == nil {
+        continue
+      }
+      data[j] = fmt.Sprintf("%v", item.([]interface{})[j])
+    }
+    score, _ := strconv.ParseFloat(
+      fmt.Sprintf("%v", item.([]interface{})[sortIdx]),
+      16,
+    )
+    scores = append(scores, &RankingScore{
+      symbols[i],
+      score,
+      data,
+    })
+  }
+
+  sort.SliceStable(scores, func(i, j int) bool {
+    if sortType == -1 {
+      return scores[i].Value > scores[j].Value
+    } else if sortType == 1 {
+      return scores[i].Value < scores[j].Value
+    }
+    return true
+  })
+
+  offset := (current - 1) * pageSize
+  endPos := offset + pageSize
+  if endPos > len(scores) {
+    endPos = len(scores)
+  }
+
+  ranking := &RankingResult{
+    Total: len(scores),
+  }
+  for _, score := range scores[offset:endPos] {
+    ranking.Data = append(ranking.Data, strings.Join(
+      append([]string{score.Symbol}, score.Data...),
+      ",",
+    ))
+  }
+
+  return ranking
 }
 
 func (r *DailyRepository) Pivot(symbol string) error {
@@ -527,6 +651,10 @@ func (r *DailyRepository) VolumeProfile(symbol string, limit int) error {
     totalVolume += item.Volume
   }
 
+  if minPrice == maxPrice {
+    return errors.New("klines not valid")
+  }
+
   targetVolume, _ = decimal.NewFromFloat(totalVolume).Mul(decimal.NewFromFloat(0.7)).Float64()
 
   value := decimal.NewFromFloat(maxPrice - minPrice).Div(decimal.NewFromInt(100))
@@ -607,21 +735,35 @@ func (r *DailyRepository) VolumeProfile(symbol string, limit int) error {
     return errors.New("invalid data")
   }
 
-  content, _ := json.Marshal(map[string]interface{}{
-    "poc": poc["prices"].([]float64),
-    "vah": data[startIndex]["prices"].([]float64),
-    "val": data[endIndex]["prices"].([]float64),
-  })
+  values := map[string]interface{}{
+    "poc":       0.0,
+    "vah":       0.0,
+    "val":       0.0,
+    "poc_ratio": 0.0,
+  }
+  values["poc"], _ = decimal.Avg(
+    decimal.NewFromFloat(poc["prices"].([]float64)[0]),
+    decimal.NewFromFloat(poc["prices"].([]float64)[1]),
+  ).Div(tickSize).Ceil().Mul(tickSize).Float64()
+  values["vah"], _ = decimal.Avg(
+    decimal.NewFromFloat(data[startIndex]["prices"].([]float64)[0]),
+    decimal.NewFromFloat(data[startIndex]["prices"].([]float64)[1]),
+  ).Div(tickSize).Ceil().Mul(tickSize).Float64()
+  values["val"], _ = decimal.Avg(
+    decimal.NewFromFloat(data[endIndex]["prices"].([]float64)[0]),
+    decimal.NewFromFloat(data[endIndex]["prices"].([]float64)[1]),
+  ).Div(tickSize).Ceil().Mul(tickSize).Float64()
 
-  r.Rdb.HSet(
+  values["poc_ratio"], _ = decimal.NewFromFloat(values["vah"].(float64) - values["val"].(float64)).Div(decimal.NewFromFloat(values["poc"].(float64))).Round(4).Float64()
+
+  r.Rdb.HMSet(
     r.Ctx,
     fmt.Sprintf(
       "binance:spot:indicators:%s:%s",
       symbol,
       day,
     ),
-    "volume_profile",
-    content,
+    values,
   )
 
   return nil

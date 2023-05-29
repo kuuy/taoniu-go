@@ -39,7 +39,7 @@ func (srv *Scalping) Pagenate(ctx context.Context, request *pb.PagenateRequest) 
   reply.Total = srv.Repository.Count(conditions)
   grids := srv.Repository.Listings(
     conditions,
-    int(request.Page),
+    int(request.Current),
     int(request.PageSize),
   )
   for _, grid := range grids {
