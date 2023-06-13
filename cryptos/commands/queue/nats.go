@@ -1,16 +1,23 @@
 package queue
 
 import (
+  "context"
+  "gorm.io/gorm"
   "log"
   "sync"
 
+  "github.com/go-redis/redis/v8"
   "github.com/urfave/cli/v2"
 
   "taoniu.local/cryptos/common"
   queue "taoniu.local/cryptos/queue/nats"
 )
 
-type NatsHandler struct{}
+type NatsHandler struct {
+  Db  *gorm.DB
+  Rdb *redis.Client
+  Ctx context.Context
+}
 
 func NewNatsCommand() *cli.Command {
   var h NatsHandler
@@ -18,7 +25,11 @@ func NewNatsCommand() *cli.Command {
     Name:  "nats",
     Usage: "",
     Before: func(c *cli.Context) error {
-      h = NatsHandler{}
+      h = NatsHandler{
+        Db:  common.NewDB(),
+        Rdb: common.NewRedis(),
+        Ctx: context.Background(),
+      }
       return nil
     },
     Action: func(c *cli.Context) error {
@@ -39,7 +50,7 @@ func (h *NatsHandler) run() error {
   nc := common.NewNats()
   defer nc.Close()
 
-  queue.NewWorkers().Subscribe(nc)
+  queue.NewWorkers(h.Db, h.Rdb, h.Ctx).Subscribe(nc)
 
   <-h.wait(wg)
 

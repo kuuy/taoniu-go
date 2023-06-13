@@ -9,7 +9,6 @@ import (
   "gorm.io/gorm"
 
   repositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated/tradings"
-  fishersRepositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated/tradings/fishers"
   tasks "taoniu.local/cryptos/tasks/binance/spot/margin/isolated/tradings"
 )
 
@@ -31,7 +30,7 @@ func (t *TradingsTask) Fishers() *tasks.FishersTask {
       Asynq: t.Asynq,
     }
     t.FishersTask.Job = &tradingsJobs.Fishers{}
-    t.FishersTask.Repository = &fishersRepositories.FishersRepository{
+    t.FishersTask.Repository = &repositories.FishersRepository{
       Db: t.Db,
     }
   }

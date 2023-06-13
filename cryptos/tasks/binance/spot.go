@@ -10,6 +10,10 @@ import (
   "taoniu.local/cryptos/queue/asynq/jobs/binance/spot"
   savingsRepositories "taoniu.local/cryptos/repositories/binance/savings"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
+  crossRepositories "taoniu.local/cryptos/repositories/binance/spot/margin/cross"
+  crossTradingsRepositories "taoniu.local/cryptos/repositories/binance/spot/margin/cross/tradings"
+  isolatedRepositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated"
+  isolatedTradingsRepositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated/tradings"
   tradingsRepositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
   tasks "taoniu.local/cryptos/tasks/binance/spot"
 )
@@ -73,16 +77,28 @@ func (t *SpotTask) Tickers() *tasks.TickersTask {
     t.TickersTask.SymbolsRepository = &repositories.SymbolsRepository{
       Db: t.Db,
     }
-    t.TickersTask.SymbolsRepository.TradingsRepository = &repositories.TradingsRepository{
+    t.TickersTask.TradingsRepository = &repositories.TradingsRepository{
       Db: t.Db,
     }
-    t.TickersTask.SymbolsRepository.TradingsRepository.FishersRepository = &tradingsRepositories.FishersRepository{
+    t.TickersTask.TradingsRepository.FishersRepository = &tradingsRepositories.FishersRepository{
       Db: t.Db,
     }
-    t.TickersTask.SymbolsRepository.TradingsRepository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
+    t.TickersTask.TradingsRepository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
       Db: t.Db,
     }
-    t.TickersTask.SymbolsRepository.TradingsRepository.TriggersRepository = &tradingsRepositories.TriggersRepository{
+    t.TickersTask.TradingsRepository.TriggersRepository = &tradingsRepositories.TriggersRepository{
+      Db: t.Db,
+    }
+    t.TickersTask.CrossTradingsRepository = &crossRepositories.TradingsRepository{
+      Db: t.Db,
+    }
+    t.TickersTask.CrossTradingsRepository.TriggersRepository = &crossTradingsRepositories.TriggersRepository{
+      Db: t.Db,
+    }
+    t.TickersTask.IsolatedTradingsRepository = &isolatedRepositories.TradingsRepository{
+      Db: t.Db,
+    }
+    t.TickersTask.IsolatedTradingsRepository.FishersRepository = &isolatedTradingsRepositories.FishersRepository{
       Db: t.Db,
     }
   }
@@ -101,16 +117,28 @@ func (t *SpotTask) Depth() *tasks.DepthTask {
     t.DepthTask.SymbolsRepository = &repositories.SymbolsRepository{
       Db: t.Db,
     }
-    t.DepthTask.SymbolsRepository.TradingsRepository = &repositories.TradingsRepository{
+    t.DepthTask.TradingsRepository = &repositories.TradingsRepository{
       Db: t.Db,
     }
-    t.DepthTask.SymbolsRepository.TradingsRepository.FishersRepository = &tradingsRepositories.FishersRepository{
+    t.DepthTask.TradingsRepository.FishersRepository = &tradingsRepositories.FishersRepository{
       Db: t.Db,
     }
-    t.DepthTask.SymbolsRepository.TradingsRepository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
+    t.DepthTask.TradingsRepository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
       Db: t.Db,
     }
-    t.DepthTask.SymbolsRepository.TradingsRepository.TriggersRepository = &tradingsRepositories.TriggersRepository{
+    t.DepthTask.TradingsRepository.TriggersRepository = &tradingsRepositories.TriggersRepository{
+      Db: t.Db,
+    }
+    t.DepthTask.CrossTradingsRepository = &crossRepositories.TradingsRepository{
+      Db: t.Db,
+    }
+    t.DepthTask.CrossTradingsRepository.TriggersRepository = &crossTradingsRepositories.TriggersRepository{
+      Db: t.Db,
+    }
+    t.DepthTask.IsolatedTradingsRepository = &isolatedRepositories.TradingsRepository{
+      Db: t.Db,
+    }
+    t.DepthTask.IsolatedTradingsRepository.FishersRepository = &isolatedTradingsRepositories.FishersRepository{
       Db: t.Db,
     }
   }
@@ -131,16 +159,28 @@ func (t *SpotTask) Klines() *tasks.KlinesTask {
     t.KlinesTask.SymbolsRepository = &repositories.SymbolsRepository{
       Db: t.Db,
     }
-    t.KlinesTask.SymbolsRepository.TradingsRepository = &repositories.TradingsRepository{
+    t.KlinesTask.TradingsRepository = &repositories.TradingsRepository{
       Db: t.Db,
     }
-    t.KlinesTask.SymbolsRepository.TradingsRepository.FishersRepository = &tradingsRepositories.FishersRepository{
+    t.KlinesTask.TradingsRepository.FishersRepository = &tradingsRepositories.FishersRepository{
       Db: t.Db,
     }
-    t.KlinesTask.SymbolsRepository.TradingsRepository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
+    t.KlinesTask.TradingsRepository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
       Db: t.Db,
     }
-    t.KlinesTask.SymbolsRepository.TradingsRepository.TriggersRepository = &tradingsRepositories.TriggersRepository{
+    t.KlinesTask.TradingsRepository.TriggersRepository = &tradingsRepositories.TriggersRepository{
+      Db: t.Db,
+    }
+    t.KlinesTask.CrossTradingsRepository = &crossRepositories.TradingsRepository{
+      Db: t.Db,
+    }
+    t.KlinesTask.CrossTradingsRepository.TriggersRepository = &crossTradingsRepositories.TriggersRepository{
+      Db: t.Db,
+    }
+    t.KlinesTask.IsolatedTradingsRepository = &isolatedRepositories.TradingsRepository{
+      Db: t.Db,
+    }
+    t.KlinesTask.IsolatedTradingsRepository.FishersRepository = &isolatedTradingsRepositories.FishersRepository{
       Db: t.Db,
     }
   }

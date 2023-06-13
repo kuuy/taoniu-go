@@ -2,7 +2,7 @@ package tradings
 
 import (
   "context"
-  jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/spot/margin/isolated/tradings"
+  "taoniu.local/cryptos/repositories/binance/spot/margin/isolated/tradings"
   "time"
 
   "github.com/go-redis/redis/v8"
@@ -10,6 +10,7 @@ import (
   "gorm.io/gorm"
 
   config "taoniu.local/cryptos/config/queue"
+  jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/spot/margin/isolated/tradings"
   savingsRepositories "taoniu.local/cryptos/repositories/binance/savings"
   isolatedRepositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated"
   repositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated/tradings/fishers"
@@ -22,7 +23,7 @@ type FishersTask struct {
   Ctx        context.Context
   Asynq      *asynq.Client
   Job        *jobs.Fishers
-  Repository *repositories.FishersRepository
+  Repository *tradings.FishersRepository
   GridsTask  *tasks.GridsTask
 }
 

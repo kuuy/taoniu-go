@@ -94,11 +94,11 @@ func NewTriggersCommand() *cli.Command {
 func (h *TriggersHandler) Create() error {
   log.Println("spot tradings triggers create...")
   symbol := "DOGEUSDT"
-  amount := 100.00
-  buyPrice := 0.03917
-  sellPrice := 0.08917
+  capital := 100.00
+  multiple := 3
+  price := 0.03917
   expiredAt := time.Now()
-  err := h.Repository.Create(symbol, amount, buyPrice, sellPrice, expiredAt)
+  err := h.Repository.Apply(symbol, capital, multiple, price, expiredAt)
   if err != nil {
     return err
   }

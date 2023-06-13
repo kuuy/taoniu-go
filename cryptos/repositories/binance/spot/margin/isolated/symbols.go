@@ -9,31 +9,9 @@ import (
 )
 
 type SymbolsRepository struct {
-  Db                 *gorm.DB
-  Rdb                *redis.Client
-  Ctx                context.Context
-  TradingsRepository *TradingsRepository
-}
-
-func (r *SymbolsRepository) Tradings() *TradingsRepository {
-  if r.TradingsRepository == nil {
-    r.TradingsRepository = &TradingsRepository{
-      Db:  r.Db,
-      Rdb: r.Rdb,
-      Ctx: r.Ctx,
-    }
-  }
-  return r.TradingsRepository
-}
-
-func (r *SymbolsRepository) Scan() []string {
-  var symbols []string
-  for _, symbol := range r.Tradings().Fishers().Scan() {
-    if !r.contains(symbols, symbol) {
-      symbols = append(symbols, symbol)
-    }
-  }
-  return symbols
+  Db  *gorm.DB
+  Rdb *redis.Client
+  Ctx context.Context
 }
 
 func (r *SymbolsRepository) Flush() error {
@@ -44,7 +22,7 @@ func (r *SymbolsRepository) Flush() error {
   for _, symbol := range symbols {
     exists, _ := r.Rdb.Exists(
       r.Ctx,
-      fmt.Sprintf("binance:spot:margin:isolated:balances:%s", symbol),
+      fmt.Sprintf("binance:spot:margin:isolated:balance:%s", symbol),
     ).Result()
     if exists == 0 {
       continue

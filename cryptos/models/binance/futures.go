@@ -1,27 +1,31 @@
 package binance
 
 import (
-	"gorm.io/gorm"
-	"taoniu.local/cryptos/models/binance/futures"
+  "gorm.io/gorm"
+  "taoniu.local/cryptos/models/binance/futures"
 )
 
 type Futures struct{}
 
 func NewFutures() *Futures {
-	return &Futures{}
+  return &Futures{}
 }
 
 func (m *Futures) AutoMigrate(db *gorm.DB) error {
-	db.AutoMigrate(
-		&futures.Symbol{},
-		&futures.Order{},
-		&futures.Kline{},
-		&futures.Strategy{},
-		&futures.Plan{},
-		&futures.Grid{},
-		&futures.TradingScalping{},
-		&futures.TradingGrid{},
-	)
+  db.AutoMigrate(
+    &futures.Symbol{},
+    &futures.Position{},
+    &futures.Order{},
+    &futures.Kline{},
+    &futures.Strategy{},
+    &futures.Plan{},
+    &futures.Grid{},
+    &futures.TradingScalping{},
+    &futures.TradingGrid{},
+    &futures.Trigger{},
+  )
 
-	return nil
+  futures.NewTradings().AutoMigrate(db)
+
+  return nil
 }

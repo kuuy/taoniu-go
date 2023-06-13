@@ -10,6 +10,7 @@ import (
   savingsModels "taoniu.local/cryptos/models/binance/savings"
   spotModels "taoniu.local/cryptos/models/binance/spot"
   models "taoniu.local/cryptos/models/binance/spot/margin/isolated/tradings/fishers"
+  "taoniu.local/cryptos/repositories/binance/spot/margin/isolated/tradings"
 )
 
 type ProductsRepository interface {
@@ -19,7 +20,7 @@ type ProductsRepository interface {
 
 type GridsRepository struct {
   Db                 *gorm.DB
-  AccountRepository  AccountRepository
+  AccountRepository  tradings.AccountRepository
   ProductsRepository ProductsRepository
 }
 

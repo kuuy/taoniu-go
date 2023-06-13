@@ -44,15 +44,15 @@ func (srv *Triggers) Pagenate(ctx context.Context, request *pb.PagenateRequest) 
   )
   for _, grid := range grids {
     reply.Data = append(reply.Data, &pb.TriggersInfo{
-      Id:           grid.ID,
-      Symbol:       grid.Symbol,
-      BuyPrice:     float32(grid.BuyPrice),
-      BuyQuantity:  float32(grid.BuyQuantity),
-      SellPrice:    float32(grid.SellPrice),
-      SellQuantity: float32(grid.SellQuantity),
-      Status:       int32(grid.Status),
-      CreatedAt:    timestamppb.New(grid.CreatedAt),
-      UpdatedAt:    timestamppb.New(grid.UpdatedAt),
+      Id:     grid.ID,
+      Symbol: grid.Symbol,
+      //BuyPrice:     float32(grid.BuyPrice),
+      //BuyQuantity:  float32(grid.BuyQuantity),
+      //SellPrice:    float32(grid.SellPrice),
+      //SellQuantity: float32(grid.SellQuantity),
+      Status:    int32(grid.Status),
+      CreatedAt: timestamppb.New(grid.CreatedAt),
+      UpdatedAt: timestamppb.New(grid.UpdatedAt),
     })
   }
   return reply, nil

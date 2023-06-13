@@ -1,21 +1,22 @@
 package spot
 
 import (
-	"gorm.io/gorm"
-	"taoniu.local/cryptos/models/binance/spot/tradings"
+  "gorm.io/gorm"
+  "taoniu.local/cryptos/models/binance/spot/tradings"
 )
 
 type Tradings struct{}
 
 func NewTradings() *Tradings {
-	return &Tradings{}
+  return &Tradings{}
 }
 
 func (m *Tradings) AutoMigrate(db *gorm.DB) error {
-	db.AutoMigrate(
-		&tradings.Scalping{},
-		&tradings.Triggers{},
-	)
-	tradings.NewFishers().AutoMigrate(db)
-	return nil
+  db.AutoMigrate(
+    &tradings.Scalping{},
+    &Triggers{},
+  )
+  tradings.NewFishers().AutoMigrate(db)
+  tradings.NewTriggers().AutoMigrate(db)
+  return nil
 }

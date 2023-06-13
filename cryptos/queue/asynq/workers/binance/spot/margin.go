@@ -12,6 +12,7 @@ func NewMargin() *Margin {
 }
 
 func (h *Margin) Register(mux *asynq.ServeMux) error {
+  margin.NewCross().Register(mux)
   margin.NewIsolated().Register(mux)
   return nil
 }

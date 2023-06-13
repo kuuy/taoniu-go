@@ -4,27 +4,34 @@ import (
   "context"
   "fmt"
   "math/rand"
-  jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/spot"
   "time"
 
   "github.com/go-redis/redis/v8"
   "github.com/hibiken/asynq"
 
   config "taoniu.local/cryptos/config/queue"
+  jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/spot"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
+  crossRepositories "taoniu.local/cryptos/repositories/binance/spot/margin/cross"
+  isolatedRepositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated"
 )
 
 type TickersTask struct {
-  Rdb               *redis.Client
-  Ctx               context.Context
-  Asynq             *asynq.Client
-  Job               *jobs.Tickers
-  Repository        *repositories.TickersRepository
-  SymbolsRepository *repositories.SymbolsRepository
+  Rdb                        *redis.Client
+  Ctx                        context.Context
+  Asynq                      *asynq.Client
+  Job                        *jobs.Tickers
+  Repository                 *repositories.TickersRepository
+  SymbolsRepository          *repositories.SymbolsRepository
+  TradingsRepository         *repositories.TradingsRepository
+  CrossTradingsRepository    *crossRepositories.TradingsRepository
+  IsolatedTradingsRepository *isolatedRepositories.TradingsRepository
 }
 
 func (t *TickersTask) Flush() error {
-  symbols := t.SymbolsRepository.Scan()
+  symbols := t.Scan()
+  rand.Seed(time.Now().UnixNano())
+  rand.Shuffle(len(symbols), func(i, j int) { symbols[i], symbols[j] = symbols[j], symbols[i] })
   for i := 0; i < len(symbols); i += 20 {
     j := i + 20
     if j > len(symbols) {
@@ -106,6 +113,26 @@ func (t *TickersTask) FlushDelay() error {
   }
 
   return nil
+}
+
+func (t *TickersTask) Scan() []string {
+  var symbols []string
+  for _, symbol := range t.TradingsRepository.Scan() {
+    if !t.contains(symbols, symbol) {
+      symbols = append(symbols, symbol)
+    }
+  }
+  for _, symbol := range t.CrossTradingsRepository.Scan() {
+    if !t.contains(symbols, symbol) {
+      symbols = append(symbols, symbol)
+    }
+  }
+  for _, symbol := range t.IsolatedTradingsRepository.Scan() {
+    if !t.contains(symbols, symbol) {
+      symbols = append(symbols, symbol)
+    }
+  }
+  return symbols
 }
 
 func (t *TickersTask) contains(s []string, str string) bool {

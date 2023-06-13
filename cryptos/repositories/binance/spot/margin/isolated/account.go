@@ -31,10 +31,10 @@ import (
 )
 
 type AccountRepository struct {
-  Db                *gorm.DB
-  Rdb               *redis.Client
-  Ctx               context.Context
-  SymbolsRepository *SymbolsRepository
+  Db                 *gorm.DB
+  Rdb                *redis.Client
+  Ctx                context.Context
+  TradingsRepository *TradingsRepository
 }
 
 func (r *AccountRepository) Flush() error {
@@ -47,12 +47,12 @@ func (r *AccountRepository) Flush() error {
     baseTotalAsset, _ := strconv.ParseFloat(coin.BaseAsset.TotalAsset, 64)
     quoteTotalAsset, _ := strconv.ParseFloat(coin.QuoteAsset.TotalAsset, 64)
     if baseTotalAsset <= 0.0 && quoteTotalAsset <= 0.0 {
-      r.Rdb.Del(r.Ctx, fmt.Sprintf("binance:spot:margin:isolated:balances:%s", coin.Symbol))
+      r.Rdb.Del(r.Ctx, fmt.Sprintf("binance:spot:margin:isolated:balance:%s", coin.Symbol))
       continue
     }
     r.Rdb.HMSet(
       r.Ctx,
-      fmt.Sprintf("binance:spot:margin:isolated:balances:%s", coin.Symbol),
+      fmt.Sprintf("binance:spot:margin:isolated:balance:%s", coin.Symbol),
       map[string]interface{}{
         "margin_ratio":      coin.MarginRatio,
         "liquidate_price":   coin.LiquidatePrice,
@@ -83,7 +83,7 @@ func (r *AccountRepository) Balance(symbol string) (float64, float64, error) {
   data, _ := r.Rdb.HMGet(
     r.Ctx,
     fmt.Sprintf(
-      "binance:spot:margin:isolated:balances:%s",
+      "binance:spot:margin:isolated:balance:%s",
       symbol,
     ),
     fields...,
@@ -100,7 +100,7 @@ func (r *AccountRepository) Balance(symbol string) (float64, float64, error) {
 }
 
 func (r *AccountRepository) Collect() error {
-  symbols := r.SymbolsRepository.Scan()
+  symbols := r.TradingsRepository.Scan()
   for _, symbol := range symbols {
     var entity *binanceModels.Symbol
     result := r.Db.Select([]string{"base_asset", "quote_asset"}).Where("symbol", symbol).Take(&entity)
@@ -110,7 +110,7 @@ func (r *AccountRepository) Collect() error {
     var quantity float64 = 0
     val, err := r.Rdb.HGet(
       r.Ctx,
-      fmt.Sprintf("binance:spot:balances:%s", entity.BaseAsset),
+      fmt.Sprintf("binance:spot:balance:%s", entity.BaseAsset),
       "free",
     ).Result()
     if err == nil {
@@ -135,7 +135,7 @@ func (r *AccountRepository) Collect() error {
 }
 
 func (r *AccountRepository) Liquidate() error {
-  symbols := r.SymbolsRepository.Scan()
+  symbols := r.TradingsRepository.Scan()
   for _, symbol := range symbols {
     var entity *binanceModels.Symbol
     result := r.Db.Select([]string{"quote_asset"}).Where("symbol", symbol).Take(&entity)
@@ -147,7 +147,7 @@ func (r *AccountRepository) Liquidate() error {
     var interest float64 = 0
     data, err := r.Rdb.HMGet(
       r.Ctx,
-      fmt.Sprintf("binance:spot:margin:isolated:balances:%s", symbol),
+      fmt.Sprintf("binance:spot:margin:isolated:balance:%s", symbol),
       "quote_free",
       "quote_borrowed",
       "quote_interest",

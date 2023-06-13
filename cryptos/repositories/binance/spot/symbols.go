@@ -20,22 +20,9 @@ import (
 )
 
 type SymbolsRepository struct {
-  Db                 *gorm.DB
-  Rdb                *redis.Client
-  Ctx                context.Context
-  MarginRepository   *MarginRepository
-  TradingsRepository *TradingsRepository
-}
-
-func (r *SymbolsRepository) Margins() *MarginRepository {
-  if r.MarginRepository == nil {
-    r.MarginRepository = &MarginRepository{
-      Db:  r.Db,
-      Rdb: r.Rdb,
-      Ctx: r.Ctx,
-    }
-  }
-  return r.MarginRepository
+  Db  *gorm.DB
+  Rdb *redis.Client
+  Ctx context.Context
 }
 
 func (r *SymbolsRepository) Currencies() []string {
@@ -50,15 +37,22 @@ func (r *SymbolsRepository) Symbols() []string {
   return symbols
 }
 
-func (r *SymbolsRepository) Get(
-  symbol string,
-) (models.Symbol, error) {
+func (r *SymbolsRepository) Get(symbol string) (models.Symbol, error) {
   var entity models.Symbol
   result := r.Db.Where("symbol", symbol).Take(&entity)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     return entity, result.Error
   }
   return entity, nil
+}
+
+func (r *SymbolsRepository) Filters(params datatypes.JSONMap) (tickSize float64, stepSize float64, err error) {
+  var filters []string
+  filters = strings.Split(params["price"].(string), ",")
+  tickSize, _ = strconv.ParseFloat(filters[2], 64)
+  filters = strings.Split(params["quote"].(string), ",")
+  stepSize, _ = strconv.ParseFloat(filters[2], 64)
+  return
 }
 
 func (r *SymbolsRepository) Flush() error {
@@ -144,31 +138,6 @@ func (r *SymbolsRepository) Flush() error {
   }
 
   return nil
-}
-
-func (r *SymbolsRepository) Scan() []string {
-  var symbols []string
-  for _, symbol := range r.TradingsRepository.FishersRepository.Scan() {
-    if !r.contains(symbols, symbol) {
-      symbols = append(symbols, symbol)
-    }
-  }
-  for _, symbol := range r.TradingsRepository.ScalpingRepository.Scan() {
-    if !r.contains(symbols, symbol) {
-      symbols = append(symbols, symbol)
-    }
-  }
-  for _, symbol := range r.TradingsRepository.TriggersRepository.Scan() {
-    if !r.contains(symbols, symbol) {
-      symbols = append(symbols, symbol)
-    }
-  }
-  for _, symbol := range r.Margins().Symbols().Scan() {
-    if !r.contains(symbols, symbol) {
-      symbols = append(symbols, symbol)
-    }
-  }
-  return symbols
 }
 
 func (r *SymbolsRepository) Count() error {

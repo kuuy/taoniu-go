@@ -10,6 +10,7 @@ import (
   "gorm.io/gorm"
 
   models "taoniu.local/cryptos/models/binance/spot"
+  tradingsRepositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
 )
 
 type TradingsRepository struct {
@@ -18,9 +19,9 @@ type TradingsRepository struct {
   Ctx                context.Context
   AccountRepository  *AccountRepository
   ProductsRepository ProductsRepository
-  FishersRepository  FishersRepository
-  ScalpingRepository ScalpingRepository
-  TriggersRepository TriggersRepository
+  FishersRepository  *tradingsRepositories.FishersRepository
+  ScalpingRepository *tradingsRepositories.ScalpingRepository
+  TriggersRepository *tradingsRepositories.TriggersRepository
 }
 
 func (r *TradingsRepository) Scan() []string {

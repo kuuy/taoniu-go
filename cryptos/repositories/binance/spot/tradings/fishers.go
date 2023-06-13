@@ -36,43 +36,6 @@ func (r *FishersRepository) Scan() []string {
   return symbols
 }
 
-func (r *FishersRepository) Apply(
-  symbol string,
-  amount float64,
-  balance float64,
-  targetBalance float64,
-  stopBalance float64,
-  tickers [][]float64,
-) error {
-  var fisher spotModels.Fisher
-  result := r.Db.Where("symbol=? AND status IN ?", symbol, []int{1, 3, 4}).Take(&fisher)
-  if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    fisher = spotModels.Fisher{
-      ID:            xid.New().String(),
-      Symbol:        symbol,
-      Price:         0,
-      Balance:       balance,
-      Tickers:       r.JSON(tickers),
-      StartAmount:   amount,
-      StartBalance:  balance,
-      TargetBalance: targetBalance,
-      StopBalance:   stopBalance,
-      Status:        1,
-    }
-    r.Db.Create(&fisher)
-  } else {
-    if fisher.Status == 4 {
-      return errors.New("stop loss occured")
-    }
-    if fisher.Status == 3 {
-      return errors.New("fisher error waiting")
-    }
-    return errors.New("fisher not finished")
-  }
-
-  return nil
-}
-
 func (r *FishersRepository) Flush(symbol string) error {
   var fisher spotModels.Fisher
   result := r.Db.Where("symbol=?", symbol).Take(&fisher)

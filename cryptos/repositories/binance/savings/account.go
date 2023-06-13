@@ -25,12 +25,12 @@ func (r *AccountRepository) Flush() error {
     log.Println("product:", product)
     //	free, _ := strconv.ParseFloat(coin.Free, 64)
     //	if free <= 0.0 {
-    //		r.Rdb.Del(r.Ctx, fmt.Sprintf("binance:spot:balances:%s", coin.Asset))
+    //		r.Rdb.Del(r.Ctx, fmt.Sprintf("binance:spot:balance:%s", coin.Asset))
     //		continue
     //	}
     //	r.Rdb.HMSet(
     //		r.Ctx,
-    //		fmt.Sprintf("binance:spot:balances:%s", coin.Asset),
+    //		fmt.Sprintf("binance:spot:balance:%s", coin.Asset),
     //		map[string]interface{}{
     //			"free":   coin.Free,
     //			"locked": coin.Locked,
