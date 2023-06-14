@@ -77,7 +77,12 @@ func NewTickersCommand() *cli.Command {
       return nil
     },
     Action: func(c *cli.Context) error {
-      if err := h.start(); err != nil {
+      no, _ := strconv.Atoi(c.Args().Get(0))
+      if no < 1 {
+        log.Fatal("no is less than 1")
+        return nil
+      }
+      if err := h.start(no); err != nil {
         return cli.Exit(err.Error(), 1)
       }
       return nil
@@ -124,11 +129,23 @@ func (h *TickersHandler) handler(message map[string]interface{}) {
   }
 }
 
-func (h *TickersHandler) start() (err error) {
+func (h *TickersHandler) start(current int) (err error) {
   log.Println("stream start")
 
+  symbols := h.Scan()
+
+  offset := (current - 1) * 25
+  if offset >= len(symbols) {
+    err = errors.New("symbols out of range")
+    return
+  }
+  endPos := offset + 25
+  if endPos > len(symbols) {
+    endPos = len(symbols)
+  }
+
   var streams []string
-  for _, symbol := range h.Scan() {
+  for _, symbol := range symbols[offset:endPos] {
     streams = append(
       streams,
       fmt.Sprintf("%s@miniTicker", strings.ToLower(symbol)),
@@ -173,7 +190,7 @@ func (h *TickersHandler) start() (err error) {
   for {
     select {
     case <-ticker.C:
-      if len(streams) != len(h.Scan()) {
+      if len(symbols) != len(h.Scan()) {
         h.Socket.Close(websocket.StatusNormalClosure, "")
         return
       }
