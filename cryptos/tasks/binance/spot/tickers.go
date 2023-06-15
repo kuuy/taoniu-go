@@ -21,7 +21,6 @@ type TickersTask struct {
   Ctx                        context.Context
   Asynq                      *asynq.Client
   Job                        *jobs.Tickers
-  Repository                 *repositories.TickersRepository
   SymbolsRepository          *repositories.SymbolsRepository
   TradingsRepository         *repositories.TradingsRepository
   CrossTradingsRepository    *crossRepositories.TradingsRepository

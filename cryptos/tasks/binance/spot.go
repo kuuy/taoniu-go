@@ -2,12 +2,11 @@ package binance
 
 import (
   "context"
-
   "github.com/go-redis/redis/v8"
   "github.com/hibiken/asynq"
   "gorm.io/gorm"
 
-  "taoniu.local/cryptos/queue/asynq/jobs/binance/spot"
+  jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/spot"
   savingsRepositories "taoniu.local/cryptos/repositories/binance/savings"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
   crossRepositories "taoniu.local/cryptos/repositories/binance/spot/margin/cross"
@@ -69,11 +68,7 @@ func (t *SpotTask) Tickers() *tasks.TickersTask {
       Ctx:   t.Ctx,
       Asynq: t.Asynq,
     }
-    t.TickersTask.Job = &spot.Tickers{}
-    t.TickersTask.Repository = &repositories.TickersRepository{
-      Rdb: t.Rdb,
-      Ctx: t.Ctx,
-    }
+    t.TickersTask.Job = &jobs.Tickers{}
     t.TickersTask.SymbolsRepository = &repositories.SymbolsRepository{
       Db: t.Db,
     }
@@ -110,7 +105,7 @@ func (t *SpotTask) Depth() *tasks.DepthTask {
     t.DepthTask = &tasks.DepthTask{
       Asynq: t.Asynq,
     }
-    t.DepthTask.Job = &spot.Depth{}
+    t.DepthTask.Job = &jobs.Depth{}
     t.DepthTask.Repository = &repositories.DepthRepository{
       Db: t.Db,
     }
@@ -152,7 +147,7 @@ func (t *SpotTask) Klines() *tasks.KlinesTask {
       Ctx:   t.Ctx,
       Asynq: t.Asynq,
     }
-    t.KlinesTask.Job = &spot.Klines{}
+    t.KlinesTask.Job = &jobs.Klines{}
     t.KlinesTask.Repository = &repositories.KlinesRepository{
       Db: t.Db,
     }

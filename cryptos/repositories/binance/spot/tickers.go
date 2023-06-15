@@ -34,7 +34,7 @@ func (r *TickersRepository) Flush(symbols []string) error {
     symbol := data["symbol"].(string)
     redisKey := fmt.Sprintf("binance:spot:realtime:%s", symbol)
     value, err := r.Rdb.HGet(r.Ctx, redisKey, "price").Result()
-    if err != nil {
+    if err == nil {
       lasttime, _ := strconv.ParseInt(value, 10, 64)
       if lasttime > timestamp {
         continue

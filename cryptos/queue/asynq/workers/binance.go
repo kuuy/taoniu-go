@@ -13,5 +13,6 @@ func NewBinance() *Binance {
 
 func (h *Binance) Register(mux *asynq.ServeMux) error {
   binance.NewSpot().Register(mux)
+  binance.NewFutures().Register(mux)
   return nil
 }

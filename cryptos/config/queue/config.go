@@ -12,6 +12,10 @@ const (
   BINANCE_SPOT_TRADINGS_TRIGGERS                = "cryptos.jobs.binance.spot.tradings.triggers"
   BINANCE_SPOT_MARGIN_CROSS_TRADINGS_TRIGGERS   = "cryptos.jobs.binance.spot.margin.cross.tradings.triggers"
   BINANCE_SPOT_MARGIN_ISOLATED_TRADINGS_FISHERS = "cryptos.jobs.binance.spot.margin.isolated.tradings.fishers"
+  BINANCE_FUTURES_TICKERS                       = "cryptos.jobs.binance.futures.tickers"
+  BINANCE_FUTURES_TICKERS_DELAY                 = "cryptos.jobs.binance.futures.tickers.delay"
+  BINANCE_FUTURES_KLINES                        = "cryptos.jobs.binance.futures.klines"
+  BINANCE_FUTURES_KLINES_DELAY                  = "cryptos.jobs.binance.futures.klines.delay"
   TRADINGVIEW_ANALYSIS                          = "tradingview.jobs.analysis"
   TRADINGVIEW_ANALYSIS_DELAY                    = "tradingview.jobs.analysis.delay"
 )

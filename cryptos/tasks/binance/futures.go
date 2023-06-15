@@ -4,24 +4,25 @@ import (
   "context"
 
   "github.com/go-redis/redis/v8"
+  "github.com/hibiken/asynq"
   "gorm.io/gorm"
 
+  jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/futures"
   repositories "taoniu.local/cryptos/repositories/binance/futures"
+  tradingsRepositories "taoniu.local/cryptos/repositories/binance/futures/tradings"
   tasks "taoniu.local/cryptos/tasks/binance/futures"
 )
 
 type FuturesTask struct {
-  Db             *gorm.DB
-  Rdb            *redis.Client
-  Ctx            context.Context
-  CronTask       *tasks.CronTask
-  AccountTask    *tasks.AccountTask
-  SymbolsTask    *tasks.SymbolsTask
-  TickersTask    *tasks.TickersTask
-  KlinesTask     *tasks.KlinesTask
-  IndicatorsTask *tasks.IndicatorsTask
-  StrategiesTask *tasks.StrategiesTask
-  PlansTask      *tasks.PlansTask
+  Db          *gorm.DB
+  Rdb         *redis.Client
+  Ctx         context.Context
+  Asynq       *asynq.Client
+  CronTask    *tasks.CronTask
+  AccountTask *tasks.AccountTask
+  SymbolsTask *tasks.SymbolsTask
+  TickersTask *tasks.TickersTask
+  KlinesTask  *tasks.KlinesTask
 }
 
 func (t *FuturesTask) Cron() *tasks.CronTask {
@@ -33,6 +34,18 @@ func (t *FuturesTask) Cron() *tasks.CronTask {
     }
   }
   return t.CronTask
+}
+
+func (t *FuturesTask) Account() *tasks.AccountTask {
+  if t.AccountTask == nil {
+    t.AccountTask = &tasks.AccountTask{}
+    t.AccountTask.Repository = &repositories.AccountRepository{
+      Db:  t.Db,
+      Rdb: t.Rdb,
+      Ctx: t.Ctx,
+    }
+  }
+  return t.AccountTask
 }
 
 func (t *FuturesTask) Symbols() *tasks.SymbolsTask {
@@ -50,12 +63,19 @@ func (t *FuturesTask) Symbols() *tasks.SymbolsTask {
 func (t *FuturesTask) Tickers() *tasks.TickersTask {
   if t.TickersTask == nil {
     t.TickersTask = &tasks.TickersTask{
-      Rdb: t.Rdb,
-      Ctx: t.Ctx,
+      Rdb:   t.Rdb,
+      Ctx:   t.Ctx,
+      Asynq: t.Asynq,
     }
-    t.TickersTask.Repository = &repositories.TickersRepository{
-      Rdb: t.Rdb,
-      Ctx: t.Ctx,
+    t.TickersTask.Job = &jobs.Tickers{}
+    t.TickersTask.SymbolsRepository = &repositories.SymbolsRepository{
+      Db: t.Db,
+    }
+    t.TickersTask.TradingsRepository = &repositories.TradingsRepository{
+      Db: t.Db,
+    }
+    t.TickersTask.TradingsRepository.TriggersRepository = &tradingsRepositories.TriggersRepository{
+      Db: t.Db,
     }
   }
   return t.TickersTask
@@ -64,61 +84,25 @@ func (t *FuturesTask) Tickers() *tasks.TickersTask {
 func (t *FuturesTask) Klines() *tasks.KlinesTask {
   if t.KlinesTask == nil {
     t.KlinesTask = &tasks.KlinesTask{
-      Rdb: t.Rdb,
-      Ctx: t.Ctx,
+      Rdb:   t.Rdb,
+      Ctx:   t.Ctx,
+      Asynq: t.Asynq,
     }
+    t.KlinesTask.Job = &jobs.Klines{}
     t.KlinesTask.Repository = &repositories.KlinesRepository{
-      Db:  t.Db,
-      Rdb: t.Rdb,
-      Ctx: t.Ctx,
+      Db: t.Db,
+    }
+    t.KlinesTask.SymbolsRepository = &repositories.SymbolsRepository{
+      Db: t.Db,
+    }
+    t.KlinesTask.TradingsRepository = &repositories.TradingsRepository{
+      Db: t.Db,
+    }
+    t.KlinesTask.TradingsRepository.TriggersRepository = &tradingsRepositories.TriggersRepository{
+      Db: t.Db,
     }
   }
   return t.KlinesTask
-}
-
-func (t *FuturesTask) Indicators() *tasks.IndicatorsTask {
-  if t.IndicatorsTask == nil {
-    t.IndicatorsTask = &tasks.IndicatorsTask{
-      Db:  t.Db,
-      Rdb: t.Rdb,
-      Ctx: t.Ctx,
-    }
-  }
-  return t.IndicatorsTask
-}
-
-func (t *FuturesTask) Strategies() *tasks.StrategiesTask {
-  if t.StrategiesTask == nil {
-    t.StrategiesTask = &tasks.StrategiesTask{
-      Db:  t.Db,
-      Rdb: t.Rdb,
-      Ctx: t.Ctx,
-    }
-  }
-  return t.StrategiesTask
-}
-
-func (t *FuturesTask) Plans() *tasks.PlansTask {
-  if t.PlansTask == nil {
-    t.PlansTask = &tasks.PlansTask{
-      Db:  t.Db,
-      Rdb: t.Rdb,
-      Ctx: t.Ctx,
-    }
-  }
-  return t.PlansTask
-}
-
-func (t *FuturesTask) Account() *tasks.AccountTask {
-  if t.AccountTask == nil {
-    t.AccountTask = &tasks.AccountTask{}
-    t.AccountTask.Repository = &repositories.AccountRepository{
-      Db:  t.Db,
-      Rdb: t.Rdb,
-      Ctx: t.Ctx,
-    }
-  }
-  return t.AccountTask
 }
 
 func (t *FuturesTask) Flush() {

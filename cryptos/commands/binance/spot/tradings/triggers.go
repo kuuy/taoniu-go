@@ -2,12 +2,10 @@ package tradings
 
 import (
   "context"
-  "log"
-  "time"
-
   "github.com/go-redis/redis/v8"
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
+  "log"
 
   "taoniu.local/cryptos/common"
   spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
@@ -58,16 +56,6 @@ func NewTriggersCommand() *cli.Command {
     },
     Subcommands: []*cli.Command{
       {
-        Name:  "create",
-        Usage: "",
-        Action: func(c *cli.Context) error {
-          if err := h.Create(); err != nil {
-            return cli.Exit(err.Error(), 1)
-          }
-          return nil
-        },
-      },
-      {
         Name:  "place",
         Usage: "",
         Action: func(c *cli.Context) error {
@@ -89,21 +77,6 @@ func NewTriggersCommand() *cli.Command {
       },
     },
   }
-}
-
-func (h *TriggersHandler) Create() error {
-  log.Println("spot tradings triggers create...")
-  symbol := "DOGEUSDT"
-  capital := 100.00
-  multiple := 3
-  price := 0.03917
-  expiredAt := time.Now()
-  err := h.Repository.Apply(symbol, capital, multiple, price, expiredAt)
-  if err != nil {
-    return err
-  }
-
-  return nil
 }
 
 func (h *TriggersHandler) Place() error {

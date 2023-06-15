@@ -1,85 +1,177 @@
 package futures
 
 import (
-	"context"
-	"errors"
-	"strconv"
-	"time"
+  "context"
+  "encoding/json"
+  "errors"
+  "fmt"
+  "net"
+  "net/http"
+  "strconv"
+  "time"
 
-	"gorm.io/gorm"
+  "github.com/go-redis/redis/v8"
+  "github.com/rs/xid"
+  "gorm.io/gorm"
 
-	"github.com/adshao/go-binance/v2"
-	"github.com/go-redis/redis/v8"
-	"github.com/rs/xid"
-
-	models "taoniu.local/cryptos/models/binance/futures"
+  "taoniu.local/cryptos/common"
+  models "taoniu.local/cryptos/models/binance/futures"
 )
 
 type KlinesRepository struct {
-	Db  *gorm.DB
-	Rdb *redis.Client
-	Ctx context.Context
+  Db       *gorm.DB
+  Rdb      *redis.Client
+  Ctx      context.Context
+  UseProxy bool
+}
+
+func (r *KlinesRepository) Series(symbol string, interval string, timestamp int64, limit int) []interface{} {
+  var klines []*models.Kline
+  r.Db.Where(
+    "symbol=? AND interval=? AND timestamp<?",
+    symbol,
+    interval,
+    timestamp,
+  ).Order("timestamp desc").Limit(limit).Find(&klines)
+
+  series := make([]interface{}, len(klines))
+  for i, kline := range klines {
+    series[i] = []interface{}{
+      kline.Open,
+      kline.High,
+      kline.Low,
+      kline.Close,
+      kline.Timestamp,
+    }
+  }
+  return series
+}
+
+func (r *KlinesRepository) Count(symbol string, interval string) int64 {
+  var total int64
+  r.Db.Model(&models.Kline{}).Where("symbol=? AND interval=?", symbol, interval).Count(&total)
+  return total
 }
 
 func (r *KlinesRepository) Flush(symbol string, interval string, limit int) error {
-	client := binance.NewFuturesClient("", "")
-	klines, err := client.NewKlinesService().Symbol(
-		symbol,
-	).Interval(
-		interval,
-	).Limit(
-		limit,
-	).Do(r.Ctx)
-	if err != nil {
-		return err
-	}
-	for _, kline := range klines {
-		open, _ := strconv.ParseFloat(kline.Open, 64)
-		close, _ := strconv.ParseFloat(kline.Close, 64)
-		high, _ := strconv.ParseFloat(kline.High, 64)
-		low, _ := strconv.ParseFloat(kline.Low, 64)
-		volume, _ := strconv.ParseFloat(kline.Volume, 64)
-		quota, _ := strconv.ParseFloat(kline.QuoteAssetVolume, 64)
-		timestamp := kline.OpenTime
-		var entity models.Kline
-		result := r.Db.Where(
-			"symbol=? AND interval=? AND timestamp=?",
-			symbol,
-			interval,
-			timestamp,
-		).Take(&entity)
-		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			entity = models.Kline{
-				ID:        xid.New().String(),
-				Symbol:    symbol,
-				Interval:  interval,
-				Open:      open,
-				Close:     close,
-				High:      high,
-				Low:       low,
-				Volume:    volume,
-				Quota:     quota,
-				Timestamp: timestamp,
-			}
-			r.Db.Create(&entity)
-		} else {
-			entity.Open = open
-			entity.Close = close
-			entity.High = high
-			entity.Low = low
-			entity.Volume = volume
-			entity.Quota = quota
-			entity.Timestamp = timestamp
-			r.Db.Model(&models.Kline{ID: entity.ID}).Updates(entity)
-		}
-	}
+  klines, err := r.Request(symbol, interval, limit)
+  if err != nil {
+    return err
+  }
+  for _, kline := range klines {
+    open, _ := strconv.ParseFloat(kline[1].(string), 64)
+    close, _ := strconv.ParseFloat(kline[4].(string), 64)
+    high, _ := strconv.ParseFloat(kline[2].(string), 64)
+    low, _ := strconv.ParseFloat(kline[3].(string), 64)
+    volume, _ := strconv.ParseFloat(kline[5].(string), 64)
+    quota, _ := strconv.ParseFloat(kline[7].(string), 64)
+    timestamp := int64(kline[0].(float64))
+    var entity models.Kline
+    result := r.Db.Where(
+      "symbol=? AND interval=? AND timestamp=?",
+      symbol,
+      interval,
+      timestamp,
+    ).Take(&entity)
+    if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+      entity = models.Kline{
+        ID:        xid.New().String(),
+        Symbol:    symbol,
+        Interval:  interval,
+        Open:      open,
+        Close:     close,
+        High:      high,
+        Low:       low,
+        Volume:    volume,
+        Quota:     quota,
+        Timestamp: timestamp,
+      }
+      r.Db.Create(&entity)
+    } else {
+      entity.Open = open
+      entity.Close = close
+      entity.High = high
+      entity.Low = low
+      entity.Volume = volume
+      entity.Quota = quota
+      entity.Timestamp = timestamp
+      r.Db.Model(&models.Kline{ID: entity.ID}).Updates(entity)
+    }
+  }
 
-	return nil
+  if len(klines) > 0 {
+    timestamp := time.Now().Unix()
+    r.Rdb.ZAdd(
+      r.Ctx,
+      fmt.Sprintf(
+        "binance:futures:klines:flush:%v",
+        interval,
+      ),
+      &redis.Z{
+        float64(timestamp),
+        symbol,
+      },
+    )
+  }
+
+  return nil
+}
+
+func (r *KlinesRepository) Request(symbol string, interval string, limit int) ([][]interface{}, error) {
+  tr := &http.Transport{
+    DisableKeepAlives: true,
+  }
+  if r.UseProxy {
+    session := &common.ProxySession{
+      Proxy: "socks5://127.0.0.1:1088?timeout=5s",
+    }
+    tr.DialContext = session.DialContext
+  } else {
+    session := &net.Dialer{}
+    tr.DialContext = session.DialContext
+  }
+
+  httpClient := &http.Client{
+    Transport: tr,
+    Timeout:   time.Duration(8) * time.Second,
+  }
+
+  url := "https://fapi.binance.com/fapi/v1/klines"
+  req, _ := http.NewRequest("GET", url, nil)
+  q := req.URL.Query()
+  q.Add("symbol", symbol)
+  q.Add("interval", interval)
+  q.Add("limit", fmt.Sprintf("%v", limit))
+  req.URL.RawQuery = q.Encode()
+  resp, err := httpClient.Do(req)
+  if err != nil {
+    return nil, err
+  }
+  defer resp.Body.Close()
+
+  if resp.StatusCode != http.StatusOK {
+    return nil, errors.New(
+      fmt.Sprintf(
+        "request error: status[%s] code[%d]",
+        resp.Status,
+        resp.StatusCode,
+      ),
+    )
+  }
+
+  var result [][]interface{}
+  json.NewDecoder(resp.Body).Decode(&result)
+  return result, nil
 }
 
 func (r *KlinesRepository) Clean() error {
-	timestamp := time.Now().AddDate(0, 0, -100).Unix()
-	r.Db.Where("timestamp < ?", timestamp).Delete(&models.Kline{})
+  var timestamp int64
 
-	return nil
+  timestamp = time.Now().AddDate(0, 0, -101).Unix()
+  r.Db.Where("interval = ? && timestamp < ?", "1d", timestamp).Delete(&models.Kline{})
+
+  timestamp = time.Now().AddDate(0, 0, -3).Unix()
+  r.Db.Where("interval = ? && timestamp < ?", "1m", timestamp).Delete(&models.Kline{})
+
+  return nil
 }

@@ -1,0 +1,34 @@
+package futures
+
+import (
+  "context"
+  "github.com/go-redis/redis/v8"
+  "gorm.io/gorm"
+  tradingsRepositories "taoniu.local/cryptos/repositories/binance/futures/tradings"
+)
+
+type TradingsRepository struct {
+  Db                 *gorm.DB
+  Rdb                *redis.Client
+  Ctx                context.Context
+  TriggersRepository *tradingsRepositories.TriggersRepository
+}
+
+func (r *TradingsRepository) Scan() []string {
+  var symbols []string
+  for _, symbol := range r.TriggersRepository.Scan() {
+    if !r.contains(symbols, symbol) {
+      symbols = append(symbols, symbol)
+    }
+  }
+  return symbols
+}
+
+func (r *TradingsRepository) contains(s []string, str string) bool {
+  for _, v := range s {
+    if v == str {
+      return true
+    }
+  }
+  return false
+}

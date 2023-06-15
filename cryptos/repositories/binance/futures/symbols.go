@@ -42,6 +42,15 @@ func (r *SymbolsRepository) Get(
   return entity, nil
 }
 
+func (r *SymbolsRepository) Filters(params datatypes.JSONMap) (tickSize float64, stepSize float64, err error) {
+  var filters []string
+  filters = strings.Split(params["price"].(string), ",")
+  tickSize, _ = strconv.ParseFloat(filters[2], 64)
+  filters = strings.Split(params["quote"].(string), ",")
+  stepSize, _ = strconv.ParseFloat(filters[2], 64)
+  return
+}
+
 func (r *SymbolsRepository) Flush() error {
   client := binance.NewFuturesClient("", "")
   result, err := client.NewExchangeInfoService().Do(r.Ctx)

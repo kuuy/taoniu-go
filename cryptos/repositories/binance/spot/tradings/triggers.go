@@ -2,15 +2,11 @@ package tradings
 
 import (
   "context"
-  "errors"
-  "log"
-  "time"
-
   "github.com/go-redis/redis/v8"
-  "github.com/rs/xid"
   "gorm.io/gorm"
+  "log"
 
-  "taoniu.local/cryptos/models/binance/spot"
+  spotModels "taoniu.local/cryptos/models/binance/spot"
   models "taoniu.local/cryptos/models/binance/spot/tradings"
 )
 
@@ -25,78 +21,12 @@ type TriggersRepository struct {
 
 func (r *TriggersRepository) Scan() []string {
   var symbols []string
-  r.Db.Model(&spot.Triggers{}).Where("status", []int{1, 3}).Distinct().Pluck("symbol", &symbols)
+  r.Db.Model(&spotModels.Trigger{}).Where("status", []int{1, 3}).Distinct().Pluck("symbol", &symbols)
   return symbols
 }
 
-func (r *TriggersRepository) Count(conditions map[string]interface{}) int64 {
-  var total int64
-  query := r.Db.Model(&spot.Triggers{})
-  if _, ok := conditions["symbol"]; ok {
-    query.Where("symbol", conditions["symbol"].(string))
-  }
-  if _, ok := conditions["status"]; ok {
-    query.Where("status IN ?", conditions["status"].([]int))
-  } else {
-    query.Where("status IN ?", []int{0, 1, 2, 3})
-  }
-  query.Count(&total)
-  return total
-}
-
-func (r *TriggersRepository) Listings(conditions map[string]interface{}, current int, pageSize int) []*spot.Triggers {
-  var grids []*spot.Triggers
-  query := r.Db.Select([]string{
-    "id",
-    "symbol",
-    "buy_price",
-    "buy_quantity",
-    "sell_price",
-    "sell_quantity",
-    "status",
-    "created_at",
-    "updated_at",
-  })
-  if _, ok := conditions["symbol"]; ok {
-    query.Where("symbol", conditions["symbol"].(string))
-  }
-  if _, ok := conditions["status"]; ok {
-    query.Where("status IN ?", conditions["status"].([]int))
-  } else {
-    query.Where("status IN ?", []int{0, 1, 2, 3})
-  }
-  query.Order("updated_at desc")
-  query.Offset((current - 1) * pageSize).Limit(pageSize).Find(&grids)
-  return grids
-}
-
-func (r *TriggersRepository) Apply(
-  symbol string,
-  capital float64,
-  multiple int,
-  price float64,
-  expiredAt time.Time,
-) error {
-  var trigger *models.Triggers
-  result := r.Db.Where("symbol=? AND status IN ?", symbol, []int{1, 3, 4}).Take(&trigger)
-  if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-  }
-  entity := &spot.Triggers{
-    ID:        xid.New().String(),
-    Symbol:    symbol,
-    Capital:   capital,
-    Multiple:  multiple,
-    Price:     price,
-    ExpiredAt: expiredAt,
-    Status:    1,
-  }
-  r.Db.Create(&entity)
-
-  return nil
-}
-
 func (r *TriggersRepository) Place(symbol string) error {
-  //var trigger spot.Triggers
+  //var trigger spotModels.Trigger
   //result := r.Db.Where("symbol=? AND status=?", symbol, 0).Take(&trigger)
   //if errors.Is(result.Error, gorm.ErrRecordNotFound) {
   //  return errors.New("triggers empty")
@@ -121,7 +51,7 @@ func (r *TriggersRepository) Place(symbol string) error {
   //  apiError, ok := err.(common.APIError)
   //  if ok {
   //    if apiError.Code == -2010 {
-  //      r.Db.Model(&spot.Triggers{ID: trigger.ID}).Updates(map[string]interface{}{
+  //      r.Db.Model(&spotModels.Trigger{ID: trigger.ID}).Updates(map[string]interface{}{
   //        "remark": err.Error(),
   //      })
   //      return nil
@@ -133,7 +63,7 @@ func (r *TriggersRepository) Place(symbol string) error {
   //  trigger.Status = 1
   //}
   //
-  //if err := r.Db.Model(&spot.Triggers{ID: trigger.ID}).Updates(trigger).Error; err != nil {
+  //if err := r.Db.Model(&spotModels.Trigger{ID: trigger.ID}).Updates(trigger).Error; err != nil {
   //  return err
   //}
   //
@@ -152,7 +82,7 @@ func (r *TriggersRepository) Flush(symbol string) error {
     log.Println("take error", err)
   }
 
-  //var entities []*spot.Triggers
+  //var entities []*spotModels.Trigger
   //r.Db.Where("symbol=? AND status IN ?", symbol, []int{0, 2}).Find(&entities)
   //for _, entity := range entities {
   //  if entity.Status == 0 {
@@ -161,12 +91,12 @@ func (r *TriggersRepository) Flush(symbol string) error {
   //      orderID := r.OrdersRepository.Lost(entity.Symbol, "BUY", entity.BuyPrice, timestamp-30)
   //      if orderID > 0 {
   //        entity.BuyOrderId = orderID
-  //        if err := r.Db.Model(&spot.Triggers{ID: entity.ID}).Updates(entity).Error; err != nil {
+  //        if err := r.Db.Model(&spotModels.Trigger{ID: entity.ID}).Updates(entity).Error; err != nil {
   //          return err
   //        }
   //      } else {
   //        if timestamp > time.Now().Unix()-300 {
-  //          r.Db.Model(&spot.Triggers{ID: entity.ID}).Update("status", 1)
+  //          r.Db.Model(&spotModels.Trigger{ID: entity.ID}).Update("status", 1)
   //        }
   //        return nil
   //      }
@@ -183,19 +113,19 @@ func (r *TriggersRepository) Flush(symbol string) error {
   //        entity.Status = 4
   //      }
   //    }
-  //    r.Db.Model(&spot.Triggers{ID: entity.ID}).Updates(entity)
+  //    r.Db.Model(&spotModels.Trigger{ID: entity.ID}).Updates(entity)
   //  } else if entity.Status == 2 {
   //    timestamp := entity.UpdatedAt.Unix()
   //    if entity.SellOrderId == 0 {
   //      orderID := r.OrdersRepository.Lost(entity.Symbol, "SELL", entity.BuyPrice, timestamp-30)
   //      if orderID > 0 {
   //        entity.SellOrderId = orderID
-  //        if err := r.Db.Model(&spot.Triggers{ID: entity.ID}).Updates(entity).Error; err != nil {
+  //        if err := r.Db.Model(&spotModels.Trigger{ID: entity.ID}).Updates(entity).Error; err != nil {
   //          return err
   //        }
   //      } else {
   //        if timestamp > time.Now().Unix()-300 {
-  //          r.Db.Model(&spot.Triggers{ID: entity.ID}).Update("status", 1)
+  //          r.Db.Model(&spotModels.Trigger{ID: entity.ID}).Update("status", 1)
   //        }
   //        return nil
   //      }
@@ -212,7 +142,7 @@ func (r *TriggersRepository) Flush(symbol string) error {
   //        entity.Status = 5
   //      }
   //    }
-  //    r.Db.Model(&spot.Triggers{ID: entity.ID}).Updates(entity)
+  //    r.Db.Model(&spotModels.Trigger{ID: entity.ID}).Updates(entity)
   //  }
   //}
 
@@ -220,7 +150,7 @@ func (r *TriggersRepository) Flush(symbol string) error {
 }
 
 func (r *TriggersRepository) Take(symbol string, price float64) error {
-  //var triggers spot.Triggers
+  //var triggers spotModels.Trigger
   //result := r.Db.Where("symbol=? AND status=?", symbol, 1).Order("sell_price asc").Take(&triggers)
   //if errors.Is(result.Error, gorm.ErrRecordNotFound) {
   //  return errors.New("empty triggers")
@@ -233,7 +163,7 @@ func (r *TriggersRepository) Take(symbol string, price float64) error {
   //  apiError, ok := err.(common.APIError)
   //  if ok {
   //    if apiError.Code == -2010 {
-  //      r.Db.Model(&spot.Triggers{ID: triggers.ID}).Update("remark", err.Error())
+  //      r.Db.Model(&spotModels.Trigger{ID: triggers.ID}).Update("remark", err.Error())
   //      return nil
   //    }
   //  }
@@ -242,7 +172,7 @@ func (r *TriggersRepository) Take(symbol string, price float64) error {
   //
   //triggers.SellOrderId = orderID
   //triggers.Status = 2
-  //if err := r.Db.Model(&spot.Triggers{ID: triggers.ID}).Updates(triggers).Error; err != nil {
+  //if err := r.Db.Model(&spotModels.Trigger{ID: triggers.ID}).Updates(triggers).Error; err != nil {
   //  return err
   //}
 

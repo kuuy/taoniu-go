@@ -14,7 +14,6 @@ func NewTradings() *Tradings {
 func (m *Tradings) AutoMigrate(db *gorm.DB) error {
   db.AutoMigrate(
     &tradings.Scalping{},
-    &Triggers{},
   )
   tradings.NewFishers().AutoMigrate(db)
   tradings.NewTriggers().AutoMigrate(db)

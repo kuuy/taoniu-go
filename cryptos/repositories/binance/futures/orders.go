@@ -36,6 +36,27 @@ type OrdersRepository struct {
   Ctx context.Context
 }
 
+func (r *OrdersRepository) Lost(symbol string, positionSide string, side string, price float64, timestamp int64) int64 {
+  var entity models.Order
+  result := r.Db.Where("symbol=? AND position_side=? AND side=? AND price=?", symbol, positionSide, side, price).Order("updated_at desc").Take(&entity)
+  if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+    return 0
+  }
+  if entity.UpdatedAt.Unix() < timestamp {
+    return 0
+  }
+  return entity.OrderID
+}
+
+func (r *OrdersRepository) Status(symbol string, orderID int64) string {
+  var entity models.Order
+  result := r.Db.Select("status").Where("symbol=? AND order_id=?", symbol, orderID).Take(&entity)
+  if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+    return ""
+  }
+  return entity.Status
+}
+
 func (r *OrdersRepository) Open(symbol string) error {
   client := binance.NewFuturesClient(config.ACCOUNT_API_KEY, config.ACCOUNT_SECRET_KEY)
   orders, err := client.NewListOpenOrdersService().Symbol(symbol).Do(r.Ctx)

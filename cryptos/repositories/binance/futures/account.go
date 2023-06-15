@@ -4,12 +4,12 @@ import (
   "context"
   "errors"
   "fmt"
+  "strconv"
+
   "github.com/adshao/go-binance/v2"
   "github.com/go-redis/redis/v8"
   "github.com/rs/xid"
   "gorm.io/gorm"
-  "log"
-  "strconv"
 
   config "taoniu.local/cryptos/config/binance/futures"
   models "taoniu.local/cryptos/models/binance/futures"
@@ -29,7 +29,7 @@ func (r *AccountRepository) Flush() error {
   }
 
   for _, position := range account.Positions {
-    if position.Isolated {
+    if position.Isolated || position.UpdateTime == 0 {
       continue
     }
 
@@ -80,7 +80,6 @@ func (r *AccountRepository) Flush() error {
       entity.Timestamp = position.UpdateTime
       r.Db.Model(&models.Position{ID: entity.ID}).Updates(entity)
     }
-    log.Println("position", position.Symbol, side, leverage, entryPrice, notional)
   }
 
   r.Rdb.HMSet(r.Ctx, "binance:futures:balance:USDT", map[string]interface{}{

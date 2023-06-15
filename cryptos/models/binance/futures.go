@@ -17,11 +17,6 @@ func (m *Futures) AutoMigrate(db *gorm.DB) error {
     &futures.Position{},
     &futures.Order{},
     &futures.Kline{},
-    &futures.Strategy{},
-    &futures.Plan{},
-    &futures.Grid{},
-    &futures.TradingScalping{},
-    &futures.TradingGrid{},
     &futures.Trigger{},
   )
 

@@ -1,4 +1,4 @@
-package futures
+package spot
 
 import (
   "errors"
@@ -7,17 +7,11 @@ import (
   "github.com/rs/xid"
   "gorm.io/gorm"
 
-  models "taoniu.local/cryptos/models/binance/futures"
+  models "taoniu.local/cryptos/models/binance/spot"
 )
 
 type TriggersRepository struct {
   Db *gorm.DB
-}
-
-func (r *TriggersRepository) Scan() []string {
-  var symbols []string
-  r.Db.Model(&models.Trigger{}).Where("status", []int{1, 3}).Distinct().Pluck("symbol", &symbols)
-  return symbols
 }
 
 func (r *TriggersRepository) Count(conditions map[string]interface{}) int64 {
@@ -64,7 +58,6 @@ func (r *TriggersRepository) Listings(conditions map[string]interface{}, current
 
 func (r *TriggersRepository) Apply(
   symbol string,
-  side int,
   capital float64,
   price float64,
   expiredAt time.Time,
@@ -75,7 +68,6 @@ func (r *TriggersRepository) Apply(
     entity := &models.Trigger{
       ID:         xid.New().String(),
       Symbol:     symbol,
-      Side:       side,
       Capital:    capital,
       Price:      price,
       EntryPrice: price,

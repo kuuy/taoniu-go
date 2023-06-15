@@ -1,15 +1,15 @@
-package futures
+package spot
 
 import "time"
 
 type Trigger struct {
   ID            string    `gorm:"size:20;primaryKey"`
-  Symbol        string    `gorm:"size:20;not null;index:idx_binance_futures_triggers_symbol_status"`
+  Symbol        string    `gorm:"size:20;not null;index:idx_binance_spot_triggers_symbol_status"`
   Capital       float64   `gorm:"not null"`
   Price         float64   `gorm:"not null"`
   EntryPrice    float64   `gorm:"not null"`
   EntryQuantity float64   `gorm:"not null"`
-  Status        int       `gorm:"size:30;not null;index;index:idx_binance_futures_triggers_symbol_status"`
+  Status        int       `gorm:"size:30;not null;index;index:idx_binance_spot_triggers_symbol_status"`
   Remark        string    `gorm:"size:5000;not null"`
   ExpiredAt     time.Time `gorm:"not null"`
   CreatedAt     time.Time `gorm:"not null"`
@@ -17,5 +17,5 @@ type Trigger struct {
 }
 
 func (m *Trigger) TableName() string {
-  return "binance_futures_triggers"
+  return "binance_spot_triggers"
 }

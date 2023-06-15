@@ -1,10 +1,27 @@
 package futures
 
 import (
+  "errors"
   "github.com/shopspring/decimal"
+  "gorm.io/gorm"
+  models "taoniu.local/cryptos/models/binance/futures"
 )
 
-type PositionsRepository struct{}
+type PositionsRepository struct {
+  Db *gorm.DB
+}
+
+func (r *PositionsRepository) Get(
+  symbol string,
+  side int,
+) (models.Position, error) {
+  var entity models.Position
+  result := r.Db.Where("symbol=? AND side=? AND status=1", symbol, side).Take(&entity)
+  if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+    return entity, result.Error
+  }
+  return entity, nil
+}
 
 func (r *PositionsRepository) Ratio(capital float64, entryAmount float64) float64 {
   totalAmount := 0.0
