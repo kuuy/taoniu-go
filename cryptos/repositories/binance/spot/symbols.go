@@ -239,7 +239,7 @@ func (r *SymbolsRepository) Price(symbol string) (float64, error) {
   ).Result()
   for i := 0; i < len(fields); i++ {
     if data[i] == nil {
-      return 0, errors.New("price not exists")
+      return 0, errors.New(fmt.Sprintf("[%s] price not exists", symbol))
     }
   }
 
@@ -252,7 +252,7 @@ func (r *SymbolsRepository) Price(symbol string) (float64, error) {
       float64(timestamp),
       symbol,
     })
-    return 0, errors.New("price long time not freshed")
+    return 0, errors.New(fmt.Sprintf("[%s] price long time not freshed", symbol))
   }
 
   return price, nil

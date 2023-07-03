@@ -53,7 +53,7 @@ func (r *AccountRepository) Flush() error {
         "free":      coin.Free,
         "locked":    coin.Locked,
         "borrowed":  coin.Borrowed,
-        "interrest": coin.Interest,
+        "interest":  coin.Interest,
         "net_asset": coin.NetAsset,
       },
     )

@@ -83,7 +83,7 @@ func (r *GridsRepository) Pending() map[string]float64 {
   return data
 }
 
-func (r *GridsRepository) Collect() error {
+func (r *GridsRepository) Earn() error {
   data := r.Pending()
   for symbol, saveQuantity := range data {
     _, quantity, err := r.AccountRepository.Balance(symbol)
@@ -105,7 +105,7 @@ func (r *GridsRepository) Collect() error {
       continue
     }
     minPurchaseAmount := decimal.NewFromFloat(product.MinPurchaseAmount)
-    multiple := decimal.NewFromFloat(quantity - saveQuantity).Div(minPurchaseAmount)
+    multiple := decimal.NewFromFloat(quantity).Sub(decimal.NewFromFloat(saveQuantity)).Div(minPurchaseAmount)
     takeQuantity, _ := multiple.Floor().Mul(minPurchaseAmount).Float64()
     if product.MinPurchaseAmount > takeQuantity {
       continue

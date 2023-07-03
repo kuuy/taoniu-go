@@ -8,7 +8,6 @@ import (
   "log"
   "strconv"
   "strings"
-  config "taoniu.local/cryptos/config/binance/spot"
   "time"
 
   "gorm.io/gorm"
@@ -18,6 +17,7 @@ import (
   "github.com/urfave/cli/v2"
 
   "taoniu.local/cryptos/common"
+  config "taoniu.local/cryptos/config/binance/spot"
   jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/futures/streams"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
   crossRepositories "taoniu.local/cryptos/repositories/binance/spot/margin/cross"

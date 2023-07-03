@@ -18,10 +18,11 @@ import (
 )
 
 type OrdersHandler struct {
-  Db         *gorm.DB
-  Rdb        *redis.Client
-  Ctx        context.Context
-  Repository *repositories.OrdersRepository
+  Db                *gorm.DB
+  Rdb               *redis.Client
+  Ctx               context.Context
+  Repository        *repositories.OrdersRepository
+  SymbolsRepository *repositories.SymbolsRepository
 }
 
 func NewOrdersCommand() *cli.Command {
@@ -39,6 +40,9 @@ func NewOrdersCommand() *cli.Command {
         Db:  h.Db,
         Rdb: h.Rdb,
         Ctx: h.Ctx,
+      }
+      h.SymbolsRepository = &repositories.SymbolsRepository{
+        Db: h.Db,
       }
       return nil
     },
@@ -68,6 +72,16 @@ func NewOrdersCommand() *cli.Command {
         Usage: "",
         Action: func(c *cli.Context) error {
           if err := h.flush(); err != nil {
+            return cli.Exit(err.Error(), 1)
+          }
+          return nil
+        },
+      },
+      {
+        Name:  "sync",
+        Usage: "",
+        Action: func(c *cli.Context) error {
+          if err := h.sync(); err != nil {
             return cli.Exit(err.Error(), 1)
           }
           return nil
@@ -249,5 +263,15 @@ func (h *OrdersHandler) flush() error {
   //  h.Repository.Flush(symbol, orderID)
   //}
 
+  return nil
+}
+
+func (h *OrdersHandler) sync() error {
+  log.Println("futures sync orders...")
+  symbols := h.SymbolsRepository.Symbols()
+  for _, symbol := range symbols {
+    log.Println("symbol:", symbol)
+    h.Repository.Open(symbol)
+  }
   return nil
 }

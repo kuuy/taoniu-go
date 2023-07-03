@@ -23,7 +23,7 @@ func (r *SourcesRepository) Sources() *spiderRepositories.SourcesRepository {
 
 func (r *SourcesRepository) Find(id string) (*spidersModels.Source, error) {
   var entity *spidersModels.Source
-  result := r.Db.First(&entity, id)
+  result := r.Db.First(&entity, "id=?", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     return nil, result.Error
   }

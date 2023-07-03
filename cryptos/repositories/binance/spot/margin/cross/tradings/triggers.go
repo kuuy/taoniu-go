@@ -70,7 +70,7 @@ func (r *TriggersRepository) Place(symbol string) error {
   }
 
   if price > buyPrice {
-    return errors.New(fmt.Sprintf("price mush reach %v", buyPrice))
+    return errors.New(fmt.Sprintf("price must reach %v", buyPrice))
   }
 
   if !r.CanBuy(symbol, buyPrice) {

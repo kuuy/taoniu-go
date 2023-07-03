@@ -8,6 +8,7 @@ import (
   "net"
   "net/http"
   "strconv"
+  "strings"
   "time"
 
   "github.com/go-redis/redis/v8"
@@ -112,4 +113,50 @@ func (r *TickersRepository) Request(symbol string) (map[string]interface{}, erro
   var result map[string]interface{}
   json.NewDecoder(resp.Body).Decode(&result)
   return result, nil
+}
+
+func (r *TickersRepository) Gets(symbols []string, fields []string) []string {
+  var script = redis.NewScript(`
+	local hmget = function (key)
+		local hash = {}
+		local data = redis.call('HMGET', key, unpack(ARGV))
+		for i = 1, #ARGV do
+			hash[i] = data[i]
+		end
+		return hash
+	end
+	local data = {}
+	for i = 1, #KEYS do
+		local key = 'binance:futures:realtime:' .. KEYS[i]
+		if redis.call('EXISTS', key) == 0 then
+			data[i] = false
+		else
+			data[i] = hmget(key)
+		end
+	end
+	return data
+  `)
+  args := make([]interface{}, len(fields))
+  for i := 0; i < len(fields); i++ {
+    args[i] = fields[i]
+  }
+  result, _ := script.Run(r.Ctx, r.Rdb, symbols, args...).Result()
+
+  tickers := make([]string, len(symbols))
+  for i := 0; i < len(symbols); i++ {
+    item := result.([]interface{})[i]
+    if item == nil {
+      continue
+    }
+    data := make([]string, len(fields))
+    for j := 0; j < len(fields); j++ {
+      if item.([]interface{})[j] == nil {
+        continue
+      }
+      data[j] = fmt.Sprintf("%v", item.([]interface{})[j])
+    }
+    tickers[i] = strings.Join(data, ",")
+  }
+
+  return tickers
 }

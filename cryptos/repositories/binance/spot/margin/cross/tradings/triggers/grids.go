@@ -2,7 +2,6 @@ package triggers
 
 import (
   "gorm.io/gorm"
-
   models "taoniu.local/cryptos/models/binance/spot/margin/cross/tradings/triggers"
 )
 

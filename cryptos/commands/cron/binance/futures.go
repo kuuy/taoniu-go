@@ -64,8 +64,10 @@ func (h *FuturesHandler) run() error {
   })
   c.AddFunc("@every 5s", func() {
     binance.Futures().Tickers().Flush()
+    binance.Futures().Tradings().Triggers().Place()
   })
   c.AddFunc("@every 15s", func() {
+    binance.Futures().Tradings().Triggers().Flush()
   })
   c.AddFunc("@every 30s", func() {
     binance.Futures().Flush()
@@ -78,10 +80,16 @@ func (h *FuturesHandler) run() error {
     binance.Futures().Tickers().Fix()
     binance.Futures().Klines().Fix("1m", 30, 270)
     binance.Futures().Klines().Fix("1d", 2, 2700)
+    binance.Futures().Orders().Fix()
   })
   c.AddFunc("@every 5m", func() {
     binance.Futures().Tickers().FlushDelay()
     binance.Futures().Klines().FlushDelay("1m", 30)
+    binance.Futures().Indicators().Daily().Flush()
+    binance.Futures().Strategies().Daily().Flush()
+    binance.Futures().Indicators().Minutely().Flush()
+    binance.Futures().Strategies().Minutely().Flush()
+    binance.Futures().Plans().Minutely().Flush()
     //binance.Futures().Indicators().Daily().Place()
     //binance.Futures().Strategies().Daily().Place()
   })

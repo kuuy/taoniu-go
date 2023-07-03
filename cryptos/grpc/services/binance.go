@@ -28,5 +28,6 @@ func NewBinance(
 
 func (srv *Binance) Register(s *grpc.Server) error {
   binance.NewSpot(srv.Db, srv.Rdb, srv.Ctx).Register(s)
+  binance.NewFutures(srv.Db, srv.Rdb, srv.Ctx).Register(s)
   return nil
 }

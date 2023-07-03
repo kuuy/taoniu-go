@@ -122,8 +122,8 @@ func (h *SpotHandler) run() error {
     binance.Spot().Margin().Isolated().Account().Collect()
   })
   c.AddFunc("45 1,17 * * *", func() {
-    binance.Spot().Tradings().Collect()
-    binance.Spot().Margin().Isolated().Tradings().Fishers().Grids().Collect()
+    binance.Spot().Tradings().Earn()
+    binance.Spot().Margin().Isolated().Tradings().Fishers().Grids().Earn()
   })
   c.AddFunc("30 23 * * *", func() {
     binance.Spot().Clean()

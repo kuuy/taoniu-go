@@ -574,21 +574,21 @@ func (h *FishersHandler) Apply() error {
   //  tickers,
   //)
 
-  symbol := "BTCUSDT"
-  amount := 10.0
-  balance := 1500.0
-  targetBalance := 2900.0
-  stopBalance := 100.0
-  var tickers [][]float64
-  tickers = append(tickers, []float64{45537.74, 33987.30, 28239.70, 25519.31, 23155.30, 20170.97, 15749.75})
-  return h.Repository.Apply(
-    symbol,
-    amount,
-    balance,
-    targetBalance,
-    stopBalance,
-    tickers,
-  )
+  //symbol := "BTCUSDT"
+  //amount := 10.0
+  //balance := 1500.0
+  //targetBalance := 2900.0
+  //stopBalance := 100.0
+  //var tickers [][]float64
+  //tickers = append(tickers, []float64{45537.74, 33987.30, 28239.70, 25519.31, 23155.30, 20170.97, 15749.75})
+  //return h.Repository.Apply(
+  //  symbol,
+  //  amount,
+  //  balance,
+  //  targetBalance,
+  //  stopBalance,
+  //  tickers,
+  //)
 
   //symbol := "XRPUSDT"
   //amount := 10.0
@@ -708,4 +708,52 @@ func (h *FishersHandler) Apply() error {
   //	stopBalance,
   //	tickers,
   //)
+
+  //symbol := "TRUUSDT"
+  //amount := 10.0
+  //balance := 1500.0
+  //targetBalance := 2900.0
+  //stopBalance := 100.0
+  //var tickers [][]float64
+  //tickers = append(tickers, []float64{0.0490, 0.0431, 0.0386, 0.0345, 0.0311, 0.0266})
+  //return h.Repository.Apply(
+  //  symbol,
+  //  amount,
+  //  balance,
+  //  targetBalance,
+  //  stopBalance,
+  //  tickers,
+  //)
+
+  //symbol := "EDUUSDT"
+  //amount := 10.0
+  //balance := 1500.0
+  //targetBalance := 2900.0
+  //stopBalance := 100.0
+  //var tickers [][]float64
+  //tickers = append(tickers, []float64{1.74623, 1.23508, 0.72157, 0.12914})
+  //return h.Repository.Apply(
+  //  symbol,
+  //  amount,
+  //  balance,
+  //  targetBalance,
+  //  stopBalance,
+  //  tickers,
+  //)
+
+  symbol := "SUIUSDT"
+  amount := 10.0
+  balance := 1500.0
+  targetBalance := 2900.0
+  stopBalance := 100.0
+  var tickers [][]float64
+  tickers = append(tickers, []float64{1.3775, 0.9088, 0.5881, 0.0536})
+  return h.Repository.Apply(
+    symbol,
+    amount,
+    balance,
+    targetBalance,
+    stopBalance,
+    tickers,
+  )
 }

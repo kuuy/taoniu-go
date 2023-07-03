@@ -6,8 +6,8 @@ import (
   "github.com/hibiken/asynq"
 
   config "taoniu.local/cryptos/config/queue"
-  jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/spot/tradings"
-  repositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
+  jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/futures/tradings"
+  repositories "taoniu.local/cryptos/repositories/binance/futures/tradings"
 )
 
 type TriggersTask struct {
@@ -17,15 +17,15 @@ type TriggersTask struct {
 }
 
 func (t *TriggersTask) Place() error {
-  symbols := t.Repository.Scan()
-  for _, symbol := range symbols {
-    task, err := t.Job.Place(symbol)
+  ids := t.Repository.Ids()
+  for _, id := range ids {
+    task, err := t.Job.Place(id)
     if err != nil {
       return err
     }
     t.Asynq.Enqueue(
       task,
-      asynq.Queue(config.BINANCE_SPOT_TRADINGS_TRIGGERS),
+      asynq.Queue(config.BINANCE_FUTURES_TRADINGS_TRIGGERS),
       asynq.MaxRetry(0),
       asynq.Timeout(5*time.Minute),
     )
@@ -34,15 +34,15 @@ func (t *TriggersTask) Place() error {
 }
 
 func (t *TriggersTask) Flush() error {
-  symbols := t.Repository.Scan()
-  for _, symbol := range symbols {
-    task, err := t.Job.Flush(symbol)
+  ids := t.Repository.Ids()
+  for _, id := range ids {
+    task, err := t.Job.Flush(id)
     if err != nil {
       return err
     }
     t.Asynq.Enqueue(
       task,
-      asynq.Queue(config.BINANCE_SPOT_TRADINGS_TRIGGERS),
+      asynq.Queue(config.BINANCE_FUTURES_TRADINGS_TRIGGERS),
       asynq.MaxRetry(0),
       asynq.Timeout(5*time.Minute),
     )

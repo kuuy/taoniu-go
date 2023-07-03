@@ -4,11 +4,10 @@ import (
   "context"
   "errors"
   "fmt"
-  "strconv"
-
   "github.com/adshao/go-binance/v2"
   "github.com/go-redis/redis/v8"
   "gorm.io/gorm"
+  "strconv"
 
   config "taoniu.local/cryptos/config/binance/spot"
   binanceModels "taoniu.local/cryptos/models/binance/spot"

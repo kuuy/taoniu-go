@@ -90,7 +90,7 @@ func (r *AccountRepository) Balance(symbol string) (float64, float64, error) {
   ).Result()
   for i := 0; i < len(fields); i++ {
     if data[i] == nil {
-      return 0, 0, errors.New("price not exists")
+      return 0, 0, errors.New(fmt.Sprintf("[%s] isolated margin balance not exists", symbol))
     }
   }
   balance, _ := strconv.ParseFloat(data[0].(string), 64)

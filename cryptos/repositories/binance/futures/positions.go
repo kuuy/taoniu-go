@@ -4,6 +4,7 @@ import (
   "errors"
   "github.com/shopspring/decimal"
   "gorm.io/gorm"
+  "math"
   models "taoniu.local/cryptos/models/binance/futures"
 )
 
@@ -26,13 +27,7 @@ func (r *PositionsRepository) Get(
 func (r *PositionsRepository) Ratio(capital float64, entryAmount float64) float64 {
   totalAmount := 0.0
   lastAmount := 0.0
-  //ratios := []float64{0.0071, 0.0216, 0.0361, 0.0586, 0.0739, 0.1122}
-  //ratios := []float64{1,           0.328703704, 0.59833795, 0.616040956, 0.792963464, 0.658645276}
-  //ratios := []float64{3.042253521, 1.671296296, 1.623268698, 1.26109215, 1.51826793, 1}
-  //1.718309859 1.029586967 0.971263265
-  //ratios := []float64{0.0071, 0.0122, 0.0209, 0.0358, 0.0614, 0.1053}
   ratios := []float64{0.0071, 0.0193, 0.0331, 0.0567, 0.0972, 0.1667}
-  //ratios := []float64{0.0071, 0.0126, 0.0222, 0.0391, 0.0690, 0.1218}
   for _, ratio := range ratios {
     if entryAmount == 0.0 {
       return ratio
@@ -66,4 +61,35 @@ func (r *PositionsRepository) Calc(
   price, _ := decimal.NewFromFloat(amount).Div(decimal.NewFromFloat(volume)).Float64()
 
   return price, volume, amount
+}
+
+func (r *PositionsRepository) Capital(capital float64, entryAmount float64, place int) (result float64, err error) {
+  step := math.Pow10(place - 1)
+
+  for {
+    ratio := r.Ratio(capital, entryAmount)
+    if ratio == 0.0 {
+      break
+    }
+    result = capital
+    if capital <= step {
+      break
+    }
+    capital -= step
+  }
+
+  if result == 0.0 {
+    err = errors.New("reach the max invest capital")
+    return
+  }
+
+  if place > 1 {
+    capital, err = r.Capital(result+step, entryAmount, place-1)
+    if err != nil {
+      return
+    }
+    result = capital
+  }
+
+  return
 }

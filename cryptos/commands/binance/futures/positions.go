@@ -1,7 +1,9 @@
 package futures
 
 import (
+  "errors"
   "log"
+  "math"
   "strconv"
   "strings"
 
@@ -69,7 +71,7 @@ func (h *PositionsHandler) calc(
 ) error {
   log.Println("binance futures positions calc...")
 
-  capital, _ := decimal.NewFromFloat(margin).Mul(decimal.NewFromInt32(int32(multiple))).Float64()
+  maxCapital, _ := decimal.NewFromFloat(margin).Mul(decimal.NewFromInt32(int32(multiple))).Float64()
   entryAmount, _ := decimal.NewFromFloat(entryPrice).Mul(decimal.NewFromFloat(entryVolume)).Float64()
 
   entity, err := h.SymbolsRepository.Get(symbol)
@@ -83,13 +85,28 @@ func (h *PositionsHandler) calc(
   filters = strings.Split(entity.Filters["quote"].(string), ",")
   stepSize, _ := strconv.ParseFloat(filters[2], 64)
 
-  ratio := h.Repository.Ratio(capital, entryAmount)
+  ratio := h.Repository.Ratio(maxCapital, entryAmount)
   if entryAmount == 0.0 {
-    entryAmount, _ = decimal.NewFromFloat(capital).Mul(decimal.NewFromFloat(ratio)).Float64()
-    ratio = h.Repository.Ratio(capital, entryAmount)
+    entryAmount, _ = decimal.NewFromFloat(maxCapital).Mul(decimal.NewFromFloat(ratio)).Float64()
+    //ratio = h.Repository.Ratio(capital, entryAmount)
   }
+
   entryVolume, _ = decimal.NewFromFloat(entryAmount).Div(decimal.NewFromFloat(entryPrice)).Float64()
   log.Println("entry", entryPrice, entryVolume, entryAmount)
+
+  var capital float64
+
+  ipart, _ := math.Modf(maxCapital)
+  places := 1
+  for ; ipart >= 10; ipart = ipart / 10 {
+    places++
+  }
+
+  capital, err = h.Repository.Capital(maxCapital, entryAmount, places)
+  if err != nil {
+    return errors.New("reach the max invest capital")
+  }
+  ratio = h.Repository.Ratio(capital, entryAmount)
 
   var takePrice float64
   if side == 1 {
@@ -109,9 +126,9 @@ func (h *PositionsHandler) calc(
     }
     price, volume, amount := h.Repository.Calc(capital, side, entryPrice, entryAmount, ratio)
     if side == 1 {
-      price, _ = decimal.NewFromFloat(price).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
-    } else {
       price, _ = decimal.NewFromFloat(price).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+    } else {
+      price, _ = decimal.NewFromFloat(price).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
     }
     volume, _ = decimal.NewFromFloat(volume).Div(decimal.NewFromFloat(stepSize)).Ceil().Mul(decimal.NewFromFloat(stepSize)).Float64()
 
@@ -119,6 +136,11 @@ func (h *PositionsHandler) calc(
     entryAmount, _ = decimal.NewFromFloat(entryPrice).Mul(decimal.NewFromFloat(entryVolume)).Float64()
 
     log.Println("price", price, volume, amount, entryPrice)
+    capital, err = h.Repository.Capital(maxCapital, entryAmount, places)
+    if err != nil {
+      log.Println("reach the max invest capital")
+      break
+    }
     ratio = h.Repository.Ratio(capital, entryAmount)
   }
 

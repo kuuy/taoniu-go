@@ -18,5 +18,6 @@ func NewMargin(db *gorm.DB) *Margin {
 
 func (srv *Margin) Register(s *grpc.Server) error {
   margin.NewIsolated(srv.Db).Register(s)
+  margin.NewCross(srv.Db).Register(s)
   return nil
 }

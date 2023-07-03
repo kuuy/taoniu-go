@@ -79,12 +79,12 @@ func (t *TradingsTask) Triggers() *tasks.TriggersTask {
     t.TriggersTask = &tasks.TriggersTask{
       Asynq: t.Asynq,
     }
+    t.TriggersTask.Job = &tradings.Triggers{}
     t.TriggersTask.Repository = &tradingsRepositories.TriggersRepository{
       Db:  t.Db,
       Rdb: t.Rdb,
       Ctx: t.Ctx,
     }
-    t.TriggersTask.Job = &tradings.Triggers{}
     t.TriggersTask.Repository.SymbolsRepository = &repositories.SymbolsRepository{
       Db:  t.Db,
       Rdb: t.Rdb,
@@ -94,6 +94,6 @@ func (t *TradingsTask) Triggers() *tasks.TriggersTask {
   return t.TriggersTask
 }
 
-func (t *TradingsTask) Collect() error {
-  return t.Repository.Collect()
+func (t *TradingsTask) Earn() error {
+  return t.Repository.Earn()
 }

@@ -1,14 +1,14 @@
 package fishers
 
 import (
-	repositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated/tradings/fishers"
+  repositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated/tradings/fishers"
 )
 
 type GridsTask struct {
-	Repository *repositories.GridsRepository
+  Repository *repositories.GridsRepository
 }
 
-func (t *GridsTask) Collect() error {
-	t.Repository.Collect()
-	return nil
+func (t *GridsTask) Earn() error {
+  t.Repository.Earn()
+  return nil
 }

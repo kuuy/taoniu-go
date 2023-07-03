@@ -70,7 +70,7 @@ func (r *TradingsRepository) Pending() map[string]float64 {
   return data
 }
 
-func (r *TradingsRepository) Collect() error {
+func (r *TradingsRepository) Earn() error {
   data := r.Pending()
   for symbol, pendingQuantity := range data {
     _, balanceQuantity, err := r.AccountRepository.Balance(symbol)
@@ -92,7 +92,7 @@ func (r *TradingsRepository) Collect() error {
       continue
     }
     minPurchaseAmount := decimal.NewFromFloat(product.MinPurchaseAmount)
-    savingQuantity := decimal.NewFromFloat(balanceQuantity - pendingQuantity).Div(minPurchaseAmount)
+    savingQuantity := decimal.NewFromFloat(balanceQuantity).Sub(decimal.NewFromFloat(pendingQuantity)).Div(minPurchaseAmount)
     purchaseQuantity, _ := savingQuantity.Floor().Mul(minPurchaseAmount).Float64()
     if product.MinPurchaseAmount > purchaseQuantity {
       continue

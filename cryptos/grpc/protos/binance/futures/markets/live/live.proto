@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package taoniu.local.cryptos.grpc.binance.futures.markets.live;
+option go_package = "taoniu.local/cryptos/grpc/binance/futures/markets/live";
+
+import "google/protobuf/timestamp.proto";
+
+service Live {
+  rpc Pagenate (PagenateRequest) returns (PagenateReply) {}
+}
+
+message LiveInfo {
+  string symbol = 1;
+  float open = 2;
+  float price = 3;
+  float high = 4;
+  float low = 5;
+  double volume = 6;
+  double quota = 7;
+  google.protobuf.Timestamp timestamp = 8;
+}
+
+message PagenateRequest {
+  string symbol = 1;
+  int32 current = 2;
+  int32 pageSize = 3;
+}
+
+message PagenateReply {
+  int64 total = 1;
+  repeated LiveInfo data = 2;
+}

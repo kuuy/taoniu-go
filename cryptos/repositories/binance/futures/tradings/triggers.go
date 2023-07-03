@@ -5,6 +5,7 @@ import (
   "fmt"
   "github.com/rs/xid"
   "log"
+  "math"
   "time"
 
   "github.com/adshao/go-binance/v2/common"
@@ -12,7 +13,7 @@ import (
   "gorm.io/gorm"
 
   futuresModels "taoniu.local/cryptos/models/binance/futures"
-  models "taoniu.local/cryptos/models/binance/spot/margin/cross/tradings/triggers"
+  models "taoniu.local/cryptos/models/binance/futures/tradings/triggers"
 )
 
 type TriggersRepository struct {
@@ -28,9 +29,15 @@ func (r *TriggersRepository) Scan() []string {
   return symbols
 }
 
-func (r *TriggersRepository) Place(symbol string) error {
+func (r *TriggersRepository) Ids() []string {
+  var ids []string
+  r.Db.Model(&futuresModels.Trigger{}).Select("id").Where("status", []int{1, 3}).Find(&ids)
+  return ids
+}
+
+func (r *TriggersRepository) Place(id string) error {
   var trigger futuresModels.Trigger
-  result := r.Db.Where("symbol=? AND status=?", symbol, 1).Take(&trigger)
+  result := r.Db.First(&trigger, "id=?", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     return errors.New("trigger empty")
   }
@@ -41,7 +48,10 @@ func (r *TriggersRepository) Place(symbol string) error {
     return errors.New("trigger expired")
   }
 
-  position, err := r.PositionRepository.Get(symbol, trigger.Side)
+  position, err := r.PositionRepository.Get(trigger.Symbol, trigger.Side)
+  if err != nil && trigger.EntryQuantity > 0 {
+    return err
+  }
   if err == nil && position.Timestamp > trigger.Timestamp {
     trigger.EntryPrice = position.EntryPrice
     if trigger.Side == 1 {
@@ -54,13 +64,16 @@ func (r *TriggersRepository) Place(symbol string) error {
   }
 
   var positionSide string
+  var side string
   if trigger.Side == 1 {
     positionSide = "LONG"
+    side = "BUY"
   } else if trigger.Side == 2 {
     positionSide = "SHORT"
+    side = "SELL"
   }
 
-  entity, err := r.SymbolsRepository.Get(symbol)
+  entity, err := r.SymbolsRepository.Get(trigger.Symbol)
   if err != nil {
     return err
   }
@@ -71,11 +84,18 @@ func (r *TriggersRepository) Place(symbol string) error {
   }
 
   entryAmount, _ := decimal.NewFromFloat(trigger.EntryPrice).Mul(decimal.NewFromFloat(trigger.EntryQuantity)).Float64()
-  ratio := r.Ratio(trigger.Capital, entryAmount)
-  if ratio == 0.0 {
+
+  ipart, _ := math.Modf(trigger.Capital)
+  places := 1
+  for ; ipart >= 10; ipart = ipart / 10 {
+    places++
+  }
+  capital, err := r.Capital(trigger.Capital, entryAmount, places)
+  if err != nil {
     return errors.New("reach the max invest capital")
   }
-  buyPrice, buyQuantity := r.Calc(trigger.Capital, trigger.Side, trigger.EntryPrice, entryAmount, ratio)
+  ratio := r.Ratio(capital, entryAmount)
+  buyPrice, buyQuantity := r.Calc(capital, trigger.Side, trigger.EntryPrice, entryAmount, ratio)
 
   if trigger.Side == 1 {
     buyPrice, _ = decimal.NewFromFloat(buyPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
@@ -87,41 +107,43 @@ func (r *TriggersRepository) Place(symbol string) error {
 
   entryQuantity, _ := decimal.NewFromFloat(trigger.EntryQuantity).Add(decimal.NewFromFloat(buyQuantity)).Float64()
 
-  price, err := r.SymbolsRepository.Price(symbol)
+  price, err := r.SymbolsRepository.Price(trigger.Symbol)
   if err != nil {
     return err
   }
 
   if trigger.Side == 1 && price > buyPrice {
-    return errors.New(fmt.Sprintf("price mush reach %v", buyPrice))
+    return errors.New(fmt.Sprintf("price must reach %v", buyPrice))
   } else if trigger.Side == 2 && price < buyPrice {
-    return errors.New(fmt.Sprintf("price mush reach %v", buyPrice))
+    return errors.New(fmt.Sprintf("price must reach %v", buyPrice))
   }
 
-  if !r.CanBuy(symbol, buyPrice) {
+  if !r.CanBuy(&trigger, buyPrice) {
     return errors.New("can not buy now")
   }
 
+  var sellPrice float64
   if trigger.EntryQuantity == 0.0 {
     trigger.EntryPrice = buyPrice
+    if trigger.Side == 1 {
+      sellPrice, _ = decimal.NewFromFloat(trigger.EntryPrice).Mul(decimal.NewFromFloat(1.02)).Float64()
+      sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+    } else {
+      sellPrice, _ = decimal.NewFromFloat(trigger.EntryPrice).Mul(decimal.NewFromFloat(0.98)).Float64()
+      sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
+    }
   } else {
+    if trigger.Side == 1 {
+      sellPrice, _ = decimal.NewFromFloat(trigger.EntryPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+    } else {
+      sellPrice, _ = decimal.NewFromFloat(trigger.EntryPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
+    }
     trigger.EntryPrice, _ = decimal.NewFromFloat(entryAmount).Add(decimal.NewFromFloat(buyAmount)).Div(decimal.NewFromFloat(entryQuantity)).Float64()
   }
   trigger.EntryQuantity = entryQuantity
 
-  var sellPrice float64
-  if trigger.Side == 1 {
-    sellPrice, _ = decimal.NewFromFloat(trigger.EntryPrice).Mul(decimal.NewFromFloat(1.02)).Float64()
-    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
-  } else {
-    sellPrice, _ = decimal.NewFromFloat(trigger.EntryPrice).Mul(decimal.NewFromFloat(0.98)).Float64()
-    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
-  }
-  sellQuantity, _ := decimal.NewFromFloat(buyAmount).Div(decimal.NewFromFloat(sellPrice)).Float64()
-  sellQuantity, _ = decimal.NewFromFloat(sellQuantity).Div(decimal.NewFromFloat(stepSize)).Floor().Mul(decimal.NewFromFloat(stepSize)).Float64()
-
   r.Db.Transaction(func(tx *gorm.DB) error {
-    orderID, err := r.OrdersRepository.Create(symbol, positionSide, "BUY", buyPrice, buyQuantity)
+    orderID, err := r.OrdersRepository.Create(trigger.Symbol, positionSide, side, buyPrice, buyQuantity)
     if err != nil {
       apiError, ok := err.(common.APIError)
       if ok {
@@ -136,13 +158,13 @@ func (r *TriggersRepository) Place(symbol string) error {
     }
     grid := models.Grid{
       ID:           xid.New().String(),
-      Symbol:       symbol,
+      Symbol:       trigger.Symbol,
       TriggerID:    trigger.ID,
       BuyOrderId:   orderID,
       BuyPrice:     buyPrice,
       BuyQuantity:  buyQuantity,
       SellPrice:    sellPrice,
-      SellQuantity: sellQuantity,
+      SellQuantity: buyQuantity,
       Status:       0,
     }
     if err := tx.Create(&grid).Error; err != nil {
@@ -155,14 +177,14 @@ func (r *TriggersRepository) Place(symbol string) error {
   return nil
 }
 
-func (r *TriggersRepository) Flush(symbol string) error {
+func (r *TriggersRepository) Flush(id string) error {
   var trigger futuresModels.Trigger
-  result := r.Db.Where("symbol=?", symbol).Take(&trigger)
+  result := r.Db.First(&trigger, "id=?", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     return errors.New("fishers empty")
   }
 
-  price, err := r.SymbolsRepository.Price(symbol)
+  price, err := r.SymbolsRepository.Price(trigger.Symbol)
   if err != nil {
     return err
   }
@@ -179,12 +201,18 @@ func (r *TriggersRepository) Flush(symbol string) error {
   }
 
   var grids []*models.Grid
-  r.Db.Where("symbol=? AND status IN ?", trigger.Symbol, []int{0, 2}).Find(&grids)
+  r.Db.Where("trigger_id=? AND status IN ?", trigger.ID, []int{0, 2}).Find(&grids)
   for _, grid := range grids {
     if grid.Status == 0 {
       timestamp := grid.CreatedAt.Unix()
       if grid.BuyOrderId == 0 {
-        orderID := r.OrdersRepository.Lost(symbol, positionSide, "BUY", grid.BuyPrice, timestamp-30)
+        var side string
+        if trigger.Side == 1 {
+          side = "BUY"
+        } else if trigger.Side == 2 {
+          side = "SELL"
+        }
+        orderID := r.OrdersRepository.Lost(trigger.Symbol, positionSide, side, grid.BuyPrice, timestamp-30)
         if orderID > 0 {
           grid.BuyOrderId = orderID
           if err := r.Db.Model(&models.Grid{ID: grid.ID}).Updates(grid).Error; err != nil {
@@ -215,11 +243,13 @@ func (r *TriggersRepository) Flush(symbol string) error {
           return nil
         }
       }
-      status := r.OrdersRepository.Status(symbol, grid.BuyOrderId)
+
+      status := r.OrdersRepository.Status(grid.Symbol, grid.BuyOrderId)
       if status == "" || status == "NEW" || status == "PARTIALLY_FILLED" {
-        r.OrdersRepository.Flush(symbol, grid.BuyOrderId)
+        r.OrdersRepository.Flush(grid.Symbol, grid.BuyOrderId)
         continue
       }
+
       r.Db.Transaction(func(tx *gorm.DB) error {
         if status == "FILLED" {
           grid.Status = 1
@@ -246,7 +276,13 @@ func (r *TriggersRepository) Flush(symbol string) error {
     } else if grid.Status == 2 {
       timestamp := grid.UpdatedAt.Unix()
       if grid.SellOrderId == 0 {
-        orderID := r.OrdersRepository.Lost(symbol, positionSide, "SELL", grid.SellPrice, timestamp-30)
+        var side string
+        if trigger.Side == 1 {
+          side = "SELL"
+        } else if trigger.Side == 2 {
+          side = "BUY"
+        }
+        orderID := r.OrdersRepository.Lost(trigger.Symbol, positionSide, side, grid.SellPrice, timestamp-30)
         if orderID > 0 {
           grid.SellOrderId = orderID
           if err := r.Db.Model(&models.Grid{ID: grid.ID}).Updates(grid).Error; err != nil {
@@ -259,9 +295,9 @@ func (r *TriggersRepository) Flush(symbol string) error {
           return nil
         }
       }
-      status := r.OrdersRepository.Status(symbol, grid.SellOrderId)
+      status := r.OrdersRepository.Status(trigger.Symbol, grid.SellOrderId)
       if status == "" || status == "NEW" || status == "PARTIALLY_FILLED" {
-        r.OrdersRepository.Flush(symbol, grid.SellOrderId)
+        r.OrdersRepository.Flush(trigger.Symbol, grid.SellOrderId)
         continue
       }
       r.Db.Transaction(func(tx *gorm.DB) error {
@@ -295,23 +331,43 @@ func (r *TriggersRepository) Flush(symbol string) error {
 
 func (r *TriggersRepository) Take(trigger *futuresModels.Trigger, price float64) error {
   var positionSide string
+  var side string
   if trigger.Side == 1 {
     positionSide = "LONG"
+    side = "SELL"
   } else if trigger.Side == 2 {
     positionSide = "SHORT"
+    side = "BUY"
   }
 
   var grid models.Grid
-  result := r.Db.Where("symbol=? AND status=?", trigger.Symbol, 1).Order("sell_price asc").Take(&grid)
-  if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    return errors.New("empty grid")
+  if trigger.Side == 1 {
+    result := r.Db.Where("trigger_id=? AND status=?", trigger.ID, 1).Order("sell_price asc").Take(&grid)
+    if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+      return errors.New("empty grid")
+    }
+    if price < grid.SellPrice {
+      if price < trigger.EntryPrice*1.035 {
+        return errors.New("price too low")
+      }
+      grid.SellPrice = price
+    }
   }
-  if price < grid.SellPrice {
-    return errors.New("price too low")
+  if trigger.Side == 2 && price > grid.SellPrice {
+    result := r.Db.Where("trigger_id=? AND status=?", trigger.ID, 1).Order("sell_price desc").Take(&grid)
+    if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+      return errors.New("empty grid")
+    }
+    if price > grid.SellPrice {
+      if price > trigger.EntryPrice*0.965 {
+        return errors.New("price too high")
+      }
+      grid.SellPrice = price
+    }
   }
   r.Db.Transaction(func(tx *gorm.DB) error {
     trigger.EntryQuantity, _ = decimal.NewFromFloat(trigger.EntryQuantity).Sub(decimal.NewFromFloat(grid.SellQuantity)).Float64()
-    orderID, err := r.OrdersRepository.Create(grid.Symbol, positionSide, "SELL", grid.SellPrice, grid.SellQuantity)
+    orderID, err := r.OrdersRepository.Create(grid.Symbol, positionSide, side, grid.SellPrice, grid.SellQuantity)
     if err != nil {
       apiError, ok := err.(common.APIError)
       if ok {
@@ -352,6 +408,37 @@ func (r *TriggersRepository) Ratio(capital float64, entryAmount float64) float64
   return 0.0
 }
 
+func (r *TriggersRepository) Capital(capital float64, entryAmount float64, place int) (result float64, err error) {
+  step := math.Pow10(place - 1)
+
+  for {
+    ratio := r.Ratio(capital, entryAmount)
+    if ratio == 0.0 {
+      break
+    }
+    result = capital
+    if capital <= step {
+      break
+    }
+    capital -= step
+  }
+
+  if result == 0.0 {
+    err = errors.New("reach the max invest capital")
+    return
+  }
+
+  if place > 1 {
+    capital, err = r.Capital(result+step, entryAmount, place-1)
+    if err != nil {
+      return
+    }
+    result = capital
+  }
+
+  return
+}
+
 func (r *TriggersRepository) Calc(
   capital float64,
   side int,
@@ -359,6 +446,14 @@ func (r *TriggersRepository) Calc(
   entryAmount float64,
   ratio float64,
 ) (float64, float64) {
+  if entryAmount > 0 {
+    if side == 1 {
+      entryPrice, _ = decimal.NewFromFloat(entryPrice).Mul(decimal.NewFromFloat(0.995)).Float64()
+    } else {
+      entryPrice, _ = decimal.NewFromFloat(entryPrice).Mul(decimal.NewFromFloat(1.005)).Float64()
+    }
+  }
+
   lost, _ := decimal.NewFromFloat(entryAmount).Mul(decimal.NewFromFloat(0.005)).Float64()
   amount, _ := decimal.NewFromFloat(capital).Mul(decimal.NewFromFloat(ratio)).Float64()
 
@@ -375,14 +470,24 @@ func (r *TriggersRepository) Calc(
 }
 
 func (r *TriggersRepository) CanBuy(
-  symbol string,
+  trigger *futuresModels.Trigger,
   price float64,
 ) bool {
   var grid models.Grid
-  result := r.Db.Where("symbol=? AND status IN ?", symbol, []int{0, 1, 2}).Order("buy_price asc").Take(&grid)
-  if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    if price >= grid.BuyPrice {
-      return false
+  if trigger.Side == 1 {
+    result := r.Db.Where("trigger_id=? AND status IN ?", trigger.ID, []int{0, 1, 2}).Order("buy_price asc").Take(&grid)
+    if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+      if price >= grid.BuyPrice {
+        return false
+      }
+    }
+  }
+  if trigger.Side == 2 {
+    result := r.Db.Where("trigger_id=? AND status IN ?", trigger.ID, []int{0, 1, 2}).Order("buy_price desc").Take(&grid)
+    if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+      if price <= grid.BuyPrice {
+        return false
+      }
     }
   }
 

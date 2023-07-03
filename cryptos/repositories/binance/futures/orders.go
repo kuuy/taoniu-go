@@ -202,6 +202,76 @@ func (r *OrdersRepository) Create(
   return response.OrderID, nil
 }
 
+func (r *OrdersRepository) Cancel(symbol string, orderId int64) error {
+  tr := &http.Transport{
+    DisableKeepAlives: true,
+  }
+  session := &net.Dialer{}
+  tr.DialContext = session.DialContext
+
+  httpClient := &http.Client{
+    Transport: tr,
+    Timeout:   time.Duration(5) * time.Second,
+  }
+
+  params := url.Values{}
+  params.Add("symbol", symbol)
+  params.Add("orderId", fmt.Sprintf("%v", orderId))
+  params.Add("recvWindow", "60000")
+
+  timestamp := time.Now().UnixNano() / int64(time.Millisecond)
+  payload := fmt.Sprintf("%s&timestamp=%v", params.Encode(), timestamp)
+
+  block, _ := pem.Decode([]byte(config.TRADE_SECRET_KEY))
+  privateKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+  if err != nil {
+    return err
+  }
+  hashed := sha256.Sum256([]byte(payload))
+  signature, _ := rsa.SignPKCS1v15(rand.Reader, privateKey.(*rsa.PrivateKey), crypto.SHA256, hashed[:])
+
+  data := url.Values{}
+  data.Add("signature", base64.StdEncoding.EncodeToString(signature))
+
+  body := bytes.NewBufferString(fmt.Sprintf("%s&%s", payload, data.Encode()))
+
+  url := "https://fapi.binance.com/fapi/v1/order"
+  req, _ := http.NewRequest("DELETE", url, body)
+  req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+  req.Header.Set("X-MBX-APIKEY", config.TRADE_API_KEY)
+  resp, err := httpClient.Do(req)
+  if err != nil {
+    return err
+  }
+  defer resp.Body.Close()
+
+  if resp.StatusCode >= http.StatusBadRequest {
+    apiErr := new(common.APIError)
+    err = json.NewDecoder(resp.Body).Decode(&apiErr)
+    if err == nil {
+      return apiErr
+    }
+  }
+
+  if resp.StatusCode != http.StatusOK {
+    return errors.New(
+      fmt.Sprintf(
+        "request error: status[%s] code[%d]",
+        resp.Status,
+        resp.StatusCode,
+      ),
+    )
+  }
+
+  var response binance.CancelOrderResponse
+  err = json.NewDecoder(resp.Body).Decode(&response)
+  if err != nil {
+    return err
+  }
+
+  return nil
+}
+
 func (r *OrdersRepository) Flush(symbol string, orderID int64) error {
   client := binance.NewFuturesClient(config.ACCOUNT_API_KEY, config.ACCOUNT_SECRET_KEY)
   order, err := client.NewGetOrderService().Symbol(symbol).OrderID(orderID).Do(r.Ctx)

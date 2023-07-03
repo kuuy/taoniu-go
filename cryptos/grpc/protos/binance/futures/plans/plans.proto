@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package taoniu.local.cryptos.grpc.binance.futures.plans;
+option go_package = "taoniu.local/cryptos/grpc/binance/futures/plans";
+
+import "google/protobuf/timestamp.proto";
+
+service Plans {
+  rpc Pagenate (PagenateRequest) returns (PagenateReply) {}
+}
+
+message PlanInfo {
+  string id = 1;
+  uint32 side = 2;
+  string symbol = 3;
+  float price = 4;
+  float quantity = 5;
+  float amount = 6;
+  google.protobuf.Timestamp createdAt = 7;
+}
+
+message PagenateRequest {
+  string symbol = 1;
+  int32 current = 2;
+  int32 pageSize = 3;
+}
+
+message PagenateReply {
+  int64 total = 1;
+  repeated PlanInfo data = 2;
+}

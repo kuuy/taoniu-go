@@ -24,6 +24,7 @@ func NewFutures(db *gorm.DB, rdb *redis.Client, ctx context.Context) *Futures {
 
 func (h *Futures) Subscribe(nc *nats.Conn) error {
   futures.NewAccount(h.Rdb, h.Ctx).Subscribe(nc)
+  futures.NewTickers(h.Rdb, h.Ctx).Subscribe(nc)
   futures.NewOrders(h.Db, h.Rdb, h.Ctx).Subscribe(nc)
   return nil
 }

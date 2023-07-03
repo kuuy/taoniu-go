@@ -70,7 +70,7 @@ func (r *TriggersRepository) Apply(
   expiredAt time.Time,
 ) error {
   var trigger *models.Trigger
-  result := r.Db.Where("symbol=? AND status IN ?", symbol, []int{1, 3}).Take(&trigger)
+  result := r.Db.Where("symbol=? AND side=? AND status IN ?", symbol, side, []int{1, 3}).Take(&trigger)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     entity := &models.Trigger{
       ID:         xid.New().String(),

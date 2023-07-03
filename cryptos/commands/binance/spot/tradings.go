@@ -60,17 +60,17 @@ func NewTradingsCommand() *cli.Command {
         Name:  "pending",
         Usage: "",
         Action: func(c *cli.Context) error {
-          if err := h.pending(); err != nil {
+          if err := h.Pending(); err != nil {
             return cli.Exit(err.Error(), 1)
           }
           return nil
         },
       },
       {
-        Name:  "collect",
+        Name:  "earn",
         Usage: "",
         Action: func(c *cli.Context) error {
-          if err := h.collect(); err != nil {
+          if err := h.Earn(); err != nil {
             return cli.Exit(err.Error(), 1)
           }
           return nil
@@ -83,14 +83,14 @@ func NewTradingsCommand() *cli.Command {
   }
 }
 
-func (h *TradingsHandler) pending() error {
+func (h *TradingsHandler) Pending() error {
   log.Println("spot tradings pending...")
   data := h.Repository.Pending()
   log.Println(data)
   return nil
 }
 
-func (h *TradingsHandler) collect() error {
-  log.Println("spot tradings collect...")
-  return h.Repository.Collect()
+func (h *TradingsHandler) Earn() error {
+  log.Println("spot tradings earn...")
+  return h.Repository.Earn()
 }

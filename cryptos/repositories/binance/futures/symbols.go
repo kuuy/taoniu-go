@@ -4,6 +4,7 @@ import (
   "context"
   "errors"
   "fmt"
+  "github.com/shopspring/decimal"
   "math"
   "strconv"
   "strings"
@@ -164,7 +165,7 @@ func (r *SymbolsRepository) Price(symbol string) (float64, error) {
   ).Result()
   for i := 0; i < len(fields); i++ {
     if data[i] == nil {
-      return 0, errors.New("price not exists")
+      return 0, errors.New(fmt.Sprintf("[%s] price not exists", symbol))
     }
   }
 
@@ -176,10 +177,47 @@ func (r *SymbolsRepository) Price(symbol string) (float64, error) {
       float64(timestamp),
       symbol,
     })
-    return 0, errors.New("price long time not freshed")
+    return 0, errors.New(fmt.Sprintf("[%s] price long time not freshed", symbol))
   }
 
   return price, nil
+}
+
+func (r *SymbolsRepository) Adjust(symbol string, price float64, amount float64) (float64, float64, error) {
+  var entity models.Symbol
+  result := r.Db.Select("filters").Where("symbol", symbol).Take(&entity)
+  if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+    return 0, 0, result.Error
+  }
+  var data []string
+  data = strings.Split(entity.Filters["price"].(string), ",")
+  maxPrice, _ := strconv.ParseFloat(data[0], 64)
+  minPrice, _ := strconv.ParseFloat(data[1], 64)
+  tickSize, _ := decimal.NewFromString(data[2])
+
+  if price > maxPrice {
+    return 0, 0, errors.New("price too high")
+  }
+  if price < minPrice {
+    price = minPrice
+  }
+
+  price, _ = decimal.NewFromFloat(price).Div(tickSize).Ceil().Mul(tickSize).Float64()
+
+  data = strings.Split(entity.Filters["quote"].(string), ",")
+  maxQty, _ := strconv.ParseFloat(data[0], 64)
+  minQty, _ := strconv.ParseFloat(data[1], 64)
+  stepSize, _ := decimal.NewFromString(data[2])
+
+  quantity, _ := decimal.NewFromFloat(amount).Div(decimal.NewFromFloat(price)).Div(stepSize).Ceil().Mul(stepSize).Float64()
+  if quantity > maxQty {
+    return 0, 0, errors.New("quantity too high")
+  }
+  if quantity < minQty {
+    quantity = minQty
+  }
+
+  return price, quantity, nil
 }
 
 func (r *SymbolsRepository) Filter(symbol string, price float64, amount float64) (float64, float64) {
@@ -234,7 +272,7 @@ func (r *SymbolsRepository) Context(symbol string) map[string]interface{} {
   data, _ := r.Rdb.HMGet(
     r.Ctx,
     fmt.Sprintf(
-      "binance:futures:indicators:%s:%s",
+      "binance:futures:indicators:1d:%s:%s",
       symbol,
       day,
     ),

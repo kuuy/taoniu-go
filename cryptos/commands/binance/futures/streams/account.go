@@ -4,15 +4,16 @@ import (
   "context"
   "encoding/json"
   "fmt"
-  "github.com/adshao/go-binance/v2"
   "log"
   "strconv"
   "time"
 
   "nhooyr.io/websocket"
 
+  "github.com/adshao/go-binance/v2"
   "github.com/nats-io/nats.go"
   "github.com/urfave/cli/v2"
+
   "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/futures"
   jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/futures/streams"

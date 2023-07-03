@@ -13,6 +13,7 @@ func NewStreamCommand() *cli.Command {
     Usage: "",
     Subcommands: []*cli.Command{
       streams.NewAccountCommand(),
+      streams.NewTickersCommand(),
     },
   }
 }

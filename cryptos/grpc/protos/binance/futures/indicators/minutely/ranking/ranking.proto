@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package taoniu.local.cryptos.grpc.binance.futures.indicators.minutely.ranking;
+option go_package = "taoniu.local/cryptos/grpc/binance/futures/indicators/minutely/ranking";
+
+service Ranking {
+  rpc Pagenate (PagenateRequest) returns (PagenateReply) {}
+}
+
+message PagenateRequest {
+  string symbol = 1;
+  repeated string fields = 2;
+  string sortField = 3;
+  int32 sortType = 4;
+  int32 current = 5;
+  int32 pageSize = 6;
+}
+
+message PagenateReply {
+  int64 total = 1;
+  repeated string data = 2;
+}

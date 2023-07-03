@@ -23,6 +23,7 @@ type PositionRepository interface {
 type OrdersRepository interface {
   Status(symbol string, orderID int64) string
   Create(symbol string, positionSide string, side string, price float64, quantity float64) (int64, error)
+  Cancel(symbol string, orderId int64) error
   Lost(symbol string, positionSide string, side string, price float64, timestamp int64) int64
   Flush(symbol string, orderID int64) error
 }

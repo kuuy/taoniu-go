@@ -14,15 +14,20 @@ import (
 )
 
 type FuturesTask struct {
-  Db          *gorm.DB
-  Rdb         *redis.Client
-  Ctx         context.Context
-  Asynq       *asynq.Client
-  CronTask    *tasks.CronTask
-  AccountTask *tasks.AccountTask
-  SymbolsTask *tasks.SymbolsTask
-  TickersTask *tasks.TickersTask
-  KlinesTask  *tasks.KlinesTask
+  Db             *gorm.DB
+  Rdb            *redis.Client
+  Ctx            context.Context
+  Asynq          *asynq.Client
+  CronTask       *tasks.CronTask
+  AccountTask    *tasks.AccountTask
+  SymbolsTask    *tasks.SymbolsTask
+  TickersTask    *tasks.TickersTask
+  KlinesTask     *tasks.KlinesTask
+  IndicatorsTask *tasks.IndicatorsTask
+  StrategiesTask *tasks.StrategiesTask
+  PlansTask      *tasks.PlansTask
+  TradingsTask   *tasks.TradingsTask
+  OrdersTask     *tasks.OrdersTask
 }
 
 func (t *FuturesTask) Cron() *tasks.CronTask {
@@ -105,11 +110,66 @@ func (t *FuturesTask) Klines() *tasks.KlinesTask {
   return t.KlinesTask
 }
 
+func (t *FuturesTask) Indicators() *tasks.IndicatorsTask {
+  if t.IndicatorsTask == nil {
+    t.IndicatorsTask = &tasks.IndicatorsTask{
+      Db:    t.Db,
+      Asynq: t.Asynq,
+    }
+  }
+  return t.IndicatorsTask
+}
+
+func (t *FuturesTask) Strategies() *tasks.StrategiesTask {
+  if t.StrategiesTask == nil {
+    t.StrategiesTask = &tasks.StrategiesTask{
+      Db:    t.Db,
+      Asynq: t.Asynq,
+    }
+  }
+  return t.StrategiesTask
+}
+
+func (t *FuturesTask) Plans() *tasks.PlansTask {
+  if t.PlansTask == nil {
+    t.PlansTask = &tasks.PlansTask{
+      Asynq: t.Asynq,
+    }
+  }
+  return t.PlansTask
+}
+
+func (t *FuturesTask) Tradings() *tasks.TradingsTask {
+  if t.TradingsTask == nil {
+    t.TradingsTask = &tasks.TradingsTask{
+      Db:    t.Db,
+      Rdb:   t.Rdb,
+      Ctx:   t.Ctx,
+      Asynq: t.Asynq,
+    }
+  }
+  return t.TradingsTask
+}
+
+func (t *FuturesTask) Orders() *tasks.OrdersTask {
+  if t.OrdersTask == nil {
+    t.OrdersTask = &tasks.OrdersTask{
+      Db:  t.Db,
+      Rdb: t.Rdb,
+      Ctx: t.Ctx,
+    }
+    t.OrdersTask.Repository = &repositories.OrdersRepository{
+      Db:  t.Db,
+      Rdb: t.Rdb,
+      Ctx: t.Ctx,
+    }
+  }
+  return t.OrdersTask
+}
+
 func (t *FuturesTask) Flush() {
   t.Account().Flush()
-  //t.Indicators().Daily().Pivot()
-  //t.Indicators().Daily().Atr(14, 100)
-  //t.Plans().Daily().Flush()
+  t.Plans().Daily().Flush()
 }
 
 func (t *FuturesTask) Clean() {
@@ -117,4 +177,5 @@ func (t *FuturesTask) Clean() {
 }
 
 func (t *FuturesTask) Sync() {
+  t.Orders().Sync()
 }
