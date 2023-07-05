@@ -7,6 +7,7 @@ import (
   "fmt"
   "net"
   "net/http"
+  "os"
   "strconv"
   "strings"
   "time"
@@ -89,7 +90,7 @@ func (r *TickersRepository) Request(symbol string) (map[string]interface{}, erro
     Timeout:   time.Duration(5) * time.Second,
   }
 
-  url := "https://fapi.binance.com/fapi/v1/ticker/24hr"
+  url := fmt.Sprintf("%s/fapi/v1/ticker/24hr", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))
   req, _ := http.NewRequest("GET", url, nil)
   q := req.URL.Query()
   q.Add("symbol", symbol)

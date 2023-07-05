@@ -6,6 +6,7 @@ import (
   "errors"
   "fmt"
   "log"
+  "os"
   "strconv"
   "strings"
   "time"
@@ -83,6 +84,7 @@ func (h *TickersHandler) handler(message map[string]interface{}) {
   data := message["data"].(map[string]interface{})
   event := data["e"].(string)
 
+  log.Println("ticker", data)
   if event == "24hrMiniTicker" {
     open, _ := strconv.ParseFloat(data["o"].(string), 64)
     price, _ := strconv.ParseFloat(data["c"].(string), 64)
@@ -132,7 +134,12 @@ func (h *TickersHandler) start(current int) (err error) {
     return errors.New("streams empty")
   }
 
-  endpoint := fmt.Sprintf("wss://fstream.binance.com/stream?streams=%s", strings.Join(streams, "/"))
+  endpoint := fmt.Sprintf(
+    "%s/stream?streams=%s",
+    os.Getenv("BINANCE_FUTURES_STREAMS_ENDPOINT"),
+    strings.Join(streams, "/"),
+  )
+  log.Println("endpoint", endpoint)
 
   h.Socket, _, err = websocket.Dial(h.Ctx, endpoint, &websocket.DialOptions{
     CompressionMode: websocket.CompressionDisabled,

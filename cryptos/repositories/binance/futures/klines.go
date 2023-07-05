@@ -7,6 +7,7 @@ import (
   "fmt"
   "net"
   "net/http"
+  "os"
   "strconv"
   "time"
 
@@ -136,7 +137,7 @@ func (r *KlinesRepository) Request(symbol string, interval string, limit int) ([
     Timeout:   time.Duration(8) * time.Second,
   }
 
-  url := "https://fapi.binance.com/fapi/v1/klines"
+  url := fmt.Sprintf("%s/fapi/v1/klines", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))
   req, _ := http.NewRequest("GET", url, nil)
   q := req.URL.Query()
   q.Add("symbol", symbol)

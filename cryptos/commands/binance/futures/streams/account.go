@@ -5,6 +5,7 @@ import (
   "encoding/json"
   "fmt"
   "log"
+  "os"
   "strconv"
   "time"
 
@@ -101,16 +102,23 @@ func (h *AccountHandler) handler(message map[string]interface{}) {
 func (h *AccountHandler) start() (err error) {
   log.Println("stream start")
 
-  client := binance.NewFuturesClient(config.STREAMS_API_KEY, config.STREAMS_SECRET_KEY)
-
+  client := binance.NewFuturesClient(
+    os.Getenv("BINANCE_FUTURES_STREAMS_API_KEY"),
+    os.Getenv("BINANCE_FUTURES_STREAMS_API_SECRET"),
+  )
+  client.BaseURL = os.Getenv("BINANCE_FUTURES_API_ENDPOINT")
   listenKey, err := client.NewStartUserStreamService().Do(h.Ctx)
   if err != nil {
     return err
   }
   defer client.NewCloseUserStreamService().ListenKey(listenKey).Do(h.Ctx)
 
-  endpoint := fmt.Sprintf("wss://fstream.binance.com/ws/%s", listenKey)
-
+  endpoint := fmt.Sprintf(
+    "%s/ws/%s",
+    os.Getenv("BINANCE_FUTURES_STREAMS_ENDPOINT"),
+    listenKey,
+  )
+  log.Println("endpoint", endpoint)
   h.Socket, _, err = websocket.Dial(h.Ctx, endpoint, &websocket.DialOptions{
     CompressionMode: websocket.CompressionDisabled,
   })

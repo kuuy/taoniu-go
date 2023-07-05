@@ -50,3 +50,8 @@ func (h *Klines) Flush(ctx context.Context, t *asynq.Task) error {
 
   return nil
 }
+
+func (h *Klines) Register(mux *asynq.ServeMux) error {
+  mux.HandleFunc("binance:futures:klines:flush", h.Flush)
+  return nil
+}

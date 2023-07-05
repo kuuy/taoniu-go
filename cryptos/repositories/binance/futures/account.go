@@ -4,6 +4,7 @@ import (
   "context"
   "errors"
   "fmt"
+  "os"
   "strconv"
 
   "github.com/adshao/go-binance/v2"
@@ -11,7 +12,6 @@ import (
   "github.com/rs/xid"
   "gorm.io/gorm"
 
-  config "taoniu.local/cryptos/config/binance/futures"
   models "taoniu.local/cryptos/models/binance/futures"
 )
 
@@ -22,7 +22,11 @@ type AccountRepository struct {
 }
 
 func (r *AccountRepository) Flush() error {
-  client := binance.NewFuturesClient(config.ACCOUNT_API_KEY, config.ACCOUNT_SECRET_KEY)
+  client := binance.NewFuturesClient(
+    os.Getenv("BINANCE_FUTURES_ACCOUNT_API_KEY"),
+    os.Getenv("BINANCE_FUTURES_ACCOUNT_API_SECRET"),
+  )
+  client.BaseURL = os.Getenv("BINANCE_FUTURES_API_ENDPOINT")
   account, err := client.NewGetAccountService().Do(r.Ctx)
   if err != nil {
     return err
@@ -59,6 +63,9 @@ func (r *AccountRepository) Flush() error {
       side,
     ).Take(&entity)
     if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+      if status == 2 {
+        continue
+      }
       entity = models.Position{
         ID:         xid.New().String(),
         Symbol:     position.Symbol,

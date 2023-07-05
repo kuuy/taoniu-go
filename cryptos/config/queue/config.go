@@ -16,6 +16,7 @@ const (
   BINANCE_FUTURES_TICKERS_DELAY                 = "cryptos.jobs.binance.futures.tickers.delay"
   BINANCE_FUTURES_KLINES                        = "cryptos.jobs.binance.futures.klines"
   BINANCE_FUTURES_KLINES_DELAY                  = "cryptos.jobs.binance.futures.klines.delay"
+  BINANCE_FUTURES_ORDERS                        = "cryptos.jobs.binance.futures.orders"
   BINANCE_FUTURES_INDICATORS                    = "cryptos.jobs.binance.futures.indicators"
   BINANCE_FUTURES_STRATEGIES                    = "cryptos.jobs.binance.futures.strategies"
   BINANCE_FUTURES_PLANS                         = "cryptos.jobs.binance.futures.plans"

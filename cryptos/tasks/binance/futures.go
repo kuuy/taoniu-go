@@ -23,11 +23,11 @@ type FuturesTask struct {
   SymbolsTask    *tasks.SymbolsTask
   TickersTask    *tasks.TickersTask
   KlinesTask     *tasks.KlinesTask
+  OrdersTask     *tasks.OrdersTask
   IndicatorsTask *tasks.IndicatorsTask
   StrategiesTask *tasks.StrategiesTask
   PlansTask      *tasks.PlansTask
   TradingsTask   *tasks.TradingsTask
-  OrdersTask     *tasks.OrdersTask
 }
 
 func (t *FuturesTask) Cron() *tasks.CronTask {
@@ -110,6 +110,25 @@ func (t *FuturesTask) Klines() *tasks.KlinesTask {
   return t.KlinesTask
 }
 
+func (t *FuturesTask) Orders() *tasks.OrdersTask {
+  if t.OrdersTask == nil {
+    t.OrdersTask = &tasks.OrdersTask{
+      Asynq: t.Asynq,
+    }
+    t.OrdersTask.Job = &jobs.Orders{}
+    t.OrdersTask.SymbolsRepository = &repositories.SymbolsRepository{
+      Db: t.Db,
+    }
+    t.OrdersTask.TradingsRepository = &repositories.TradingsRepository{
+      Db: t.Db,
+    }
+    t.OrdersTask.TradingsRepository.TriggersRepository = &tradingsRepositories.TriggersRepository{
+      Db: t.Db,
+    }
+  }
+  return t.OrdersTask
+}
+
 func (t *FuturesTask) Indicators() *tasks.IndicatorsTask {
   if t.IndicatorsTask == nil {
     t.IndicatorsTask = &tasks.IndicatorsTask{
@@ -149,22 +168,6 @@ func (t *FuturesTask) Tradings() *tasks.TradingsTask {
     }
   }
   return t.TradingsTask
-}
-
-func (t *FuturesTask) Orders() *tasks.OrdersTask {
-  if t.OrdersTask == nil {
-    t.OrdersTask = &tasks.OrdersTask{
-      Db:  t.Db,
-      Rdb: t.Rdb,
-      Ctx: t.Ctx,
-    }
-    t.OrdersTask.Repository = &repositories.OrdersRepository{
-      Db:  t.Db,
-      Rdb: t.Rdb,
-      Ctx: t.Ctx,
-    }
-  }
-  return t.OrdersTask
 }
 
 func (t *FuturesTask) Flush() {

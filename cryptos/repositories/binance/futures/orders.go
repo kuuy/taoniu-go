@@ -4,6 +4,7 @@ import (
   "bytes"
   "context"
   "crypto"
+  "crypto/hmac"
   "crypto/rand"
   "crypto/rsa"
   "crypto/sha256"
@@ -16,6 +17,7 @@ import (
   "net"
   "net/http"
   "net/url"
+  "os"
   "strconv"
   "time"
 
@@ -58,7 +60,11 @@ func (r *OrdersRepository) Status(symbol string, orderID int64) string {
 }
 
 func (r *OrdersRepository) Open(symbol string) error {
-  client := binance.NewFuturesClient(config.ACCOUNT_API_KEY, config.ACCOUNT_SECRET_KEY)
+  client := binance.NewFuturesClient(
+    os.Getenv("BINANCE_FUTURES_ACCOUNT_API_KEY"),
+    os.Getenv("BINANCE_FUTURES_ACCOUNT_API_SECRET"),
+  )
+  client.BaseURL = os.Getenv("BINANCE_FUTURES_API_ENDPOINT")
   orders, err := client.NewListOpenOrdersService().Symbol(symbol).Do(r.Ctx)
   if err != nil {
     return err
@@ -149,23 +155,38 @@ func (r *OrdersRepository) Create(
   timestamp := time.Now().UnixNano()/int64(time.Millisecond) - timediff
   payload := fmt.Sprintf("%s&timestamp=%v", params.Encode(), timestamp)
 
-  block, _ := pem.Decode([]byte(config.TRADE_SECRET_KEY))
-  privateKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
-  if err != nil {
-    return
-  }
-  hashed := sha256.Sum256([]byte(payload))
-  signature, _ := rsa.SignPKCS1v15(rand.Reader, privateKey.(*rsa.PrivateKey), crypto.SHA256, hashed[:])
-
   data := url.Values{}
-  data.Add("signature", base64.StdEncoding.EncodeToString(signature))
+
+  secretKey := os.Getenv("BINANCE_FUTURES_TRADE_API_SECRET")
+  if len(secretKey) == 64 {
+    mac := hmac.New(sha256.New, []byte(secretKey))
+    _, err = mac.Write([]byte(payload))
+    if err != nil {
+      return
+    }
+    signature := mac.Sum(nil)
+    data.Add("signature", fmt.Sprintf("%x", signature))
+  } else {
+    block, _ := pem.Decode([]byte(secretKey))
+    if block == nil {
+      err = errors.New("invalid raa secret key")
+      return
+    }
+    privateKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+    if err != nil {
+      return 0, err
+    }
+    hashed := sha256.Sum256([]byte(payload))
+    signature, _ := rsa.SignPKCS1v15(rand.Reader, privateKey.(*rsa.PrivateKey), crypto.SHA256, hashed[:])
+    data.Add("signature", base64.StdEncoding.EncodeToString(signature))
+  }
 
   body := bytes.NewBufferString(fmt.Sprintf("%s&%s", payload, data.Encode()))
 
-  url := "https://fapi.binance.com/fapi/v1/order"
+  url := fmt.Sprintf("%s/fapi/v1/order", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))
   req, _ := http.NewRequest("POST", url, body)
   req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-  req.Header.Set("X-MBX-APIKEY", config.TRADE_API_KEY)
+  req.Header.Set("X-MBX-APIKEY", os.Getenv("BINANCE_FUTURES_TRADE_API_KEY"))
   resp, err := httpClient.Do(req)
   if err != nil {
     return
@@ -202,6 +223,224 @@ func (r *OrdersRepository) Create(
   return response.OrderID, nil
 }
 
+func (r *OrdersRepository) Take(
+  symbol string,
+  positionSide string,
+  price float64,
+) (orderId int64, err error) {
+  tr := &http.Transport{
+    DisableKeepAlives: true,
+  }
+  session := &net.Dialer{}
+  tr.DialContext = session.DialContext
+
+  httpClient := &http.Client{
+    Transport: tr,
+    Timeout:   time.Duration(5) * time.Second,
+  }
+
+  var side string
+  if positionSide == "LONG" {
+    side = "SELL"
+  } else {
+    side = "BUY"
+  }
+
+  params := url.Values{}
+  params.Add("symbol", symbol)
+  params.Add("positionSide", positionSide)
+  params.Add("side", side)
+  params.Add("type", "TAKE_PROFIT_MARKET")
+  params.Add("stopPrice", strconv.FormatFloat(price, 'f', -1, 64))
+  params.Add("closePosition", "true")
+  params.Add("timeInForce", "GTC")
+  params.Add("newOrderRespType", "RESULT")
+  params.Add("recvWindow", "60000")
+
+  value, err := r.Rdb.HGet(r.Ctx, "binance:server", "timediff").Result()
+  if err != nil {
+    return
+  }
+  timediff, _ := strconv.ParseInt(value, 10, 64)
+
+  timestamp := time.Now().UnixNano()/int64(time.Millisecond) - timediff
+  payload := fmt.Sprintf("%s&timestamp=%v", params.Encode(), timestamp)
+
+  data := url.Values{}
+
+  secretKey := os.Getenv("BINANCE_FUTURES_TRADE_API_SECRET")
+  if len(secretKey) == 64 {
+    mac := hmac.New(sha256.New, []byte(secretKey))
+    _, err = mac.Write([]byte(payload))
+    if err != nil {
+      return
+    }
+    signature := mac.Sum(nil)
+    data.Add("signature", fmt.Sprintf("%x", signature))
+  } else {
+    block, _ := pem.Decode([]byte(secretKey))
+    if block == nil {
+      err = errors.New("invalid raa secret key")
+      return
+    }
+    privateKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+    if err != nil {
+      return 0, err
+    }
+    hashed := sha256.Sum256([]byte(payload))
+    signature, _ := rsa.SignPKCS1v15(rand.Reader, privateKey.(*rsa.PrivateKey), crypto.SHA256, hashed[:])
+    data.Add("signature", base64.StdEncoding.EncodeToString(signature))
+  }
+
+  body := bytes.NewBufferString(fmt.Sprintf("%s&%s", payload, data.Encode()))
+
+  url := fmt.Sprintf("%s/fapi/v1/order", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))
+  req, _ := http.NewRequest("POST", url, body)
+  req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+  req.Header.Set("X-MBX-APIKEY", os.Getenv("BINANCE_FUTURES_TRADE_API_KEY"))
+  resp, err := httpClient.Do(req)
+  if err != nil {
+    return
+  }
+  defer resp.Body.Close()
+
+  if resp.StatusCode >= http.StatusBadRequest {
+    apiErr := new(common.APIError)
+    err = json.NewDecoder(resp.Body).Decode(&apiErr)
+    if err == nil {
+      return 0, apiErr
+    }
+  }
+
+  if resp.StatusCode != http.StatusOK {
+    err = errors.New(
+      fmt.Sprintf(
+        "request error: status[%s] code[%d]",
+        resp.Status,
+        resp.StatusCode,
+      ),
+    )
+    return
+  }
+
+  var response binance.CreateOrderResponse
+  err = json.NewDecoder(resp.Body).Decode(&response)
+  if err != nil {
+    return
+  }
+
+  return response.OrderID, nil
+}
+
+func (r *OrdersRepository) Stop(
+  symbol string,
+  positionSide string,
+  price float64,
+) (orderId int64, err error) {
+  tr := &http.Transport{
+    DisableKeepAlives: true,
+  }
+  session := &net.Dialer{}
+  tr.DialContext = session.DialContext
+
+  httpClient := &http.Client{
+    Transport: tr,
+    Timeout:   time.Duration(5) * time.Second,
+  }
+
+  var side string
+  if positionSide == "LONG" {
+    side = "SELL"
+  } else {
+    side = "BUY"
+  }
+
+  params := url.Values{}
+  params.Add("symbol", symbol)
+  params.Add("positionSide", positionSide)
+  params.Add("side", side)
+  params.Add("type", "STOP_MARKET")
+  params.Add("stopPrice", strconv.FormatFloat(price, 'f', -1, 64))
+  params.Add("closePosition", "true")
+  params.Add("timeInForce", "GTC")
+  params.Add("newOrderRespType", "RESULT")
+  params.Add("recvWindow", "60000")
+
+  value, err := r.Rdb.HGet(r.Ctx, "binance:server", "timediff").Result()
+  if err != nil {
+    return
+  }
+  timediff, _ := strconv.ParseInt(value, 10, 64)
+
+  timestamp := time.Now().UnixNano()/int64(time.Millisecond) - timediff
+  payload := fmt.Sprintf("%s&timestamp=%v", params.Encode(), timestamp)
+
+  data := url.Values{}
+
+  secretKey := os.Getenv("BINANCE_FUTURES_TRADE_API_SECRET")
+  if len(secretKey) == 64 {
+    mac := hmac.New(sha256.New, []byte(secretKey))
+    _, err = mac.Write([]byte(payload))
+    if err != nil {
+      return
+    }
+    signature := mac.Sum(nil)
+    data.Add("signature", fmt.Sprintf("%x", signature))
+  } else {
+    block, _ := pem.Decode([]byte(secretKey))
+    if block == nil {
+      err = errors.New("invalid raa secret key")
+      return
+    }
+    privateKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+    if err != nil {
+      return 0, err
+    }
+    hashed := sha256.Sum256([]byte(payload))
+    signature, _ := rsa.SignPKCS1v15(rand.Reader, privateKey.(*rsa.PrivateKey), crypto.SHA256, hashed[:])
+    data.Add("signature", base64.StdEncoding.EncodeToString(signature))
+  }
+
+  body := bytes.NewBufferString(fmt.Sprintf("%s&%s", payload, data.Encode()))
+
+  url := fmt.Sprintf("%s/fapi/v1/order", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))
+  req, _ := http.NewRequest("POST", url, body)
+  req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+  req.Header.Set("X-MBX-APIKEY", os.Getenv("BINANCE_FUTURES_TRADE_API_KEY"))
+  resp, err := httpClient.Do(req)
+  if err != nil {
+    return
+  }
+  defer resp.Body.Close()
+
+  if resp.StatusCode >= http.StatusBadRequest {
+    apiErr := new(common.APIError)
+    err = json.NewDecoder(resp.Body).Decode(&apiErr)
+    if err == nil {
+      return 0, apiErr
+    }
+  }
+
+  if resp.StatusCode != http.StatusOK {
+    err = errors.New(
+      fmt.Sprintf(
+        "request error: status[%s] code[%d]",
+        resp.Status,
+        resp.StatusCode,
+      ),
+    )
+    return
+  }
+
+  var response binance.CreateOrderResponse
+  err = json.NewDecoder(resp.Body).Decode(&response)
+  if err != nil {
+    return
+  }
+
+  return response.OrderID, nil
+}
+
 func (r *OrdersRepository) Cancel(symbol string, orderId int64) error {
   tr := &http.Transport{
     DisableKeepAlives: true,
@@ -222,20 +461,34 @@ func (r *OrdersRepository) Cancel(symbol string, orderId int64) error {
   timestamp := time.Now().UnixNano() / int64(time.Millisecond)
   payload := fmt.Sprintf("%s&timestamp=%v", params.Encode(), timestamp)
 
-  block, _ := pem.Decode([]byte(config.TRADE_SECRET_KEY))
-  privateKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
-  if err != nil {
-    return err
-  }
-  hashed := sha256.Sum256([]byte(payload))
-  signature, _ := rsa.SignPKCS1v15(rand.Reader, privateKey.(*rsa.PrivateKey), crypto.SHA256, hashed[:])
-
   data := url.Values{}
-  data.Add("signature", base64.StdEncoding.EncodeToString(signature))
+
+  secretKey := os.Getenv("BINANCE_FUTURES_TRADE_API_SECRET")
+  if len(secretKey) == 64 {
+    mac := hmac.New(sha256.New, []byte(secretKey))
+    _, err := mac.Write([]byte(payload))
+    if err != nil {
+      return err
+    }
+    signature := mac.Sum(nil)
+    data.Add("signature", fmt.Sprintf("%x", signature))
+  } else {
+    block, _ := pem.Decode([]byte(secretKey))
+    if block == nil {
+      return errors.New("invalid raa secret key")
+    }
+    privateKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+    if err != nil {
+      return err
+    }
+    hashed := sha256.Sum256([]byte(payload))
+    signature, _ := rsa.SignPKCS1v15(rand.Reader, privateKey.(*rsa.PrivateKey), crypto.SHA256, hashed[:])
+    data.Add("signature", base64.StdEncoding.EncodeToString(signature))
+  }
 
   body := bytes.NewBufferString(fmt.Sprintf("%s&%s", payload, data.Encode()))
 
-  url := "https://fapi.binance.com/fapi/v1/order"
+  url := fmt.Sprintf("%s/fapi/v1/order", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))
   req, _ := http.NewRequest("DELETE", url, body)
   req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
   req.Header.Set("X-MBX-APIKEY", config.TRADE_API_KEY)
@@ -273,7 +526,11 @@ func (r *OrdersRepository) Cancel(symbol string, orderId int64) error {
 }
 
 func (r *OrdersRepository) Flush(symbol string, orderID int64) error {
-  client := binance.NewFuturesClient(config.ACCOUNT_API_KEY, config.ACCOUNT_SECRET_KEY)
+  client := binance.NewFuturesClient(
+    os.Getenv("BINANCE_FUTURES_ACCOUNT_API_KEY"),
+    os.Getenv("BINANCE_FUTURES_ACCOUNT_API_SECRET"),
+  )
+  client.BaseURL = os.Getenv("BINANCE_FUTURES_API_ENDPOINT")
   order, err := client.NewGetOrderService().Symbol(symbol).OrderID(orderID).Do(r.Ctx)
   if err != nil {
     return err

@@ -6,6 +6,7 @@ import (
   "fmt"
   "github.com/shopspring/decimal"
   "math"
+  "os"
   "strconv"
   "strings"
   "time"
@@ -54,6 +55,7 @@ func (r *SymbolsRepository) Filters(params datatypes.JSONMap) (tickSize float64,
 
 func (r *SymbolsRepository) Flush() error {
   client := binance.NewFuturesClient("", "")
+  client.BaseURL = os.Getenv("BINANCE_FUTURES_API_ENDPOINT")
   result, err := client.NewExchangeInfoService().Do(r.Ctx)
   if err != nil {
     return err

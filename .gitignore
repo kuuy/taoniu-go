@@ -17,3 +17,5 @@
 .idea/
 
 .env
+.env.prod
+.env.test

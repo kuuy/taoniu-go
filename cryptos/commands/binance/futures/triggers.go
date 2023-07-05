@@ -47,10 +47,10 @@ func NewTriggersCommand() *cli.Command {
 
 func (h *TriggersHandler) Apply() error {
   log.Println("futures triggers apply...")
-  symbol := "QTUMUSDT"
-  side := 2
+  symbol := "AMBUSDT"
+  side := 1
   capital := 20000.0
-  price := 2.9
+  price := 0.01
   expiredAt := time.Now().Add(time.Hour * 24 * 14)
   err := h.Repository.Apply(symbol, side, capital, price, expiredAt)
   if err != nil {

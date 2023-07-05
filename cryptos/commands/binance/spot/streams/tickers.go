@@ -6,6 +6,7 @@ import (
   "errors"
   "fmt"
   "log"
+  "os"
   "strconv"
   "strings"
   "time"
@@ -156,7 +157,11 @@ func (h *TickersHandler) start(current int) (err error) {
     return errors.New("streams empty")
   }
 
-  endpoint := fmt.Sprintf("wss://stream.binance.com/stream?streams=%s", strings.Join(streams, "/"))
+  endpoint := fmt.Sprintf(
+    "%s?streams=%s",
+    os.Getenv("BINANCE_SPOT_STREAMS_ENDPOINT"),
+    strings.Join(streams, "/"),
+  )
 
   h.Socket, _, err = websocket.Dial(h.Ctx, endpoint, &websocket.DialOptions{
     CompressionMode: websocket.CompressionDisabled,

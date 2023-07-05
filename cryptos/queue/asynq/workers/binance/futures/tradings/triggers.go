@@ -3,6 +3,8 @@ package tradings
 import (
   "context"
   "encoding/json"
+  "fmt"
+  "time"
 
   "github.com/go-redis/redis/v8"
   "github.com/hibiken/asynq"
@@ -58,6 +60,16 @@ func (h *Triggers) Place(ctx context.Context, t *asynq.Task) error {
   var payload TriggersPlacePayload
   json.Unmarshal(t.Payload(), &payload)
 
+  mutex := common.NewMutex(
+    h.Rdb,
+    h.Ctx,
+    fmt.Sprintf("locks:binance:futures:tradings:triggers:place:%s", payload.ID),
+  )
+  if mutex.Lock(30 * time.Second) {
+    return nil
+  }
+  defer mutex.Unlock()
+
   h.Repository.Place(payload.ID)
 
   return nil
@@ -66,6 +78,16 @@ func (h *Triggers) Place(ctx context.Context, t *asynq.Task) error {
 func (h *Triggers) Flush(ctx context.Context, t *asynq.Task) error {
   var payload TriggersFlushPayload
   json.Unmarshal(t.Payload(), &payload)
+
+  mutex := common.NewMutex(
+    h.Rdb,
+    h.Ctx,
+    fmt.Sprintf("locks:binance:futures:tradings:triggers:flush:%s", payload.ID),
+  )
+  if mutex.Lock(30 * time.Second) {
+    return nil
+  }
+  defer mutex.Unlock()
 
   h.Repository.Flush(payload.ID)
 

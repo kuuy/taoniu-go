@@ -70,6 +70,7 @@ func (h *FuturesHandler) run() error {
     binance.Futures().Tradings().Triggers().Flush()
   })
   c.AddFunc("@every 30s", func() {
+    binance.Futures().Orders().Open()
     binance.Futures().Flush()
   })
   c.AddFunc("@every 1m", func() {

@@ -1,0 +1,67 @@
+package binance
+
+import (
+  "context"
+  "gorm.io/gorm"
+  "log"
+  "sync"
+
+  "github.com/go-redis/redis/v8"
+  "github.com/urfave/cli/v2"
+
+  "taoniu.local/cryptos/common"
+  workers "taoniu.local/cryptos/queue/nats/workers/binance"
+)
+
+type SpotHandler struct {
+  Db  *gorm.DB
+  Rdb *redis.Client
+  Ctx context.Context
+}
+
+func NewSpotCommand() *cli.Command {
+  var h SpotHandler
+  return &cli.Command{
+    Name:  "spot",
+    Usage: "",
+    Before: func(c *cli.Context) error {
+      h = SpotHandler{
+        Db:  common.NewDB(),
+        Rdb: common.NewRedis(),
+        Ctx: context.Background(),
+      }
+      return nil
+    },
+    Action: func(c *cli.Context) error {
+      if err := h.run(); err != nil {
+        return cli.Exit(err.Error(), 1)
+      }
+      return nil
+    },
+  }
+}
+
+func (h *SpotHandler) run() error {
+  log.Println("nats running...")
+
+  wg := &sync.WaitGroup{}
+  wg.Add(1)
+
+  nc := common.NewNats()
+  defer nc.Close()
+
+  workers.NewSpot(h.Db, h.Rdb, h.Ctx).Subscribe(nc)
+
+  <-h.wait(wg)
+
+  return nil
+}
+
+func (h *SpotHandler) wait(wg *sync.WaitGroup) chan bool {
+  ch := make(chan bool)
+  go func() {
+    wg.Wait()
+    ch <- true
+  }()
+  return ch
+}

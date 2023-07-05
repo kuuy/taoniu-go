@@ -51,7 +51,7 @@ func NewOrdersCommand() *cli.Command {
         Name:  "open",
         Usage: "",
         Action: func(c *cli.Context) error {
-          if err := h.open(); err != nil {
+          if err := h.Open(); err != nil {
             return cli.Exit(err.Error(), 1)
           }
           return nil
@@ -61,7 +61,17 @@ func NewOrdersCommand() *cli.Command {
         Name:  "create",
         Usage: "",
         Action: func(c *cli.Context) error {
-          if err := h.create(); err != nil {
+          if err := h.Create(); err != nil {
+            return cli.Exit(err.Error(), 1)
+          }
+          return nil
+        },
+      },
+      {
+        Name:  "cancel",
+        Usage: "",
+        Action: func(c *cli.Context) error {
+          if err := h.Cancel(); err != nil {
             return cli.Exit(err.Error(), 1)
           }
           return nil
@@ -141,8 +151,10 @@ func (h *OrdersHandler) saveOrder(db *gorm.DB, order *futures.Order) {
   }
 }
 
-func (h *OrdersHandler) open() error {
+func (h *OrdersHandler) Open() error {
   log.Println("futures orders open...")
+  symbol := "BTCUSDT"
+  return h.Repository.Open(symbol)
   //ctx := context.Background()
   //rdb := pool.NewRedis()
   //defer rdb.Close()
@@ -233,13 +245,24 @@ func (h *OrdersHandler) open() error {
   return nil
 }
 
-func (h *OrdersHandler) create() error {
+func (h *OrdersHandler) Create() error {
   symbol := "BTCUSDT"
   positionSide := "LONG"
   side := "BUY"
   price := 25000.0
   quantity := 0.001
   orderId, err := h.Repository.Create(symbol, positionSide, side, price, quantity)
+  if err != nil {
+    return err
+  }
+  log.Println("orderId", orderId)
+  return nil
+}
+
+func (h *OrdersHandler) Cancel() error {
+  symbol := "BTCUSDT"
+  orderId := 3394265812
+  err := h.Repository.Cancel(symbol, int64(orderId))
   if err != nil {
     return err
   }

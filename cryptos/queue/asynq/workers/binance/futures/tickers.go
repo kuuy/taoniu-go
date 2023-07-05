@@ -44,3 +44,8 @@ func (h *Tickers) Flush(ctx context.Context, t *asynq.Task) error {
 
   return nil
 }
+
+func (h *Tickers) Register(mux *asynq.ServeMux) error {
+  mux.HandleFunc("binance:futures:tickers:flush", h.Flush)
+  return nil
+}

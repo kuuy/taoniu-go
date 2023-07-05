@@ -42,7 +42,7 @@ func NewAccountCommand() *cli.Command {
         Name:  "flush",
         Usage: "",
         Action: func(c *cli.Context) error {
-          if err := h.flush(); err != nil {
+          if err := h.Flush(); err != nil {
             return cli.Exit(err.Error(), 1)
           }
           return nil
@@ -52,7 +52,7 @@ func NewAccountCommand() *cli.Command {
   }
 }
 
-func (h *AccountHandler) flush() error {
+func (h *AccountHandler) Flush() error {
   log.Println("account flush processing...")
   return h.Repository.Flush()
 }
