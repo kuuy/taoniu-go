@@ -7,12 +7,7 @@ import (
   "gorm.io/gorm"
 
   jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/spot"
-  savingsRepositories "taoniu.local/cryptos/repositories/binance/savings"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
-  crossRepositories "taoniu.local/cryptos/repositories/binance/spot/margin/cross"
-  crossTradingsRepositories "taoniu.local/cryptos/repositories/binance/spot/margin/cross/tradings"
-  isolatedRepositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated"
-  isolatedTradingsRepositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated/tradings"
   tradingsRepositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
   tasks "taoniu.local/cryptos/tasks/binance/spot"
 )
@@ -49,6 +44,20 @@ func (t *SpotTask) Cron() *tasks.CronTask {
   return t.CronTask
 }
 
+func (t *SpotTask) Account() *tasks.AccountTask {
+  if t.AccountTask == nil {
+    t.AccountTask = &tasks.AccountTask{
+      Asynq: t.Asynq,
+    }
+    t.AccountTask.Repository = &repositories.AccountRepository{
+      Db:  t.Db,
+      Rdb: t.Rdb,
+      Ctx: t.Ctx,
+    }
+  }
+  return t.AccountTask
+}
+
 func (t *SpotTask) Symbols() *tasks.SymbolsTask {
   if t.SymbolsTask == nil {
     t.SymbolsTask = &tasks.SymbolsTask{}
@@ -68,14 +77,13 @@ func (t *SpotTask) Tickers() *tasks.TickersTask {
       Ctx:   t.Ctx,
       Asynq: t.Asynq,
     }
-    t.TickersTask.Job = &jobs.Tickers{}
     t.TickersTask.SymbolsRepository = &repositories.SymbolsRepository{
       Db: t.Db,
     }
     t.TickersTask.TradingsRepository = &repositories.TradingsRepository{
       Db: t.Db,
     }
-    t.TickersTask.TradingsRepository.FishersRepository = &tradingsRepositories.FishersRepository{
+    t.TickersTask.TradingsRepository.LaunchpadRepository = &tradingsRepositories.LaunchpadRepository{
       Db: t.Db,
     }
     t.TickersTask.TradingsRepository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
@@ -84,60 +92,8 @@ func (t *SpotTask) Tickers() *tasks.TickersTask {
     t.TickersTask.TradingsRepository.TriggersRepository = &tradingsRepositories.TriggersRepository{
       Db: t.Db,
     }
-    t.TickersTask.CrossTradingsRepository = &crossRepositories.TradingsRepository{
-      Db: t.Db,
-    }
-    t.TickersTask.CrossTradingsRepository.TriggersRepository = &crossTradingsRepositories.TriggersRepository{
-      Db: t.Db,
-    }
-    t.TickersTask.IsolatedTradingsRepository = &isolatedRepositories.TradingsRepository{
-      Db: t.Db,
-    }
-    t.TickersTask.IsolatedTradingsRepository.FishersRepository = &isolatedTradingsRepositories.FishersRepository{
-      Db: t.Db,
-    }
   }
   return t.TickersTask
-}
-
-func (t *SpotTask) Depth() *tasks.DepthTask {
-  if t.DepthTask == nil {
-    t.DepthTask = &tasks.DepthTask{
-      Asynq: t.Asynq,
-    }
-    t.DepthTask.Job = &jobs.Depth{}
-    t.DepthTask.Repository = &repositories.DepthRepository{
-      Db: t.Db,
-    }
-    t.DepthTask.SymbolsRepository = &repositories.SymbolsRepository{
-      Db: t.Db,
-    }
-    t.DepthTask.TradingsRepository = &repositories.TradingsRepository{
-      Db: t.Db,
-    }
-    t.DepthTask.TradingsRepository.FishersRepository = &tradingsRepositories.FishersRepository{
-      Db: t.Db,
-    }
-    t.DepthTask.TradingsRepository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
-      Db: t.Db,
-    }
-    t.DepthTask.TradingsRepository.TriggersRepository = &tradingsRepositories.TriggersRepository{
-      Db: t.Db,
-    }
-    t.DepthTask.CrossTradingsRepository = &crossRepositories.TradingsRepository{
-      Db: t.Db,
-    }
-    t.DepthTask.CrossTradingsRepository.TriggersRepository = &crossTradingsRepositories.TriggersRepository{
-      Db: t.Db,
-    }
-    t.DepthTask.IsolatedTradingsRepository = &isolatedRepositories.TradingsRepository{
-      Db: t.Db,
-    }
-    t.DepthTask.IsolatedTradingsRepository.FishersRepository = &isolatedTradingsRepositories.FishersRepository{
-      Db: t.Db,
-    }
-  }
-  return t.DepthTask
 }
 
 func (t *SpotTask) Klines() *tasks.KlinesTask {
@@ -147,7 +103,6 @@ func (t *SpotTask) Klines() *tasks.KlinesTask {
       Ctx:   t.Ctx,
       Asynq: t.Asynq,
     }
-    t.KlinesTask.Job = &jobs.Klines{}
     t.KlinesTask.Repository = &repositories.KlinesRepository{
       Db: t.Db,
     }
@@ -157,7 +112,7 @@ func (t *SpotTask) Klines() *tasks.KlinesTask {
     t.KlinesTask.TradingsRepository = &repositories.TradingsRepository{
       Db: t.Db,
     }
-    t.KlinesTask.TradingsRepository.FishersRepository = &tradingsRepositories.FishersRepository{
+    t.KlinesTask.TradingsRepository.LaunchpadRepository = &tradingsRepositories.LaunchpadRepository{
       Db: t.Db,
     }
     t.KlinesTask.TradingsRepository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
@@ -166,28 +121,71 @@ func (t *SpotTask) Klines() *tasks.KlinesTask {
     t.KlinesTask.TradingsRepository.TriggersRepository = &tradingsRepositories.TriggersRepository{
       Db: t.Db,
     }
-    t.KlinesTask.CrossTradingsRepository = &crossRepositories.TradingsRepository{
+  }
+  return t.KlinesTask
+}
+
+func (t *SpotTask) Depth() *tasks.DepthTask {
+  if t.DepthTask == nil {
+    t.DepthTask = &tasks.DepthTask{
+      Rdb:   t.Rdb,
+      Ctx:   t.Ctx,
+      Asynq: t.Asynq,
+    }
+    t.DepthTask.SymbolsRepository = &repositories.SymbolsRepository{
       Db: t.Db,
     }
-    t.KlinesTask.CrossTradingsRepository.TriggersRepository = &crossTradingsRepositories.TriggersRepository{
+    t.DepthTask.TradingsRepository = &repositories.TradingsRepository{
       Db: t.Db,
     }
-    t.KlinesTask.IsolatedTradingsRepository = &isolatedRepositories.TradingsRepository{
+    t.DepthTask.TradingsRepository.LaunchpadRepository = &tradingsRepositories.LaunchpadRepository{
       Db: t.Db,
     }
-    t.KlinesTask.IsolatedTradingsRepository.FishersRepository = &isolatedTradingsRepositories.FishersRepository{
+    t.DepthTask.TradingsRepository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
+      Db: t.Db,
+    }
+    t.DepthTask.TradingsRepository.TriggersRepository = &tradingsRepositories.TriggersRepository{
       Db: t.Db,
     }
   }
-  return t.KlinesTask
+  return t.DepthTask
+}
+
+func (t *SpotTask) Orders() *tasks.OrdersTask {
+  if t.OrdersTask == nil {
+    t.OrdersTask = &tasks.OrdersTask{
+      Asynq: t.Asynq,
+    }
+    t.OrdersTask.Job = &jobs.Orders{}
+    t.OrdersTask.Repository = &repositories.OrdersRepository{
+      Db:  t.Db,
+      Rdb: t.Rdb,
+      Ctx: t.Ctx,
+    }
+    t.OrdersTask.SymbolsRepository = &repositories.SymbolsRepository{
+      Db: t.Db,
+    }
+    t.OrdersTask.TradingsRepository = &repositories.TradingsRepository{
+      Db: t.Db,
+    }
+    t.OrdersTask.TradingsRepository.LaunchpadRepository = &tradingsRepositories.LaunchpadRepository{
+      Db: t.Db,
+    }
+    t.OrdersTask.TradingsRepository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
+      Db: t.Db,
+    }
+    t.OrdersTask.TradingsRepository.TriggersRepository = &tradingsRepositories.TriggersRepository{
+      Db: t.Db,
+    }
+  }
+  return t.OrdersTask
 }
 
 func (t *SpotTask) Indicators() *tasks.IndicatorsTask {
   if t.IndicatorsTask == nil {
     t.IndicatorsTask = &tasks.IndicatorsTask{
-      Db:  t.Db,
-      Rdb: t.Rdb,
-      Ctx: t.Ctx,
+      Db:    t.Db,
+      Asynq: t.Asynq,
     }
   }
   return t.IndicatorsTask
@@ -196,9 +194,8 @@ func (t *SpotTask) Indicators() *tasks.IndicatorsTask {
 func (t *SpotTask) Strategies() *tasks.StrategiesTask {
   if t.StrategiesTask == nil {
     t.StrategiesTask = &tasks.StrategiesTask{
-      Db:  t.Db,
-      Rdb: t.Rdb,
-      Ctx: t.Ctx,
+      Db:    t.Db,
+      Asynq: t.Asynq,
     }
   }
   return t.StrategiesTask
@@ -207,9 +204,7 @@ func (t *SpotTask) Strategies() *tasks.StrategiesTask {
 func (t *SpotTask) Plans() *tasks.PlansTask {
   if t.PlansTask == nil {
     t.PlansTask = &tasks.PlansTask{
-      Db:  t.Db,
-      Rdb: t.Rdb,
-      Ctx: t.Ctx,
+      Asynq: t.Asynq,
     }
   }
   return t.PlansTask
@@ -223,71 +218,8 @@ func (t *SpotTask) Tradings() *tasks.TradingsTask {
       Ctx:   t.Ctx,
       Asynq: t.Asynq,
     }
-    t.TradingsTask.Repository = &repositories.TradingsRepository{
-      Db: t.Db,
-    }
-    t.TradingsTask.Repository.AccountRepository = &repositories.AccountRepository{
-      Db:  t.Db,
-      Rdb: t.Rdb,
-      Ctx: t.Ctx,
-    }
-    t.TradingsTask.Repository.ProductsRepository = &savingsRepositories.ProductsRepository{
-      Db: t.Db,
-    }
-    t.TradingsTask.Repository.FishersRepository = &tradingsRepositories.FishersRepository{
-      Db: t.Db,
-    }
-    t.TradingsTask.Repository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
-      Db: t.Db,
-    }
-    t.TradingsTask.Repository.TriggersRepository = &tradingsRepositories.TriggersRepository{
-      Db: t.Db,
-    }
   }
   return t.TradingsTask
-}
-
-func (t *SpotTask) Account() *tasks.AccountTask {
-  if t.AccountTask == nil {
-    t.AccountTask = &tasks.AccountTask{}
-    t.AccountTask.Repository = &repositories.AccountRepository{
-      Db:  t.Db,
-      Rdb: t.Rdb,
-      Ctx: t.Ctx,
-    }
-  }
-  return t.AccountTask
-}
-
-func (t *SpotTask) Orders() *tasks.OrdersTask {
-  if t.OrdersTask == nil {
-    t.OrdersTask = &tasks.OrdersTask{
-      Db:  t.Db,
-      Rdb: t.Rdb,
-      Ctx: t.Ctx,
-    }
-    t.OrdersTask.Repository = &repositories.OrdersRepository{
-      Db:  t.Db,
-      Rdb: t.Rdb,
-      Ctx: t.Ctx,
-    }
-  }
-  return t.OrdersTask
-}
-
-func (t *SpotTask) Grids() *tasks.GridsTask {
-  if t.GridsTask == nil {
-    t.GridsTask = &tasks.GridsTask{
-      Rdb: t.Rdb,
-      Ctx: t.Ctx,
-    }
-    t.GridsTask.Repository = &repositories.GridsRepository{
-      Db:  t.Db,
-      Rdb: t.Rdb,
-      Ctx: t.Ctx,
-    }
-  }
-  return t.GridsTask
 }
 
 func (t *SpotTask) Analysis() *tasks.AnalysisTask {
@@ -313,18 +245,6 @@ func (t *SpotTask) Margin() *tasks.MarginTask {
   return t.MarginTask
 }
 
-func (t *SpotTask) Flush() {
-  t.Account().Flush()
-  //t.Orders().Open()
-  //t.Orders().Gets()
-  t.Margin().Flush()
-  //t.Plans().Daily().Flush()
-}
-
 func (t *SpotTask) Clean() {
   t.Klines().Clean()
-}
-
-func (t *SpotTask) Sync() {
-  t.Orders().Sync()
 }

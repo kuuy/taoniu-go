@@ -5,8 +5,10 @@ import (
   "encoding/json"
   "errors"
   "fmt"
+  "github.com/shopspring/decimal"
   "net"
   "net/http"
+  "os"
   "strconv"
   "strings"
   "time"
@@ -46,6 +48,7 @@ func (r *TickersRepository) Flush(symbols []string) error {
     low, _ := strconv.ParseFloat(data["lowPrice"].(string), 64)
     volume, _ := strconv.ParseFloat(data["volume"].(string), 64)
     quota, _ := strconv.ParseFloat(data["quoteVolume"].(string), 64)
+    change, _ := decimal.NewFromFloat(price).Sub(decimal.NewFromFloat(open)).Div(decimal.NewFromFloat(open)).Round(4).Float64()
     pipe.HMSet(
       r.Ctx,
       redisKey,
@@ -57,6 +60,7 @@ func (r *TickersRepository) Flush(symbols []string) error {
         "low":       low,
         "volume":    volume,
         "quota":     quota,
+        "change":    change,
         "timestamp": timestamp,
       },
     )
@@ -93,7 +97,7 @@ func (r *TickersRepository) Request(symbols []string) ([]interface{}, error) {
     Timeout:   time.Duration(5) * time.Second,
   }
 
-  url := "https://api.binance.com/api/v3/ticker/24hr"
+  url := fmt.Sprintf("%s/api/v3/ticker/24hr", os.Getenv("BINANCE_SPOT_API_ENDPOINT"))
   req, _ := http.NewRequest("GET", url, nil)
   q := req.URL.Query()
   val, _ := json.Marshal(symbols)
@@ -117,6 +121,11 @@ func (r *TickersRepository) Request(symbols []string) ([]interface{}, error) {
 
   var result []interface{}
   json.NewDecoder(resp.Body).Decode(&result)
+
+  if len(result) == 0 {
+    return nil, errors.New("invalid response")
+  }
+
   return result, nil
 }
 

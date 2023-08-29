@@ -1,18 +1,18 @@
 package v1
 
 import (
-	"net/http"
+  "net/http"
 
-	"github.com/go-chi/chi/v5"
+  "github.com/go-chi/chi/v5"
 
-	"taoniu.local/cryptos/api"
-	"taoniu.local/cryptos/api/v1/binance"
+  "taoniu.local/cryptos/api"
+  "taoniu.local/cryptos/api/v1/binance"
 )
 
 func NewBinanceRouter() http.Handler {
-	r := chi.NewRouter()
-	r.Use(api.Authenticator)
-	r.Mount("/spot", binance.NewSpotRouter())
-
-	return r
+  r := chi.NewRouter()
+  r.Use(api.Authenticator)
+  r.Mount("/spot", binance.NewSpotRouter())
+  r.Mount("/futures", binance.NewFuturesRouter())
+  return r
 }

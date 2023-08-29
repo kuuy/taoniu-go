@@ -5,6 +5,7 @@ import (
   "encoding/json"
   "errors"
   "fmt"
+  "github.com/shopspring/decimal"
   "log"
   "os"
   "strconv"
@@ -48,6 +49,9 @@ func NewTickersCommand() *cli.Command {
       h.TradingsRepository = &repositories.TradingsRepository{
         Db: h.Db,
       }
+      h.TradingsRepository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
+        Db: h.Db,
+      }
       h.TradingsRepository.TriggersRepository = &tradingsRepositories.TriggersRepository{
         Db: h.Db,
       }
@@ -84,7 +88,6 @@ func (h *TickersHandler) handler(message map[string]interface{}) {
   data := message["data"].(map[string]interface{})
   event := data["e"].(string)
 
-  log.Println("ticker", data)
   if event == "24hrMiniTicker" {
     open, _ := strconv.ParseFloat(data["o"].(string), 64)
     price, _ := strconv.ParseFloat(data["c"].(string), 64)
@@ -92,6 +95,7 @@ func (h *TickersHandler) handler(message map[string]interface{}) {
     low, _ := strconv.ParseFloat(data["l"].(string), 64)
     volume, _ := strconv.ParseFloat(data["v"].(string), 64)
     quota, _ := strconv.ParseFloat(data["q"].(string), 64)
+    change, _ := decimal.NewFromFloat(price).Sub(decimal.NewFromFloat(open)).Div(decimal.NewFromFloat(open)).Round(4).Float64()
     data, _ := json.Marshal(map[string]interface{}{
       "symbol":    data["s"].(string),
       "price":     price,
@@ -100,9 +104,10 @@ func (h *TickersHandler) handler(message map[string]interface{}) {
       "low":       low,
       "volume":    volume,
       "quota":     quota,
+      "change":    change,
       "timestamp": time.Now().Unix(),
     })
-    h.Nats.Publish(config.NATS_TICKERS_UPDATE, data)
+    h.Nats.Publish(config.NATS_TRADES_UPDATE, data)
     h.Nats.Flush()
   }
 }
@@ -112,12 +117,12 @@ func (h *TickersHandler) start(current int) (err error) {
 
   symbols := h.Scan()
 
-  offset := (current - 1) * 25
+  offset := (current - 1) * 20
   if offset >= len(symbols) {
     err = errors.New("symbols out of range")
     return
   }
-  endPos := offset + 25
+  endPos := offset + 20
   if endPos > len(symbols) {
     endPos = len(symbols)
   }
@@ -173,12 +178,12 @@ func (h *TickersHandler) start(current int) (err error) {
   for {
     select {
     case <-ticker.C:
-      if len(symbols) != len(h.Scan()) {
+      err = h.ping()
+      if err != nil {
         h.Socket.Close(websocket.StatusNormalClosure, "")
         return
       }
-      err = h.ping()
-      if err != nil {
+      if len(symbols) != len(h.Scan()) {
         h.Socket.Close(websocket.StatusNormalClosure, "")
         return
       }

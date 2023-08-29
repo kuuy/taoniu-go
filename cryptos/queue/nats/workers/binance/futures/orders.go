@@ -1,31 +1,25 @@
 package futures
 
 import (
-  "context"
   "encoding/json"
-  "github.com/go-redis/redis/v8"
   "github.com/nats-io/nats.go"
-  "gorm.io/gorm"
+  "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/futures"
   repositories "taoniu.local/cryptos/repositories/binance/futures"
 )
 
 type Orders struct {
-  Db         *gorm.DB
-  Rdb        *redis.Client
-  Ctx        context.Context
-  Repository *repositories.OrdersRepository
+  NatsContext *common.NatsContext
+  Repository  *repositories.OrdersRepository
 }
 
-func NewOrders(db *gorm.DB, rdb *redis.Client, ctx context.Context) *Orders {
+func NewOrders(natsContext *common.NatsContext) *Orders {
   h := &Orders{
-    Db:  db,
-    Rdb: rdb,
-    Ctx: ctx,
+    NatsContext: natsContext,
   }
   h.Repository = &repositories.OrdersRepository{
-    Db:  h.Db,
-    Ctx: h.Ctx,
+    Db:  h.NatsContext.Db,
+    Ctx: h.NatsContext.Ctx,
   }
   return h
 }
@@ -36,8 +30,8 @@ type OrdersUpdatePayload struct {
   Status  string `json:"status"`
 }
 
-func (h *Orders) Subscribe(nc *nats.Conn) error {
-  nc.Subscribe(config.NATS_ORDERS_UPDATE, h.Update)
+func (h *Orders) Subscribe() error {
+  h.NatsContext.Conn.Subscribe(config.NATS_ORDERS_UPDATE, h.Update)
   return nil
 }
 

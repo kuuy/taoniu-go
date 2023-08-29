@@ -33,7 +33,7 @@ func NewFuturesCommand() *cli.Command {
       return nil
     },
     Action: func(c *cli.Context) error {
-      if err := h.run(); err != nil {
+      if err := h.Run(); err != nil {
         return cli.Exit(err.Error(), 1)
       }
       return nil
@@ -41,7 +41,7 @@ func NewFuturesCommand() *cli.Command {
   }
 }
 
-func (h *FuturesHandler) run() error {
+func (h *FuturesHandler) Run() error {
   log.Println("nats running...")
 
   wg := &sync.WaitGroup{}
@@ -50,7 +50,13 @@ func (h *FuturesHandler) run() error {
   nc := common.NewNats()
   defer nc.Close()
 
-  workers.NewFutures(h.Db, h.Rdb, h.Ctx).Subscribe(nc)
+  natsContext := &common.NatsContext{
+    Db:   h.Db,
+    Rdb:  h.Rdb,
+    Ctx:  h.Ctx,
+    Conn: nc,
+  }
+  workers.NewFutures(natsContext).Subscribe()
 
   <-h.wait(wg)
 

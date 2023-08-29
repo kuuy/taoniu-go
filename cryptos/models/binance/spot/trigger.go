@@ -7,8 +7,15 @@ type Trigger struct {
   Symbol        string    `gorm:"size:20;not null;index:idx_binance_spot_triggers_symbol_status"`
   Capital       float64   `gorm:"not null"`
   Price         float64   `gorm:"not null"`
+  TakePrice     float64   `gorm:"not null"`
+  StopPrice     float64   `gorm:"not null"`
   EntryPrice    float64   `gorm:"not null"`
   EntryQuantity float64   `gorm:"not null"`
+  Profit        float64   `gorm:"not null"`
+  BufferProfit  float64   `gorm:"not null"`
+  TakeOrderId   int64     `gorm:"not null"`
+  StopOrderId   int64     `gorm:"not null"`
+  Timestamp     int64     `gorm:"not null"`
   Status        int       `gorm:"size:30;not null;index;index:idx_binance_spot_triggers_symbol_status"`
   Remark        string    `gorm:"size:5000;not null"`
   ExpiredAt     time.Time `gorm:"not null"`

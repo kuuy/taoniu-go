@@ -1,29 +1,22 @@
 package workers
 
 import (
-  "context"
-  "github.com/go-redis/redis/v8"
-  "github.com/nats-io/nats.go"
-  "gorm.io/gorm"
+  "taoniu.local/cryptos/common"
   "taoniu.local/cryptos/queue/nats/workers/binance"
 )
 
 type Binance struct {
-  Db  *gorm.DB
-  Rdb *redis.Client
-  Ctx context.Context
+  NatsContext *common.NatsContext
 }
 
-func NewBinance(db *gorm.DB, rdb *redis.Client, ctx context.Context) *Binance {
+func NewBinance(natsContext *common.NatsContext) *Binance {
   return &Binance{
-    Db:  db,
-    Rdb: rdb,
-    Ctx: ctx,
+    NatsContext: natsContext,
   }
 }
 
-func (h *Binance) Subscribe(nc *nats.Conn) error {
-  binance.NewSpot(h.Db, h.Rdb, h.Ctx).Subscribe(nc)
-  binance.NewFutures(h.Db, h.Rdb, h.Ctx).Subscribe(nc)
+func (h *Binance) Subscribe() error {
+  binance.NewSpot(h.NatsContext).Subscribe()
+  binance.NewFutures(h.NatsContext).Subscribe()
   return nil
 }

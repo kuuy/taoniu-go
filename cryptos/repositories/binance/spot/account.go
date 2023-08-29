@@ -2,15 +2,12 @@ package spot
 
 import (
   "context"
-  "errors"
   "fmt"
   "github.com/adshao/go-binance/v2"
   "github.com/go-redis/redis/v8"
   "gorm.io/gorm"
+  "os"
   "strconv"
-
-  config "taoniu.local/cryptos/config/binance/spot"
-  binanceModels "taoniu.local/cryptos/models/binance/spot"
 )
 
 type AccountRepository struct {
@@ -20,7 +17,12 @@ type AccountRepository struct {
 }
 
 func (r *AccountRepository) Flush() error {
-  client := binance.NewClient(config.ACCOUNT_API_KEY, config.ACCOUNT_SECRET_KEY)
+  client := binance.NewClient(
+    os.Getenv("BINANCE_SPOT_ACCOUNT_API_KEY"),
+    os.Getenv("BINANCE_SPOT_ACCOUNT_API_SECRET"),
+  )
+  client.BaseURL = os.Getenv("BINANCE_SPOT_API_ENDPOINT")
+
   account, err := client.NewGetAccountService().Do(r.Ctx)
   if err != nil {
     return err
@@ -55,37 +57,16 @@ func (r *AccountRepository) Flush() error {
   return nil
 }
 
-func (r *AccountRepository) Balance(symbol string) (float64, float64, error) {
-  var entity *binanceModels.Symbol
-  result := r.Db.Select([]string{"base_asset", "quote_asset"}).Where("symbol", symbol).Take(&entity)
-  if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    return 0, 0, errors.New("no symbol data")
-  }
-
-  var balance float64 = 0
-  var quantity float64 = 0
-
-  var val string
-  var err error
-  val, err = r.Rdb.HGet(
+func (r *AccountRepository) Balance(asset string) (balance float64, err error) {
+  value, err := r.Rdb.HGet(
     r.Ctx,
-    fmt.Sprintf("binance:spot:balance:%s", entity.QuoteAsset),
+    fmt.Sprintf("binance:spot:balance:%s", asset),
     "free",
   ).Result()
   if err == nil {
-    balance, _ = strconv.ParseFloat(val, 64)
+    balance, _ = strconv.ParseFloat(value, 64)
   }
-
-  val, err = r.Rdb.HGet(
-    r.Ctx,
-    fmt.Sprintf("binance:spot:balance:%s", entity.BaseAsset),
-    "free",
-  ).Result()
-  if err == nil {
-    quantity, _ = strconv.ParseFloat(val, 64)
-  }
-
-  return balance, quantity, nil
+  return
 }
 
 func (r *AccountRepository) contains(s []string, str string) bool {

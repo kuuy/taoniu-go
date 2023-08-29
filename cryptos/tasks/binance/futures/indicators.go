@@ -3,33 +3,161 @@ package futures
 import (
   "github.com/hibiken/asynq"
   "gorm.io/gorm"
+  "time"
 
-  tasks "taoniu.local/cryptos/tasks/binance/futures/indicators"
+  config "taoniu.local/cryptos/config/queue"
+  models "taoniu.local/cryptos/models/binance/futures"
+  jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/futures"
 )
 
 type IndicatorsTask struct {
-  Db           *gorm.DB
-  Asynq        *asynq.Client
-  DailyTask    *tasks.DailyTask
-  MinutelyTask *tasks.MinutelyTask
+  Db    *gorm.DB
+  Asynq *asynq.Client
+  Job   *jobs.Indicators
 }
 
-func (t *IndicatorsTask) Daily() *tasks.DailyTask {
-  if t.DailyTask == nil {
-    t.DailyTask = &tasks.DailyTask{
-      Db:    t.Db,
-      Asynq: t.Asynq,
+func (t *IndicatorsTask) Pivot(interval string) error {
+  var symbols []string
+  t.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+  for _, symbol := range symbols {
+    task, err := t.Job.Pivot(symbol, interval)
+    if err != nil {
+      return err
     }
+    t.Asynq.Enqueue(
+      task,
+      asynq.Queue(config.BINANCE_FUTURES_INDICATORS),
+      asynq.MaxRetry(0),
+      asynq.Timeout(5*time.Minute),
+    )
   }
-  return t.DailyTask
+  return nil
 }
 
-func (t *IndicatorsTask) Minutely() *tasks.MinutelyTask {
-  if t.MinutelyTask == nil {
-    t.MinutelyTask = &tasks.MinutelyTask{
-      Db:    t.Db,
-      Asynq: t.Asynq,
+func (t *IndicatorsTask) Atr(interval string, period int, limit int) error {
+  var symbols []string
+  t.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+  for _, symbol := range symbols {
+    task, err := t.Job.Atr(symbol, interval, period, limit)
+    if err != nil {
+      return err
     }
+    t.Asynq.Enqueue(
+      task,
+      asynq.Queue(config.BINANCE_FUTURES_INDICATORS),
+      asynq.MaxRetry(0),
+      asynq.Timeout(5*time.Minute),
+    )
   }
-  return t.MinutelyTask
+  return nil
+}
+
+func (t *IndicatorsTask) Zlema(interval string, period int, limit int) error {
+  var symbols []string
+  t.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+  for _, symbol := range symbols {
+    task, err := t.Job.Zlema(symbol, interval, period, limit)
+    if err != nil {
+      return err
+    }
+    t.Asynq.Enqueue(
+      task,
+      asynq.Queue(config.BINANCE_FUTURES_INDICATORS),
+      asynq.MaxRetry(0),
+      asynq.Timeout(5*time.Minute),
+    )
+  }
+  return nil
+}
+
+func (t *IndicatorsTask) HaZlema(interval string, period int, limit int) error {
+  var symbols []string
+  t.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+  for _, symbol := range symbols {
+    task, err := t.Job.HaZlema(symbol, interval, period, limit)
+    if err != nil {
+      return err
+    }
+    t.Asynq.Enqueue(
+      task,
+      asynq.Queue(config.BINANCE_FUTURES_INDICATORS),
+      asynq.MaxRetry(0),
+      asynq.Timeout(5*time.Minute),
+    )
+  }
+  return nil
+}
+
+func (t *IndicatorsTask) Kdj(interval string, longPeriod int, shortPeriod int, limit int) error {
+  var symbols []string
+  t.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+  for _, symbol := range symbols {
+    task, err := t.Job.Kdj(symbol, interval, longPeriod, shortPeriod, limit)
+    if err != nil {
+      return err
+    }
+    t.Asynq.Enqueue(
+      task,
+      asynq.Queue(config.BINANCE_FUTURES_INDICATORS),
+      asynq.MaxRetry(0),
+      asynq.Timeout(5*time.Minute),
+    )
+  }
+  return nil
+}
+
+func (t *IndicatorsTask) BBands(interval string, period int, limit int) error {
+  var symbols []string
+  t.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+  for _, symbol := range symbols {
+    task, err := t.Job.BBands(symbol, interval, period, limit)
+    if err != nil {
+      return err
+    }
+    t.Asynq.Enqueue(
+      task,
+      asynq.Queue(config.BINANCE_FUTURES_INDICATORS),
+      asynq.MaxRetry(0),
+      asynq.Timeout(5*time.Minute),
+    )
+  }
+  return nil
+}
+
+func (t *IndicatorsTask) VolumeProfile(interval string) error {
+  var limit int
+  if interval == "1m" {
+    limit = 1440
+  } else if interval == "4h" {
+    limit = 126
+  } else {
+    limit = 100
+  }
+
+  var symbols []string
+  t.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+  for _, symbol := range symbols {
+    task, err := t.Job.VolumeProfile(symbol, interval, limit)
+    if err != nil {
+      return err
+    }
+    t.Asynq.Enqueue(
+      task,
+      asynq.Queue(config.BINANCE_FUTURES_INDICATORS),
+      asynq.MaxRetry(0),
+      asynq.Timeout(5*time.Minute),
+    )
+  }
+  return nil
+}
+
+func (t *IndicatorsTask) Flush(interval string) error {
+  t.Pivot(interval)
+  t.Atr(interval, 14, 100)
+  t.Zlema(interval, 14, 100)
+  t.HaZlema(interval, 14, 100)
+  t.Kdj(interval, 9, 3, 100)
+  t.BBands(interval, 14, 100)
+  t.VolumeProfile(interval)
+  return nil
 }

@@ -50,7 +50,13 @@ func (h *SpotHandler) run() error {
   nc := common.NewNats()
   defer nc.Close()
 
-  workers.NewSpot(h.Db, h.Rdb, h.Ctx).Subscribe(nc)
+  natsContext := &common.NatsContext{
+    Db:   h.Db,
+    Rdb:  h.Rdb,
+    Ctx:  h.Ctx,
+    Conn: nc,
+  }
+  workers.NewSpot(natsContext).Subscribe()
 
   <-h.wait(wg)
 

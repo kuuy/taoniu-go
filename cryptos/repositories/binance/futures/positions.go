@@ -2,14 +2,17 @@ package futures
 
 import (
   "errors"
+  "math"
+
   "github.com/shopspring/decimal"
   "gorm.io/gorm"
-  "math"
+
   models "taoniu.local/cryptos/models/binance/futures"
 )
 
 type PositionsRepository struct {
-  Db *gorm.DB
+  Db                *gorm.DB
+  SymbolsRepository *SymbolsRepository
 }
 
 func (r *PositionsRepository) Get(
@@ -22,6 +25,26 @@ func (r *PositionsRepository) Get(
     return entity, result.Error
   }
   return entity, nil
+}
+
+func (r *PositionsRepository) Gets(conditions map[string]interface{}) []*models.Position {
+  var positions []*models.Position
+  query := r.Db.Select([]string{
+    "id",
+    "symbol",
+    "side",
+    "leverage",
+    "capital",
+    "notional",
+    "entry_price",
+    "entry_quantity",
+    "timestamp",
+  })
+  if _, ok := conditions["side"]; ok {
+    query.Where("side", conditions["side"].(int))
+  }
+  query.Where("status=1 AND entry_quantity>0").Find(&positions)
+  return positions
 }
 
 func (r *PositionsRepository) Ratio(capital float64, entryAmount float64) float64 {
@@ -54,12 +77,12 @@ func (r *PositionsRepository) BuyQuantity(
   }
   var lost float64
   for i := 0; i < places; i++ {
-    lost, _ = decimal.NewFromFloat(entryAmount).Mul(decimal.NewFromFloat(0.005)).Float64()
+    lost, _ = decimal.NewFromFloat(entryAmount).Mul(decimal.NewFromFloat(0.0085)).Float64()
     if side == 1 {
-      entryPrice, _ = decimal.NewFromFloat(entryPrice).Mul(decimal.NewFromFloat(0.995)).Float64()
+      entryPrice, _ = decimal.NewFromFloat(entryPrice).Mul(decimal.NewFromFloat(0.9915)).Float64()
       buyQuantity, _ = decimal.NewFromFloat(buyAmount).Add(decimal.NewFromFloat(lost)).Div(decimal.NewFromFloat(entryPrice)).Float64()
     } else {
-      entryPrice, _ = decimal.NewFromFloat(entryPrice).Mul(decimal.NewFromFloat(1.005)).Float64()
+      entryPrice, _ = decimal.NewFromFloat(entryPrice).Mul(decimal.NewFromFloat(1.0085)).Float64()
       buyQuantity, _ = decimal.NewFromFloat(buyAmount).Sub(decimal.NewFromFloat(lost)).Div(decimal.NewFromFloat(entryPrice)).Float64()
     }
     entryAmount, _ = decimal.NewFromFloat(entryAmount).Add(decimal.NewFromFloat(lost)).Float64()
@@ -79,9 +102,9 @@ func (r *PositionsRepository) SellPrice(
   }
   for i := 0; i < places; i++ {
     if side == 1 {
-      sellPrice, _ = decimal.NewFromFloat(entryPrice).Mul(decimal.NewFromFloat(1.005)).Float64()
+      sellPrice, _ = decimal.NewFromFloat(entryPrice).Mul(decimal.NewFromFloat(1.0085)).Float64()
     } else {
-      sellPrice, _ = decimal.NewFromFloat(entryPrice).Mul(decimal.NewFromFloat(0.995)).Float64()
+      sellPrice, _ = decimal.NewFromFloat(entryPrice).Mul(decimal.NewFromFloat(0.9915)).Float64()
     }
   }
   return
@@ -136,4 +159,12 @@ func (r *PositionsRepository) Capital(capital float64, entryAmount float64, plac
   }
 
   return
+}
+
+func (r *PositionsRepository) Filters(symbol string) (tickSize float64, stepSize float64, err error) {
+  entity, err := r.SymbolsRepository.Get(symbol)
+  if err != nil {
+    return
+  }
+  return r.SymbolsRepository.Filters(entity.Filters)
 }

@@ -1,13 +1,13 @@
 package tradings
 
 import (
-  jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/spot/tradings"
   "time"
 
   "github.com/hibiken/asynq"
 
   config "taoniu.local/cryptos/config/queue"
-  plansRepositories "taoniu.local/cryptos/repositories/binance/spot/plans"
+  jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/spot/tradings"
+  spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
   repositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
 )
 
@@ -15,21 +15,30 @@ type ScalpingTask struct {
   Asynq           *asynq.Client
   Job             *jobs.Scalping
   Repository      *repositories.ScalpingRepository
-  PlansRepository *plansRepositories.DailyRepository
+  PlansRepository *spotRepositories.PlansRepository
 }
 
 func (t *ScalpingTask) Place() error {
-  plan, err := t.PlansRepository.Filter()
-  if err != nil {
-    return err
+  ids := t.PlansRepository.Ids(0)
+  for _, id := range ids {
+    task, err := t.Job.Place(id)
+    if err != nil {
+      return err
+    }
+    t.Asynq.Enqueue(
+      task,
+      asynq.Queue(config.BINANCE_SPOT_TRADINGS_SCALPING),
+      asynq.MaxRetry(0),
+      asynq.Timeout(5*time.Minute),
+    )
   }
-  return t.Repository.Place(plan)
+  return nil
 }
 
 func (t *ScalpingTask) Flush() error {
-  symbols := t.Repository.Scan()
-  for _, symbol := range symbols {
-    task, err := t.Job.Flush(symbol)
+  ids := t.Repository.ScalpingIds()
+  for _, id := range ids {
+    task, err := t.Job.Flush(id)
     if err != nil {
       return err
     }

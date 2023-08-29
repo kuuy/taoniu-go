@@ -2,12 +2,20 @@ package futures
 
 import (
   "context"
+  "crypto/hmac"
+  "crypto/sha256"
+  "encoding/json"
   "errors"
   "fmt"
+  "io"
+  "log"
+  "net"
+  "net/http"
+  "net/url"
   "os"
   "strconv"
+  "time"
 
-  "github.com/adshao/go-binance/v2"
   "github.com/go-redis/redis/v8"
   "github.com/rs/xid"
   "gorm.io/gorm"
@@ -21,21 +29,103 @@ type AccountRepository struct {
   Ctx context.Context
 }
 
+type AccountInfo struct {
+  Assets    []*AssetInfo    `json:"assets"`
+  Positions []*PositionInfo `json:"positions"`
+}
+
+type AssetInfo struct {
+  Asset            string `json:"asset"`
+  Balance          string `json:"walletBalance"`
+  Free             string `json:"availableBalance"`
+  UnrealizedProfit string `json:"unrealizedProfit"`
+  Margin           string `json:"marginBalance"`
+  InitialMargin    string `json:"initialMargin"`
+  MaintMargin      string `json:"maintMargin"`
+}
+
+type PositionInfo struct {
+  Symbol        string `json:"symbol"`
+  PositionSide  string `json:"positionSide"`
+  Isolated      bool   `json:"isolated"`
+  Leverage      string `json:"leverage"`
+  Capital       string `json:"maxNotional"`
+  Notional      string `json:"notional"`
+  EntryPrice    string `json:"entryPrice"`
+  EntryQuantity string `json:"positionAmt"`
+  UpdateTime    int64  `json:"updateTime"`
+}
+
+func (r *AccountRepository) Balance(asset string) (map[string]float64, error) {
+  fields := []string{
+    "balance",
+    "free",
+    "unrealized_profit",
+    "margin",
+    "initial_margin",
+    "maint_margin",
+  }
+  data, _ := r.Rdb.HMGet(
+    r.Ctx,
+    fmt.Sprintf(
+      "binance:futures:balance:%s",
+      asset,
+    ),
+    fields...,
+  ).Result()
+  balance := map[string]float64{}
+  for i, field := range fields {
+    if data[i] == nil {
+      return nil, errors.New("balance not exists")
+    }
+    balance[field], _ = strconv.ParseFloat(data[i].(string), 64)
+  }
+  return balance, nil
+}
+
 func (r *AccountRepository) Flush() error {
-  client := binance.NewFuturesClient(
-    os.Getenv("BINANCE_FUTURES_ACCOUNT_API_KEY"),
-    os.Getenv("BINANCE_FUTURES_ACCOUNT_API_SECRET"),
-  )
-  client.BaseURL = os.Getenv("BINANCE_FUTURES_API_ENDPOINT")
-  account, err := client.NewGetAccountService().Do(r.Ctx)
+  account, err := r.Request()
   if err != nil {
     return err
   }
+
+  for _, coin := range account.Assets {
+    balance, _ := strconv.ParseFloat(coin.Balance, 64)
+    free, _ := strconv.ParseFloat(coin.Free, 64)
+    unrealizedProfit, _ := strconv.ParseFloat(coin.UnrealizedProfit, 64)
+    margin, _ := strconv.ParseFloat(coin.Margin, 64)
+    initialMargin, _ := strconv.ParseFloat(coin.InitialMargin, 64)
+    maintMargin, _ := strconv.ParseFloat(coin.MaintMargin, 64)
+
+    if balance <= 0.0 {
+      continue
+    }
+
+    r.Rdb.HMSet(
+      r.Ctx,
+      fmt.Sprintf("binance:futures:balance:%s", coin.Asset),
+      map[string]interface{}{
+        "balance":           balance,
+        "free":              free,
+        "unrealized_profit": unrealizedProfit,
+        "margin":            margin,
+        "initial_margin":    initialMargin,
+        "maint_margin":      maintMargin,
+      },
+    )
+  }
+
+  var symbols []string
 
   for _, position := range account.Positions {
     if position.Isolated || position.UpdateTime == 0 {
       continue
     }
+    if position.PositionSide != "LONG" && position.PositionSide != "SHORT" {
+      continue
+    }
+
+    symbols = append(symbols, position.Symbol)
 
     var side int
     if fmt.Sprintf("%v", position.PositionSide) == "LONG" {
@@ -46,15 +136,21 @@ func (r *AccountRepository) Flush() error {
 
     leverage, _ := strconv.Atoi(position.Leverage)
     entryPrice, _ := strconv.ParseFloat(position.EntryPrice, 64)
-    volume, _ := strconv.ParseFloat(position.PositionAmt, 64)
+    entryQuantity, _ := strconv.ParseFloat(position.EntryQuantity, 64)
+    capital, _ := strconv.ParseFloat(position.Capital, 64)
     notional, _ := strconv.ParseFloat(position.Notional, 64)
 
-    var status int
-    if notional == 0.0 {
-      status = 2
-    } else {
-      status = 1
+    if side == 1 && entryQuantity < 0 {
+      entryQuantity = 0
     }
+    if side == 2 && entryQuantity > 0 {
+      entryQuantity = 0
+    }
+    if entryQuantity < 0 {
+      entryQuantity = -entryQuantity
+    }
+
+    timestamp := time.Now().UnixNano() / int64(time.Millisecond)
 
     var entity models.Position
     result := r.Db.Where(
@@ -63,104 +159,106 @@ func (r *AccountRepository) Flush() error {
       side,
     ).Take(&entity)
     if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-      if status == 2 {
+      if notional == 0 {
         continue
       }
       entity = models.Position{
-        ID:         xid.New().String(),
-        Symbol:     position.Symbol,
-        Leverage:   leverage,
-        Side:       side,
-        EntryPrice: entryPrice,
-        Volume:     volume,
-        Notional:   notional,
-        Timestamp:  position.UpdateTime,
-        Status:     status,
+        ID:            xid.New().String(),
+        Symbol:        position.Symbol,
+        Side:          side,
+        Leverage:      leverage,
+        Capital:       capital,
+        Notional:      notional,
+        EntryPrice:    entryPrice,
+        EntryQuantity: entryQuantity,
+        Timestamp:     timestamp,
+        Status:        1,
       }
       r.Db.Create(&entity)
     } else {
-      entity.Leverage = leverage
-      entity.EntryPrice = entryPrice
-      entity.Volume = volume
-      entity.Notional = notional
-      entity.Status = status
-      entity.Timestamp = position.UpdateTime
-      r.Db.Model(&models.Position{ID: entity.ID}).Updates(entity)
+      if entryPrice == entity.EntryPrice && entryQuantity == entity.EntryQuantity {
+        continue
+      }
+      r.Db.Model(&entity).Where("version", entity.Version).Updates(map[string]interface{}{
+        "leverage":       leverage,
+        "capital":        capital,
+        "notional":       notional,
+        "entry_price":    entryPrice,
+        "entry_quantity": entryQuantity,
+        "timestamp":      timestamp,
+        "version":        gorm.Expr("version + ?", 1),
+      })
     }
   }
 
-  r.Rdb.HMSet(r.Ctx, "binance:futures:balance:USDT", map[string]interface{}{
-    "balance":           account.TotalWalletBalance,
-    "available_balance": account.AvailableBalance,
-    "unrealized_profit": account.TotalUnrealizedProfit,
-  })
-
-  //positions := make(map[string]interface{})
-  //for _, position := range account.Positions {
-  //	symbol := position.Symbol
-  //	side := fmt.Sprintf("%s", position.PositionSide)
-  //	leverage, _ := strconv.ParseInt(position.Leverage, 10, 64)
-  //	entryPrice, _ := strconv.ParseFloat(position.EntryPrice, 64)
-  //	margin, _ := strconv.ParseFloat(position.PositionInitialMargin, 64)
-  //	notional, _ := strconv.ParseFloat(position.Notional, 64)
-  //	maxNotional, _ := strconv.ParseInt(position.MaxNotional, 10, 64)
-  //	unrealizedProfit, _ := strconv.ParseFloat(position.UnrealizedProfit, 64)
-  //	if notional == 0.0 {
-  //		continue
-  //	}
-  //	var entity map[string]interface{}
-  //	if value, ok := positions[symbol]; !ok {
-  //		entity = map[string]interface{}{
-  //			"symbol":                  symbol,
-  //			"leverage":                leverage,
-  //			"notional":                notional,
-  //			"max_notional":            maxNotional,
-  //			"long_entry_price":        0.0,
-  //			"long_margin":             0.0,
-  //			"long_notional":           0.0,
-  //			"long_unrealized_profit":  0.0,
-  //			"short_entry_price":       0.0,
-  //			"short_margin":            0.0,
-  //			"short_notional":          0.0,
-  //			"short_unrealized_profit": 0.0,
-  //		}
-  //	} else {
-  //		entity = value.(map[string]interface{})
-  //	}
-  //	if side == "LONG" {
-  //		entity["long_entry_price"] = entryPrice
-  //		entity["long_margin"] = margin
-  //		entity["long_notional"] = notional
-  //		entity["long_unrealized_profit"] = unrealizedProfit
-  //	}
-  //	if side == "SHORT" {
-  //		entity["short_entry_price"] = entryPrice
-  //		entity["short_margin"] = margin
-  //		entity["short_notional"] = notional
-  //		entity["short_unrealized_profit"] = unrealizedProfit
-  //	}
-  //	entity["notional"] = entity["long_notional"].(float64) - entity["short_notional"].(float64)
-  //	positions[symbol] = entity
-  //}
-  //
-  //for symbol, entity := range positions {
-  //	rdb.HMSet(ctx, fmt.Sprintf("binance:futures:positions:%s", symbol), entity)
-  //	rdb.SAdd(ctx, "binance:futures:trading", symbol)
-  //	rdb.SRem(ctx, "binance:futures:untrading", symbol)
-  //}
-  //
-  //symbols, _ := rdb.SMembers(ctx, "binance:futures:trading").Result()
-  //for _, symbol := range symbols {
-  //	if _, ok := positions[symbol]; !ok {
-  //		rdb.Del(ctx, fmt.Sprintf("binance:futures:positions:%s", symbol))
-  //		rdb.SRem(ctx, "binance:futures:trading", symbol)
-  //		rdb.SAdd(ctx, "binance:futures:untrading", symbol)
-  //	}
-  //}
+  if len(symbols) > 0 {
+    r.Db.Model(&models.Position{}).Where("entry_quantity > 0 AND symbol NOT IN ?", symbols).Updates(map[string]interface{}{
+      "entry_quantity": 0,
+      "timestamp":      time.Now().UnixMilli(),
+      "version":        gorm.Expr("version + ?", 1),
+    })
+  }
 
   return nil
 }
 
-func (r *AccountRepository) Balance(symbol string) (float64, float64, error) {
-  return 0, 0, nil
+func (r *AccountRepository) Request() (*AccountInfo, error) {
+  tr := &http.Transport{
+    DisableKeepAlives: true,
+  }
+  session := &net.Dialer{}
+  tr.DialContext = session.DialContext
+
+  httpClient := &http.Client{
+    Transport: tr,
+    Timeout:   time.Duration(3) * time.Second,
+  }
+
+  params := url.Values{}
+  params.Add("timeInForce", "GTC")
+  params.Add("recvWindow", "60000")
+
+  value, err := r.Rdb.HGet(r.Ctx, "binance:server", "timediff").Result()
+  if err != nil {
+    return nil, err
+  }
+  timediff, _ := strconv.ParseInt(value, 10, 64)
+
+  timestamp := time.Now().UnixNano()/int64(time.Millisecond) - timediff
+  params.Add("timestamp", fmt.Sprintf("%v", timestamp))
+
+  mac := hmac.New(sha256.New, []byte(os.Getenv("BINANCE_FUTURES_ACCOUNT_API_SECRET")))
+  _, err = mac.Write([]byte(params.Encode()))
+  if err != nil {
+    return nil, err
+  }
+  signature := mac.Sum(nil)
+  params.Add("signature", fmt.Sprintf("%x", signature))
+
+  url := fmt.Sprintf("%s/fapi/v2/account", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))
+  req, _ := http.NewRequest("GET", url, nil)
+  req.URL.RawQuery = params.Encode()
+  req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+  req.Header.Set("X-MBX-APIKEY", os.Getenv("BINANCE_FUTURES_ACCOUNT_API_KEY"))
+  resp, err := httpClient.Do(req)
+  if err != nil {
+    return nil, err
+  }
+  defer resp.Body.Close()
+
+  if resp.StatusCode != http.StatusOK {
+    body, _ := io.ReadAll(resp.Body)
+    log.Println("response", string(body))
+    return nil, errors.New(
+      fmt.Sprintf(
+        "request error: status[%s] code[%d]",
+        resp.Status,
+        resp.StatusCode,
+      ),
+    )
+  }
+
+  var result *AccountInfo
+  json.NewDecoder(resp.Body).Decode(&result)
+  return result, nil
 }

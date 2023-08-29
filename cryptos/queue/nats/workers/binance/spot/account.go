@@ -1,23 +1,20 @@
 package spot
 
 import (
-  "context"
   "encoding/json"
   "fmt"
-  "github.com/go-redis/redis/v8"
   "github.com/nats-io/nats.go"
+  "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/spot"
 )
 
 type Account struct {
-  Rdb *redis.Client
-  Ctx context.Context
+  NatsContext *common.NatsContext
 }
 
-func NewAccount(rdb *redis.Client, ctx context.Context) *Account {
+func NewAccount(natsContext *common.NatsContext) *Account {
   h := &Account{
-    Rdb: rdb,
-    Ctx: ctx,
+    NatsContext: natsContext,
   }
   return h
 }
@@ -28,8 +25,8 @@ type AccountUpdatePayload struct {
   Locked float64 `json:"locked"`
 }
 
-func (h *Account) Subscribe(nc *nats.Conn) error {
-  nc.Subscribe(config.NATS_ACCOUNT_UPDATE, h.Update)
+func (h *Account) Subscribe() error {
+  h.NatsContext.Conn.Subscribe(config.NATS_ACCOUNT_UPDATE, h.Update)
   return nil
 }
 
@@ -37,8 +34,8 @@ func (h *Account) Update(m *nats.Msg) {
   var payload *AccountUpdatePayload
   json.Unmarshal(m.Data, &payload)
 
-  h.Rdb.HMSet(
-    h.Ctx,
+  h.NatsContext.Rdb.HMSet(
+    h.NatsContext.Ctx,
     fmt.Sprintf("binance:spot:balance:%s", payload.Asset),
     map[string]interface{}{
       "free":   payload.Free,

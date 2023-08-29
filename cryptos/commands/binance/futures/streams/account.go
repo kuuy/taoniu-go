@@ -118,7 +118,6 @@ func (h *AccountHandler) start() (err error) {
     os.Getenv("BINANCE_FUTURES_STREAMS_ENDPOINT"),
     listenKey,
   )
-  log.Println("endpoint", endpoint)
   h.Socket, _, err = websocket.Dial(h.Ctx, endpoint, &websocket.DialOptions{
     CompressionMode: websocket.CompressionDisabled,
   })

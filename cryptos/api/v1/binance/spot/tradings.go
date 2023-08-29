@@ -26,9 +26,9 @@ func NewTradingsRouter() http.Handler {
   h.Repository = &repositories.TradingsRepository{
     Db: h.Db,
   }
-  h.Repository.FishersRepository = &tradingsRepositories.FishersRepository{
-    Db: h.Db,
-  }
+  //h.Repository.FishersRepository = &tradingsRepositories.FishersRepository{
+  //  Db: h.Db,
+  //}
   h.Repository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
     Db: h.Db,
   }

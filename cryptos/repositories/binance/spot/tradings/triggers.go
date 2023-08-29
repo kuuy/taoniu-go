@@ -14,7 +14,7 @@ type TriggersRepository struct {
   Db                *gorm.DB
   Rdb               *redis.Client
   Ctx               context.Context
-  SymbolsRepository SpotSymbolsRepository
+  SymbolsRepository SymbolsRepository
   OrdersRepository  OrdersRepository
   AccountRepository AccountRepository
 }

@@ -22,10 +22,12 @@ func NewSpotCommand() *cli.Command {
       spot.NewMarginCommand(),
       spot.NewAnalysisCommand(),
       spot.NewPlansCommand(),
-      spot.NewGridsCommand(),
-      spot.NewFishersCommand(),
+      spot.NewLaunchpadCommand(),
+      spot.NewScalpingCommand(),
+      spot.NewTriggersCommand(),
       spot.NewTradingsCommand(),
       spot.NewStreamCommand(),
+      spot.NewTasksCommand(),
     },
   }
 }

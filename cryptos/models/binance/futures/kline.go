@@ -5,7 +5,7 @@ import "time"
 type Kline struct {
   ID        string    `gorm:"size:20;primaryKey"`
   Symbol    string    `gorm:"size:20;not null;uniqueIndex:unq_binance_futures_klines_symbol_interval_timestamp"`
-  Interval  string    `gorm:"size:2;not null;uniqueIndex:unq_binance_futures_klines_symbol_interval_timestamp;index:idx_binance_futures_klines_interval_timestamp"`
+  Interval  string    `gorm:"size:3;not null;uniqueIndex:unq_binance_futures_klines_symbol_interval_timestamp;index:idx_binance_futures_klines_interval_timestamp"`
   Open      float64   `gorm:"not null"`
   Close     float64   `gorm:"not null"`
   High      float64   `gorm:"not null"`

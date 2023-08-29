@@ -3,6 +3,8 @@ package common
 import (
   "context"
   "errors"
+  "fmt"
+  "github.com/vchitai/go-socket.io/v4/engineio"
   "strconv"
   "strings"
   "time"
@@ -12,6 +14,7 @@ import (
   "github.com/hibiken/asynq"
   "github.com/nats-io/nats.go"
   "github.com/rs/xid"
+  socketio "github.com/vchitai/go-socket.io/v4"
   "gorm.io/driver/postgres"
   "gorm.io/gorm"
 )
@@ -19,6 +22,19 @@ import (
 var (
   dbPool *sql.DB
 )
+
+type NatsContext struct {
+  Db   *gorm.DB
+  Rdb  *redis.Client
+  Ctx  context.Context
+  Conn *nats.Conn
+}
+
+type SocketContext struct {
+  Socket *socketio.Server
+  Conn   socketio.Conn
+  Nats   *nats.Conn
+}
 
 type Mutex struct {
   rdb   *redis.Client
@@ -63,28 +79,42 @@ func NewDB() *gorm.DB {
   return db
 }
 
-func NewAsynqServer() *asynq.Server {
+func NewAsynqServer(topic string) *asynq.Server {
   rdb := asynq.RedisClientOpt{
-    Addr: GetEnvString("ASYNQ_REDIS_ADDR"),
-    DB:   GetEnvInt("ASYNQ_REDIS_DB"),
+    Addr: GetEnvString(fmt.Sprintf("ASYNQ_%s_REDIS_ADDR", topic)),
+    DB:   GetEnvInt(fmt.Sprintf("ASYNQ_%s_REDIS_DB", topic)),
   }
   queues := make(map[string]int)
-  for _, item := range GetEnvArray("ASYNQ_QUEUE") {
+  for _, item := range GetEnvArray(fmt.Sprintf("ASYNQ_%s_QUEUE", topic)) {
     data := strings.Split(item, ",")
     weight, _ := strconv.Atoi(data[1])
     queues[data[0]] = weight
   }
   return asynq.NewServer(rdb, asynq.Config{
-    Concurrency: GetEnvInt("ASYNQ_CONCURRENCY"),
+    Concurrency: GetEnvInt(fmt.Sprintf("ASYNQ_%s_CONCURRENCY", topic)),
     Queues:      queues,
   })
 }
 
-func NewAsynqClient() *asynq.Client {
+func NewAsynqClient(topic string) *asynq.Client {
   return asynq.NewClient(asynq.RedisClientOpt{
-    Addr: GetEnvString("ASYNQ_REDIS_ADDR"),
-    DB:   GetEnvInt("ASYNQ_REDIS_DB"),
+    Addr: GetEnvString(fmt.Sprintf("ASYNQ_%s_REDIS_ADDR", topic)),
+    DB:   GetEnvInt(fmt.Sprintf("ASYNQ_%s_REDIS_DB", topic)),
   })
+}
+
+func NewSocketServer(opts *engineio.Options) *socketio.Server {
+  server := socketio.NewServer(opts)
+  _, err := server.Adapter(&socketio.RedisAdapterConfig{
+    Addr:     GetEnvString("CRYPTOS_SOCKET_REDIS_ADDR"),
+    Password: GetEnvString("CRYPTOS_SOCKET_REDIS_PASSWORD"),
+    DB:       GetEnvInt("CRYPTOS_SOCKET_REDIS_DB"),
+    Prefix:   "socket.io",
+  })
+  if err != nil {
+    panic(err)
+  }
+  return server
 }
 
 func NewNats() *nats.Conn {
@@ -115,10 +145,9 @@ func (m *Mutex) Lock(ttl time.Duration) bool {
     m.value,
     ttl,
   ).Result()
-  if err != redis.Nil {
+  if err != nil {
     return false
   }
-
   return result
 }
 

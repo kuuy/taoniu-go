@@ -12,12 +12,15 @@ func NewSpot() *Spot {
 }
 
 func (h *Spot) Register(mux *asynq.ServeMux) error {
-  mux.HandleFunc("binance:spot:depth:flush", spot.NewDepth().Flush)
-  mux.HandleFunc("binance:spot:tickers:flush", spot.NewTickers().Flush)
-  mux.HandleFunc("binance:spot:klines:flush", spot.NewKlines().Flush)
-
+  spot.NewTickers().Register(mux)
+  spot.NewKlines().Register(mux)
+  spot.NewDepth().Register(mux)
+  spot.NewIndicators().Register(mux)
+  spot.NewStrategies().Register(mux)
+  spot.NewPlans().Register(mux)
+  spot.NewAccount().Register(mux)
+  spot.NewOrders().Register(mux)
   spot.NewTradings().Register(mux)
   spot.NewMargin().Register(mux)
-
   return nil
 }

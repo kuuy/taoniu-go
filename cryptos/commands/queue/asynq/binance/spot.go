@@ -33,7 +33,7 @@ func NewSpotCommand() *cli.Command {
 func (h *SpotHandler) run() error {
   log.Println("queue running...")
 
-  worker := common.NewAsynqServer()
+  worker := common.NewAsynqServer("BINANCE_SPOT")
 
   mux := asynq.NewServeMux()
   workers.NewSpot().Register(mux)

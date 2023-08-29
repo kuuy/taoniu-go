@@ -1,23 +1,20 @@
 package spot
 
 import (
-  "context"
   "encoding/json"
   "fmt"
-  "github.com/go-redis/redis/v8"
   "github.com/nats-io/nats.go"
+  "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/spot"
 )
 
 type Tickers struct {
-  Rdb *redis.Client
-  Ctx context.Context
+  NatsContext *common.NatsContext
 }
 
-func NewTickers(rdb *redis.Client, ctx context.Context) *Tickers {
+func NewTickers(natsContext *common.NatsContext) *Tickers {
   h := &Tickers{
-    Rdb: rdb,
-    Ctx: ctx,
+    NatsContext: natsContext,
   }
   return h
 }
@@ -33,8 +30,8 @@ type TickersUpdatePayload struct {
   Timestamp int64   `json:"timestamp"`
 }
 
-func (h *Tickers) Subscribe(nc *nats.Conn) error {
-  nc.Subscribe(config.NATS_TICKERS_UPDATE, h.Update)
+func (h *Tickers) Subscribe() error {
+  h.NatsContext.Conn.Subscribe(config.NATS_TRADES_UPDATE, h.Update)
   return nil
 }
 
@@ -42,8 +39,8 @@ func (h *Tickers) Update(m *nats.Msg) {
   var payload *TickersUpdatePayload
   json.Unmarshal(m.Data, &payload)
 
-  h.Rdb.HMSet(
-    h.Ctx,
+  h.NatsContext.Rdb.HMSet(
+    h.NatsContext.Ctx,
     fmt.Sprintf("binance:spot:realtime:%s", payload.Symbol),
     map[string]interface{}{
       "symbol":    payload.Symbol,

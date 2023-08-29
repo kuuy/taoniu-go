@@ -16,11 +16,10 @@ import (
 )
 
 type Triggers struct {
-  Db                *gorm.DB
-  Rdb               *redis.Client
-  Ctx               context.Context
-  Repository        *repositories.TriggersRepository
-  SymbolsRepository *futuresRepositories.SymbolsRepository
+  Db         *gorm.DB
+  Rdb        *redis.Client
+  Ctx        context.Context
+  Repository *repositories.TriggersRepository
 }
 
 func NewTriggers() *Triggers {
@@ -32,11 +31,12 @@ func NewTriggers() *Triggers {
   h.Repository = &repositories.TriggersRepository{
     Db: h.Db,
   }
-  h.Repository.PositionRepository = &futuresRepositories.PositionsRepository{
-    Db: h.Db,
-  }
   h.Repository.SymbolsRepository = &futuresRepositories.SymbolsRepository{
     Db:  h.Db,
+    Rdb: h.Rdb,
+    Ctx: h.Ctx,
+  }
+  h.Repository.AccountRepository = &futuresRepositories.AccountRepository{
     Rdb: h.Rdb,
     Ctx: h.Ctx,
   }
@@ -44,6 +44,9 @@ func NewTriggers() *Triggers {
     Db:  h.Db,
     Rdb: h.Rdb,
     Ctx: h.Ctx,
+  }
+  h.Repository.PositionRepository = &futuresRepositories.PositionsRepository{
+    Db: h.Db,
   }
   return h
 }
@@ -65,7 +68,7 @@ func (h *Triggers) Place(ctx context.Context, t *asynq.Task) error {
     h.Ctx,
     fmt.Sprintf("locks:binance:futures:tradings:triggers:place:%s", payload.ID),
   )
-  if mutex.Lock(30 * time.Second) {
+  if !mutex.Lock(30 * time.Second) {
     return nil
   }
   defer mutex.Unlock()
@@ -84,7 +87,7 @@ func (h *Triggers) Flush(ctx context.Context, t *asynq.Task) error {
     h.Ctx,
     fmt.Sprintf("locks:binance:futures:tradings:triggers:flush:%s", payload.ID),
   )
-  if mutex.Lock(30 * time.Second) {
+  if !mutex.Lock(30 * time.Second) {
     return nil
   }
   defer mutex.Unlock()

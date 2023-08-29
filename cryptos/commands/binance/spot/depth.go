@@ -10,26 +10,16 @@ import (
 
   "taoniu.local/cryptos/common"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
-  crossRepositories "taoniu.local/cryptos/repositories/binance/spot/margin/cross"
-  crossTradingsRepositories "taoniu.local/cryptos/repositories/binance/spot/margin/cross/tradings"
-  isolatedRepositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated"
-  isolatedTradingsRepositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated/tradings"
   tradingsRepositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
 )
 
-type symbolsRepository interface {
-  Scan() []string
-}
-
 type DepthHandler struct {
-  Db                         *gorm.DB
-  Rdb                        *redis.Client
-  Ctx                        context.Context
-  Repository                 *repositories.DepthRepository
-  SymbolsRepository          *repositories.SymbolsRepository
-  TradingsRepository         *repositories.TradingsRepository
-  CrossTradingsRepository    *crossRepositories.TradingsRepository
-  IsolatedTradingsRepository *isolatedRepositories.TradingsRepository
+  Db                 *gorm.DB
+  Rdb                *redis.Client
+  Ctx                context.Context
+  Repository         *repositories.DepthRepository
+  SymbolsRepository  *repositories.SymbolsRepository
+  TradingsRepository *repositories.TradingsRepository
 }
 
 func NewDepthCommand() *cli.Command {
@@ -52,25 +42,10 @@ func NewDepthCommand() *cli.Command {
       h.TradingsRepository = &repositories.TradingsRepository{
         Db: h.Db,
       }
-      h.TradingsRepository.FishersRepository = &tradingsRepositories.FishersRepository{
-        Db: h.Db,
-      }
       h.TradingsRepository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
         Db: h.Db,
       }
       h.TradingsRepository.TriggersRepository = &tradingsRepositories.TriggersRepository{
-        Db: h.Db,
-      }
-      h.CrossTradingsRepository = &crossRepositories.TradingsRepository{
-        Db: h.Db,
-      }
-      h.CrossTradingsRepository.TriggersRepository = &crossTradingsRepositories.TriggersRepository{
-        Db: h.Db,
-      }
-      h.IsolatedTradingsRepository = &isolatedRepositories.TradingsRepository{
-        Db: h.Db,
-      }
-      h.IsolatedTradingsRepository.FishersRepository = &isolatedTradingsRepositories.FishersRepository{
         Db: h.Db,
       }
       return nil
@@ -101,7 +76,7 @@ func (h *DepthHandler) Flush() error {
   log.Println("symbols depth flush...")
   symbols := h.Scan()
   for _, symbol := range symbols {
-    err := h.Repository.Flush(symbol)
+    err := h.Repository.Flush(symbol, 1000)
     if err != nil {
       log.Println("error", err)
     }
@@ -112,16 +87,6 @@ func (h *DepthHandler) Flush() error {
 func (h *DepthHandler) Scan() []string {
   var symbols []string
   for _, symbol := range h.TradingsRepository.Scan() {
-    if !h.contains(symbols, symbol) {
-      symbols = append(symbols, symbol)
-    }
-  }
-  for _, symbol := range h.CrossTradingsRepository.Scan() {
-    if !h.contains(symbols, symbol) {
-      symbols = append(symbols, symbol)
-    }
-  }
-  for _, symbol := range h.IsolatedTradingsRepository.Scan() {
     if !h.contains(symbols, symbol) {
       symbols = append(symbols, symbol)
     }

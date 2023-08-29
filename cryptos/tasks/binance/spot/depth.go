@@ -1,32 +1,30 @@
 package spot
 
 import (
-  "math/rand"
+  "context"
   "time"
 
+  "github.com/go-redis/redis/v8"
   "github.com/hibiken/asynq"
 
   config "taoniu.local/cryptos/config/queue"
   jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/spot"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
-  crossRepositories "taoniu.local/cryptos/repositories/binance/spot/margin/cross"
-  isolatedRepositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated"
 )
 
 type DepthTask struct {
-  Asynq                      *asynq.Client
-  Job                        *jobs.Depth
-  Repository                 *repositories.DepthRepository
-  SymbolsRepository          *repositories.SymbolsRepository
-  TradingsRepository         *repositories.TradingsRepository
-  CrossTradingsRepository    *crossRepositories.TradingsRepository
-  IsolatedTradingsRepository *isolatedRepositories.TradingsRepository
+  Rdb                *redis.Client
+  Ctx                context.Context
+  Asynq              *asynq.Client
+  Job                *jobs.Depth
+  SymbolsRepository  *repositories.SymbolsRepository
+  TradingsRepository *repositories.TradingsRepository
 }
 
-func (t *DepthTask) Flush() error {
+func (t *DepthTask) Flush(limit int) error {
   symbols := t.Scan()
   for _, symbol := range symbols {
-    task, err := t.Job.Flush(symbol, false)
+    task, err := t.Job.Flush(symbol, limit, false)
     if err != nil {
       return err
     }
@@ -37,16 +35,13 @@ func (t *DepthTask) Flush() error {
       asynq.Timeout(5*time.Minute),
     )
   }
-
   return nil
 }
 
-func (t *DepthTask) FlushDelay() error {
+func (t *DepthTask) FlushDelay(limit int) error {
   symbols := t.SymbolsRepository.Symbols()
-  rand.Seed(time.Now().UnixNano())
-  rand.Shuffle(len(symbols), func(i, j int) { symbols[i], symbols[j] = symbols[j], symbols[i] })
   for _, symbol := range symbols {
-    task, err := t.Job.Flush(symbol, true)
+    task, err := t.Job.Flush(symbol, limit, true)
     if err != nil {
       return err
     }
@@ -57,7 +52,6 @@ func (t *DepthTask) FlushDelay() error {
       asynq.Timeout(5*time.Minute),
     )
   }
-
   return nil
 }
 
@@ -68,20 +62,10 @@ func (t *DepthTask) Scan() []string {
       symbols = append(symbols, symbol)
     }
   }
-  for _, symbol := range t.CrossTradingsRepository.Scan() {
-    if !t.contains(symbols, symbol) {
-      symbols = append(symbols, symbol)
-    }
-  }
-  for _, symbol := range t.IsolatedTradingsRepository.Scan() {
-    if !t.contains(symbols, symbol) {
-      symbols = append(symbols, symbol)
-    }
-  }
   return symbols
 }
 
-func (h *DepthTask) contains(s []string, str string) bool {
+func (t *DepthTask) contains(s []string, str string) bool {
   for _, v := range s {
     if v == str {
       return true

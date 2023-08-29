@@ -6,6 +6,7 @@ import (
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
   "log"
+  "taoniu.local/cryptos/commands/binance/spot/indicators/daily"
   "taoniu.local/cryptos/common"
   models "taoniu.local/cryptos/models/binance/spot"
   repositories "taoniu.local/cryptos/repositories/binance/spot/indicators"
@@ -37,6 +38,7 @@ func NewDailyCommand() *cli.Command {
       return nil
     },
     Subcommands: []*cli.Command{
+      daily.NewRankingCommand(),
       {
         Name:  "pivot",
         Usage: "",
@@ -124,7 +126,7 @@ func NewDailyCommand() *cli.Command {
 func (h *DailyHandler) atr() error {
   log.Println("daily atr processing...")
   var symbols []string
-  h.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Find(&symbols)
+  h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
   for _, symbol := range symbols {
     h.Repository.Atr(symbol, 14, 100)
   }
@@ -134,7 +136,7 @@ func (h *DailyHandler) atr() error {
 func (h *DailyHandler) zlema() error {
   log.Println("daily zlema processing...")
   var symbols []string
-  h.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Find(&symbols)
+  h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
   for _, symbol := range symbols {
     h.Repository.Zlema(symbol, 14, 100)
   }
@@ -144,7 +146,7 @@ func (h *DailyHandler) zlema() error {
 func (h *DailyHandler) haZlema() error {
   log.Println("daily ha_zlema processing...")
   var symbols []string
-  h.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Find(&symbols)
+  h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
   for _, symbol := range symbols {
     h.Repository.HaZlema(symbol, 14, 100)
   }
@@ -154,7 +156,7 @@ func (h *DailyHandler) haZlema() error {
 func (h *DailyHandler) kdj() error {
   log.Println("daily kdj indicator...")
   var symbols []string
-  h.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Find(&symbols)
+  h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
   for _, symbol := range symbols {
     h.Repository.Kdj(symbol, 9, 3, 100)
   }
@@ -164,7 +166,7 @@ func (h *DailyHandler) kdj() error {
 func (h *DailyHandler) bBands() error {
   log.Println("daily boll bands indicator...")
   var symbols []string
-  h.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Find(&symbols)
+  h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
   for _, symbol := range symbols {
     h.Repository.BBands(symbol, 14, 100)
   }
@@ -174,7 +176,7 @@ func (h *DailyHandler) bBands() error {
 func (h *DailyHandler) pivot() error {
   log.Println("daily pivot indicator...")
   var symbols []string
-  h.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Find(&symbols)
+  h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
   for _, symbol := range symbols {
     h.Repository.Pivot(symbol)
   }
@@ -184,7 +186,7 @@ func (h *DailyHandler) pivot() error {
 func (h *DailyHandler) volumeProfile() error {
   log.Println("daily volume profile indicator...")
   var symbols []string
-  h.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Find(&symbols)
+  h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
   for _, symbol := range symbols {
     err := h.Repository.VolumeProfile(symbol, 1440)
     if err != nil {

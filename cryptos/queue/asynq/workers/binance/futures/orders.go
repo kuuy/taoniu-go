@@ -26,30 +26,38 @@ func NewOrders() *Orders {
     Ctx: context.Background(),
   }
   h.Repository = &repositories.OrdersRepository{
-    Db: h.Db,
+    Db:  h.Db,
+    Rdb: h.Rdb,
+    Ctx: h.Ctx,
   }
   return h
 }
 
 type OrdersOpenPayload struct {
-  Symbol string
+  Symbol string `json:"symbol"`
 }
 
 type OrdersFlushPayload struct {
-  Symbol  string
-  OrderID int64
+  Symbol  string `json:"symbol"`
+  OrderID int64  `json:"order_id"`
+}
+
+type OrdersSyncPayload struct {
+  Symbol    string `json:"symbol"`
+  StartTime int64  `json:"start_time"`
+  limit     int    `json:"limit"`
 }
 
 func (h *Orders) Open(ctx context.Context, t *asynq.Task) error {
-  var payload OrdersFlushPayload
+  var payload OrdersOpenPayload
   json.Unmarshal(t.Payload(), &payload)
 
   mutex := common.NewMutex(
     h.Rdb,
     h.Ctx,
-    fmt.Sprintf("locks:binance:futures:tradings:orders:open:%s", payload.Symbol),
+    fmt.Sprintf("locks:binance:futures:orders:open:%s", payload.Symbol),
   )
-  if mutex.Lock(5 * time.Second) {
+  if !mutex.Lock(5 * time.Second) {
     return nil
   }
   defer mutex.Unlock()
@@ -66,9 +74,9 @@ func (h *Orders) Flush(ctx context.Context, t *asynq.Task) error {
   mutex := common.NewMutex(
     h.Rdb,
     h.Ctx,
-    fmt.Sprintf("locks:binance:futures:tradings:orders:flush:%s:%d", payload.Symbol, payload.OrderID),
+    fmt.Sprintf("locks:binance:futures:orders:flush:%s:%d", payload.Symbol, payload.OrderID),
   )
-  if mutex.Lock(5 * time.Second) {
+  if !mutex.Lock(5 * time.Second) {
     return nil
   }
   defer mutex.Unlock()
@@ -78,8 +86,28 @@ func (h *Orders) Flush(ctx context.Context, t *asynq.Task) error {
   return nil
 }
 
+func (h *Orders) Sync(ctx context.Context, t *asynq.Task) error {
+  var payload OrdersSyncPayload
+  json.Unmarshal(t.Payload(), &payload)
+
+  mutex := common.NewMutex(
+    h.Rdb,
+    h.Ctx,
+    fmt.Sprintf("locks:binance:futures:orders:sync:%s", payload.Symbol),
+  )
+  if !mutex.Lock(5 * time.Second) {
+    return nil
+  }
+  defer mutex.Unlock()
+
+  h.Repository.Sync(payload.Symbol, payload.StartTime, payload.limit)
+
+  return nil
+}
+
 func (h *Orders) Register(mux *asynq.ServeMux) error {
   mux.HandleFunc("binance:futures:orders:open", h.Open)
   mux.HandleFunc("binance:futures:orders:flush", h.Flush)
+  mux.HandleFunc("binance:futures:orders:sync", h.Sync)
   return nil
 }

@@ -2,6 +2,7 @@ package strategies
 
 import (
   "context"
+  "github.com/go-redis/redis/v8"
   "log"
 
   "github.com/urfave/cli/v2"
@@ -14,6 +15,8 @@ import (
 
 type MinutelyHandler struct {
   Db         *gorm.DB
+  Rdb        *redis.Client
+  Ctx        context.Context
   Repository *repositories.MinutelyRepository
 }
 
@@ -24,12 +27,14 @@ func NewMinutelyCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = MinutelyHandler{
-        Db: common.NewDB(),
+        Db:  common.NewDB(),
+        Rdb: common.NewRedis(),
+        Ctx: context.Background(),
       }
       h.Repository = &repositories.MinutelyRepository{
         Db:  h.Db,
-        Rdb: common.NewRedis(),
-        Ctx: context.Background(),
+        Rdb: h.Rdb,
+        Ctx: h.Ctx,
       }
       return nil
     },
@@ -38,7 +43,8 @@ func NewMinutelyCommand() *cli.Command {
         Name:  "atr",
         Usage: "",
         Action: func(c *cli.Context) error {
-          if err := h.atr(); err != nil {
+          symbol := c.Args().Get(0)
+          if err := h.atr(symbol); err != nil {
             return cli.Exit(err.Error(), 1)
           }
           return nil
@@ -88,12 +94,19 @@ func NewMinutelyCommand() *cli.Command {
   }
 }
 
-func (h *MinutelyHandler) atr() error {
+func (h *MinutelyHandler) atr(symbol string) error {
   log.Println("daily atr processing...")
   var symbols []string
-  h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+  if symbol == "" {
+    h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+  } else {
+    symbols = append(symbols, symbol)
+  }
   for _, symbol := range symbols {
-    h.Repository.Atr(symbol)
+    err := h.Repository.Atr(symbol)
+    if err != nil {
+      log.Println("error", err.Error())
+    }
   }
   return nil
 }

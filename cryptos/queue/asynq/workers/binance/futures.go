@@ -14,10 +14,12 @@ func NewFutures() *Futures {
 func (h *Futures) Register(mux *asynq.ServeMux) error {
   futures.NewTickers().Register(mux)
   futures.NewKlines().Register(mux)
+  futures.NewDepth().Register(mux)
   futures.NewIndicators().Register(mux)
   futures.NewStrategies().Register(mux)
   futures.NewPlans().Register(mux)
-  futures.NewTradings().Register(mux)
+  futures.NewAccount().Register(mux)
   futures.NewOrders().Register(mux)
+  futures.NewTradings().Register(mux)
   return nil
 }

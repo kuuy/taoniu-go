@@ -23,11 +23,13 @@ type FuturesTask struct {
   SymbolsTask    *tasks.SymbolsTask
   TickersTask    *tasks.TickersTask
   KlinesTask     *tasks.KlinesTask
+  DepthTask      *tasks.DepthTask
   OrdersTask     *tasks.OrdersTask
   IndicatorsTask *tasks.IndicatorsTask
   StrategiesTask *tasks.StrategiesTask
   PlansTask      *tasks.PlansTask
   TradingsTask   *tasks.TradingsTask
+  AnalysisTask   *tasks.AnalysisTask
 }
 
 func (t *FuturesTask) Cron() *tasks.CronTask {
@@ -43,7 +45,9 @@ func (t *FuturesTask) Cron() *tasks.CronTask {
 
 func (t *FuturesTask) Account() *tasks.AccountTask {
   if t.AccountTask == nil {
-    t.AccountTask = &tasks.AccountTask{}
+    t.AccountTask = &tasks.AccountTask{
+      Asynq: t.Asynq,
+    }
     t.AccountTask.Repository = &repositories.AccountRepository{
       Db:  t.Db,
       Rdb: t.Rdb,
@@ -72,11 +76,13 @@ func (t *FuturesTask) Tickers() *tasks.TickersTask {
       Ctx:   t.Ctx,
       Asynq: t.Asynq,
     }
-    t.TickersTask.Job = &jobs.Tickers{}
     t.TickersTask.SymbolsRepository = &repositories.SymbolsRepository{
       Db: t.Db,
     }
     t.TickersTask.TradingsRepository = &repositories.TradingsRepository{
+      Db: t.Db,
+    }
+    t.TickersTask.TradingsRepository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
       Db: t.Db,
     }
     t.TickersTask.TradingsRepository.TriggersRepository = &tradingsRepositories.TriggersRepository{
@@ -93,7 +99,6 @@ func (t *FuturesTask) Klines() *tasks.KlinesTask {
       Ctx:   t.Ctx,
       Asynq: t.Asynq,
     }
-    t.KlinesTask.Job = &jobs.Klines{}
     t.KlinesTask.Repository = &repositories.KlinesRepository{
       Db: t.Db,
     }
@@ -103,11 +108,37 @@ func (t *FuturesTask) Klines() *tasks.KlinesTask {
     t.KlinesTask.TradingsRepository = &repositories.TradingsRepository{
       Db: t.Db,
     }
+    t.KlinesTask.TradingsRepository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
+      Db: t.Db,
+    }
     t.KlinesTask.TradingsRepository.TriggersRepository = &tradingsRepositories.TriggersRepository{
       Db: t.Db,
     }
   }
   return t.KlinesTask
+}
+
+func (t *FuturesTask) Depth() *tasks.DepthTask {
+  if t.DepthTask == nil {
+    t.DepthTask = &tasks.DepthTask{
+      Rdb:   t.Rdb,
+      Ctx:   t.Ctx,
+      Asynq: t.Asynq,
+    }
+    t.DepthTask.SymbolsRepository = &repositories.SymbolsRepository{
+      Db: t.Db,
+    }
+    t.DepthTask.TradingsRepository = &repositories.TradingsRepository{
+      Db: t.Db,
+    }
+    t.DepthTask.TradingsRepository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
+      Db: t.Db,
+    }
+    t.DepthTask.TradingsRepository.TriggersRepository = &tradingsRepositories.TriggersRepository{
+      Db: t.Db,
+    }
+  }
+  return t.DepthTask
 }
 
 func (t *FuturesTask) Orders() *tasks.OrdersTask {
@@ -116,10 +147,18 @@ func (t *FuturesTask) Orders() *tasks.OrdersTask {
       Asynq: t.Asynq,
     }
     t.OrdersTask.Job = &jobs.Orders{}
+    t.OrdersTask.Repository = &repositories.OrdersRepository{
+      Db:  t.Db,
+      Rdb: t.Rdb,
+      Ctx: t.Ctx,
+    }
     t.OrdersTask.SymbolsRepository = &repositories.SymbolsRepository{
       Db: t.Db,
     }
     t.OrdersTask.TradingsRepository = &repositories.TradingsRepository{
+      Db: t.Db,
+    }
+    t.OrdersTask.TradingsRepository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
       Db: t.Db,
     }
     t.OrdersTask.TradingsRepository.TriggersRepository = &tradingsRepositories.TriggersRepository{
@@ -170,15 +209,15 @@ func (t *FuturesTask) Tradings() *tasks.TradingsTask {
   return t.TradingsTask
 }
 
-func (t *FuturesTask) Flush() {
-  t.Account().Flush()
-  t.Plans().Daily().Flush()
+func (t *FuturesTask) Analysis() *tasks.AnalysisTask {
+  if t.AnalysisTask == nil {
+    t.AnalysisTask = &tasks.AnalysisTask{
+      Db: t.Db,
+    }
+  }
+  return t.AnalysisTask
 }
 
 func (t *FuturesTask) Clean() {
   t.Klines().Clean()
-}
-
-func (t *FuturesTask) Sync() {
-  t.Orders().Sync()
 }

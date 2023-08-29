@@ -1,28 +1,29 @@
 package spot
 
 import (
-	"context"
-	"github.com/go-redis/redis/v8"
-	"gorm.io/gorm"
-	repositories "taoniu.local/cryptos/repositories/binance/spot/plans"
-	tasks "taoniu.local/cryptos/tasks/binance/spot/plans"
+  "time"
+
+  "github.com/hibiken/asynq"
+
+  config "taoniu.local/cryptos/config/queue"
+  jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/spot"
 )
 
 type PlansTask struct {
-	Db        *gorm.DB
-	Rdb       *redis.Client
-	Ctx       context.Context
-	DailyTask *tasks.DailyTask
+  Asynq *asynq.Client
+  Job   *jobs.Plans
 }
 
-func (t *PlansTask) Daily() *tasks.DailyTask {
-	if t.DailyTask == nil {
-		t.DailyTask = &tasks.DailyTask{}
-		t.DailyTask.Repository = &repositories.DailyRepository{
-			Db:  t.Db,
-			Rdb: t.Rdb,
-			Ctx: t.Ctx,
-		}
-	}
-	return t.DailyTask
+func (t *PlansTask) Flush(interval string) error {
+  task, err := t.Job.Flush(interval)
+  if err != nil {
+    return err
+  }
+  t.Asynq.Enqueue(
+    task,
+    asynq.Queue(config.BINANCE_SPOT_PLANS),
+    asynq.MaxRetry(0),
+    asynq.Timeout(5*time.Minute),
+  )
+  return nil
 }

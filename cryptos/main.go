@@ -35,7 +35,9 @@ func main() {
     Commands: []*cli.Command{
       commands.NewApiCommand(),
       commands.NewGrpcCommand(),
+      commands.NewSocketCommand(),
       commands.NewBinanceCommand(),
+      commands.NewDydxCommand(),
       commands.NewCronCommand(),
       commands.NewDbCommand(),
       commands.NewQueueCommand(),

@@ -1,70 +1,117 @@
 package strategies
 
 import (
-	"context"
-	"github.com/go-redis/redis/v8"
-	"gorm.io/gorm"
-	models "taoniu.local/cryptos/models/binance/spot"
-	repositories "taoniu.local/cryptos/repositories/binance/spot/strategies"
+  "time"
+
+  "github.com/hibiken/asynq"
+  "gorm.io/gorm"
+
+  config "taoniu.local/cryptos/config/queue"
+  models "taoniu.local/cryptos/models/binance/spot"
+  jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/spot/strategies"
 )
 
 type DailyTask struct {
-	Db         *gorm.DB
-	Rdb        *redis.Client
-	Ctx        context.Context
-	Repository *repositories.DailyRepository
+  Db    *gorm.DB
+  Asynq *asynq.Client
+  Job   *jobs.Daily
 }
 
 func (t *DailyTask) Atr() error {
-	var symbols []string
-	t.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Find(&symbols)
-	for _, symbol := range symbols {
-		t.Repository.Atr(symbol)
-	}
-	return nil
+  var symbols []string
+  t.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+  for _, symbol := range symbols {
+    task, err := t.Job.Atr(symbol)
+    if err != nil {
+      return err
+    }
+    t.Asynq.Enqueue(
+      task,
+      asynq.Queue(config.BINANCE_SPOT_STRATEGIES),
+      asynq.MaxRetry(0),
+      asynq.Timeout(5*time.Minute),
+    )
+  }
+  return nil
 }
 
 func (t *DailyTask) Zlema() error {
-	var symbols []string
-	t.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Find(&symbols)
-	for _, symbol := range symbols {
-		t.Repository.Zlema(symbol)
-	}
-	return nil
+  var symbols []string
+  t.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+  for _, symbol := range symbols {
+    task, err := t.Job.Zlema(symbol)
+    if err != nil {
+      return err
+    }
+    t.Asynq.Enqueue(
+      task,
+      asynq.Queue(config.BINANCE_SPOT_STRATEGIES),
+      asynq.MaxRetry(0),
+      asynq.Timeout(5*time.Minute),
+    )
+  }
+  return nil
 }
 
 func (t *DailyTask) HaZlema() error {
-	var symbols []string
-	t.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Find(&symbols)
-	for _, symbol := range symbols {
-		t.Repository.HaZlema(symbol)
-	}
-	return nil
+  var symbols []string
+  t.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+  for _, symbol := range symbols {
+    task, err := t.Job.HaZlema(symbol)
+    if err != nil {
+      return err
+    }
+    t.Asynq.Enqueue(
+      task,
+      asynq.Queue(config.BINANCE_SPOT_STRATEGIES),
+      asynq.MaxRetry(0),
+      asynq.Timeout(5*time.Minute),
+    )
+  }
+  return nil
 }
 
 func (t *DailyTask) Kdj() error {
-	var symbols []string
-	t.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Find(&symbols)
-	for _, symbol := range symbols {
-		t.Repository.Kdj(symbol)
-	}
-	return nil
+  var symbols []string
+  t.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+  for _, symbol := range symbols {
+    task, err := t.Job.Kdj(symbol)
+    if err != nil {
+      return err
+    }
+    t.Asynq.Enqueue(
+      task,
+      asynq.Queue(config.BINANCE_SPOT_STRATEGIES),
+      asynq.MaxRetry(0),
+      asynq.Timeout(5*time.Minute),
+    )
+  }
+  return nil
 }
 
 func (t *DailyTask) BBands() error {
-	var symbols []string
-	t.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Find(&symbols)
-	for _, symbol := range symbols {
-		t.Repository.BBands(symbol)
-	}
-	return nil
+  var symbols []string
+  t.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+  for _, symbol := range symbols {
+    task, err := t.Job.BBands(symbol)
+    if err != nil {
+      return err
+    }
+    t.Asynq.Enqueue(
+      task,
+      asynq.Queue(config.BINANCE_SPOT_STRATEGIES),
+      asynq.MaxRetry(0),
+      asynq.Timeout(5*time.Minute),
+    )
+  }
+  return nil
 }
 
 func (t *DailyTask) Flush() error {
-	t.Atr()
-	t.Zlema()
-	t.HaZlema()
-	t.Kdj()
-	t.BBands()
-	return nil
+  t.Atr()
+  t.Zlema()
+  t.HaZlema()
+  t.Kdj()
+  t.BBands()
+  return nil
 }

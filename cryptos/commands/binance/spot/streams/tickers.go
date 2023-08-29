@@ -5,6 +5,7 @@ import (
   "encoding/json"
   "errors"
   "fmt"
+  "github.com/shopspring/decimal"
   "log"
   "os"
   "strconv"
@@ -19,24 +20,18 @@ import (
 
   "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/spot"
-  jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/futures/streams"
+  jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/spot/streams"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
-  crossRepositories "taoniu.local/cryptos/repositories/binance/spot/margin/cross"
-  crossTradingsRepositories "taoniu.local/cryptos/repositories/binance/spot/margin/cross/tradings"
-  isolatedRepositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated"
-  isolatedTradingsRepositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated/tradings"
   tradingsRepositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
 )
 
 type TickersHandler struct {
-  Db                         *gorm.DB
-  Ctx                        context.Context
-  Socket                     *websocket.Conn
-  Nats                       *nats.Conn
-  TickersJob                 *jobs.Tickers
-  TradingsRepository         *repositories.TradingsRepository
-  CrossTradingsRepository    *crossRepositories.TradingsRepository
-  IsolatedTradingsRepository *isolatedRepositories.TradingsRepository
+  Db                 *gorm.DB
+  Ctx                context.Context
+  Socket             *websocket.Conn
+  Nats               *nats.Conn
+  TickersJob         *jobs.Tickers
+  TradingsRepository *repositories.TradingsRepository
 }
 
 func NewTickersCommand() *cli.Command {
@@ -54,25 +49,13 @@ func NewTickersCommand() *cli.Command {
       h.TradingsRepository = &repositories.TradingsRepository{
         Db: h.Db,
       }
-      h.TradingsRepository.FishersRepository = &tradingsRepositories.FishersRepository{
+      h.TradingsRepository.LaunchpadRepository = &tradingsRepositories.LaunchpadRepository{
         Db: h.Db,
       }
       h.TradingsRepository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
         Db: h.Db,
       }
       h.TradingsRepository.TriggersRepository = &tradingsRepositories.TriggersRepository{
-        Db: h.Db,
-      }
-      h.CrossTradingsRepository = &crossRepositories.TradingsRepository{
-        Db: h.Db,
-      }
-      h.CrossTradingsRepository.TriggersRepository = &crossTradingsRepositories.TriggersRepository{
-        Db: h.Db,
-      }
-      h.IsolatedTradingsRepository = &isolatedRepositories.TradingsRepository{
-        Db: h.Db,
-      }
-      h.IsolatedTradingsRepository.FishersRepository = &isolatedTradingsRepositories.FishersRepository{
         Db: h.Db,
       }
       return nil
@@ -108,6 +91,7 @@ func (h *TickersHandler) handler(message map[string]interface{}) {
   data := message["data"].(map[string]interface{})
   event := data["e"].(string)
 
+  log.Println("ticker", data)
   if event == "24hrMiniTicker" {
     open, _ := strconv.ParseFloat(data["o"].(string), 64)
     price, _ := strconv.ParseFloat(data["c"].(string), 64)
@@ -115,6 +99,7 @@ func (h *TickersHandler) handler(message map[string]interface{}) {
     low, _ := strconv.ParseFloat(data["l"].(string), 64)
     volume, _ := strconv.ParseFloat(data["v"].(string), 64)
     quota, _ := strconv.ParseFloat(data["q"].(string), 64)
+    change, _ := decimal.NewFromFloat(price).Sub(decimal.NewFromFloat(open)).Div(decimal.NewFromFloat(open)).Round(4).Float64()
     data, _ := json.Marshal(map[string]interface{}{
       "symbol":    data["s"].(string),
       "price":     price,
@@ -123,9 +108,10 @@ func (h *TickersHandler) handler(message map[string]interface{}) {
       "low":       low,
       "volume":    volume,
       "quota":     quota,
+      "change":    change,
       "timestamp": time.Now().Unix(),
     })
-    h.Nats.Publish(config.NATS_TICKERS_UPDATE, data)
+    h.Nats.Publish(config.NATS_TRADES_UPDATE, data)
     h.Nats.Flush()
   }
 }
@@ -135,12 +121,12 @@ func (h *TickersHandler) start(current int) (err error) {
 
   symbols := h.Scan()
 
-  offset := (current - 1) * 25
+  offset := (current - 1) * 20
   if offset >= len(symbols) {
     err = errors.New("symbols out of range")
     return
   }
-  endPos := offset + 25
+  endPos := offset + 20
   if endPos > len(symbols) {
     endPos = len(symbols)
   }
@@ -158,10 +144,11 @@ func (h *TickersHandler) start(current int) (err error) {
   }
 
   endpoint := fmt.Sprintf(
-    "%s?streams=%s",
+    "%s/stream?streams=%s",
     os.Getenv("BINANCE_SPOT_STREAMS_ENDPOINT"),
     strings.Join(streams, "/"),
   )
+  log.Println("endpoint", endpoint)
 
   h.Socket, _, err = websocket.Dial(h.Ctx, endpoint, &websocket.DialOptions{
     CompressionMode: websocket.CompressionDisabled,
@@ -215,16 +202,6 @@ func (h *TickersHandler) start(current int) (err error) {
 func (h *TickersHandler) Scan() []string {
   var symbols []string
   for _, symbol := range h.TradingsRepository.Scan() {
-    if !h.contains(symbols, symbol) {
-      symbols = append(symbols, symbol)
-    }
-  }
-  for _, symbol := range h.CrossTradingsRepository.Scan() {
-    if !h.contains(symbols, symbol) {
-      symbols = append(symbols, symbol)
-    }
-  }
-  for _, symbol := range h.IsolatedTradingsRepository.Scan() {
     if !h.contains(symbols, symbol) {
       symbols = append(symbols, symbol)
     }

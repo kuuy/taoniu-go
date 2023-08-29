@@ -11,20 +11,16 @@ import (
   config "taoniu.local/cryptos/config/queue"
   jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/spot"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
-  crossRepositories "taoniu.local/cryptos/repositories/binance/spot/margin/cross"
-  isolatedRepositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated"
 )
 
 type KlinesTask struct {
-  Rdb                        *redis.Client
-  Ctx                        context.Context
-  Asynq                      *asynq.Client
-  Job                        *jobs.Klines
-  Repository                 *repositories.KlinesRepository
-  SymbolsRepository          *repositories.SymbolsRepository
-  TradingsRepository         *repositories.TradingsRepository
-  CrossTradingsRepository    *crossRepositories.TradingsRepository
-  IsolatedTradingsRepository *isolatedRepositories.TradingsRepository
+  Rdb                *redis.Client
+  Ctx                context.Context
+  Asynq              *asynq.Client
+  Job                *jobs.Klines
+  Repository         *repositories.KlinesRepository
+  SymbolsRepository  *repositories.SymbolsRepository
+  TradingsRepository *repositories.TradingsRepository
 }
 
 func (t *KlinesTask) Flush(interval string, limit int) error {
@@ -102,16 +98,6 @@ func (t *KlinesTask) Clean() error {
 func (t *KlinesTask) Scan() []string {
   var symbols []string
   for _, symbol := range t.TradingsRepository.Scan() {
-    if !t.contains(symbols, symbol) {
-      symbols = append(symbols, symbol)
-    }
-  }
-  for _, symbol := range t.CrossTradingsRepository.Scan() {
-    if !t.contains(symbols, symbol) {
-      symbols = append(symbols, symbol)
-    }
-  }
-  for _, symbol := range t.IsolatedTradingsRepository.Scan() {
     if !t.contains(symbols, symbol) {
       symbols = append(symbols, symbol)
     }

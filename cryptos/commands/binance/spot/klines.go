@@ -6,19 +6,21 @@ import (
   "strconv"
 
   "github.com/go-redis/redis/v8"
+  "github.com/nats-io/nats.go"
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
 
   "taoniu.local/cryptos/common"
-  models "taoniu.local/cryptos/models/binance/spot"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
 type KlinesHandler struct {
-  Db         *gorm.DB
-  Rdb        *redis.Client
-  Ctx        context.Context
-  Repository *repositories.KlinesRepository
+  Db                *gorm.DB
+  Rdb               *redis.Client
+  Ctx               context.Context
+  Nats              *nats.Conn
+  Repository        *repositories.KlinesRepository
+  SymbolsRepository *repositories.SymbolsRepository
 }
 
 func NewKlinesCommand() *cli.Command {
@@ -28,14 +30,19 @@ func NewKlinesCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = KlinesHandler{
-        Db:  common.NewDB(),
-        Rdb: common.NewRedis(),
-        Ctx: context.Background(),
+        Db:   common.NewDB(),
+        Rdb:  common.NewRedis(),
+        Ctx:  context.Background(),
+        Nats: common.NewNats(),
       }
       h.Repository = &repositories.KlinesRepository{
-        Db:  h.Db,
-        Rdb: h.Rdb,
-        Ctx: h.Ctx,
+        Db:   h.Db,
+        Rdb:  h.Rdb,
+        Ctx:  h.Ctx,
+        Nats: h.Nats,
+      }
+      h.SymbolsRepository = &repositories.SymbolsRepository{
+        Db: h.Db,
       }
       return nil
     },
@@ -44,21 +51,22 @@ func NewKlinesCommand() *cli.Command {
         Name:  "flush",
         Usage: "",
         Action: func(c *cli.Context) error {
+          symbol := c.Args().Get(2)
           interval := c.Args().Get(0)
-          if interval == "" {
-            log.Fatal("interval is empty")
-            return nil
-          }
           limit, _ := strconv.Atoi(c.Args().Get(1))
-          if interval == "1d" && (limit < 1 || limit > 100) {
-            log.Fatal("limit not in 1~100")
+          if interval == "1m" && (limit < 1 || limit > 4320) {
+            log.Fatal("limit not in 1~4320")
             return nil
           }
-          if interval == "1m" && (limit < 1 || limit > 1000) {
-            log.Fatal("limit not in 1~1000")
+          if interval == "4h" && (limit < 1 || limit > 672) {
+            log.Fatal("limit not in 1~672")
             return nil
           }
-          if err := h.flush(interval, limit); err != nil {
+          if interval == "1d" && (limit < 1 || limit > 365) {
+            log.Fatal("limit not in 1~365")
+            return nil
+          }
+          if err := h.Flush(symbol, interval, limit); err != nil {
             return cli.Exit(err.Error(), 1)
           }
           return nil
@@ -68,21 +76,22 @@ func NewKlinesCommand() *cli.Command {
         Name:  "fix",
         Usage: "",
         Action: func(c *cli.Context) error {
+          symbol := c.Args().Get(2)
           interval := c.Args().Get(0)
-          if interval == "" {
-            log.Fatal("interval is empty")
-            return nil
-          }
           limit, _ := strconv.Atoi(c.Args().Get(1))
-          if interval == "1d" && (limit < 1 || limit > 100) {
-            log.Fatal("limit not in 1~100")
+          if interval == "1m" && (limit < 1 || limit > 4320) {
+            log.Fatal("limit not in 1~4320")
             return nil
           }
-          if interval == "1m" && (limit < 1 || limit > 1000) {
-            log.Fatal("limit not in 1~1000")
+          if interval == "4h" && (limit < 1 || limit > 672) {
+            log.Fatal("limit not in 1~672")
             return nil
           }
-          if err := h.fix(interval, limit); err != nil {
+          if interval == "1d" && (limit < 1 || limit > 365) {
+            log.Fatal("limit not in 1~365")
+            return nil
+          }
+          if err := h.Fix(symbol, interval, limit); err != nil {
             return cli.Exit(err.Error(), 1)
           }
           return nil
@@ -92,7 +101,7 @@ func NewKlinesCommand() *cli.Command {
         Name:  "clean",
         Usage: "",
         Action: func(c *cli.Context) error {
-          if err := h.clean(); err != nil {
+          if err := h.Clean(); err != nil {
             return cli.Exit(err.Error(), 1)
           }
           return nil
@@ -102,38 +111,41 @@ func NewKlinesCommand() *cli.Command {
   }
 }
 
-func (h *KlinesHandler) flush(interval string, limit int) error {
+func (h *KlinesHandler) Flush(symbol string, interval string, limit int) error {
   log.Println("binance spot klines flush...")
   var symbols []string
-  h.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Find(&symbols)
+  if symbol == "" {
+    symbols = h.SymbolsRepository.Symbols()
+  } else {
+    symbols = append(symbols, symbol)
+  }
   for _, symbol := range symbols {
-    err := h.Repository.Flush(symbol, interval, limit)
+    err := h.Repository.Flush(symbol, interval, 0, limit)
     if err != nil {
       log.Println("kline flush error", err)
     }
   }
-
   return nil
 }
 
-func (h *KlinesHandler) fix(interval string, limit int) error {
-  log.Println("binance spot klines flush...")
+func (h *KlinesHandler) Fix(symbol string, interval string, limit int) error {
+  log.Println("binance spot klines fix...")
   var symbols []string
-  h.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Find(&symbols)
+  if symbol == "" {
+    symbols = h.SymbolsRepository.Symbols()
+  } else {
+    symbols = append(symbols, symbol)
+  }
   for _, symbol := range symbols {
-    if int(h.Repository.Count(symbol, interval)) > limit {
-      continue
-    }
-    err := h.Repository.Flush(symbol, interval, limit)
+    err := h.Repository.Fix(symbol, interval, limit)
     if err != nil {
-      log.Println("kline flush error", err)
+      log.Println("kline fix error", err)
     }
   }
-
   return nil
 }
 
-func (h *KlinesHandler) clean() error {
+func (h *KlinesHandler) Clean() error {
   log.Println("binance spot klines daily clean...")
   h.Repository.Clean()
   return nil

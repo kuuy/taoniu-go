@@ -2,6 +2,7 @@ package futures
 
 import (
   "context"
+  "encoding/json"
   "errors"
   "fmt"
   "github.com/shopspring/decimal"
@@ -152,6 +153,76 @@ func (r *SymbolsRepository) Count() error {
   return nil
 }
 
+func (r *SymbolsRepository) Slippage(symbol string) error {
+  depth, err := r.Depth(symbol)
+  if err != nil {
+    return err
+  }
+  asks := depth["asks"].([]interface{})
+  bids := depth["bids"].([]interface{})
+  data := make(map[string]float64)
+  data["slippage@1%"] = 0
+  data["slippage@-1%"] = 0
+  data["slippage@2%"] = 0
+  data["slippage@-2%"] = 0
+  var stop1, stop2 float64
+  for i, item := range asks {
+    price, _ := strconv.ParseFloat(item.([]interface{})[0].(string), 64)
+    volume, _ := strconv.ParseFloat(item.([]interface{})[1].(string), 64)
+    if i == 0 {
+      stop1 = price * 1.01
+      stop2 = price * 1.02
+    }
+    if price <= stop1 {
+      data["slippage@1%"] += volume
+    }
+    if price > stop2 {
+      break
+    }
+    data["slippage@2%"] += volume
+  }
+  for i, item := range bids {
+    price, _ := strconv.ParseFloat(item.([]interface{})[0].(string), 64)
+    volume, _ := strconv.ParseFloat(item.([]interface{})[1].(string), 64)
+    if i == 0 {
+      stop1 = price * 0.99
+      stop2 = price * 0.98
+    }
+    if price >= stop1 {
+      data["slippage@-1%"] += volume
+    }
+    if price < stop2 {
+      break
+    }
+    data["slippage@-2%"] += volume
+  }
+  r.Rdb.HMSet(
+    r.Ctx,
+    fmt.Sprintf("binance:futures:realtime:%s", symbol),
+    map[string]interface{}{
+      "slippage@1%":  data["slippage@1%"],
+      "slippage@-1%": data["slippage@-1%"],
+      "slippage@2%":  data["slippage@2%"],
+      "slippage@-2%": data["slippage@-2%"],
+    },
+  )
+  return nil
+}
+
+func (r *SymbolsRepository) Depth(symbol string) (map[string]interface{}, error) {
+  var depth string
+  result := r.Db.Model(&models.Symbol{}).Select("depth").Where("symbol", symbol).Take(&depth)
+  if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+    return nil, result.Error
+  }
+  var out map[string]interface{}
+  json.Unmarshal([]byte(depth), &out)
+  if len(out) == 0 {
+    return nil, errors.New("depth empty")
+  }
+  return out, nil
+}
+
 func (r *SymbolsRepository) Price(symbol string) (float64, error) {
   fields := []string{
     "price",
@@ -165,6 +236,9 @@ func (r *SymbolsRepository) Price(symbol string) (float64, error) {
     ),
     fields...,
   ).Result()
+  if len(data) != len(fields) {
+    return 0, errors.New(fmt.Sprintf("[%s] price not exists", symbol))
+  }
   for i := 0; i < len(fields); i++ {
     if data[i] == nil {
       return 0, errors.New(fmt.Sprintf("[%s] price not exists", symbol))
@@ -175,10 +249,6 @@ func (r *SymbolsRepository) Price(symbol string) (float64, error) {
   price, _ := strconv.ParseFloat(data[0].(string), 64)
   lasttime, _ := strconv.ParseInt(data[1].(string), 10, 64)
   if timestamp-lasttime > 30 {
-    r.Rdb.ZAdd(r.Ctx, "binance:futures:tickers:flush", &redis.Z{
-      float64(timestamp),
-      symbol,
-    })
     return 0, errors.New(fmt.Sprintf("[%s] price long time not freshed", symbol))
   }
 

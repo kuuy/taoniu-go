@@ -12,19 +12,15 @@ import (
   config "taoniu.local/cryptos/config/queue"
   jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/spot"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
-  crossRepositories "taoniu.local/cryptos/repositories/binance/spot/margin/cross"
-  isolatedRepositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated"
 )
 
 type TickersTask struct {
-  Rdb                        *redis.Client
-  Ctx                        context.Context
-  Asynq                      *asynq.Client
-  Job                        *jobs.Tickers
-  SymbolsRepository          *repositories.SymbolsRepository
-  TradingsRepository         *repositories.TradingsRepository
-  CrossTradingsRepository    *crossRepositories.TradingsRepository
-  IsolatedTradingsRepository *isolatedRepositories.TradingsRepository
+  Rdb                *redis.Client
+  Ctx                context.Context
+  Asynq              *asynq.Client
+  Job                *jobs.Tickers
+  SymbolsRepository  *repositories.SymbolsRepository
+  TradingsRepository *repositories.TradingsRepository
 }
 
 func (t *TickersTask) Flush() error {
@@ -70,12 +66,12 @@ func (t *TickersTask) Fix() error {
   }
   rand.Seed(time.Now().UnixNano())
   rand.Shuffle(len(items), func(i, j int) { items[i], items[j] = items[j], items[i] })
-  for i := 0; i < len(items); i += 20 {
+  for i := 0; i < len(symbols); i += 20 {
     j := i + 20
-    if j > len(items) {
-      j = len(items)
+    if j > len(symbols) {
+      j = len(symbols)
     }
-    task, err := t.Job.Flush(items[i:j], true)
+    task, err := t.Job.Flush(symbols[i:j], false)
     if err != nil {
       return err
     }
@@ -99,7 +95,7 @@ func (t *TickersTask) FlushDelay() error {
     if j > len(symbols) {
       j = len(symbols)
     }
-    task, err := t.Job.Flush(symbols[i:j], true)
+    task, err := t.Job.Flush(symbols[i:j], false)
     if err != nil {
       return err
     }
@@ -117,16 +113,6 @@ func (t *TickersTask) FlushDelay() error {
 func (t *TickersTask) Scan() []string {
   var symbols []string
   for _, symbol := range t.TradingsRepository.Scan() {
-    if !t.contains(symbols, symbol) {
-      symbols = append(symbols, symbol)
-    }
-  }
-  for _, symbol := range t.CrossTradingsRepository.Scan() {
-    if !t.contains(symbols, symbol) {
-      symbols = append(symbols, symbol)
-    }
-  }
-  for _, symbol := range t.IsolatedTradingsRepository.Scan() {
     if !t.contains(symbols, symbol) {
       symbols = append(symbols, symbol)
     }

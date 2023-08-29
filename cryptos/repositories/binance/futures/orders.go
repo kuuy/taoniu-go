@@ -28,7 +28,6 @@ import (
   "github.com/rs/xid"
   "gorm.io/gorm"
 
-  config "taoniu.local/cryptos/config/binance/futures"
   models "taoniu.local/cryptos/models/binance/futures"
 )
 
@@ -38,9 +37,79 @@ type OrdersRepository struct {
   Ctx context.Context
 }
 
-func (r *OrdersRepository) Lost(symbol string, positionSide string, side string, price float64, timestamp int64) int64 {
+func (r *OrdersRepository) Find(id string) (*models.Order, error) {
+  var entity *models.Order
+  result := r.Db.First(&entity, "id=?", id)
+  if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+    return nil, result.Error
+  }
+  return entity, nil
+}
+
+func (r *OrdersRepository) Gets(conditions map[string]interface{}) []*models.Order {
+  var positions []*models.Order
+  query := r.Db.Select([]string{
+    "symbol",
+    "order_id",
+  })
+  if _, ok := conditions["status"]; ok {
+    query.Where("status IN ?", conditions["status"].([]string))
+  } else {
+    query.Where("status IN ?", []string{"NEW", "PARTIALLY_FILLED"})
+  }
+  query.Find(&positions)
+  return positions
+}
+
+func (r *OrdersRepository) Count(conditions map[string]interface{}) int64 {
+  var total int64
+  query := r.Db.Model(&models.Order{})
+  if _, ok := conditions["symbol"]; ok {
+    query.Where("symbol", conditions["symbol"].(string))
+  }
+  if _, ok := conditions["position_side"]; ok {
+    query.Where("position_side", conditions["position_side"].(string))
+  }
+  if _, ok := conditions["status"]; ok {
+    query.Where("status", conditions["status"].(string))
+  }
+  query.Count(&total)
+  return total
+}
+
+func (r *OrdersRepository) Listings(conditions map[string]interface{}, current int, pageSize int) []*models.Order {
+  var orders []*models.Order
+  query := r.Db.Select([]string{
+    "id",
+    "symbol",
+    "order_id",
+    "type",
+    "position_side",
+    "side",
+    "price",
+    "quantity",
+    "open_time",
+    "update_time",
+    "reduce_only",
+    "status",
+  })
+  if _, ok := conditions["symbol"]; ok {
+    query.Where("symbol", conditions["symbol"].(string))
+  }
+  if _, ok := conditions["position_side"]; ok {
+    query.Where("position_side", conditions["position_side"].(string))
+  }
+  if _, ok := conditions["status"]; ok {
+    query.Where("status", conditions["status"].(string))
+  }
+  query.Order("open_time desc")
+  query.Offset((current - 1) * pageSize).Limit(pageSize).Find(&orders)
+  return orders
+}
+
+func (r *OrdersRepository) Lost(symbol string, positionSide string, side string, quantity float64, timestamp int64) int64 {
   var entity models.Order
-  result := r.Db.Where("symbol=? AND position_side=? AND side=? AND price=?", symbol, positionSide, side, price).Order("updated_at desc").Take(&entity)
+  result := r.Db.Where("symbol=? AND position_side=? AND side=? AND quantity=?", symbol, positionSide, side, quantity).Order("updated_at desc").Take(&entity)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     return 0
   }
@@ -75,45 +144,70 @@ func (r *OrdersRepository) Open(symbol string) error {
   return nil
 }
 
-func (r *OrdersRepository) Sync(symbol string, limit int) error {
-  yestoday := time.Now().Unix() - 86400
-  client := binance.NewFuturesClient(config.ACCOUNT_API_KEY, config.ACCOUNT_SECRET_KEY)
-  orders, err := client.NewListOrdersService().Symbol(
-    symbol,
-  ).StartTime(
-    yestoday * 1000,
-  ).Limit(
-    limit,
-  ).Do(r.Ctx)
+func (r *OrdersRepository) Sync(symbol string, startTime int64, limit int) error {
+  tr := &http.Transport{
+    DisableKeepAlives: true,
+  }
+  session := &net.Dialer{}
+  tr.DialContext = session.DialContext
+
+  httpClient := &http.Client{
+    Transport: tr,
+    Timeout:   time.Duration(3) * time.Second,
+  }
+
+  params := url.Values{}
+  params.Add("symbol", symbol)
+  if startTime > 0 {
+    params.Add("startTime", fmt.Sprintf("%v", startTime))
+  }
+  params.Add("limit", fmt.Sprintf("%v", limit))
+  params.Add("recvWindow", "60000")
+
+  value, err := r.Rdb.HGet(r.Ctx, "binance:server", "timediff").Result()
   if err != nil {
     return err
   }
-  for _, order := range orders {
+  timediff, _ := strconv.ParseInt(value, 10, 64)
+
+  timestamp := time.Now().UnixMilli() - timediff
+  params.Add("timestamp", fmt.Sprintf("%v", timestamp))
+
+  mac := hmac.New(sha256.New, []byte(os.Getenv("BINANCE_FUTURES_ACCOUNT_API_SECRET")))
+  _, err = mac.Write([]byte(params.Encode()))
+  if err != nil {
+    return err
+  }
+  signature := mac.Sum(nil)
+  params.Add("signature", fmt.Sprintf("%x", signature))
+
+  url := fmt.Sprintf("%s/fapi/v1/allOrders", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))
+  req, _ := http.NewRequest("GET", url, nil)
+  req.URL.RawQuery = params.Encode()
+  req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+  req.Header.Set("X-MBX-APIKEY", os.Getenv("BINANCE_FUTURES_ACCOUNT_API_KEY"))
+  resp, err := httpClient.Do(req)
+  if err != nil {
+    return err
+  }
+  defer resp.Body.Close()
+
+  if resp.StatusCode != http.StatusOK {
+    return errors.New(
+      fmt.Sprintf(
+        "request error: status[%s] code[%d]",
+        resp.Status,
+        resp.StatusCode,
+      ),
+    )
+  }
+
+  var result []*service.Order
+  json.NewDecoder(resp.Body).Decode(&result)
+  for _, order := range result {
     r.Save(order)
   }
-  return nil
-}
 
-func (r *OrdersRepository) Fix(time time.Time, limit int) error {
-  var orders []*models.Order
-  r.Db.Select([]string{
-    "symbol",
-    "order_id",
-  }).Where(
-    "updated_at < ? AND status IN ?",
-    time,
-    []string{
-      "NEW",
-      "PARTIALLY_FILLED",
-    },
-  ).Order(
-    "updated_at asc",
-  ).Limit(
-    limit,
-  ).Find(&orders)
-  for _, order := range orders {
-    r.Flush(order.Symbol, order.OrderID)
-  }
   return nil
 }
 
@@ -152,7 +246,7 @@ func (r *OrdersRepository) Create(
   }
   timediff, _ := strconv.ParseInt(value, 10, 64)
 
-  timestamp := time.Now().UnixNano()/int64(time.Millisecond) - timediff
+  timestamp := time.Now().UnixMilli() - timediff
   payload := fmt.Sprintf("%s&timestamp=%v", params.Encode(), timestamp)
 
   data := url.Values{}
@@ -458,7 +552,13 @@ func (r *OrdersRepository) Cancel(symbol string, orderId int64) error {
   params.Add("orderId", fmt.Sprintf("%v", orderId))
   params.Add("recvWindow", "60000")
 
-  timestamp := time.Now().UnixNano() / int64(time.Millisecond)
+  value, err := r.Rdb.HGet(r.Ctx, "binance:server", "timediff").Result()
+  if err != nil {
+    return err
+  }
+  timediff, _ := strconv.ParseInt(value, 10, 64)
+
+  timestamp := time.Now().UnixNano()/int64(time.Millisecond) - timediff
   payload := fmt.Sprintf("%s&timestamp=%v", params.Encode(), timestamp)
 
   data := url.Values{}
@@ -491,7 +591,7 @@ func (r *OrdersRepository) Cancel(symbol string, orderId int64) error {
   url := fmt.Sprintf("%s/fapi/v1/order", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))
   req, _ := http.NewRequest("DELETE", url, body)
   req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-  req.Header.Set("X-MBX-APIKEY", config.TRADE_API_KEY)
+  req.Header.Set("X-MBX-APIKEY", os.Getenv("BINANCE_FUTURES_TRADE_API_KEY"))
   resp, err := httpClient.Do(req)
   if err != nil {
     return err
@@ -521,6 +621,8 @@ func (r *OrdersRepository) Cancel(symbol string, orderId int64) error {
   if err != nil {
     return err
   }
+
+  r.Flush(symbol, orderId)
 
   return nil
 }

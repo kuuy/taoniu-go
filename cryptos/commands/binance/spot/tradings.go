@@ -44,9 +44,6 @@ func NewTradingsCommand() *cli.Command {
       h.Repository.ProductsRepository = &savingsRepositories.ProductsRepository{
         Db: h.Db,
       }
-      h.Repository.FishersRepository = &tradingsRepositories.FishersRepository{
-        Db: h.Db,
-      }
       h.Repository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
         Db: h.Db,
       }
@@ -76,7 +73,7 @@ func NewTradingsCommand() *cli.Command {
           return nil
         },
       },
-      tradings.NewFishersCommand(),
+      tradings.NewLaunchpadCommand(),
       tradings.NewScalpingCommand(),
       tradings.NewTriggersCommand(),
     },

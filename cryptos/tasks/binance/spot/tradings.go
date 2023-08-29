@@ -7,38 +7,31 @@ import (
   "github.com/hibiken/asynq"
   "gorm.io/gorm"
 
-  "taoniu.local/cryptos/queue/asynq/jobs/binance/spot/tradings"
-  repositories "taoniu.local/cryptos/repositories/binance/spot"
-  plansRepositories "taoniu.local/cryptos/repositories/binance/spot/plans"
+  spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
   tradingsRepositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
   tasks "taoniu.local/cryptos/tasks/binance/spot/tradings"
 )
 
 type TradingsTask struct {
-  Db           *gorm.DB
-  Rdb          *redis.Client
-  Ctx          context.Context
-  Asynq        *asynq.Client
-  FishersTask  *tasks.FishersTask
-  ScalpingTask *tasks.ScalpingTask
-  TriggersTask *tasks.TriggersTask
-  Repository   *repositories.TradingsRepository
+  Db            *gorm.DB
+  Rdb           *redis.Client
+  Ctx           context.Context
+  Asynq         *asynq.Client
+  LaunchpadTask *tasks.LaunchpadTask
+  TriggersTask  *tasks.TriggersTask
+  ScalpingTask  *tasks.ScalpingTask
 }
 
-func (t *TradingsTask) Fishers() *tasks.FishersTask {
-  if t.FishersTask == nil {
-    t.FishersTask = &tasks.FishersTask{
-      Db:    t.Db,
-      Rdb:   t.Rdb,
-      Ctx:   t.Ctx,
+func (t *TradingsTask) Launchpad() *tasks.LaunchpadTask {
+  if t.LaunchpadTask == nil {
+    t.LaunchpadTask = &tasks.LaunchpadTask{
       Asynq: t.Asynq,
     }
-    t.FishersTask.Job = &tradings.Fishers{}
-    t.FishersTask.Repository = &tradingsRepositories.FishersRepository{
+    t.LaunchpadTask.Repository = &tradingsRepositories.LaunchpadRepository{
       Db: t.Db,
     }
   }
-  return t.FishersTask
+  return t.LaunchpadTask
 }
 
 func (t *TradingsTask) Scalping() *tasks.ScalpingTask {
@@ -47,27 +40,9 @@ func (t *TradingsTask) Scalping() *tasks.ScalpingTask {
       Asynq: t.Asynq,
     }
     t.ScalpingTask.Repository = &tradingsRepositories.ScalpingRepository{
-      Db:  t.Db,
-      Rdb: t.Rdb,
-      Ctx: t.Ctx,
+      Db: t.Db,
     }
-    t.ScalpingTask.Job = &tradings.Scalping{}
-    t.ScalpingTask.Repository.SymbolsRepository = &repositories.SymbolsRepository{
-      Db:  t.Db,
-      Rdb: t.Rdb,
-      Ctx: t.Ctx,
-    }
-    t.ScalpingTask.Repository.AccountRepository = &repositories.AccountRepository{
-      Db:  t.Db,
-      Rdb: t.Rdb,
-      Ctx: t.Ctx,
-    }
-    t.ScalpingTask.Repository.OrdersRepository = &repositories.OrdersRepository{
-      Db:  t.Db,
-      Rdb: t.Rdb,
-      Ctx: t.Ctx,
-    }
-    t.ScalpingTask.PlansRepository = &plansRepositories.DailyRepository{
+    t.ScalpingTask.PlansRepository = &spotRepositories.PlansRepository{
       Db: t.Db,
     }
   }
@@ -79,21 +54,9 @@ func (t *TradingsTask) Triggers() *tasks.TriggersTask {
     t.TriggersTask = &tasks.TriggersTask{
       Asynq: t.Asynq,
     }
-    t.TriggersTask.Job = &tradings.Triggers{}
     t.TriggersTask.Repository = &tradingsRepositories.TriggersRepository{
-      Db:  t.Db,
-      Rdb: t.Rdb,
-      Ctx: t.Ctx,
-    }
-    t.TriggersTask.Repository.SymbolsRepository = &repositories.SymbolsRepository{
-      Db:  t.Db,
-      Rdb: t.Rdb,
-      Ctx: t.Ctx,
+      Db: t.Db,
     }
   }
   return t.TriggersTask
-}
-
-func (t *TradingsTask) Earn() error {
-  return t.Repository.Earn()
 }

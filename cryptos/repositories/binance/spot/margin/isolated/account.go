@@ -17,6 +17,7 @@ import (
   "net"
   "net/http"
   "net/url"
+  "os"
   "strconv"
   "time"
 
@@ -25,8 +26,6 @@ import (
   "github.com/go-redis/redis/v8"
   "gorm.io/gorm"
 
-  binanceConfig "taoniu.local/cryptos/config/binance"
-  config "taoniu.local/cryptos/config/binance/spot"
   binanceModels "taoniu.local/cryptos/models/binance/spot"
 )
 
@@ -38,7 +37,12 @@ type AccountRepository struct {
 }
 
 func (r *AccountRepository) Flush() error {
-  client := binance.NewClient(config.ACCOUNT_API_KEY, config.ACCOUNT_SECRET_KEY)
+  client := binance.NewClient(
+    os.Getenv("BINANCE_SPOT_ACCOUNT_API_KEY"),
+    os.Getenv("BINANCE_SPOT_ACCOUNT_API_SECRET"),
+  )
+  client.BaseURL = os.Getenv("BINANCE_SPOT_API_ENDPOINT")
+
   account, err := client.NewGetIsolatedMarginAccountService().Do(r.Ctx)
   if err != nil {
     return err
@@ -207,7 +211,7 @@ func (r *AccountRepository) Transfer(
   timestamp := time.Now().UnixNano() / int64(time.Millisecond)
   payload := fmt.Sprintf("%s&timestamp=%v", params.Encode(), timestamp)
 
-  block, _ := pem.Decode([]byte(binanceConfig.FUND_SECRET_KEY))
+  block, _ := pem.Decode([]byte(os.Getenv("BINANCE_FUND_API_SECRET")))
   privateKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
   if err != nil {
     return 0, err
@@ -223,7 +227,7 @@ func (r *AccountRepository) Transfer(
   url := "https://api.binance.com/sapi/v1/margin/isolated/transfer"
   req, _ := http.NewRequest("POST", url, body)
   req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-  req.Header.Set("X-MBX-APIKEY", binanceConfig.FUND_API_KEY)
+  req.Header.Set("X-MBX-APIKEY", os.Getenv("BINANCE_FUND_API_KEY"))
   resp, err := httpClient.Do(req)
   if err != nil {
     return 0, err
@@ -286,7 +290,7 @@ func (r *AccountRepository) Loan(
   timestamp := time.Now().UnixNano() / int64(time.Millisecond)
   payload := fmt.Sprintf("%s&timestamp=%v", params.Encode(), timestamp)
 
-  block, _ := pem.Decode([]byte(binanceConfig.FUND_SECRET_KEY))
+  block, _ := pem.Decode([]byte(os.Getenv("BINANCE_FUND_API_SECRET")))
   privateKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
   if err != nil {
     return 0, err
@@ -302,7 +306,7 @@ func (r *AccountRepository) Loan(
   url := "https://api.binance.com/sapi/v1/margin/loan"
   req, _ := http.NewRequest("POST", url, body)
   req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-  req.Header.Set("X-MBX-APIKEY", binanceConfig.FUND_API_KEY)
+  req.Header.Set("X-MBX-APIKEY", os.Getenv("BINANCE_FUND_API_KEY"))
   resp, err := httpClient.Do(req)
   if err != nil {
     return 0, err
@@ -365,7 +369,7 @@ func (r *AccountRepository) Repay(
   timestamp := time.Now().UnixNano() / int64(time.Millisecond)
   payload := fmt.Sprintf("%s&timestamp=%v", params.Encode(), timestamp)
 
-  block, _ := pem.Decode([]byte(binanceConfig.FUND_SECRET_KEY))
+  block, _ := pem.Decode([]byte(os.Getenv("BINANCE_FUND_API_SECRET")))
   privateKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
   if err != nil {
     return 0, err
@@ -381,7 +385,7 @@ func (r *AccountRepository) Repay(
   url := "https://api.binance.com/sapi/v1/margin/repay"
   req, _ := http.NewRequest("POST", url, body)
   req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-  req.Header.Set("X-MBX-APIKEY", binanceConfig.FUND_API_KEY)
+  req.Header.Set("X-MBX-APIKEY", os.Getenv("BINANCE_FUND_API_KEY"))
   resp, err := httpClient.Do(req)
   if err != nil {
     return 0, err

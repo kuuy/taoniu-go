@@ -12,6 +12,8 @@ func NewTradings() *Tradings {
 }
 
 func (h *Tradings) Register(mux *asynq.ServeMux) error {
+  mux.HandleFunc("binance:futures:tradings:scalping:place", tradings.NewScalping().Place)
+  mux.HandleFunc("binance:futures:tradings:scalping:flush", tradings.NewScalping().Flush)
   mux.HandleFunc("binance:futures:tradings:triggers:place", tradings.NewTriggers().Place)
   mux.HandleFunc("binance:futures:tradings:triggers:flush", tradings.NewTriggers().Flush)
   return nil

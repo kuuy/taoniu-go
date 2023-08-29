@@ -4,18 +4,20 @@ import (
   "context"
   "encoding/json"
   "fmt"
-  "github.com/adshao/go-binance/v2"
   "log"
+  "os"
   "strconv"
   "time"
 
   "nhooyr.io/websocket"
 
+  "github.com/adshao/go-binance/v2"
   "github.com/nats-io/nats.go"
   "github.com/urfave/cli/v2"
+
   "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/spot"
-  jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/futures/streams"
+  jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/spot/streams"
 )
 
 type AccountHandler struct {
@@ -87,7 +89,11 @@ func (h *AccountHandler) handler(message map[string]interface{}) {
 func (h *AccountHandler) start() (err error) {
   log.Println("stream start")
 
-  client := binance.NewClient(config.STREAMS_API_KEY, config.STREAMS_SECRET_KEY)
+  client := binance.NewClient(
+    os.Getenv("BINANCE_SPOT_STREAMS_API_KEY"),
+    os.Getenv("BINANCE_SPOT_STREAMS_API_SECRET"),
+  )
+  client.BaseURL = os.Getenv("BINANCE_SPOT_API_ENDPOINT")
 
   listenKey, err := client.NewStartUserStreamService().Do(h.Ctx)
   if err != nil {
@@ -95,7 +101,11 @@ func (h *AccountHandler) start() (err error) {
   }
   defer client.NewCloseUserStreamService().ListenKey(listenKey).Do(h.Ctx)
 
-  endpoint := fmt.Sprintf("wss://stream.binance.com/ws/%s", listenKey)
+  endpoint := fmt.Sprintf(
+    "%s/ws/%s",
+    os.Getenv("BINANCE_SPOT_STREAMS_ENDPOINT"),
+    listenKey,
+  )
 
   h.Socket, _, err = websocket.Dial(h.Ctx, endpoint, &websocket.DialOptions{
     CompressionMode: websocket.CompressionDisabled,

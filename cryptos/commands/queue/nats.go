@@ -11,6 +11,7 @@ func NewNatsCommand() *cli.Command {
     Usage: "",
     Subcommands: []*cli.Command{
       nats.NewBinanceCommand(),
+      nats.NewDydxCommand(),
     },
   }
 }

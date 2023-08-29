@@ -1,23 +1,19 @@
 package models
 
 import (
-	"gorm.io/gorm"
-	"taoniu.local/cryptos/models/binance"
-	"taoniu.local/cryptos/models/binance/spot"
+  "gorm.io/gorm"
+  "taoniu.local/cryptos/models/binance"
 )
 
 type Binance struct{}
 
 func NewBinance() *Binance {
-	return &Binance{}
+  return &Binance{}
 }
 
 func (m *Binance) AutoMigrate(db *gorm.DB) error {
-	db.AutoMigrate(
-		&spot.Symbol{},
-	)
-	binance.NewSpot().AutoMigrate(db)
-	binance.NewFutures().AutoMigrate(db)
-	binance.NewSavings().AutoMigrate(db)
-	return nil
+  binance.NewSpot().AutoMigrate(db)
+  binance.NewFutures().AutoMigrate(db)
+  binance.NewSavings().AutoMigrate(db)
+  return nil
 }

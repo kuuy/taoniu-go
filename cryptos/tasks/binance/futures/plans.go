@@ -1,33 +1,29 @@
 package futures
 
 import (
+  "time"
+
   "github.com/hibiken/asynq"
-  jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/futures/plans"
-  tasks "taoniu.local/cryptos/tasks/binance/futures/plans"
+
+  config "taoniu.local/cryptos/config/queue"
+  jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/futures"
 )
 
 type PlansTask struct {
-  Asynq        *asynq.Client
-  DailyTask    *tasks.DailyTask
-  MinutelyTask *tasks.MinutelyTask
+  Asynq *asynq.Client
+  Job   *jobs.Plans
 }
 
-func (t *PlansTask) Daily() *tasks.DailyTask {
-  if t.DailyTask == nil {
-    t.DailyTask = &tasks.DailyTask{
-      Asynq: t.Asynq,
-      Job:   &jobs.Daily{},
-    }
+func (t *PlansTask) Flush(interval string) error {
+  task, err := t.Job.Flush(interval)
+  if err != nil {
+    return err
   }
-  return t.DailyTask
-}
-
-func (t *PlansTask) Minutely() *tasks.MinutelyTask {
-  if t.MinutelyTask == nil {
-    t.MinutelyTask = &tasks.MinutelyTask{
-      Asynq: t.Asynq,
-      Job:   &jobs.Minutely{},
-    }
-  }
-  return t.MinutelyTask
+  t.Asynq.Enqueue(
+    task,
+    asynq.Queue(config.BINANCE_FUTURES_PLANS),
+    asynq.MaxRetry(0),
+    asynq.Timeout(5*time.Minute),
+  )
+  return nil
 }

@@ -13,6 +13,7 @@ func NewWorkers() *Workers {
 
 func (h *Workers) Register(mux *asynq.ServeMux) error {
   workers.NewBinance().Register(mux)
+  workers.NewDydx().Register(mux)
   workers.NewTradingview().Register(mux)
   return nil
 }

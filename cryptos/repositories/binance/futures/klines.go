@@ -5,6 +5,7 @@ import (
   "encoding/json"
   "errors"
   "fmt"
+  "log"
   "net"
   "net/http"
   "os"
@@ -12,10 +13,13 @@ import (
   "time"
 
   "github.com/go-redis/redis/v8"
+  "github.com/nats-io/nats.go"
   "github.com/rs/xid"
+  "github.com/shopspring/decimal"
   "gorm.io/gorm"
 
   "taoniu.local/cryptos/common"
+  config "taoniu.local/cryptos/config/binance/futures"
   models "taoniu.local/cryptos/models/binance/futures"
 )
 
@@ -23,6 +27,7 @@ type KlinesRepository struct {
   Db       *gorm.DB
   Rdb      *redis.Client
   Ctx      context.Context
+  Nats     *nats.Conn
   UseProxy bool
 }
 
@@ -54,11 +59,30 @@ func (r *KlinesRepository) Count(symbol string, interval string) int64 {
   return total
 }
 
-func (r *KlinesRepository) Flush(symbol string, interval string, limit int) error {
-  klines, err := r.Request(symbol, interval, limit)
+func (r *KlinesRepository) History(
+  symbol string,
+  interval string,
+  from int64,
+  to int64,
+  limit int,
+) []*models.Kline {
+  var klines []*models.Kline
+  r.Db.Model(&models.Kline{}).Where(
+    "symbol=? AND interval=? AND timestamp BETWEEN ? AND ?",
+    symbol,
+    interval,
+    from,
+    to,
+  ).Order("timestamp desc").Limit(limit).Find(&klines)
+  return klines
+}
+
+func (r *KlinesRepository) Flush(symbol string, interval string, endtime int64, limit int) error {
+  klines, err := r.Request(symbol, interval, endtime, limit)
   if err != nil {
     return err
   }
+
   for _, kline := range klines {
     open, _ := strconv.ParseFloat(kline[1].(string), 64)
     close, _ := strconv.ParseFloat(kline[4].(string), 64)
@@ -100,25 +124,99 @@ func (r *KlinesRepository) Flush(symbol string, interval string, limit int) erro
     }
   }
 
-  if len(klines) > 0 {
-    timestamp := time.Now().Unix()
-    r.Rdb.ZAdd(
-      r.Ctx,
-      fmt.Sprintf(
-        "binance:futures:klines:flush:%v",
-        interval,
-      ),
-      &redis.Z{
-        float64(timestamp),
-        symbol,
-      },
-    )
-  }
+  message, _ := json.Marshal(map[string]interface{}{
+    "symbol":   symbol,
+    "interval": interval,
+  })
+  r.Nats.Publish(config.NATS_KLINES_UPDATE, message)
+  r.Nats.Flush()
 
   return nil
 }
 
-func (r *KlinesRepository) Request(symbol string, interval string, limit int) ([][]interface{}, error) {
+func (r *KlinesRepository) Fix(symbol string, interval string, limit int) error {
+  var klines []*models.Kline
+  r.Db.Select(
+    []string{"close", "high", "low", "volume", "timestamp"},
+  ).Where(
+    "symbol=? AND interval=?", symbol, interval,
+  ).Order(
+    "timestamp desc",
+  ).Limit(
+    limit,
+  ).Find(
+    &klines,
+  )
+
+  if len(klines) == 0 {
+    return nil
+  }
+
+  timestamp := r.Timestamp(interval)
+  timestep := r.Timestep(interval)
+  lasttime := klines[0].Timestamp
+
+  if timestamp < lasttime {
+    timestamp = lasttime
+  }
+
+  var endtime int64
+  var count int
+  if lasttime != timestamp {
+    endtime = timestamp
+    count = int((timestamp - lasttime) / timestep)
+  }
+
+  for i := 1; i < len(klines); i++ {
+    if lasttime-klines[i].Timestamp != timestep {
+      if endtime == 0 {
+        endtime = lasttime
+        count = int((endtime - klines[i].Timestamp) / timestep)
+      }
+    } else {
+      if endtime > 0 {
+        err := r.Flush(symbol, interval, endtime, count)
+        if err != nil {
+          log.Println("klines fix error", err.Error())
+        }
+        endtime = 0
+      }
+    }
+    count++
+    lasttime = klines[i].Timestamp
+  }
+
+  if count > limit {
+    count = limit
+  }
+
+  log.Println("endtime", endtime, count)
+
+  if endtime > 0 {
+    log.Println("klines fix", symbol, interval, endtime, count)
+    err := r.Flush(symbol, interval, endtime, count)
+    if err != nil {
+      log.Println("klines fix error", err.Error())
+    }
+  } else if limit > count {
+    log.Println("klines fix", symbol, interval, lasttime, limit-count)
+    err := r.Flush(symbol, interval, lasttime, limit-count)
+    if err != nil {
+      log.Println("klines fix error", err.Error())
+    }
+  }
+
+  message, _ := json.Marshal(map[string]interface{}{
+    "symbol":   symbol,
+    "interval": interval,
+  })
+  r.Nats.Publish(config.NATS_KLINES_UPDATE, message)
+  r.Nats.Flush()
+
+  return nil
+}
+
+func (r *KlinesRepository) Request(symbol string, interval string, endtime int64, limit int) ([][]interface{}, error) {
   tr := &http.Transport{
     DisableKeepAlives: true,
   }
@@ -134,7 +232,7 @@ func (r *KlinesRepository) Request(symbol string, interval string, limit int) ([
 
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   time.Duration(8) * time.Second,
+    Timeout:   time.Duration(3) * time.Second,
   }
 
   url := fmt.Sprintf("%s/fapi/v1/klines", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))
@@ -142,6 +240,9 @@ func (r *KlinesRepository) Request(symbol string, interval string, limit int) ([
   q := req.URL.Query()
   q.Add("symbol", symbol)
   q.Add("interval", interval)
+  if endtime > 0 {
+    q.Add("endTime", fmt.Sprintf("%v", endtime))
+  }
   q.Add("limit", fmt.Sprintf("%v", limit))
   req.URL.RawQuery = q.Encode()
   resp, err := httpClient.Do(req)
@@ -168,11 +269,43 @@ func (r *KlinesRepository) Request(symbol string, interval string, limit int) ([
 func (r *KlinesRepository) Clean() error {
   var timestamp int64
 
-  timestamp = time.Now().AddDate(0, 0, -101).Unix()
-  r.Db.Where("interval = ? && timestamp < ?", "1d", timestamp).Delete(&models.Kline{})
+  timestamp = time.Now().AddDate(0, 0, -3).UnixMilli()
+  r.Db.Where("interval = ? AND timestamp < ?", "1m", timestamp).Delete(&models.Kline{})
 
-  timestamp = time.Now().AddDate(0, 0, -3).Unix()
-  r.Db.Where("interval = ? && timestamp < ?", "1m", timestamp).Delete(&models.Kline{})
+  timestamp = time.Now().AddDate(0, 0, -14).UnixMilli()
+  r.Db.Where("interval = ? AND timestamp < ?", "15m", timestamp).Delete(&models.Kline{})
+
+  timestamp = time.Now().AddDate(0, 0, -105).UnixMilli()
+  r.Db.Where("interval = ? AND timestamp < ?", "4h", timestamp).Delete(&models.Kline{})
+
+  timestamp = time.Now().AddDate(0, 0, -365).UnixMilli()
+  r.Db.Where("interval = ? AND timestamp < ?", "1d", timestamp).Delete(&models.Kline{})
 
   return nil
+}
+
+func (r *KlinesRepository) Timestep(interval string) int64 {
+  if interval == "1m" {
+    return 60000
+  } else if interval == "15m" {
+    return 900000
+  } else if interval == "4h" {
+    return 14400000
+  }
+  return 86400000
+}
+
+func (r *KlinesRepository) Timestamp(interval string) int64 {
+  now := time.Now().UTC()
+  duration := -time.Second * time.Duration(now.Second())
+  if interval == "15m" {
+    minute, _ := decimal.NewFromInt(int64(now.Minute())).Div(decimal.NewFromInt(15)).Floor().Mul(decimal.NewFromInt(15)).Float64()
+    duration = duration - time.Minute*time.Duration(now.Minute()-int(minute))
+  } else if interval == "4h" {
+    hour, _ := decimal.NewFromInt(int64(now.Hour())).Div(decimal.NewFromInt(4)).Floor().Mul(decimal.NewFromInt(4)).Float64()
+    duration = duration - time.Hour*time.Duration(now.Hour()-int(hour)) - time.Minute*time.Duration(now.Minute())
+  } else if interval == "1d" {
+    duration = duration - time.Hour*time.Duration(now.Hour()) - time.Minute*time.Duration(now.Minute())
+  }
+  return now.Add(duration).Unix() * 1000
 }

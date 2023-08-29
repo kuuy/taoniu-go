@@ -14,12 +14,13 @@ func NewSpot() *Spot {
 func (m *Spot) AutoMigrate(db *gorm.DB) error {
   db.AutoMigrate(
     &spot.Symbol{},
-    &spot.Order{},
     &spot.Kline{},
     &spot.Strategy{},
     &spot.Plan{},
-    &spot.Grid{},
-    &spot.Fisher{},
+    &spot.Order{},
+    &spot.Position{},
+    &spot.Launchpad{},
+    &spot.Scalping{},
     &spot.Trigger{},
   )
 

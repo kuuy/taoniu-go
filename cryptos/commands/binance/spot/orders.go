@@ -1,129 +1,160 @@
 package spot
 
 import (
-	"context"
-	"github.com/go-redis/redis/v8"
-	"github.com/urfave/cli/v2"
-	"log"
-	"strconv"
-	"strings"
-	pool "taoniu.local/cryptos/common"
-	repositories "taoniu.local/cryptos/repositories/binance/spot"
+  "context"
+  "log"
+  "strconv"
+  "strings"
+
+  "github.com/go-redis/redis/v8"
+  "github.com/urfave/cli/v2"
+  "gorm.io/gorm"
+
+  "taoniu.local/cryptos/common"
+  repositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
 type OrdersHandler struct {
-	Rdb        *redis.Client
-	Ctx        context.Context
-	Repository *repositories.OrdersRepository
+  Db         *gorm.DB
+  Rdb        *redis.Client
+  Ctx        context.Context
+  Repository *repositories.OrdersRepository
 }
 
 func NewOrdersCommand() *cli.Command {
-	var h OrdersHandler
-	return &cli.Command{
-		Name:  "orders",
-		Usage: "",
-		Before: func(c *cli.Context) error {
-			h = OrdersHandler{
-				Rdb: pool.NewRedis(),
-				Ctx: context.Background(),
-			}
-			h.Repository = &repositories.OrdersRepository{
-				Db:  pool.NewDB(),
-				Rdb: h.Rdb,
-				Ctx: h.Ctx,
-			}
-			return nil
-		},
-		Subcommands: []*cli.Command{
-			{
-				Name:  "create",
-				Usage: "",
-				Action: func(c *cli.Context) error {
-					if err := h.create(); err != nil {
-						return cli.Exit(err.Error(), 1)
-					}
-					return nil
-				},
-			},
-			{
-				Name:  "cancel",
-				Usage: "",
-				Action: func(c *cli.Context) error {
-					if err := h.cancel(); err != nil {
-						return cli.Exit(err.Error(), 1)
-					}
-					return nil
-				},
-			},
-			{
-				Name:  "open",
-				Usage: "",
-				Action: func(c *cli.Context) error {
-					if err := h.open(); err != nil {
-						return cli.Exit(err.Error(), 1)
-					}
-					return nil
-				},
-			},
-			{
-				Name:  "flush",
-				Usage: "",
-				Action: func(c *cli.Context) error {
-					if err := h.flush(); err != nil {
-						return cli.Exit(err.Error(), 1)
-					}
-					return nil
-				},
-			},
-		},
-	}
+  var h OrdersHandler
+  return &cli.Command{
+    Name:  "orders",
+    Usage: "",
+    Before: func(c *cli.Context) error {
+      h = OrdersHandler{
+        Db:  common.NewDB(),
+        Rdb: common.NewRedis(),
+        Ctx: context.Background(),
+      }
+      h.Repository = &repositories.OrdersRepository{
+        Db:  h.Db,
+        Rdb: h.Rdb,
+        Ctx: h.Ctx,
+      }
+      return nil
+    },
+    Subcommands: []*cli.Command{
+      {
+        Name:  "create",
+        Usage: "",
+        Action: func(c *cli.Context) error {
+          if err := h.Create(); err != nil {
+            return cli.Exit(err.Error(), 1)
+          }
+          return nil
+        },
+      },
+      {
+        Name:  "cancel",
+        Usage: "",
+        Action: func(c *cli.Context) error {
+          if err := h.Cancel(); err != nil {
+            return cli.Exit(err.Error(), 1)
+          }
+          return nil
+        },
+      },
+      {
+        Name:  "open",
+        Usage: "",
+        Action: func(c *cli.Context) error {
+          if err := h.Open(); err != nil {
+            return cli.Exit(err.Error(), 1)
+          }
+          return nil
+        },
+      },
+      {
+        Name:  "flush",
+        Usage: "",
+        Action: func(c *cli.Context) error {
+          if err := h.Flush(); err != nil {
+            return cli.Exit(err.Error(), 1)
+          }
+          return nil
+        },
+      },
+      {
+        Name:  "sync",
+        Usage: "",
+        Action: func(c *cli.Context) error {
+          symbol := c.Args().Get(0)
+          if symbol == "" {
+            log.Fatal("symbol is empty")
+            return nil
+          }
+          limit, _ := strconv.Atoi(c.Args().Get(1))
+          if limit < 1 {
+            log.Fatal("limit less then 1")
+            return nil
+          }
+          if err := h.Sync(symbol, limit); err != nil {
+            return cli.Exit(err.Error(), 1)
+          }
+          return nil
+        },
+      },
+    },
+  }
 }
 
-func (h *OrdersHandler) create() error {
-	log.Println("orders create...")
-	symbol := "MATICUSDT"
-	price := 0.99
-	quantity := 10.10
-	orderId, err := h.Repository.Create(symbol, "BUY", price, quantity)
-	if err != nil {
-		return err
-	}
-	log.Println("orderId", orderId)
-	return nil
+func (h *OrdersHandler) Create() error {
+  log.Println("orders create...")
+  symbol := "MATICUSDT"
+  price := 0.99
+  quantity := 10.10
+  orderId, err := h.Repository.Create(symbol, "BUY", price, quantity)
+  if err != nil {
+    return err
+  }
+  log.Println("orderId", orderId)
+  return nil
 }
 
-func (h *OrdersHandler) cancel() error {
-	log.Println("orders cancel...")
-	id := "cgcjd60v5lf88ugnccqg"
-	err := h.Repository.Cancel(id)
-	if err != nil {
-		return err
-	}
-	return nil
+func (h *OrdersHandler) Cancel() error {
+  log.Println("orders cancel...")
+  symbol := "BTCUSDT"
+  orderId := 3394265812
+  err := h.Repository.Cancel(symbol, int64(orderId))
+  if err != nil {
+    return err
+  }
+  log.Println("orderId", orderId)
+  return nil
 }
 
-func (h *OrdersHandler) open() error {
-	log.Println("spot open orders...")
-	symbols, _ := h.Rdb.SMembers(h.Ctx, "binance:spot:websocket:symbols").Result()
-	for _, symbol := range symbols {
-		log.Println("symbol:", symbol)
-		h.Repository.Open(symbol)
-	}
-	return nil
+func (h *OrdersHandler) Open() error {
+  log.Println("spot open orders...")
+  symbols, _ := h.Rdb.SMembers(h.Ctx, "binance:spot:websocket:symbols").Result()
+  for _, symbol := range symbols {
+    log.Println("symbol:", symbol)
+    h.Repository.Open(symbol)
+  }
+  return nil
 }
 
-func (h *OrdersHandler) flush() error {
-	log.Println("margin orders flush...")
-	orders, err := h.Rdb.SMembers(h.Ctx, "binance:spot:orders:flush").Result()
-	if err != nil {
-		return nil
-	}
-	for _, order := range orders {
-		data := strings.Split(order, ",")
-		symbol := data[0]
-		orderID, _ := strconv.ParseInt(data[1], 10, 64)
-		h.Repository.Flush(symbol, orderID)
-	}
+func (h *OrdersHandler) Flush() error {
+  log.Println("margin orders flush...")
+  orders, err := h.Rdb.SMembers(h.Ctx, "binance:spot:orders:flush").Result()
+  if err != nil {
+    return nil
+  }
+  for _, order := range orders {
+    data := strings.Split(order, ",")
+    symbol := data[0]
+    orderID, _ := strconv.ParseInt(data[1], 10, 64)
+    h.Repository.Flush(symbol, orderID)
+  }
+  return nil
+}
 
-	return nil
+func (h *OrdersHandler) Sync(symbol string, limit int) error {
+  log.Println("spot orders sync...")
+  return h.Repository.Sync(symbol, 0, limit)
 }

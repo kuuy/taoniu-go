@@ -12,7 +12,6 @@ import (
   spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
   repositories "taoniu.local/cryptos/repositories/binance/spot/margin/cross"
   isolatedRepositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated"
-  isolatedTradingsRepositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated/tradings"
   spotTradingsRepositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
 )
 
@@ -48,22 +47,19 @@ func NewAccountCommand() *cli.Command {
       h.SpotTradingsRepository = &spotRepositories.TradingsRepository{
         Db: h.Db,
       }
-      h.SpotTradingsRepository.FishersRepository = &spotTradingsRepositories.FishersRepository{
-        Db: h.Db,
-      }
       h.SpotTradingsRepository.ScalpingRepository = &spotTradingsRepositories.ScalpingRepository{
         Db: h.Db,
       }
       h.SpotTradingsRepository.TriggersRepository = &spotTradingsRepositories.TriggersRepository{
         Db: h.Db,
       }
-      h.IsolatedAccountRepository = &isolatedRepositories.AccountRepository{}
-      h.IsolatedTradingsRepository = &isolatedRepositories.TradingsRepository{
-        Db: h.Db,
-      }
-      h.IsolatedTradingsRepository.FishersRepository = &isolatedTradingsRepositories.FishersRepository{
-        Db: h.Db,
-      }
+      //h.IsolatedAccountRepository = &isolatedRepositories.AccountRepository{}
+      //h.IsolatedTradingsRepository = &isolatedRepositories.TradingsRepository{
+      //  Db: h.Db,
+      //}
+      //h.IsolatedTradingsRepository.FishersRepository = &isolatedTradingsRepositories.FishersRepository{
+      //  Db: h.Db,
+      //}
       return nil
     },
     Subcommands: []*cli.Command{

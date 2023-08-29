@@ -11,6 +11,7 @@ func NewCronCommand() *cli.Command {
     Usage: "",
     Subcommands: []*cli.Command{
       cron.NewBinanceCommand(),
+      cron.NewDydxCommand(),
     },
   }
 }

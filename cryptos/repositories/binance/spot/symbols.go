@@ -211,17 +211,17 @@ func (r *SymbolsRepository) Slippage(symbol string) error {
 }
 
 func (r *SymbolsRepository) Depth(symbol string) (map[string]interface{}, error) {
-  var data map[string]interface{}
-  result := r.Db.Model(&models.Symbol{}).Select("depth").Where("symbol", symbol).Take(&data)
+  var depth string
+  result := r.Db.Model(&models.Symbol{}).Select("depth").Where("symbol", symbol).Take(&depth)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     return nil, result.Error
   }
-  if depth, ok := data["depth"]; ok {
-    var out map[string]interface{}
-    json.Unmarshal([]byte(depth.(string)), &out)
-    return out, nil
+  var out map[string]interface{}
+  json.Unmarshal([]byte(depth), &out)
+  if len(out) == 0 {
+    return nil, errors.New("depth empty")
   }
-  return nil, errors.New("depth empty")
+  return out, nil
 }
 
 func (r *SymbolsRepository) Price(symbol string) (float64, error) {

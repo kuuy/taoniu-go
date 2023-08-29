@@ -9,16 +9,14 @@ import (
 
   "taoniu.local/cryptos/common"
   spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
-  plansRepositories "taoniu.local/cryptos/repositories/binance/spot/plans"
   repositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
 )
 
 type TriggersHandler struct {
-  Db              *gorm.DB
-  Rdb             *redis.Client
-  Ctx             context.Context
-  Repository      *repositories.TriggersRepository
-  PlansRepository *plansRepositories.DailyRepository
+  Db         *gorm.DB
+  Rdb        *redis.Client
+  Ctx        context.Context
+  Repository *repositories.TriggersRepository
 }
 
 func NewTriggersCommand() *cli.Command {

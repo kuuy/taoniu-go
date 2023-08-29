@@ -136,9 +136,9 @@ func (h *PositionsHandler) calc(
     entryQuantity, _ = decimal.NewFromFloat(entryQuantity).Add(decimal.NewFromFloat(buyQuantity)).Float64()
     entryAmount, _ = decimal.NewFromFloat(entryAmount).Add(decimal.NewFromFloat(buyAmount)).Float64()
     entryPrice, _ = decimal.NewFromFloat(entryAmount).Div(decimal.NewFromFloat(entryQuantity)).Float64()
-    sellPrice = h.Repository.SellPrice(side, entryPrice, entryQuantity)
+    sellPrice = h.Repository.SellPrice(side, entryPrice, entryAmount)
     sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
-    log.Println("buy", buyPrice, sellPrice, buyQuantity, entryPrice)
+    log.Println("buy", buyPrice, buyQuantity, buyAmount, sellPrice, entryPrice)
   }
 
   stopAmount, _ := decimal.NewFromFloat(entryAmount).Div(decimal.NewFromInt32(int32(leverage))).Mul(decimal.NewFromFloat(0.1)).Float64()

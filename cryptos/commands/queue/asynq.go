@@ -11,6 +11,7 @@ func NewAsynqCommand() *cli.Command {
     Usage: "",
     Subcommands: []*cli.Command{
       asynq.NewBinanceCommand(),
+      asynq.NewDydxCommand(),
     },
   }
 }

@@ -5,7 +5,7 @@ import (
   "github.com/adshao/go-binance/v2"
   "github.com/go-redis/redis/v8"
   "log"
-  config "taoniu.local/cryptos/config/binance/spot"
+  "os"
 )
 
 type AccountRepository struct {
@@ -14,7 +14,12 @@ type AccountRepository struct {
 }
 
 func (r *AccountRepository) Flush() error {
-  client := binance.NewClient(config.ACCOUNT_API_KEY, config.ACCOUNT_SECRET_KEY)
+  client := binance.NewClient(
+    os.Getenv("BINANCE_SPOT_ACCOUNT_API_KEY"),
+    os.Getenv("BINANCE_SPOT_ACCOUNT_API_SECRET"),
+  )
+  client.BaseURL = os.Getenv("BINANCE_SPOT_API_ENDPOINT")
+
   products, err := client.NewSavingFixedProjectPositionsService().Status("HOLDING").Do(r.Ctx)
   if err != nil {
     log.Println("error:", err)

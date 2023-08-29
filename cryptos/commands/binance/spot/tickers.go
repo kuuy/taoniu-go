@@ -72,15 +72,19 @@ func NewTickersCommand() *cli.Command {
 
 func (h *TickersHandler) Flush() error {
   log.Println("binance spot tickers flush...")
-  symbols := h.SymbolsRepository.Symbols()
+  //symbols := h.SymbolsRepository.Symbols()
   //log.Println(symbols)
+  symbols := []string{"BTCUSDT"}
   for i := 0; i < len(symbols); i += 20 {
     j := i + 20
     if j > len(symbols) {
       j = len(symbols)
     }
     log.Println("symbols", symbols[i:j])
-    h.Repository.Flush(symbols[i:j])
+    err := h.Repository.Flush(symbols[i:j])
+    if err != nil {
+      log.Println("error", err.Error())
+    }
     break
     //	h.Repository.Place(symbols[i:j])
   }

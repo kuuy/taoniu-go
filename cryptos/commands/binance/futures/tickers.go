@@ -2,6 +2,7 @@ package futures
 
 import (
   "context"
+  "github.com/nats-io/nats.go"
   "gorm.io/gorm"
   "log"
 
@@ -17,6 +18,7 @@ type TickersHandler struct {
   Db                 *gorm.DB
   Rdb                *redis.Client
   Ctx                context.Context
+  Nats               *nats.Conn
   Repository         *repositories.TickersRepository
   TradingsRepository *repositories.TradingsRepository
 }
@@ -28,15 +30,19 @@ func NewTickersCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = TickersHandler{
-        Db:  common.NewDB(),
-        Rdb: common.NewRedis(),
-        Ctx: context.Background(),
+        Db:   common.NewDB(),
+        Rdb:  common.NewRedis(),
+        Ctx:  context.Background(),
+        Nats: common.NewNats(),
       }
       h.Repository = &repositories.TickersRepository{
         Rdb: h.Rdb,
         Ctx: h.Ctx,
       }
       h.TradingsRepository = &repositories.TradingsRepository{
+        Db: h.Db,
+      }
+      h.TradingsRepository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
         Db: h.Db,
       }
       h.TradingsRepository.TriggersRepository = &tradingsRepositories.TriggersRepository{
@@ -49,7 +55,8 @@ func NewTickersCommand() *cli.Command {
         Name:  "flush",
         Usage: "",
         Action: func(c *cli.Context) error {
-          if err := h.flush(); err != nil {
+          symbol := c.Args().Get(0)
+          if err := h.Flush(symbol); err != nil {
             return cli.Exit(err.Error(), 1)
           }
           return nil
@@ -59,13 +66,7 @@ func NewTickersCommand() *cli.Command {
   }
 }
 
-func (h *TickersHandler) flush() error {
+func (h *TickersHandler) Flush(symbol string) error {
   log.Println("Tickers flush...")
-  symbols := h.TradingsRepository.Scan()
-  for _, symbol := range symbols {
-    log.Println("symbol", symbol)
-    h.Repository.Flush(symbol)
-  }
-
-  return nil
+  return h.Repository.Flush(symbol)
 }

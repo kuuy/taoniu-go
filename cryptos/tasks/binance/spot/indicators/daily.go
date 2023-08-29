@@ -1,79 +1,146 @@
 package indicators
 
 import (
-  "context"
-  "github.com/go-redis/redis/v8"
+  "time"
+
+  "github.com/hibiken/asynq"
   "gorm.io/gorm"
+
+  config "taoniu.local/cryptos/config/queue"
   models "taoniu.local/cryptos/models/binance/spot"
+  jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/spot/indicators"
   repositories "taoniu.local/cryptos/repositories/binance/spot/indicators"
 )
 
 type DailyTask struct {
   Db         *gorm.DB
-  Rdb        *redis.Client
-  Ctx        context.Context
+  Asynq      *asynq.Client
+  Job        *jobs.Daily
   Repository *repositories.DailyRepository
 }
 
 func (t *DailyTask) Pivot() error {
   var symbols []string
-  t.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Find(&symbols)
+  t.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
   for _, symbol := range symbols {
-    t.Repository.Pivot(symbol)
+    task, err := t.Job.Pivot(symbol)
+    if err != nil {
+      return err
+    }
+    t.Asynq.Enqueue(
+      task,
+      asynq.Queue(config.BINANCE_SPOT_INDICATORS),
+      asynq.MaxRetry(0),
+      asynq.Timeout(5*time.Minute),
+    )
   }
   return nil
 }
 
 func (t *DailyTask) Atr(period int, limit int) error {
   var symbols []string
-  t.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Find(&symbols)
+  t.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
   for _, symbol := range symbols {
-    t.Repository.Atr(symbol, period, limit)
+    task, err := t.Job.Atr(symbol, period, limit)
+    if err != nil {
+      return err
+    }
+    t.Asynq.Enqueue(
+      task,
+      asynq.Queue(config.BINANCE_SPOT_INDICATORS),
+      asynq.MaxRetry(0),
+      asynq.Timeout(5*time.Minute),
+    )
   }
   return nil
 }
 
 func (t *DailyTask) Zlema(period int, limit int) error {
   var symbols []string
-  t.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Find(&symbols)
+  t.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
   for _, symbol := range symbols {
-    t.Repository.Zlema(symbol, period, limit)
+    task, err := t.Job.Zlema(symbol, period, limit)
+    if err != nil {
+      return err
+    }
+    t.Asynq.Enqueue(
+      task,
+      asynq.Queue(config.BINANCE_SPOT_INDICATORS),
+      asynq.MaxRetry(0),
+      asynq.Timeout(5*time.Minute),
+    )
   }
   return nil
 }
 
 func (t *DailyTask) HaZlema(period int, limit int) error {
   var symbols []string
-  t.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Find(&symbols)
+  t.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
   for _, symbol := range symbols {
-    t.Repository.HaZlema(symbol, period, limit)
+    task, err := t.Job.HaZlema(symbol, period, limit)
+    if err != nil {
+      return err
+    }
+    t.Asynq.Enqueue(
+      task,
+      asynq.Queue(config.BINANCE_SPOT_INDICATORS),
+      asynq.MaxRetry(0),
+      asynq.Timeout(5*time.Minute),
+    )
   }
   return nil
 }
 
 func (t *DailyTask) Kdj(longPeriod int, shortPeriod int, limit int) error {
   var symbols []string
-  t.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Find(&symbols)
+  t.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
   for _, symbol := range symbols {
-    t.Repository.Kdj(symbol, longPeriod, shortPeriod, limit)
+    task, err := t.Job.Kdj(symbol, longPeriod, shortPeriod, limit)
+    if err != nil {
+      return err
+    }
+    t.Asynq.Enqueue(
+      task,
+      asynq.Queue(config.BINANCE_SPOT_INDICATORS),
+      asynq.MaxRetry(0),
+      asynq.Timeout(5*time.Minute),
+    )
   }
   return nil
 }
 
 func (t *DailyTask) BBands(period int, limit int) error {
   var symbols []string
-  t.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Find(&symbols)
+  t.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
   for _, symbol := range symbols {
-    t.Repository.BBands(symbol, period, limit)
+    task, err := t.Job.BBands(symbol, period, limit)
+    if err != nil {
+      return err
+    }
+    t.Asynq.Enqueue(
+      task,
+      asynq.Queue(config.BINANCE_SPOT_INDICATORS),
+      asynq.MaxRetry(0),
+      asynq.Timeout(5*time.Minute),
+    )
   }
   return nil
 }
 
 func (t *DailyTask) VolumeProfile(limit int) error {
   var symbols []string
-  t.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_spot=True", "TRADING").Find(&symbols)
+  t.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
   for _, symbol := range symbols {
-    t.Repository.VolumeProfile(symbol, limit)
+    task, err := t.Job.VolumeProfile(symbol, limit)
+    if err != nil {
+      return err
+    }
+    t.Asynq.Enqueue(
+      task,
+      asynq.Queue(config.BINANCE_SPOT_INDICATORS),
+      asynq.MaxRetry(0),
+      asynq.Timeout(5*time.Minute),
+    )
   }
   return nil
 }

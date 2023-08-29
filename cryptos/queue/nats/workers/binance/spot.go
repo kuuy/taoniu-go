@@ -1,29 +1,26 @@
 package binance
 
 import (
-  "context"
-  "github.com/go-redis/redis/v8"
-  "github.com/nats-io/nats.go"
-  "gorm.io/gorm"
+  "taoniu.local/cryptos/common"
   "taoniu.local/cryptos/queue/nats/workers/binance/spot"
 )
 
 type Spot struct {
-  Db  *gorm.DB
-  Rdb *redis.Client
-  Ctx context.Context
+  NatsContext *common.NatsContext
 }
 
-func NewSpot(db *gorm.DB, rdb *redis.Client, ctx context.Context) *Spot {
+func NewSpot(natsContext *common.NatsContext) *Spot {
   return &Spot{
-    Db:  db,
-    Rdb: rdb,
-    Ctx: ctx,
+    NatsContext: natsContext,
   }
 }
 
-func (h *Spot) Subscribe(nc *nats.Conn) error {
-  spot.NewAccount(h.Rdb, h.Ctx).Subscribe(nc)
-  spot.NewTickers(h.Rdb, h.Ctx).Subscribe(nc)
+func (h *Spot) Subscribe() error {
+  spot.NewTickers(h.NatsContext).Subscribe()
+  spot.NewIndicators(h.NatsContext).Subscribe()
+  spot.NewStrategies(h.NatsContext).Subscribe()
+  spot.NewPlans(h.NatsContext).Subscribe()
+  spot.NewAccount(h.NatsContext).Subscribe()
+  spot.NewOrders(h.NatsContext).Subscribe()
   return nil
 }

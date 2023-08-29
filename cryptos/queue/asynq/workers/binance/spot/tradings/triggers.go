@@ -1,78 +1,100 @@
 package tradings
 
 import (
-	"context"
-	"encoding/json"
+  "context"
+  "encoding/json"
+  "fmt"
+  "time"
 
-	"github.com/go-redis/redis/v8"
-	"github.com/hibiken/asynq"
-	"gorm.io/gorm"
+  "github.com/go-redis/redis/v8"
+  "github.com/hibiken/asynq"
+  "gorm.io/gorm"
 
-	"taoniu.local/cryptos/common"
-	spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
-	repositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
+  "taoniu.local/cryptos/common"
+  spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
+  repositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
 )
 
 type Triggers struct {
-	Db                *gorm.DB
-	Rdb               *redis.Client
-	Ctx               context.Context
-	Repository        *repositories.TriggersRepository
-	SymbolsRepository *spotRepositories.SymbolsRepository
+  Db                *gorm.DB
+  Rdb               *redis.Client
+  Ctx               context.Context
+  Repository        *repositories.TriggersRepository
+  SymbolsRepository *spotRepositories.SymbolsRepository
 }
 
 func NewTriggers() *Triggers {
-	h := &Triggers{
-		Db:  common.NewDB(),
-		Rdb: common.NewRedis(),
-		Ctx: context.Background(),
-	}
-	h.Repository = &repositories.TriggersRepository{
-		Db:  h.Db,
-		Rdb: h.Rdb,
-		Ctx: h.Ctx,
-	}
-	h.Repository.SymbolsRepository = &spotRepositories.SymbolsRepository{
-		Db:  h.Db,
-		Rdb: h.Rdb,
-		Ctx: h.Ctx,
-	}
-	h.Repository.AccountRepository = &spotRepositories.AccountRepository{
-		Db:  h.Db,
-		Rdb: h.Rdb,
-		Ctx: h.Ctx,
-	}
-	h.Repository.OrdersRepository = &spotRepositories.OrdersRepository{
-		Db:  h.Db,
-		Rdb: h.Rdb,
-		Ctx: h.Ctx,
-	}
+  h := &Triggers{
+    Db:  common.NewDB(),
+    Rdb: common.NewRedis(),
+    Ctx: context.Background(),
+  }
+  h.Repository = &repositories.TriggersRepository{
+    Db:  h.Db,
+    Rdb: h.Rdb,
+    Ctx: h.Ctx,
+  }
+  h.Repository.SymbolsRepository = &spotRepositories.SymbolsRepository{
+    Db:  h.Db,
+    Rdb: h.Rdb,
+    Ctx: h.Ctx,
+  }
+  h.Repository.AccountRepository = &spotRepositories.AccountRepository{
+    Db:  h.Db,
+    Rdb: h.Rdb,
+    Ctx: h.Ctx,
+  }
+  h.Repository.OrdersRepository = &spotRepositories.OrdersRepository{
+    Db:  h.Db,
+    Rdb: h.Rdb,
+    Ctx: h.Ctx,
+  }
 
-	return h
+  return h
 }
 
 type TriggersPlacePayload struct {
-	Symbol string
+  ID string
 }
 
 type TriggersFlushPayload struct {
-	Symbol string
+  ID string
 }
 
 func (h *Triggers) Place(ctx context.Context, t *asynq.Task) error {
-	var payload TriggersPlacePayload
-	json.Unmarshal(t.Payload(), &payload)
+  var payload TriggersPlacePayload
+  json.Unmarshal(t.Payload(), &payload)
 
-	h.Repository.Place(payload.Symbol)
+  mutex := common.NewMutex(
+    h.Rdb,
+    h.Ctx,
+    fmt.Sprintf("locks:binance:spot:tradings:triggers:place:%s", payload.ID),
+  )
+  if !mutex.Lock(30 * time.Second) {
+    return nil
+  }
+  defer mutex.Unlock()
 
-	return nil
+  h.Repository.Place(payload.ID)
+
+  return nil
 }
 
 func (h *Triggers) Flush(ctx context.Context, t *asynq.Task) error {
-	var payload TriggersFlushPayload
-	json.Unmarshal(t.Payload(), &payload)
+  var payload TriggersFlushPayload
+  json.Unmarshal(t.Payload(), &payload)
 
-	h.Repository.Flush(payload.Symbol)
+  mutex := common.NewMutex(
+    h.Rdb,
+    h.Ctx,
+    fmt.Sprintf("locks:binance:spot:tradings:triggers:flush:%s", payload.ID),
+  )
+  if !mutex.Lock(30 * time.Second) {
+    return nil
+  }
+  defer mutex.Unlock()
 
-	return nil
+  h.Repository.Flush(payload.ID)
+
+  return nil
 }

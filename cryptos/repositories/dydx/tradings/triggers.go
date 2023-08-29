@@ -1,0 +1,778 @@
+package tradings
+
+import (
+  "errors"
+  "fmt"
+  "log"
+  "math"
+  "time"
+
+  "github.com/rs/xid"
+  "github.com/shopspring/decimal"
+  "gorm.io/gorm"
+
+  dydxModels "taoniu.local/cryptos/models/dydx"
+  models "taoniu.local/cryptos/models/dydx/tradings"
+)
+
+type TriggersRepository struct {
+  Db                 *gorm.DB
+  MarketsRepository  MarketsRepository
+  AccountRepository  AccountRepository
+  OrdersRepository   OrdersRepository
+  PositionRepository PositionRepository
+}
+
+func (r *TriggersRepository) Scan() []string {
+  var symbols []string
+  r.Db.Model(&dydxModels.Trigger{}).Where("status", 1).Pluck("symbol", &symbols)
+  return symbols
+}
+
+func (r *TriggersRepository) Ids() []string {
+  var ids []string
+  r.Db.Model(&dydxModels.Trigger{}).Where("status", 1).Pluck("id", &ids)
+  return ids
+}
+
+func (r *TriggersRepository) TriggerIds() []string {
+  var ids []string
+  r.Db.Model(&models.Trigger{}).Select("trigger_id").Where("status", []int{0, 1, 2}).Distinct("trigger_id").Find(&ids)
+  return ids
+}
+
+func (r *TriggersRepository) Count(conditions map[string]interface{}) int64 {
+  var total int64
+  query := r.Db.Model(&models.Trigger{})
+  if _, ok := conditions["symbol"]; ok {
+    query.Where("symbol", conditions["symbol"].(string))
+  }
+  if _, ok := conditions["status"]; ok {
+    query.Where("status IN ?", conditions["status"].([]int))
+  } else {
+    query.Where("status IN ?", []int{0, 1, 2, 3})
+  }
+  query.Count(&total)
+  return total
+}
+
+func (r *TriggersRepository) Listings(conditions map[string]interface{}, current int, pageSize int) []*models.Trigger {
+  var tradings []*models.Trigger
+  query := r.Db.Select([]string{
+    "id",
+    "symbol",
+    "trigger_id",
+    "buy_price",
+    "buy_quantity",
+    "sell_price",
+    "sell_quantity",
+    "buy_order_id",
+    "sell_order_id",
+    "status",
+    "created_at",
+    "updated_at",
+  })
+  if _, ok := conditions["symbol"]; ok {
+    query.Where("symbol", conditions["symbol"].(string))
+  }
+  if _, ok := conditions["status"]; ok {
+    query.Where("status IN ?", conditions["status"].([]int))
+  } else {
+    query.Where("status IN ?", []int{0, 1, 2, 3})
+  }
+  query.Order("updated_at desc")
+  query.Offset((current - 1) * pageSize).Limit(pageSize).Find(&tradings)
+  return tradings
+}
+
+func (r *TriggersRepository) Place(id string) error {
+  var trigger *dydxModels.Trigger
+  result := r.Db.First(&trigger, "id=?", id)
+  if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+    return errors.New("trigger empty")
+  }
+
+  if trigger.ExpiredAt.Unix() < time.Now().Unix() {
+    r.Db.Model(&trigger).Update("status", 4)
+    return errors.New("trigger expired")
+  }
+
+  var positionSide string
+  var side string
+  if trigger.Side == 1 {
+    positionSide = "LONG"
+    side = "BUY"
+  } else if trigger.Side == 2 {
+    positionSide = "SHORT"
+    side = "SELL"
+  }
+
+  position, err := r.PositionRepository.Get(trigger.Symbol)
+  if err != nil {
+    return err
+  }
+
+  if position.EntryQuantity == 0 {
+    r.Close(trigger)
+    return errors.New(fmt.Sprintf("[%s] %s empty position", trigger.Symbol, positionSide))
+  }
+
+  market, err := r.MarketsRepository.Get(trigger.Symbol)
+  if err != nil {
+    return err
+  }
+
+  tickSize := market.TickSize
+  stepSize := market.StepSize
+
+  entryPrice := position.EntryPrice
+  entryQuantity := position.EntryQuantity
+  if position.Timestamp > trigger.Timestamp {
+    trigger.Timestamp = position.Timestamp
+    trigger.TakePrice = r.TakePrice(entryPrice, trigger.Side, tickSize)
+    stopPrice, err := r.StopPrice(
+      trigger.Capital,
+      trigger.Side,
+      position.Leverage,
+      entryPrice,
+      entryQuantity,
+      tickSize,
+      stepSize,
+    )
+    if err == nil {
+      trigger.StopPrice = stopPrice
+    }
+
+    err = r.Db.Model(&trigger).Where("version", trigger.Version).Updates(map[string]interface{}{
+      "take_price": trigger.TakePrice,
+      "stop_price": trigger.StopPrice,
+      "timestamp":  trigger.Timestamp,
+      "version":    gorm.Expr("version + ?", 1),
+    }).Error
+    if err != nil {
+      return err
+    }
+  }
+
+  if position.ID != "" && position.EntryQuantity != 0 && trigger.Side != position.Side {
+    return errors.New("waiting for position side change")
+  }
+
+  entryAmount, _ := decimal.NewFromFloat(entryPrice).Mul(decimal.NewFromFloat(entryQuantity)).Float64()
+
+  price, err := r.MarketsRepository.Price(trigger.Symbol, trigger.Side)
+  if err != nil {
+    return err
+  }
+
+  if entryPrice > 0 {
+    if trigger.Side == 1 && price > entryPrice {
+      return errors.New(fmt.Sprintf("[%s] %s price big than entry price", trigger.Symbol, positionSide))
+    }
+    if trigger.Side == 2 && price < entryPrice {
+      return errors.New(fmt.Sprintf("[%s] %s price small than  entry price", trigger.Symbol, positionSide))
+    }
+  }
+
+  var buyPrice float64
+  var buyQuantity float64
+  var buyAmount float64
+
+  if entryAmount == 0 {
+    if trigger.StopPrice > 0 {
+      buyPrice = trigger.StopPrice
+    } else {
+      buyPrice = trigger.Price
+    }
+    buyQuantity = market.MinOrderSize
+    buyAmount, _ = decimal.NewFromFloat(buyPrice).Mul(decimal.NewFromFloat(buyQuantity)).Float64()
+  } else {
+    ipart, _ := math.Modf(trigger.Capital)
+    places := 1
+    for ; ipart >= 10; ipart = ipart / 10 {
+      places++
+    }
+    capital, err := r.Capital(trigger.Capital, entryAmount, places)
+    if err != nil {
+      return errors.New("reach the max invest capital")
+    }
+    ratio := r.Ratio(capital, entryAmount)
+    buyAmount, _ = decimal.NewFromFloat(capital).Mul(decimal.NewFromFloat(ratio)).Float64()
+    if buyAmount < 5 {
+      buyAmount = 5
+    }
+    buyQuantity = r.BuyQuantity(trigger.Side, buyAmount, entryPrice, entryAmount)
+    buyPrice, _ = decimal.NewFromFloat(buyAmount).Div(decimal.NewFromFloat(buyQuantity)).Float64()
+    if buyQuantity < market.MinOrderSize {
+      buyQuantity = market.MinOrderSize
+      buyAmount, _ = decimal.NewFromFloat(buyPrice).Mul(decimal.NewFromFloat(buyQuantity)).Float64()
+    }
+  }
+
+  if trigger.Side == 1 {
+    if price < buyPrice {
+      buyPrice = price
+    }
+    buyPrice, _ = decimal.NewFromFloat(buyPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+  } else {
+    if price > buyPrice {
+      buyPrice = price
+    }
+    buyPrice, _ = decimal.NewFromFloat(buyPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
+  }
+
+  if trigger.Side == 1 && price > buyPrice {
+    return errors.New(fmt.Sprintf("[%s] %s price must reach %v", trigger.Symbol, positionSide, buyPrice))
+  }
+
+  if trigger.Side == 2 && price < buyPrice {
+    return errors.New(fmt.Sprintf("[%s] %s price must reach %v", trigger.Symbol, positionSide, buyPrice))
+  }
+
+  buyQuantity, _ = decimal.NewFromFloat(buyAmount).Div(decimal.NewFromFloat(buyPrice)).Float64()
+  buyQuantity, _ = decimal.NewFromFloat(buyQuantity).Div(decimal.NewFromFloat(stepSize)).Ceil().Mul(decimal.NewFromFloat(stepSize)).Float64()
+  entryQuantity, _ = decimal.NewFromFloat(entryQuantity).Add(decimal.NewFromFloat(buyQuantity)).Float64()
+
+  buyAmount, _ = decimal.NewFromFloat(buyPrice).Mul(decimal.NewFromFloat(buyQuantity)).Float64()
+  entryAmount, _ = decimal.NewFromFloat(entryAmount).Add(decimal.NewFromFloat(buyAmount)).Float64()
+
+  if entryPrice == 0 {
+    entryPrice = buyPrice
+  } else {
+    entryPrice, _ = decimal.NewFromFloat(entryAmount).Div(decimal.NewFromFloat(entryQuantity)).Float64()
+  }
+
+  sellPrice := r.SellPrice(trigger.Side, entryPrice, entryAmount)
+  if trigger.Side == 1 {
+    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+  } else {
+    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
+  }
+
+  if !r.CanBuy(trigger, buyPrice) {
+    return errors.New(fmt.Sprintf("[%s] can not buy now", trigger.Symbol))
+  }
+
+  balance, err := r.AccountRepository.Balance()
+  if err != nil {
+    return err
+  }
+
+  if position.ID != "" && balance["margin"] < 5 {
+    return errors.New(fmt.Sprintf("[%s] margin must reach 5", market.QuoteAsset))
+  }
+
+  if position.ID != "" && buyAmount > balance["margin"]*float64(position.Leverage) {
+    return errors.New(fmt.Sprintf("[%s] %v margin not enough", trigger.Symbol, buyAmount))
+  }
+
+  return r.Db.Transaction(func(tx *gorm.DB) (err error) {
+    if position.ID != "" {
+      result := tx.Model(&position).Where("version", position.Version).Updates(map[string]interface{}{
+        "entry_quantity": gorm.Expr("entry_quantity + ?", buyQuantity),
+        "version":        gorm.Expr("version + ?", 1),
+      })
+      if result.Error != nil {
+        return result.Error
+      }
+      if result.RowsAffected == 0 {
+        return errors.New("position update failed")
+      }
+    }
+
+    orderID, err := r.OrdersRepository.Create(trigger.Symbol, side, buyPrice, buyQuantity)
+    if err != nil {
+      r.Db.Model(&trigger).Where("version", trigger.Version).Updates(map[string]interface{}{
+        "remark":  err.Error(),
+        "version": gorm.Expr("version + ?", 1),
+      })
+      return err
+    }
+
+    trading := models.Trigger{
+      ID:           xid.New().String(),
+      Symbol:       trigger.Symbol,
+      TriggerID:    trigger.ID,
+      BuyOrderId:   orderID,
+      BuyPrice:     buyPrice,
+      BuyQuantity:  buyQuantity,
+      SellPrice:    sellPrice,
+      SellQuantity: buyQuantity,
+    }
+    return tx.Create(&trading).Error
+  })
+}
+
+func (r *TriggersRepository) Flush(id string) error {
+  var trigger *dydxModels.Trigger
+  result := r.Db.First(&trigger, "id=?", id)
+  if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+    return errors.New("trigger empty")
+  }
+
+  price, err := r.MarketsRepository.Price(trigger.Symbol, trigger.Side)
+  if err != nil {
+    return err
+  }
+  err = r.Take(trigger, price)
+  if err != nil {
+    log.Println("take error", trigger.Symbol, err)
+  }
+
+  var side string
+  if trigger.Side == 1 {
+    side = "BUY"
+  } else if trigger.Side == 2 {
+    side = "SELL"
+  }
+
+  var tradings []*models.Trigger
+  r.Db.Where("trigger_id=? AND status IN ?", trigger.ID, []int{0, 2}).Find(&tradings)
+
+  for _, trading := range tradings {
+    if trading.Status == 0 {
+      timestamp := trading.CreatedAt.Unix()
+      if trading.BuyOrderId == "" {
+        orderID := r.OrdersRepository.Lost(trading.Symbol, side, trading.BuyQuantity, timestamp-30)
+        if orderID != "" {
+          trading.BuyOrderId = orderID
+          result := r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+            "buy_order_id": trading.BuyOrderId,
+            "version":      gorm.Expr("version + ?", 1),
+          })
+          if result.Error != nil {
+            return result.Error
+          }
+          if result.RowsAffected == 0 {
+            return errors.New("order update failed")
+          }
+        }
+      } else {
+        if timestamp < time.Now().Unix()-900 {
+          r.OrdersRepository.Flush(trading.BuyOrderId)
+          status := r.OrdersRepository.Status(trading.BuyOrderId)
+          if status == "NEW" {
+            r.OrdersRepository.Cancel(trading.BuyOrderId)
+          }
+        }
+      }
+
+      status := r.OrdersRepository.Status(trading.BuyOrderId)
+      if status == "" || status == "NEW" || status == "PARTIALLY_FILLED" {
+        r.OrdersRepository.Flush(trading.BuyOrderId)
+        continue
+      }
+
+      if status == "FILLED" {
+        trading.Status = 1
+      } else {
+        trading.Status = 4
+      }
+
+      result := r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+        "buy_order_id": trading.BuyOrderId,
+        "status":       trading.Status,
+        "version":      gorm.Expr("version + ?", 1),
+      })
+      if result.Error != nil {
+        return result.Error
+      }
+      if result.RowsAffected == 0 {
+        return errors.New("order update failed")
+      }
+    }
+
+    if trading.Status == 2 {
+      timestamp := trading.UpdatedAt.Unix()
+      if trading.SellOrderId == "" {
+        orderID := r.OrdersRepository.Lost(trading.Symbol, side, trading.SellQuantity, timestamp-30)
+        if orderID != "" {
+          trading.SellOrderId = orderID
+          result := r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+            "sell_order_id": trading.SellOrderId,
+            "version":       gorm.Expr("version + ?", 1),
+          })
+          if result.Error != nil {
+            return result.Error
+          }
+          if result.RowsAffected == 0 {
+            return errors.New("order update failed")
+          }
+        }
+      } else {
+        if timestamp < time.Now().Unix()-900 {
+          r.OrdersRepository.Flush(trading.SellOrderId)
+          status := r.OrdersRepository.Status(trading.SellOrderId)
+          if status == "NEW" {
+            r.OrdersRepository.Cancel(trading.SellOrderId)
+          }
+        }
+      }
+
+      status := r.OrdersRepository.Status(trading.SellOrderId)
+      if status == "" || status == "NEW" || status == "PARTIALLY_FILLED" {
+        r.OrdersRepository.Flush(trading.SellOrderId)
+        continue
+      }
+
+      if status == "FILLED" {
+        trading.Status = 3
+      } else if status == "CANCELED" {
+        trading.SellOrderId = ""
+        trading.Status = 1
+      } else {
+        trading.Status = 5
+      }
+
+      result := r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+        "sell_order_id": trading.SellOrderId,
+        "status":        trading.Status,
+        "version":       gorm.Expr("version + ?", 1),
+      })
+      if result.Error != nil {
+        return result.Error
+      }
+      if result.RowsAffected == 0 {
+        return errors.New("order update failed")
+      }
+    }
+  }
+
+  return nil
+}
+
+func (r *TriggersRepository) Take(trigger *dydxModels.Trigger, price float64) error {
+  var positionSide string
+  var side string
+
+  if trigger.Side == 1 {
+    positionSide = "LONG"
+    side = "SELL"
+  } else if trigger.Side == 2 {
+    positionSide = "SHORT"
+    side = "BUY"
+  }
+
+  position, err := r.PositionRepository.Get(trigger.Symbol)
+  if err != nil {
+    return err
+  }
+
+  if position.EntryQuantity == 0 {
+    r.Close(trigger)
+    return errors.New(fmt.Sprintf("[%s] %s empty position", trigger.Symbol, positionSide))
+  }
+
+  if position.Timestamp > trigger.Timestamp {
+    trigger.Timestamp = position.Timestamp
+  }
+
+  tickSize, _, err := r.Filters(trigger.Symbol)
+  if err != nil {
+    return err
+  }
+
+  entryPrice := position.EntryPrice
+
+  var sellPrice float64
+  var trading *models.Trigger
+
+  if trigger.Side == 1 {
+    result := r.Db.Where("trigger_id=? AND status=?", trigger.ID, 1).Order("sell_price asc").Take(&trading)
+    if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+      return errors.New(fmt.Sprintf("[%s] %s empty trading", trigger.Symbol, positionSide))
+    }
+    if price < trading.SellPrice {
+      if price < entryPrice*1.0138 {
+        return errors.New("price too low")
+      }
+      sellPrice = entryPrice * 1.0138
+    } else {
+      sellPrice = trading.SellPrice
+    }
+    if sellPrice < price*0.9985 {
+      sellPrice = price * 0.9985
+    }
+    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+  }
+
+  if trigger.Side == 2 {
+    result := r.Db.Where("trigger_id=? AND status=?", trigger.ID, 1).Order("sell_price desc").Take(&trading)
+    if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+      return errors.New("empty trading")
+    }
+    if price > trading.SellPrice {
+      if price > entryPrice*0.9862 {
+        return errors.New("price too high")
+      }
+      sellPrice = entryPrice * 0.9862
+    } else {
+      sellPrice = trading.SellPrice
+    }
+    if sellPrice > price*1.0015 {
+      sellPrice = price * 1.0015
+    }
+    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
+  }
+
+  orderID, err := r.OrdersRepository.Create(trading.Symbol, side, sellPrice, trading.SellQuantity)
+  if err != nil {
+    r.Db.Model(&trigger).Where("version", trigger.Version).Updates(map[string]interface{}{
+      "remark":  err.Error(),
+      "version": gorm.Expr("version + ?", 1),
+    })
+    return err
+  }
+
+  r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+    "sell_order_id": orderID,
+    "status":        2,
+    "version":       gorm.Expr("version + ?", 1),
+  })
+
+  return nil
+}
+
+func (r *TriggersRepository) Close(trigger *dydxModels.Trigger) error {
+  var total int64
+  r.Db.Model(&models.Trigger{}).Where("trigger_id = ? AND status IN ?", trigger.ID, []int{0, 1, 2}).Count(&total)
+  if total == 0 {
+    return nil
+  }
+  r.Db.Model(&models.Trigger{}).Where("trigger_id = ? AND status = 0", trigger.ID).Count(&total)
+  if total > 0 {
+    return nil
+  }
+  timestamp := time.Now().Add(-15*time.Minute).UnixNano() / int64(time.Millisecond)
+  if trigger.Timestamp > timestamp {
+    return nil
+  }
+  return r.Db.Transaction(func(tx *gorm.DB) (err error) {
+    err = tx.Model(&trigger).Where("version", trigger.Version).Updates(map[string]interface{}{
+      "remark":  "position not exists",
+      "version": gorm.Expr("version + ?", 1),
+    }).Error
+    if err != nil {
+      return
+    }
+    err = tx.Model(&models.Trigger{}).Where("trigger_id=? AND status IN ?", trigger.ID, []int{0, 1, 2}).Update("status", 5).Error
+    if err != nil {
+      return
+    }
+    return
+  })
+}
+
+func (r *TriggersRepository) Ratio(capital float64, entryAmount float64) float64 {
+  totalAmount := 0.0
+  lastAmount := 0.0
+  ratios := []float64{0.0071, 0.0193, 0.0331, 0.0567, 0.0972, 0.1667}
+  for _, ratio := range ratios {
+    if entryAmount == 0 {
+      return ratio
+    }
+    if totalAmount >= entryAmount-lastAmount {
+      return ratio
+    }
+    lastAmount, _ = decimal.NewFromFloat(capital).Mul(decimal.NewFromFloat(ratio)).Float64()
+    totalAmount, _ = decimal.NewFromFloat(totalAmount).Add(decimal.NewFromFloat(lastAmount)).Float64()
+  }
+  return 0.0
+}
+
+func (r *TriggersRepository) Capital(capital float64, entryAmount float64, place int) (result float64, err error) {
+  step := math.Pow10(place - 1)
+
+  for {
+    ratio := r.Ratio(capital, entryAmount)
+    if ratio == 0 {
+      break
+    }
+    result = capital
+    if capital <= step {
+      break
+    }
+    capital -= step
+  }
+
+  if result == 0 {
+    err = errors.New("reach the max invest capital")
+    return
+  }
+
+  if place > 1 {
+    capital, err = r.Capital(result+step, entryAmount, place-1)
+    if err != nil {
+      return
+    }
+    result = capital
+  }
+
+  if result < 5 {
+    result = 5
+  }
+
+  return
+}
+
+func (r *TriggersRepository) BuyQuantity(
+  side int,
+  buyAmount float64,
+  entryPrice float64,
+  entryAmount float64,
+) (buyQuantity float64) {
+  ipart, _ := math.Modf(entryAmount + buyAmount)
+  places := 1
+  for ; ipart >= 10; ipart = ipart / 10 {
+    places++
+  }
+  var lost float64
+  for i := 0; i < places; i++ {
+    lost, _ = decimal.NewFromFloat(entryAmount).Mul(decimal.NewFromFloat(0.005)).Float64()
+    if side == 1 {
+      entryPrice, _ = decimal.NewFromFloat(entryPrice).Mul(decimal.NewFromFloat(0.995)).Float64()
+      buyQuantity, _ = decimal.NewFromFloat(buyAmount).Add(decimal.NewFromFloat(lost)).Div(decimal.NewFromFloat(entryPrice)).Float64()
+    } else {
+      entryPrice, _ = decimal.NewFromFloat(entryPrice).Mul(decimal.NewFromFloat(1.005)).Float64()
+      buyQuantity, _ = decimal.NewFromFloat(buyAmount).Sub(decimal.NewFromFloat(lost)).Div(decimal.NewFromFloat(entryPrice)).Float64()
+    }
+    entryAmount, _ = decimal.NewFromFloat(entryAmount).Add(decimal.NewFromFloat(lost)).Float64()
+  }
+  return
+}
+
+func (r *TriggersRepository) SellPrice(
+  side int,
+  entryPrice float64,
+  entryAmount float64,
+) (sellPrice float64) {
+  ipart, _ := math.Modf(entryAmount)
+  places := 1
+  for ; ipart >= 10; ipart = ipart / 10 {
+    places++
+  }
+  for i := 0; i < places; i++ {
+    if side == 1 {
+      sellPrice, _ = decimal.NewFromFloat(entryPrice).Mul(decimal.NewFromFloat(1.0085)).Float64()
+    } else {
+      sellPrice, _ = decimal.NewFromFloat(entryPrice).Mul(decimal.NewFromFloat(0.9915)).Float64()
+    }
+  }
+  return
+}
+
+func (r *TriggersRepository) TakePrice(
+  entryPrice float64,
+  side int,
+  tickSize float64,
+) float64 {
+  var takePrice float64
+  if side == 1 {
+    takePrice, _ = decimal.NewFromFloat(entryPrice).Mul(decimal.NewFromFloat(1.02)).Float64()
+    takePrice, _ = decimal.NewFromFloat(takePrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+  } else {
+    takePrice, _ = decimal.NewFromFloat(entryPrice).Mul(decimal.NewFromFloat(0.98)).Float64()
+    takePrice, _ = decimal.NewFromFloat(takePrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+  }
+  return takePrice
+}
+
+func (r *TriggersRepository) StopPrice(
+  maxCapital float64,
+  side int,
+  leverage int,
+  entryPrice float64,
+  entryQuantity float64,
+  tickSize float64,
+  stepSize float64,
+) (stopPrice float64, err error) {
+  ipart, _ := math.Modf(maxCapital)
+  places := 1
+  for ; ipart >= 10; ipart = ipart / 10 {
+    places++
+  }
+
+  entryAmount, _ := decimal.NewFromFloat(entryPrice).Mul(decimal.NewFromFloat(entryQuantity)).Float64()
+
+  var buyPrice float64
+  var buyQuantity float64
+  var buyAmount float64
+
+  for {
+    var err error
+    capital, err := r.Capital(maxCapital, entryAmount, places)
+    if err != nil {
+      break
+    }
+    ratio := r.Ratio(capital, entryAmount)
+    buyAmount, _ = decimal.NewFromFloat(capital).Mul(decimal.NewFromFloat(ratio)).Float64()
+    if buyAmount < 5 {
+      buyAmount = 5
+    }
+    buyQuantity = r.BuyQuantity(side, buyAmount, entryPrice, entryAmount)
+    buyPrice, _ = decimal.NewFromFloat(buyAmount).Div(decimal.NewFromFloat(buyQuantity)).Float64()
+    if side == 1 {
+      buyPrice, _ = decimal.NewFromFloat(buyPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+    } else {
+      buyPrice, _ = decimal.NewFromFloat(buyPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
+    }
+    buyQuantity, _ = decimal.NewFromFloat(buyQuantity).Div(decimal.NewFromFloat(stepSize)).Ceil().Mul(decimal.NewFromFloat(stepSize)).Float64()
+    buyAmount, _ = decimal.NewFromFloat(buyPrice).Mul(decimal.NewFromFloat(buyQuantity)).Float64()
+    entryQuantity, _ = decimal.NewFromFloat(entryQuantity).Add(decimal.NewFromFloat(buyQuantity)).Float64()
+    entryAmount, _ = decimal.NewFromFloat(entryAmount).Add(decimal.NewFromFloat(buyAmount)).Float64()
+    entryPrice, _ = decimal.NewFromFloat(entryAmount).Div(decimal.NewFromFloat(entryQuantity)).Float64()
+  }
+
+  stopAmount, _ := decimal.NewFromFloat(entryAmount).Div(decimal.NewFromInt32(int32(leverage))).Mul(decimal.NewFromFloat(0.1)).Float64()
+  if side == 1 {
+    stopPrice, _ = decimal.NewFromFloat(entryPrice).Sub(
+      decimal.NewFromFloat(stopAmount).Div(decimal.NewFromFloat(entryQuantity)),
+    ).Float64()
+    stopPrice, _ = decimal.NewFromFloat(stopPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+  } else {
+    stopPrice, _ = decimal.NewFromFloat(entryPrice).Add(
+      decimal.NewFromFloat(stopAmount).Div(decimal.NewFromFloat(entryQuantity)),
+    ).Float64()
+    stopPrice, _ = decimal.NewFromFloat(stopPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
+  }
+
+  return
+}
+
+func (r *TriggersRepository) CanBuy(
+  trigger *dydxModels.Trigger,
+  price float64,
+) bool {
+  var trading models.Trigger
+  if trigger.Side == 1 {
+    result := r.Db.Where("trigger_id=? AND status IN ?", trigger.ID, []int{0, 1, 2}).Order("buy_price asc").Take(&trading)
+    if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+      if trading.Status == 0 {
+        return false
+      }
+      if price >= trading.BuyPrice {
+        return false
+      }
+    }
+  }
+  if trigger.Side == 2 {
+    result := r.Db.Where("trigger_id=? AND status IN ?", trigger.ID, []int{0, 1, 2}).Order("buy_price desc").Take(&trading)
+    if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+      if trading.Status == 0 {
+        return false
+      }
+      if price <= trading.BuyPrice {
+        return false
+      }
+    }
+  }
+  return true
+}
+
+func (r *TriggersRepository) Filters(symbol string) (tickSize float64, stepSize float64, err error) {
+  entity, err := r.MarketsRepository.Get(symbol)
+  if err != nil {
+    return
+  }
+  return entity.TickSize, entity.StepSize, err
+}

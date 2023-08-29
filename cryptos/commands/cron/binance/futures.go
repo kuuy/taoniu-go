@@ -2,17 +2,16 @@ package binance
 
 import (
   "context"
-  "log"
-  "sync"
-
   "github.com/go-redis/redis/v8"
   "github.com/hibiken/asynq"
   "github.com/robfig/cron/v3"
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
-
+  "log"
+  "sync"
   "taoniu.local/cryptos/common"
   "taoniu.local/cryptos/tasks"
+  "time"
 )
 
 type FuturesHandler struct {
@@ -31,7 +30,7 @@ func NewFuturesCommand() *cli.Command {
       h = FuturesHandler{
         Db:    common.NewDB(),
         Rdb:   common.NewRedis(),
-        Asynq: common.NewAsynqClient(),
+        Asynq: common.NewAsynqClient("BINANCE_FUTURES"),
         Ctx:   context.Background(),
       }
       return nil
@@ -59,48 +58,39 @@ func (h *FuturesHandler) run() error {
   }
 
   c := cron.New()
-  c.AddFunc("@every 1s", func() {
-    binance.Server().Time()
-  })
   c.AddFunc("@every 5s", func() {
+    binance.Futures().Account().Flush()
     binance.Futures().Tickers().Flush()
     binance.Futures().Tradings().Triggers().Place()
+    binance.Futures().Tradings().Scalping().Place()
   })
   c.AddFunc("@every 15s", func() {
     binance.Futures().Tradings().Triggers().Flush()
+    binance.Futures().Tradings().Scalping().Flush()
   })
   c.AddFunc("@every 30s", func() {
     binance.Futures().Orders().Open()
-    binance.Futures().Flush()
-  })
-  c.AddFunc("@every 1m", func() {
-    binance.Futures().Klines().Flush("1m", 5)
-    binance.Futures().Klines().Flush("1d", 1)
+    binance.Futures().Orders().Flush()
   })
   c.AddFunc("@every 3m", func() {
-    binance.Futures().Tickers().Fix()
-    binance.Futures().Klines().Fix("1m", 30, 270)
-    binance.Futures().Klines().Fix("1d", 2, 2700)
-    binance.Futures().Orders().Fix()
+    binance.Futures().Depth().Flush(1000)
+    binance.Futures().Orders().Sync(time.Now().Add(-15*time.Minute).UnixMilli(), 20)
   })
   c.AddFunc("@every 5m", func() {
-    binance.Futures().Tickers().FlushDelay()
     binance.Futures().Klines().FlushDelay("1m", 30)
-    binance.Futures().Indicators().Daily().Flush()
-    binance.Futures().Strategies().Daily().Flush()
-    binance.Futures().Indicators().Minutely().Flush()
-    binance.Futures().Strategies().Minutely().Flush()
-    binance.Futures().Plans().Minutely().Flush()
-    //binance.Futures().Indicators().Daily().Place()
-    //binance.Futures().Strategies().Daily().Place()
+    binance.Futures().Klines().FlushDelay("15m", 2)
+    binance.Futures().Depth().FlushDelay(1000)
+    binance.Futures().Analysis().Flush()
   })
   c.AddFunc("@every 15m", func() {
+    binance.Futures().Klines().FlushDelay("4h", 1)
     binance.Futures().Klines().FlushDelay("1d", 1)
   })
   c.AddFunc("@hourly", func() {
     binance.Futures().Cron().Hourly()
   })
   c.AddFunc("30 23 * * *", func() {
+    binance.Server().Time()
     binance.Futures().Clean()
   })
   c.Start()

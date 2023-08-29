@@ -14,15 +14,18 @@ func NewFutures() *Futures {
 func (m *Futures) AutoMigrate(db *gorm.DB) error {
   db.AutoMigrate(
     &futures.Symbol{},
-    &futures.Position{},
-    &futures.Order{},
     &futures.Kline{},
     &futures.Strategy{},
     &futures.Plan{},
+    &futures.Order{},
+    &futures.Position{},
+    &futures.Scalping{},
+    &futures.ScalpingPlan{},
     &futures.Trigger{},
   )
 
   futures.NewTradings().AutoMigrate(db)
+  futures.NewAnalysis().AutoMigrate(db)
 
   return nil
 }

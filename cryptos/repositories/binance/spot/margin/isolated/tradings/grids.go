@@ -4,13 +4,13 @@ import (
   "context"
   "errors"
   "gorm.io/gorm"
+  "os"
   "strconv"
   models "taoniu.local/cryptos/models/binance/spot/margin/isolated/tradings"
 
   "github.com/adshao/go-binance/v2"
   "github.com/go-redis/redis/v8"
 
-  config "taoniu.local/cryptos/config/binance/spot"
   spotModels "taoniu.local/cryptos/models/binance/spot"
   marginModels "taoniu.local/cryptos/models/binance/spot/margin"
   //spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
@@ -337,7 +337,12 @@ func (r *GridsRepository) FilterGrid(grid *spotModels.Grid, price float64, signa
 }
 
 func (r *GridsRepository) Order(symbol string, side binance.SideType, price float64, quantity float64) (int64, error) {
-  client := binance.NewClient(config.TRADE_API_KEY, config.TRADE_SECRET_KEY)
+  client := binance.NewClient(
+    os.Getenv("BINANCE_SPOT_TRADE_API_KEY"),
+    os.Getenv("BINANCE_SPOT_TRADE_API_SECRET"),
+  )
+  client.BaseURL = os.Getenv("BINANCE_SPOT_API_ENDPOINT")
+
   result, err := client.NewCreateMarginOrderService().Symbol(
     symbol,
   ).Side(

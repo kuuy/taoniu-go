@@ -1,11 +1,29 @@
 package plans
 
-import repositories "taoniu.local/cryptos/repositories/binance/spot/plans"
+import (
+  "time"
+
+  "github.com/hibiken/asynq"
+
+  config "taoniu.local/cryptos/config/queue"
+  jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/spot/plans"
+)
 
 type DailyTask struct {
-	Repository *repositories.DailyRepository
+  Asynq *asynq.Client
+  Job   *jobs.Daily
 }
 
 func (t *DailyTask) Flush() error {
-	return t.Repository.Flush()
+  task, err := t.Job.Flush()
+  if err != nil {
+    return err
+  }
+  t.Asynq.Enqueue(
+    task,
+    asynq.Queue(config.BINANCE_SPOT_PLANS),
+    asynq.MaxRetry(0),
+    asynq.Timeout(5*time.Minute),
+  )
+  return nil
 }

@@ -66,13 +66,12 @@ func (r *TriggersRepository) Apply(
   result := r.Db.Where("symbol=? AND status IN ?", symbol, []int{1, 3}).Take(&trigger)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     entity := &models.Trigger{
-      ID:         xid.New().String(),
-      Symbol:     symbol,
-      Capital:    capital,
-      Price:      price,
-      EntryPrice: price,
-      ExpiredAt:  expiredAt,
-      Status:     1,
+      ID:        xid.New().String(),
+      Symbol:    symbol,
+      Capital:   capital,
+      Price:     price,
+      ExpiredAt: expiredAt,
+      Status:    1,
     }
     r.Db.Create(&entity)
   } else {

@@ -33,7 +33,7 @@ func NewFuturesCommand() *cli.Command {
 func (h *FuturesHandler) run() error {
   log.Println("queue running...")
 
-  worker := common.NewAsynqServer()
+  worker := common.NewAsynqServer("BINANCE_FUTURES")
 
   mux := asynq.NewServeMux()
   workers.NewFutures().Register(mux)

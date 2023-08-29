@@ -1,17 +1,54 @@
 package futures
 
 import (
+  "log"
+
   "github.com/urfave/cli/v2"
-  "taoniu.local/cryptos/commands/binance/futures/plans"
+  "gorm.io/gorm"
+
+  "taoniu.local/cryptos/common"
+  repositories "taoniu.local/cryptos/repositories/binance/futures"
 )
 
+type PlansHandler struct {
+  Db         *gorm.DB
+  Repository *repositories.PlansRepository
+}
+
 func NewPlansCommand() *cli.Command {
+  var h PlansHandler
   return &cli.Command{
     Name:  "plans",
     Usage: "",
+    Before: func(c *cli.Context) error {
+      h = PlansHandler{
+        Db: common.NewDB(),
+      }
+      h.Repository = &repositories.PlansRepository{
+        Db: h.Db,
+      }
+      h.Repository.SymbolsRepository = &repositories.SymbolsRepository{
+        Db: h.Db,
+      }
+      return nil
+    },
     Subcommands: []*cli.Command{
-      plans.NewDailyCommand(),
-      plans.NewMinutelyCommand(),
+      {
+        Name:  "flush",
+        Usage: "",
+        Action: func(c *cli.Context) error {
+          interval := c.Args().Get(0)
+          if err := h.Flush(interval); err != nil {
+            return cli.Exit(err.Error(), 1)
+          }
+          return nil
+        },
+      },
     },
   }
+}
+
+func (h *PlansHandler) Flush(interval string) error {
+  log.Println("futures plans flush...")
+  return h.Repository.Flush(interval)
 }

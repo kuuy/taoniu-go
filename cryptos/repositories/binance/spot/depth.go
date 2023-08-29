@@ -6,6 +6,7 @@ import (
   "fmt"
   "net"
   "net/http"
+  "os"
   "time"
 
   "gorm.io/gorm"
@@ -19,8 +20,8 @@ type DepthRepository struct {
   UseProxy bool
 }
 
-func (r *DepthRepository) Flush(symbol string) error {
-  depth, err := r.Request(symbol)
+func (r *DepthRepository) Flush(symbol string, limit int) error {
+  depth, err := r.Request(symbol, limit)
   if err != nil {
     return err
   }
@@ -28,7 +29,7 @@ func (r *DepthRepository) Flush(symbol string) error {
   return nil
 }
 
-func (r *DepthRepository) Request(symbol string) (map[string]interface{}, error) {
+func (r *DepthRepository) Request(symbol string, limit int) (map[string]interface{}, error) {
   tr := &http.Transport{
     DisableKeepAlives: true,
   }
@@ -44,14 +45,14 @@ func (r *DepthRepository) Request(symbol string) (map[string]interface{}, error)
 
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   time.Duration(8) * time.Second,
+    Timeout:   time.Duration(3) * time.Second,
   }
 
-  url := "https://api.binance.com/api/v3/depth"
+  url := fmt.Sprintf("%s/fapi/v1/depth", os.Getenv("BINANCE_SPOT_API_ENDPOINT"))
   req, _ := http.NewRequest("GET", url, nil)
   q := req.URL.Query()
   q.Add("symbol", symbol)
-  q.Add("limit", "1000")
+  q.Add("limit", fmt.Sprintf("%v", limit))
   req.URL.RawQuery = q.Encode()
   resp, err := httpClient.Do(req)
   if err != nil {
@@ -74,6 +75,17 @@ func (r *DepthRepository) Request(symbol string) (map[string]interface{}, error)
   if err != nil {
     return nil, err
   }
-
   return result, nil
+}
+
+func (r *DepthRepository) Clean() error {
+  var timestamp int64
+
+  timestamp = time.Now().AddDate(0, 0, -101).Unix()
+  r.Db.Where("interval = ? AND timestamp < ?", "1d", timestamp).Delete(&models.Kline{})
+
+  timestamp = time.Now().AddDate(0, 0, -3).Unix()
+  r.Db.Where("interval = ? AND timestamp < ?", "1m", timestamp).Delete(&models.Kline{})
+
+  return nil
 }

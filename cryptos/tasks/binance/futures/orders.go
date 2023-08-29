@@ -7,7 +7,6 @@ import (
   "gorm.io/gorm"
 
   config "taoniu.local/cryptos/config/queue"
-  models "taoniu.local/cryptos/models/binance/futures"
   jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/futures"
   repositories "taoniu.local/cryptos/repositories/binance/futures"
 )
@@ -38,17 +37,37 @@ func (t *OrdersTask) Open() error {
   return nil
 }
 
-func (t *OrdersTask) Sync() error {
-  var symbols []string
-  t.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
-  for _, symbol := range symbols {
-    t.Repository.Sync(symbol, 20)
+func (t *OrdersTask) Flush() error {
+  orders := t.Repository.Gets(map[string]interface{}{})
+  for _, order := range orders {
+    task, err := t.Job.Flush(order.Symbol, order.OrderID)
+    if err != nil {
+      return err
+    }
+    t.Asynq.Enqueue(
+      task,
+      asynq.Queue(config.BINANCE_FUTURES_ORDERS),
+      asynq.MaxRetry(0),
+      asynq.Timeout(5*time.Minute),
+    )
   }
   return nil
 }
 
-func (t *OrdersTask) Fix() error {
-  t.Repository.Fix(time.Now().Add(-30*time.Minute), 20)
+func (t *OrdersTask) Sync(startTime int64, limit int) error {
+  symbols := t.Scan()
+  for _, symbol := range symbols {
+    task, err := t.Job.Sync(symbol, startTime, limit)
+    if err != nil {
+      return err
+    }
+    t.Asynq.Enqueue(
+      task,
+      asynq.Queue(config.BINANCE_FUTURES_ORDERS),
+      asynq.MaxRetry(0),
+      asynq.Timeout(5*time.Minute),
+    )
+  }
   return nil
 }
 
