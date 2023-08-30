@@ -283,12 +283,9 @@ func (r *TriggersRepository) Place(id string) error {
 
     orderID, err := r.OrdersRepository.Create(trigger.Symbol, positionSide, side, buyPrice, buyQuantity)
     if err != nil {
-      apiError, ok := err.(common.APIError)
+      _, ok := err.(common.APIError)
       if ok {
-        apiError := r.ApiError(apiError)
-        if apiError == nil {
-          return err
-        }
+        return err
       }
       tx.Model(&trigger).Where("version", trigger.Version).Updates(map[string]interface{}{
         "remark":  err.Error(),
@@ -532,12 +529,9 @@ func (r *TriggersRepository) Take(trigger *futuresModels.Trigger, price float64)
 
   orderID, err := r.OrdersRepository.Create(trading.Symbol, positionSide, side, sellPrice, trading.SellQuantity)
   if err != nil {
-    apiError, ok := err.(common.APIError)
+    _, ok := err.(common.APIError)
     if ok {
-      apiError := r.ApiError(apiError)
-      if apiError == nil {
-        return err
-      }
+      return err
     }
     r.Db.Model(&trigger).Where("version", trigger.Version).Updates(map[string]interface{}{
       "remark":  err.Error(),
@@ -569,13 +563,6 @@ func (r *TriggersRepository) Close(trigger *futuresModels.Trigger) {
     return
   }
   r.Db.Model(&models.Trigger{}).Where("trigger_id=? AND status IN ?", trigger.ID, []int{0, 1, 2}).Update("status", 5)
-}
-
-func (r *TriggersRepository) ApiError(apiError common.APIError) error {
-  if apiError.Code == -1001 || apiError.Code == -1111 || apiError.Code == -1121 || apiError.Code == -2010 || apiError.Code == -4016 {
-    return nil
-  }
-  return apiError
 }
 
 func (r *TriggersRepository) TakePrice(

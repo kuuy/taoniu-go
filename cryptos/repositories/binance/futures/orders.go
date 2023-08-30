@@ -288,7 +288,7 @@ func (r *OrdersRepository) Create(
   defer resp.Body.Close()
 
   if resp.StatusCode >= http.StatusBadRequest {
-    apiErr := new(common.APIError)
+    var apiErr common.APIError
     err = json.NewDecoder(resp.Body).Decode(&apiErr)
     if err == nil {
       return 0, apiErr

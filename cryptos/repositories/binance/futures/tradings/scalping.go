@@ -429,12 +429,9 @@ func (r *ScalpingRepository) Place(planID string) error {
 
     orderID, err := r.OrdersRepository.Create(plan.Symbol, positionSide, side, buyPrice, buyQuantity)
     if err != nil {
-      apiError, ok := err.(common.APIError)
+      _, ok := err.(common.APIError)
       if ok {
-        apiError := r.ApiError(apiError)
-        if apiError == nil {
-          return err
-        }
+        return err
       }
       tx.Model(&scalping).Where("version", scalping.Version).Updates(map[string]interface{}{
         "remark":  err.Error(),
@@ -539,12 +536,9 @@ func (r *ScalpingRepository) Take(scalping *futuresModels.Scalping, price float6
 
   orderID, err := r.OrdersRepository.Create(trading.Symbol, positionSide, side, sellPrice, trading.SellQuantity)
   if err != nil {
-    apiError, ok := err.(common.APIError)
+    _, ok := err.(common.APIError)
     if ok {
-      apiError := r.ApiError(apiError)
-      if apiError == nil {
-        return err
-      }
+      return err
     }
     r.Db.Model(&scalping).Where("version", scalping.Version).Updates(map[string]interface{}{
       "remark":  err.Error(),
@@ -576,13 +570,6 @@ func (r *ScalpingRepository) Close(scalping *futuresModels.Scalping) {
     return
   }
   r.Db.Model(&models.Scalping{}).Where("scalping_id=? AND status IN ?", scalping.ID, []int{0, 1, 2}).Update("status", 5)
-}
-
-func (r *ScalpingRepository) ApiError(apiError common.APIError) error {
-  if apiError.Code == -1001 || apiError.Code == -1111 || apiError.Code == -1121 || apiError.Code == -2010 || apiError.Code == -4016 {
-    return nil
-  }
-  return apiError
 }
 
 func (r *ScalpingRepository) Pending() map[string]float64 {
