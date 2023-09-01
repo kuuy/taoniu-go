@@ -36,8 +36,8 @@ type TickerInfo struct {
   CloseTime int64   `json:"closeTime"`
 }
 
-func (r *TickersRepository) Flush(symbol string) error {
-  tickers, err := r.Request(symbol)
+func (r *TickersRepository) Flush() error {
+  tickers, err := r.Request()
   if err != nil {
     return err
   }
@@ -75,7 +75,7 @@ func (r *TickersRepository) Flush(symbol string) error {
   return nil
 }
 
-func (r *TickersRepository) Request(symbol string) ([]*TickerInfo, error) {
+func (r *TickersRepository) Request() ([]*TickerInfo, error) {
   tr := &http.Transport{
     DisableKeepAlives: true,
   }
@@ -97,9 +97,6 @@ func (r *TickersRepository) Request(symbol string) ([]*TickerInfo, error) {
   url := fmt.Sprintf("%s/fapi/v1/ticker/24hr", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))
   req, _ := http.NewRequest("GET", url, nil)
   q := req.URL.Query()
-  if symbol != "" {
-    q.Add("symbol", symbol)
-  }
   req.URL.RawQuery = q.Encode()
   resp, err := httpClient.Do(req)
   if err != nil {
@@ -118,17 +115,7 @@ func (r *TickersRepository) Request(symbol string) ([]*TickerInfo, error) {
   }
 
   var result []*TickerInfo
-  if symbol != "" {
-    var ticker *TickerInfo
-    json.NewDecoder(resp.Body).Decode(&ticker)
-    result = append(result, ticker)
-  } else {
-    json.NewDecoder(resp.Body).Decode(&result)
-  }
-
-  if len(result) == 0 {
-    return nil, errors.New("invalid response")
-  }
+  json.NewDecoder(resp.Body).Decode(&result)
 
   return result, nil
 }

@@ -173,14 +173,14 @@ func (r *TriggersRepository) Place(id string) error {
     }
   }
 
-  if trigger.Side == 1 && trigger.Price > price || trigger.Side == 2 && trigger.Price < price {
+  if trigger.Side == 1 && trigger.Price < price || trigger.Side == 2 && trigger.Price > price {
     var scalping *futuresModels.Scalping
     result = r.Db.Where("symbol=? AND side=?", trigger.Symbol, trigger.Side).Take(&scalping)
     if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
       var total int64
-      r.Db.Model(&models.Scalping{}).Where("scalping_id=? AND status IN ?", scalping.ID, []int{0, 1, 2}).Count(&total)
+      r.Db.Model(&models.Scalping{}).Where("scalping_id=? AND status IN ?", scalping.ID, []int{1, 2}).Count(&total)
       if total < 2 {
-        return errors.New("waiting for the second scalping")
+        return errors.New(fmt.Sprintf("[%s] %s waiting for the second scalping", trigger.Symbol, positionSide))
       }
     }
   }

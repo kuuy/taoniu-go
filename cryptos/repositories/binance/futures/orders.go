@@ -109,7 +109,7 @@ func (r *OrdersRepository) Listings(conditions map[string]interface{}, current i
 
 func (r *OrdersRepository) Lost(symbol string, positionSide string, side string, quantity float64, timestamp int64) int64 {
   var entity models.Order
-  result := r.Db.Where("symbol=? AND position_side=? AND side=? AND quantity=?", symbol, positionSide, side, quantity).Order("updated_at desc").Take(&entity)
+  result := r.Db.Where("symbol=? AND position_side=? AND side=? AND quantity=?", symbol, positionSide, side, quantity).Order("update_time desc").Take(&entity)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     return 0
   }

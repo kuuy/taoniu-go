@@ -5,6 +5,7 @@ import (
   "math"
   "strconv"
   "strings"
+  models "taoniu.local/cryptos/models/binance/futures"
 
   "github.com/shopspring/decimal"
   "github.com/urfave/cli/v2"
@@ -29,7 +30,9 @@ func NewPositionsCommand() *cli.Command {
       h = PositionsHandler{
         Db: common.NewDB(),
       }
-      h.Repository = &repositories.PositionsRepository{}
+      h.Repository = &repositories.PositionsRepository{
+        Db: h.Db,
+      }
       h.SymbolsRepository = &repositories.SymbolsRepository{
         Db: h.Db,
       }
@@ -50,7 +53,19 @@ func NewPositionsCommand() *cli.Command {
           side, _ := strconv.Atoi(c.Args().Get(3))
           entryPrice, _ := strconv.ParseFloat(c.Args().Get(4), 16)
           entryQuantity, _ := strconv.ParseFloat(c.Args().Get(5), 16)
-          if err := h.calc(symbol, margin, leverage, side, entryPrice, entryQuantity); err != nil {
+          if err := h.Calc(symbol, margin, leverage, side, entryPrice, entryQuantity); err != nil {
+            return cli.Exit(err.Error(), 1)
+          }
+          return nil
+        },
+      },
+      {
+        Name:  "flush",
+        Usage: "",
+        Action: func(c *cli.Context) error {
+          symbol := c.Args().Get(0)
+          side, _ := strconv.Atoi(c.Args().Get(1))
+          if err := h.Flush(symbol, side); err != nil {
             return cli.Exit(err.Error(), 1)
           }
           return nil
@@ -60,7 +75,7 @@ func NewPositionsCommand() *cli.Command {
   }
 }
 
-func (h *PositionsHandler) calc(
+func (h *PositionsHandler) Calc(
   symbol string,
   margin float64,
   leverage int,
@@ -159,5 +174,22 @@ func (h *PositionsHandler) calc(
   log.Println("takePrice", takePrice)
   log.Println("stopPrice", stopPrice)
 
+  return nil
+}
+
+func (h *PositionsHandler) Flush(symbol string, side int) error {
+  var triggers []*models.Trigger
+  query := h.Db.Model(models.Trigger{}).Select([]string{"symbol", "side"})
+  if symbol != "" {
+    query.Where("symbol", symbol)
+  }
+  if side == 1 || side == 2 {
+    query.Where("side", side)
+  }
+  query.Where("status", 1).Find(&triggers)
+  for _, trigger := range triggers {
+    h.Repository.Flush(trigger.Symbol, trigger.Side)
+    break
+  }
   return nil
 }

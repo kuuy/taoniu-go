@@ -55,8 +55,7 @@ func NewTickersCommand() *cli.Command {
         Name:  "flush",
         Usage: "",
         Action: func(c *cli.Context) error {
-          symbol := c.Args().Get(0)
-          if err := h.Flush(symbol); err != nil {
+          if err := h.Flush(); err != nil {
             return cli.Exit(err.Error(), 1)
           }
           return nil
@@ -66,7 +65,7 @@ func NewTickersCommand() *cli.Command {
   }
 }
 
-func (h *TickersHandler) Flush(symbol string) error {
-  log.Println("Tickers flush...")
-  return h.Repository.Flush(symbol)
+func (h *TickersHandler) Flush() error {
+  log.Println("tickers flush...")
+  return h.Repository.Flush()
 }

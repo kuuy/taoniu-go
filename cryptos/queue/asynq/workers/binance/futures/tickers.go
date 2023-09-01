@@ -2,11 +2,11 @@ package futures
 
 import (
   "context"
-  "encoding/json"
   "github.com/go-redis/redis/v8"
   "github.com/hibiken/asynq"
   "taoniu.local/cryptos/common"
   repositories "taoniu.local/cryptos/repositories/binance/futures"
+  "time"
 )
 
 type Tickers struct {
@@ -27,20 +27,18 @@ func NewTickers() *Tickers {
   return h
 }
 
-type TickersFlushPayload struct {
-  Symbol   string
-  UseProxy bool
-}
-
 func (h *Tickers) Flush(ctx context.Context, t *asynq.Task) error {
-  var payload TickersFlushPayload
-  json.Unmarshal(t.Payload(), &payload)
-
-  if payload.UseProxy {
-    h.Repository.UseProxy = true
+  mutex := common.NewMutex(
+    h.Rdb,
+    h.Ctx,
+    "locks:binance:futures:tickers:flush",
+  )
+  if !mutex.Lock(30 * time.Second) {
+    return nil
   }
+  defer mutex.Unlock()
 
-  h.Repository.Flush(payload.Symbol)
+  h.Repository.Flush()
 
   return nil
 }

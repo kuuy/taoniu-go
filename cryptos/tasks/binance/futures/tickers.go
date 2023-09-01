@@ -22,7 +22,7 @@ type TickersTask struct {
 }
 
 func (t *TickersTask) Flush() error {
-  task, err := t.Job.Flush("", false)
+  task, err := t.Job.Flush()
   if err != nil {
     return err
   }

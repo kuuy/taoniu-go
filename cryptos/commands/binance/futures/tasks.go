@@ -10,7 +10,6 @@ func NewTasksCommand() *cli.Command {
     Name:  "tasks",
     Usage: "",
     Subcommands: []*cli.Command{
-      tasks.NewTickersCommand(),
       tasks.NewKlinesCommand(),
     },
   }

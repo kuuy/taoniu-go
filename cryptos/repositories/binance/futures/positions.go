@@ -2,6 +2,7 @@ package futures
 
 import (
   "errors"
+  "log"
   "math"
 
   "github.com/shopspring/decimal"
@@ -159,6 +160,50 @@ func (r *PositionsRepository) Capital(capital float64, entryAmount float64, plac
   }
 
   return
+}
+
+func (r *PositionsRepository) Flush(symbol string, side int) error {
+  var updateTime int64
+  updateTime = 1693219638260
+
+  var positionSide string
+  if side == 1 {
+    positionSide = "LONG"
+  } else if side == 2 {
+    positionSide = "SHORT"
+  }
+  var orders []*models.Order
+  r.Db.Model(models.Order{}).Select([]string{
+    "symbol",
+    "position_side",
+    "avg_price",
+    "executed_quantity",
+    "side",
+    "update_time",
+  }).Where("symbol=? AND position_side=? AND update_time>?", symbol, positionSide, updateTime).Order("update_time asc").Find(&orders)
+  var entryAmount float64
+  var entryPrice float64
+  var entryQuantity float64
+  for _, order := range orders {
+    updateTime = order.UpdateTime
+    if order.Status == "PARTIALLY_FILLED" || order.ExecutedQuantity == 0 {
+      continue
+    }
+    executedQuantity := decimal.NewFromFloat(order.ExecutedQuantity)
+    executedAmount := decimal.NewFromFloat(order.AvgPrice).Mul(executedQuantity)
+    if side == 1 && order.Side == "BUY" || side == 2 && order.Side == "SELL" {
+      entryAmount, _ = decimal.NewFromFloat(entryAmount).Add(executedAmount).Float64()
+      entryQuantity, _ = decimal.NewFromFloat(entryQuantity).Add(executedQuantity).Float64()
+      entryPrice, _ = decimal.NewFromFloat(entryAmount).Div(decimal.NewFromFloat(entryQuantity)).Float64()
+    }
+    if side == 1 && order.Side == "SELL" || side == 2 && order.Side == "BUY" {
+      entryQuantity, _ = decimal.NewFromFloat(entryQuantity).Sub(executedQuantity).Float64()
+      entryAmount, _ = decimal.NewFromFloat(entryPrice).Mul(decimal.NewFromFloat(entryQuantity)).Float64()
+    }
+    log.Println("order", symbol, side, order.Side, order.AvgPrice, order.ExecutedQuantity, order.UpdateTime, entryQuantity)
+  }
+  log.Println("position flush", symbol, side, entryAmount, entryPrice, entryQuantity, updateTime)
+  return nil
 }
 
 func (r *PositionsRepository) Filters(symbol string) (tickSize float64, stepSize float64, err error) {
