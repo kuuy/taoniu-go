@@ -173,7 +173,7 @@ func (r *TriggersRepository) Place(id string) error {
     }
   }
 
-  if trigger.Side == 1 && trigger.Price < price || trigger.Side == 2 && trigger.Price > price {
+  if trigger.Side == 1 && trigger.Price > price || trigger.Side == 2 && trigger.Price < price {
     var scalping *futuresModels.Scalping
     result = r.Db.Where("symbol=? AND side=?", trigger.Symbol, trigger.Side).Take(&scalping)
     if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
