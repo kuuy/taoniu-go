@@ -2,16 +2,18 @@ package binance
 
 import (
   "context"
+  "log"
+  "sync"
+  "time"
+
   "github.com/go-redis/redis/v8"
   "github.com/hibiken/asynq"
   "github.com/robfig/cron/v3"
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
-  "log"
-  "sync"
+
   "taoniu.local/cryptos/common"
   "taoniu.local/cryptos/tasks"
-  "time"
 )
 
 type FuturesHandler struct {
@@ -89,7 +91,13 @@ func (h *FuturesHandler) run() error {
   c.AddFunc("@hourly", func() {
     binance.Futures().Cron().Hourly()
   })
-  c.AddFunc("30 23 * * *", func() {
+  c.AddFunc("0 20 * * * *", func() {
+    binance.Futures().Scalping().Flush()
+  })
+  c.AddFunc("0 */336 * * * 1", func() {
+    binance.Futures().Triggers().Flush()
+  })
+  c.AddFunc("30 23 * * * *", func() {
     binance.Server().Time()
     binance.Futures().Clean()
   })

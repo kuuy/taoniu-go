@@ -9,6 +9,7 @@ require (
 	github.com/alecthomas/repr v0.1.0
 	github.com/bitly/go-simplejson v0.5.0
 	github.com/go-chi/chi/v5 v5.0.7
+	github.com/go-numb/go-dydx v0.0.0-20230714023630-3801998a7d89
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/golang/protobuf v1.5.3
 	github.com/hibiken/asynq v0.24.0
@@ -19,10 +20,12 @@ require (
 	github.com/nats-io/nats.go v1.26.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/xid v1.4.0
+	github.com/satori/go.uuid v1.2.0
 	github.com/shopspring/decimal v1.3.1
 	github.com/tidwall/gjson v1.14.4
 	github.com/urfave/cli/v2 v2.5.1
 	github.com/vchitai/go-socket.io/v4 v4.1.12
+	github.com/yanue/starkex v0.0.0-20230614033702-2d7a3a7e494e
 	golang.org/x/crypto v0.8.0
 	google.golang.org/grpc v1.54.0
 	google.golang.org/protobuf v1.30.0
@@ -43,9 +46,7 @@ require (
 	github.com/ethereum/go-ethereum v1.10.16 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/go-numb/go-dydx v0.0.0-20230714023630-3801998a7d89 // indirect
 	github.com/go-sql-driver/mysql v1.6.0 // indirect
-	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
@@ -72,7 +73,6 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/redis/go-redis/v9 v9.0.2 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
-	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.7.0 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
@@ -83,7 +83,6 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.4.0 // indirect
 	github.com/valyala/fastjson v1.4.1 // indirect
-	github.com/yanue/starkex v0.0.0-20230614033702-2d7a3a7e494e // indirect
 	golang.org/x/net v0.9.0 // indirect
 	golang.org/x/sys v0.7.0 // indirect
 	golang.org/x/text v0.9.0 // indirect

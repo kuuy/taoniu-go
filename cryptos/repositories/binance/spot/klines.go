@@ -241,16 +241,16 @@ func (r *KlinesRepository) Request(symbol string, interval string, endtime int64
 func (r *KlinesRepository) Clean() error {
   var timestamp int64
 
-  timestamp = time.Now().AddDate(0, 0, -3).UnixMilli()
+  timestamp = time.Now().AddDate(0, 0, -1).UnixMilli()
   r.Db.Where("interval = ? AND timestamp < ?", "1m", timestamp).Delete(&models.Kline{})
 
-  timestamp = time.Now().AddDate(0, 0, -14).UnixMilli()
+  timestamp = time.Now().AddDate(0, 0, -7).UnixMilli()
   r.Db.Where("interval = ? AND timestamp < ?", "15m", timestamp).Delete(&models.Kline{})
 
-  timestamp = time.Now().AddDate(0, 0, -105).UnixMilli()
+  timestamp = time.Now().AddDate(0, 0, -21).UnixMilli()
   r.Db.Where("interval = ? AND timestamp < ?", "4h", timestamp).Delete(&models.Kline{})
 
-  timestamp = time.Now().AddDate(0, 0, -365).UnixMilli()
+  timestamp = time.Now().AddDate(0, 0, -100).UnixMilli()
   r.Db.Where("interval = ? AND timestamp < ?", "1d", timestamp).Delete(&models.Kline{})
 
   return nil

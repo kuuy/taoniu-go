@@ -150,37 +150,37 @@ func (h *ScalpingHandler) Plans() error {
 }
 
 func (h *ScalpingHandler) Flush(side int) error {
-  var triggers []*models.Scalping
-  h.Db.Model(&models.Scalping{}).Where("side=? AND status=1", side).Find(&triggers)
-  for _, trigger := range triggers {
+  var scalping []*models.Scalping
+  h.Db.Model(&models.Scalping{}).Where("side=? AND status=1", side).Find(&scalping)
+  for _, entity := range scalping {
     data, _ := h.Rdb.HMGet(
       h.Ctx,
       fmt.Sprintf(
         "binance:futures:indicators:4h:%s:%s",
-        trigger.Symbol,
+        entity.Symbol,
         time.Now().Format("0102"),
       ),
-      "take_profit_price",
-      "stop_loss_point",
+      "vah",
+      "val",
     ).Result()
     if data[0] == nil || data[1] == nil {
-      log.Println("indicators empty", trigger.Symbol)
+      log.Println("indicators empty", entity.Symbol)
       continue
     }
 
     takePrice, _ := strconv.ParseFloat(data[0].(string), 64)
     stopPrice, _ := strconv.ParseFloat(data[1].(string), 64)
 
-    log.Println("price", trigger.Symbol, takePrice, stopPrice)
-
     var price float64
-    if trigger.Side == 1 {
-      price = takePrice
-    } else {
+    if side == 1 {
       price = stopPrice
+    } else {
+      price = takePrice
     }
 
-    h.Db.Model(&trigger).Update("price", price)
+    log.Println("scalping update", entity.Symbol, entity.Side, price)
+
+    h.Db.Model(&entity).Update("price", price)
   }
   return nil
 }

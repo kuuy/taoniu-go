@@ -266,6 +266,16 @@ func (r *ScalpingRepository) Place(planID string) error {
     return errors.New("scalping empty")
   }
 
+  if plan.Side == 1 && plan.Price > scalping.Price {
+    r.Db.Model(&futuresModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 5)
+    return errors.New("plan price too high")
+  }
+
+  if plan.Side == 2 && plan.Price < scalping.Price {
+    r.Db.Model(&futuresModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 5)
+    return errors.New("plan price too low")
+  }
+
   entity, err := r.SymbolsRepository.Get(plan.Symbol)
   if err != nil {
     return err

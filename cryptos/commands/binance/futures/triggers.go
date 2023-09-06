@@ -206,7 +206,7 @@ func (h *TriggersHandler) Flush(side int) error {
     data, _ := h.Rdb.HMGet(
       h.Ctx,
       fmt.Sprintf(
-        "binance:futures:indicators:15m:%s:%s",
+        "binance:futures:indicators:1d:%s:%s",
         trigger.Symbol,
         time.Now().Format("0102"),
       ),
@@ -227,6 +227,8 @@ func (h *TriggersHandler) Flush(side int) error {
     } else {
       price = takePrice
     }
+
+    log.Println("trigger update", trigger.Symbol, trigger.Side, price)
 
     h.Db.Model(&trigger).Update("price", price)
   }

@@ -28,6 +28,8 @@ type FuturesTask struct {
   IndicatorsTask *tasks.IndicatorsTask
   StrategiesTask *tasks.StrategiesTask
   PlansTask      *tasks.PlansTask
+  ScalpingTask   *tasks.ScalpingTask
+  TriggersTask   *tasks.TriggersTask
   TradingsTask   *tasks.TradingsTask
   AnalysisTask   *tasks.AnalysisTask
 }
@@ -195,6 +197,28 @@ func (t *FuturesTask) Plans() *tasks.PlansTask {
     }
   }
   return t.PlansTask
+}
+
+func (t *FuturesTask) Scalping() *tasks.ScalpingTask {
+  if t.ScalpingTask == nil {
+    t.ScalpingTask = &tasks.ScalpingTask{
+      Db:  t.Db,
+      Rdb: t.Rdb,
+      Ctx: t.Ctx,
+    }
+  }
+  return t.ScalpingTask
+}
+
+func (t *FuturesTask) Triggers() *tasks.TriggersTask {
+  if t.TriggersTask == nil {
+    t.TriggersTask = &tasks.TriggersTask{
+      Db:  t.Db,
+      Rdb: t.Rdb,
+      Ctx: t.Ctx,
+    }
+  }
+  return t.TriggersTask
 }
 
 func (t *FuturesTask) Tradings() *tasks.TradingsTask {
