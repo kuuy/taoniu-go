@@ -238,20 +238,20 @@ func (r *KlinesRepository) Request(symbol string, interval string, endtime int64
   return result, nil
 }
 
-func (r *KlinesRepository) Clean() error {
+func (r *KlinesRepository) Clean(symbol string) error {
   var timestamp int64
 
-  timestamp = time.Now().AddDate(0, 0, -1).UnixMilli()
-  r.Db.Where("interval = ? AND timestamp < ?", "1m", timestamp).Delete(&models.Kline{})
+  timestamp = r.Timestamp("1m") - r.Timestep("1m")*1440
+  r.Db.Where("symbol=? AND interval = ? AND timestamp < ?", symbol, "1m", timestamp).Delete(&models.Kline{})
 
-  timestamp = time.Now().AddDate(0, 0, -7).UnixMilli()
-  r.Db.Where("interval = ? AND timestamp < ?", "15m", timestamp).Delete(&models.Kline{})
+  timestamp = r.Timestamp("15m") - r.Timestep("15m")*672
+  r.Db.Where("symbol=? AND interval = ? AND timestamp < ?", symbol, "15m", timestamp).Delete(&models.Kline{})
 
-  timestamp = time.Now().AddDate(0, 0, -21).UnixMilli()
-  r.Db.Where("interval = ? AND timestamp < ?", "4h", timestamp).Delete(&models.Kline{})
+  timestamp = r.Timestamp("4h") - r.Timestep("15m")*126
+  r.Db.Where("symbol=? AND interval = ? AND timestamp < ?", symbol, "4h", timestamp).Delete(&models.Kline{})
 
-  timestamp = time.Now().AddDate(0, 0, -100).UnixMilli()
-  r.Db.Where("interval = ? AND timestamp < ?", "1d", timestamp).Delete(&models.Kline{})
+  timestamp = r.Timestamp("1d") - r.Timestep("1d")*100
+  r.Db.Where("symbol=? AND interval = ? AND timestamp < ?", symbol, "1d", timestamp).Delete(&models.Kline{})
 
   return nil
 }
@@ -259,8 +259,9 @@ func (r *KlinesRepository) Clean() error {
 func (r *KlinesRepository) Timestep(interval string) int64 {
   if interval == "1m" {
     return 60000
-  }
-  if interval == "4h" {
+  } else if interval == "15m" {
+    return 900000
+  } else if interval == "4h" {
     return 14400000
   }
   return 86400000
@@ -269,7 +270,10 @@ func (r *KlinesRepository) Timestep(interval string) int64 {
 func (r *KlinesRepository) Timestamp(interval string) int64 {
   now := time.Now().UTC()
   duration := -time.Second * time.Duration(now.Second())
-  if interval == "4h" {
+  if interval == "15m" {
+    minute, _ := decimal.NewFromInt(int64(now.Minute())).Div(decimal.NewFromInt(15)).Floor().Mul(decimal.NewFromInt(15)).Float64()
+    duration = duration - time.Minute*time.Duration(now.Minute()-int(minute))
+  } else if interval == "4h" {
     hour, _ := decimal.NewFromInt(int64(now.Hour())).Div(decimal.NewFromInt(4)).Floor().Mul(decimal.NewFromInt(4)).Float64()
     duration = duration - time.Hour*time.Duration(now.Hour()-int(hour)) - time.Minute*time.Duration(now.Minute())
   } else if interval == "1d" {

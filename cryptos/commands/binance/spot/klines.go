@@ -146,7 +146,10 @@ func (h *KlinesHandler) Fix(symbol string, interval string, limit int) error {
 }
 
 func (h *KlinesHandler) Clean() error {
-  log.Println("binance spot klines daily clean...")
-  h.Repository.Clean()
+  log.Println("binance spot klines clean...")
+  symbols := h.SymbolsRepository.Symbols()
+  for _, symbol := range symbols {
+    h.Repository.Clean(symbol)
+  }
   return nil
 }

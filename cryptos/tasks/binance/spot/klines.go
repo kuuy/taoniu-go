@@ -91,7 +91,10 @@ func (t *KlinesTask) FlushDelay(interval string, limit int) error {
 }
 
 func (t *KlinesTask) Clean() error {
-  t.Repository.Clean()
+  symbols := t.SymbolsRepository.Symbols()
+  for _, symbol := range symbols {
+    t.Repository.Clean(symbol)
+  }
   return nil
 }
 

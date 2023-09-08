@@ -266,20 +266,20 @@ func (r *KlinesRepository) Request(symbol string, interval string, endtime int64
   return result, nil
 }
 
-func (r *KlinesRepository) Clean() error {
+func (r *KlinesRepository) Clean(symbol string) error {
   var timestamp int64
 
-  timestamp = time.Now().AddDate(0, 0, -1).UnixMilli()
-  r.Db.Where("interval = ? AND timestamp < ?", "1m", timestamp).Delete(&models.Kline{})
+  timestamp = r.Timestamp("1m") - r.Timestep("1m")*1440
+  r.Db.Where("symbol=? AND interval = ? AND timestamp < ?", symbol, "1m", timestamp).Delete(&models.Kline{})
 
-  timestamp = time.Now().AddDate(0, 0, -7).UnixMilli()
-  r.Db.Where("interval = ? AND timestamp < ?", "15m", timestamp).Delete(&models.Kline{})
+  timestamp = r.Timestamp("15m") - r.Timestep("15m")*672
+  r.Db.Where("symbol=? AND interval = ? AND timestamp < ?", symbol, "15m", timestamp).Delete(&models.Kline{})
 
-  timestamp = time.Now().AddDate(0, 0, -21).UnixMilli()
-  r.Db.Where("interval = ? AND timestamp < ?", "4h", timestamp).Delete(&models.Kline{})
+  timestamp = r.Timestamp("4h") - r.Timestep("15m")*126
+  r.Db.Where("symbol=? AND interval = ? AND timestamp < ?", symbol, "4h", timestamp).Delete(&models.Kline{})
 
-  timestamp = time.Now().AddDate(0, 0, -100).UnixMilli()
-  r.Db.Where("interval = ? AND timestamp < ?", "1d", timestamp).Delete(&models.Kline{})
+  timestamp = r.Timestamp("1d") - r.Timestep("1d")*100
+  r.Db.Where("symbol=? AND interval = ? AND timestamp < ?", symbol, "1d", timestamp).Delete(&models.Kline{})
 
   return nil
 }

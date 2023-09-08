@@ -17,6 +17,7 @@ func NewFutoresCommand() *cli.Command {
       futures.NewIndicatorsCommand(),
       futures.NewStrategiesCommand(),
       futures.NewPlansCommand(),
+      futures.NewPatternsCommand(),
       futures.NewAccountCommand(),
       futures.NewOrdersCommand(),
       futures.NewPositionsCommand(),

@@ -211,7 +211,7 @@ func (r *IndicatorsRepository) Pivot(symbol string, interval string) error {
   }
 
   if kline.Timestamp < r.Timestamp(interval)-60000 {
-    return errors.New(fmt.Sprintf("[%s] waiting for %s kline flush", symbol, interval))
+    return errors.New(fmt.Sprintf("[%s] waiting for %s klines flush", symbol, interval))
   }
 
   p := decimal.Avg(
@@ -297,7 +297,7 @@ func (r *IndicatorsRepository) Atr(symbol string, interval string, period int, l
   }
 
   if klines[0].Timestamp < r.Timestamp(interval)-60000 {
-    return errors.New(fmt.Sprintf("[%s] waiting for %s kline flush", symbol, interval))
+    return errors.New(fmt.Sprintf("[%s] waiting for %s klines flush", symbol, interval))
   }
 
   result := talib.Atr(
@@ -369,7 +369,7 @@ func (r *IndicatorsRepository) Zlema(symbol string, interval string, period int,
   }
 
   if klines[0].Timestamp < r.Timestamp(interval)-60000 {
-    return errors.New(fmt.Sprintf("[%s] waiting for %s kline flush", symbol, interval))
+    return errors.New(fmt.Sprintf("[%s] waiting for %s klines flush", symbol, interval))
   }
 
   result := talib.Ema(data, period)
@@ -448,7 +448,7 @@ func (r *IndicatorsRepository) HaZlema(symbol string, interval string, period in
   }
 
   if klines[0].Timestamp < r.Timestamp(interval)-60000 {
-    return errors.New(fmt.Sprintf("[%s] waiting for %s kline flush", symbol, interval))
+    return errors.New(fmt.Sprintf("[%s] waiting for %s klines flush", symbol, interval))
   }
 
   result := talib.Ema(data, period)
@@ -522,7 +522,7 @@ func (r *IndicatorsRepository) Kdj(symbol string, interval string, longPeriod in
   }
 
   if klines[0].Timestamp < r.Timestamp(interval)-60000 {
-    return errors.New(fmt.Sprintf("[%s] waiting for %s kline flush", symbol, interval))
+    return errors.New(fmt.Sprintf("[%s] waiting for %s klines flush", symbol, interval))
   }
 
   slowk, slowd := talib.Stoch(highs, lows, prices, longPeriod, shortPeriod, 0, shortPeriod, 0)
@@ -597,7 +597,7 @@ func (r *IndicatorsRepository) BBands(symbol string, interval string, period int
   }
 
   if klines[0].Timestamp < r.Timestamp(interval)-60000 {
-    return errors.New(fmt.Sprintf("[%s] waiting for %s kline flush", symbol, interval))
+    return errors.New(fmt.Sprintf("[%s] waiting for %s klines flush", symbol, interval))
   }
 
   uBands, mBands, lBands := talib.BBands(prices, period, 2, 2, 0)

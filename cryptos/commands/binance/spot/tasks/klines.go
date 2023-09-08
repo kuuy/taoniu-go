@@ -95,6 +95,7 @@ func (h *KlinesHandler) Flush() error {
       continue
     }
     h.Repository.Flush(symbol, "1m", 0, 5)
+    h.Repository.Flush(symbol, "15m", 0, 1)
     h.Repository.Flush(symbol, "4h", 0, 1)
     h.Repository.Flush(symbol, "1d", 0, 1)
   }
@@ -114,7 +115,8 @@ func (h *KlinesHandler) Fix() error {
       continue
     }
     h.Repository.Fix(symbol, "1m", 1440)
-    h.Repository.Fix(symbol, "4h", 100)
+    h.Repository.Fix(symbol, "15m", 672)
+    h.Repository.Fix(symbol, "4h", 126)
     h.Repository.Fix(symbol, "1d", 100)
   }
   return nil
