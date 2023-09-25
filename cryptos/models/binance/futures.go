@@ -24,6 +24,7 @@ func (m *Futures) AutoMigrate(db *gorm.DB) error {
     &futures.Trigger{},
   )
 
+  futures.NewPatterns().AutoMigrate(db)
   futures.NewTradings().AutoMigrate(db)
   futures.NewAnalysis().AutoMigrate(db)
 

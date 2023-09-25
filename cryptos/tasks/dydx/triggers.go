@@ -1,4 +1,4 @@
-package futures
+package dydx
 
 import (
   "context"
@@ -26,7 +26,7 @@ func (t *TriggersTask) Flush() error {
     data, _ := t.Rdb.HMGet(
       t.Ctx,
       fmt.Sprintf(
-        "binance:futures:indicators:1d:%s:%s",
+        "dydx:indicators:1d:%s:%s",
         entity.Symbol,
         time.Now().Format("0102"),
       ),

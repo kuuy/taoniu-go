@@ -2,7 +2,7 @@ package tradings
 
 import (
   "gorm.io/datatypes"
-  futuresModels "taoniu.local/cryptos/models/binance/futures"
+  models "taoniu.local/cryptos/models/binance/futures"
 )
 
 type PendingInfo struct {
@@ -12,7 +12,7 @@ type PendingInfo struct {
 
 type SymbolsRepository interface {
   Price(symbol string) (float64, error)
-  Get(symbol string) (futuresModels.Symbol, error)
+  Get(symbol string) (models.Symbol, error)
   Filters(params datatypes.JSONMap) (float64, float64, error)
 }
 
@@ -21,11 +21,13 @@ type AccountRepository interface {
 }
 
 type PositionRepository interface {
-  Get(symbol string, side int) (futuresModels.Position, error)
+  Get(symbol string, side int) (models.Position, error)
   Capital(capital float64, entryAmount float64, place int) (float64, error)
   Ratio(capital float64, entryAmount float64) float64
   BuyQuantity(side int, buyAmount float64, entryPrice float64, entryAmount float64) float64
   SellPrice(side int, entryPrice float64, entryAmount float64) float64
+  TakePrice(entryPrice float64, side int, tickSize float64) float64
+  StopPrice(maxCapital float64, side int, price float64, leverage int, entryPrice float64, entryQuantity float64, tickSize float64, stepSize float64) (float64, error)
 }
 
 type OrdersRepository interface {

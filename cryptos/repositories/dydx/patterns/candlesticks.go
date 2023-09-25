@@ -11,8 +11,8 @@ import (
   "github.com/shopspring/decimal"
   "gorm.io/gorm"
 
-  futuresModels "taoniu.local/cryptos/models/binance/futures"
-  models "taoniu.local/cryptos/models/binance/futures/patterns"
+  dydxModels "taoniu.local/cryptos/models/dydx"
+  models "taoniu.local/cryptos/models/dydx/patterns"
 )
 
 type CandleSeries struct {
@@ -881,7 +881,7 @@ func (r *CandlesticksRepository) Save(symbol string, interval string, pattern st
 }
 
 func (r *CandlesticksRepository) Flush(symbol string, interval string, limit int) error {
-  var klines []*futuresModels.Kline
+  var klines []*dydxModels.Kline
   r.Db.Select(
     []string{"open", "close", "high", "low", "volume", "timestamp"},
   ).Where(
@@ -1016,21 +1016,6 @@ func (r *CandlesticksRepository) Clean(symbol string) error {
   return nil
 }
 
-func (r *CandlesticksRepository) Timestamp(interval string) int64 {
-  now := time.Now().UTC()
-  duration := -time.Second * time.Duration(now.Second())
-  if interval == "15m" {
-    minute, _ := decimal.NewFromInt(int64(now.Minute())).Div(decimal.NewFromInt(15)).Floor().Mul(decimal.NewFromInt(15)).Float64()
-    duration = duration - time.Minute*time.Duration(now.Minute()-int(minute))
-  } else if interval == "4h" {
-    hour, _ := decimal.NewFromInt(int64(now.Hour())).Div(decimal.NewFromInt(4)).Floor().Mul(decimal.NewFromInt(4)).Float64()
-    duration = duration - time.Hour*time.Duration(now.Hour()-int(hour)) - time.Minute*time.Duration(now.Minute())
-  } else if interval == "1d" {
-    duration = duration - time.Hour*time.Duration(now.Hour()) - time.Minute*time.Duration(now.Minute())
-  }
-  return now.Add(duration).Unix() * 1000
-}
-
 func (r *CandlesticksRepository) Timestep(interval string) int64 {
   if interval == "1m" {
     return 60000
@@ -1040,4 +1025,21 @@ func (r *CandlesticksRepository) Timestep(interval string) int64 {
     return 14400000
   }
   return 86400000
+}
+
+func (r *CandlesticksRepository) Timestamp(interval string) int64 {
+  now := time.Now().UTC()
+  duration := -time.Second * time.Duration(now.Second())
+  if interval == "1m" {
+    duration = duration - time.Minute
+  } else if interval == "15m" {
+    minute, _ := decimal.NewFromInt(int64(now.Minute())).Div(decimal.NewFromInt(15)).Floor().Mul(decimal.NewFromInt(15)).Float64()
+    duration = duration - time.Minute*time.Duration(now.Minute()-int(minute))
+  } else if interval == "4h" {
+    hour, _ := decimal.NewFromInt(int64(now.Hour())).Div(decimal.NewFromInt(4)).Floor().Mul(decimal.NewFromInt(4)).Float64()
+    duration = duration - time.Hour*time.Duration(now.Hour()-int(hour)) - time.Minute*time.Duration(now.Minute())
+  } else {
+    duration = duration - time.Hour*time.Duration(now.Hour()) - time.Minute*time.Duration(now.Minute())
+  }
+  return now.Add(duration).Unix() * 1000
 }

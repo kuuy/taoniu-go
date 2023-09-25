@@ -1,4 +1,4 @@
-package futures
+package dydx
 
 import (
   "context"
@@ -13,25 +13,25 @@ import (
   models "taoniu.local/cryptos/models/binance/futures"
 )
 
-type TriggersTask struct {
+type ScalpingTask struct {
   Db  *gorm.DB
   Rdb *redis.Client
   Ctx context.Context
 }
 
-func (t *TriggersTask) Flush() error {
-  var triggers []*models.Trigger
-  t.Db.Model(&models.Trigger{}).Where("status", 1).Find(&triggers)
-  for _, entity := range triggers {
+func (t *ScalpingTask) Flush() error {
+  var scalping []*models.Scalping
+  t.Db.Model(&models.Scalping{}).Where("status", 1).Find(&scalping)
+  for _, entity := range scalping {
     data, _ := t.Rdb.HMGet(
       t.Ctx,
       fmt.Sprintf(
-        "binance:futures:indicators:1d:%s:%s",
+        "dydx:indicators:4h:%s:%s",
         entity.Symbol,
         time.Now().Format("0102"),
       ),
-      "take_profit_price",
-      "stop_loss_point",
+      "vah",
+      "val",
     ).Result()
     if len(data) == 0 || data[0] == nil || data[1] == nil {
       log.Println("indicators empty", entity.Symbol)

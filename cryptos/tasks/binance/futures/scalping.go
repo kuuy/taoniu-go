@@ -33,7 +33,7 @@ func (t *ScalpingTask) Flush() error {
       "vah",
       "val",
     ).Result()
-    if data[0] == nil || data[1] == nil {
+    if len(data) == 0 || data[0] == nil || data[1] == nil {
       log.Println("indicators empty", entity.Symbol)
       continue
     }

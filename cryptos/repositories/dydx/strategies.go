@@ -23,6 +23,40 @@ type StrategiesRepository struct {
   MarketsRepository *MarketsRepository
 }
 
+func (r *StrategiesRepository) Count(conditions map[string]interface{}) int64 {
+  var total int64
+  query := r.Db.Model(&models.Plan{})
+  if _, ok := conditions["symbol"]; ok {
+    query.Where("symbol", conditions["symbol"].(string))
+  }
+  if _, ok := conditions["signal"]; ok {
+    query.Where("signal", conditions["signal"].(string))
+  }
+  query.Count(&total)
+  return total
+}
+
+func (r *StrategiesRepository) Listings(conditions map[string]interface{}, current int, pageSize int) []*models.Strategy {
+  var strategies []*models.Strategy
+  query := r.Db.Select([]string{
+    "id",
+    "symbol",
+    "indicator",
+    "signal",
+    "price",
+    "timestamp",
+  })
+  if _, ok := conditions["symbol"]; ok {
+    query.Where("symbol", conditions["symbol"].(string))
+  }
+  if _, ok := conditions["signal"]; ok {
+    query.Where("signal", conditions["signal"].(string))
+  }
+  query.Order("timestamp desc")
+  query.Offset((current - 1) * pageSize).Limit(pageSize).Find(&strategies)
+  return strategies
+}
+
 func (r *StrategiesRepository) Atr(symbol string, interval string) error {
   tickSize, _, err := r.Filters(symbol)
   if err != nil {
@@ -148,7 +182,6 @@ func (r *StrategiesRepository) Zlema(symbol string, interval string) error {
     Price:     price,
     Signal:    signal,
     Timestamp: timestamp,
-    Remark:    "",
   }
   r.Db.Create(&entity)
 
@@ -210,7 +243,6 @@ func (r *StrategiesRepository) HaZlema(symbol string, interval string) error {
     Price:     price,
     Signal:    signal,
     Timestamp: timestamp,
-    Remark:    "",
   }
   r.Db.Create(&entity)
 
@@ -274,7 +306,6 @@ func (r *StrategiesRepository) Kdj(symbol string, interval string) error {
     Price:     price,
     Signal:    signal,
     Timestamp: timestamp,
-    Remark:    "",
   }
   r.Db.Create(&entity)
 
@@ -352,7 +383,6 @@ func (r *StrategiesRepository) BBands(symbol string, interval string) error {
     Price:     price,
     Signal:    signal,
     Timestamp: timestamp,
-    Remark:    "",
   }
   r.Db.Create(&entity)
   return nil
@@ -363,5 +393,7 @@ func (r *StrategiesRepository) Filters(symbol string) (tickSize float64, stepSiz
   if err != nil {
     return
   }
-  return entity.TickSize, entity.StepSize, nil
+  tickSize = entity.TickSize
+  stepSize = entity.StepSize
+  return
 }

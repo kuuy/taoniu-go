@@ -16,6 +16,7 @@ func NewDydx(natsContext *common.NatsContext) *Dydx {
 }
 
 func (h *Dydx) Subscribe() error {
+  dydx.NewPatterns(h.NatsContext).Subscribe()
   dydx.NewIndicators(h.NatsContext).Subscribe()
   dydx.NewStrategies(h.NatsContext).Subscribe()
   dydx.NewPlans(h.NatsContext).Subscribe()

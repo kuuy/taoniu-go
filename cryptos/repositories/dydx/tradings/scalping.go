@@ -227,6 +227,7 @@ func (r *ScalpingRepository) Place(planID string) error {
   var plan *dydxModels.Plan
   result := r.Db.First(&plan, "id=?", planID)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+    r.Db.Model(&dydxModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 10)
     return errors.New("plan empty")
   }
 
@@ -258,6 +259,16 @@ func (r *ScalpingRepository) Place(planID string) error {
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     r.Db.Model(&dydxModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 5)
     return errors.New("scalping empty")
+  }
+
+  if plan.Side == 1 && plan.Price > scalping.Price {
+    r.Db.Model(&dydxModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 5)
+    return errors.New("plan price too high")
+  }
+
+  if plan.Side == 2 && plan.Price < scalping.Price {
+    r.Db.Model(&dydxModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 5)
+    return errors.New("plan price too low")
   }
 
   market, err := r.MarketsRepository.Get(plan.Symbol)
@@ -427,10 +438,6 @@ func (r *ScalpingRepository) Place(planID string) error {
 
     orderID, err := r.OrdersRepository.Create(plan.Symbol, side, buyPrice, buyQuantity)
     if err != nil {
-      r.Db.Model(&scalping).Where("version", scalping.Version).Updates(map[string]interface{}{
-        "remark":  err.Error(),
-        "version": gorm.Expr("version + ?", 1),
-      })
       return err
     }
 

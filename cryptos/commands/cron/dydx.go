@@ -84,6 +84,12 @@ func (h *DydxHandler) run() error {
   c.AddFunc("@hourly", func() {
     dydx.Cron().Hourly()
   })
+  c.AddFunc("0 20 * * * *", func() {
+    dydx.Scalping().Flush()
+  })
+  c.AddFunc("0 */336 * * * 1", func() {
+    dydx.Triggers().Flush()
+  })
   c.AddFunc("30 23 * * *", func() {
     dydx.Server().Time()
     dydx.Clean()

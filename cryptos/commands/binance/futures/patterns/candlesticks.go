@@ -14,7 +14,7 @@ import (
 
 type CandlesticksHandler struct {
   Db                *gorm.DB
-  Repository        *repositories.Candlesticks
+  Repository        *repositories.CandlesticksRepository
   SymbolsRepository *futuresRepositories.SymbolsRepository
 }
 
@@ -27,7 +27,7 @@ func NewCandlesticksCommand() *cli.Command {
       h = CandlesticksHandler{
         Db: common.NewDB(),
       }
-      h.Repository = &repositories.Candlesticks{
+      h.Repository = &repositories.CandlesticksRepository{
         Db: h.Db,
       }
       h.SymbolsRepository = &futuresRepositories.SymbolsRepository{
@@ -65,6 +65,16 @@ func NewCandlesticksCommand() *cli.Command {
           return nil
         },
       },
+      {
+        Name:  "clean",
+        Usage: "",
+        Action: func(c *cli.Context) error {
+          if err := h.Clean(); err != nil {
+            return cli.Exit(err.Error(), 1)
+          }
+          return nil
+        },
+      },
     },
   }
 }
@@ -82,6 +92,15 @@ func (h *CandlesticksHandler) Flush(symbol string, interval string, limit int) e
     if err != nil {
       log.Println("candlesticks patterns flush error", err)
     }
+  }
+  return nil
+}
+
+func (h *CandlesticksHandler) Clean() error {
+  log.Println("binance futures patterns candlesticks clean...")
+  symbols := h.SymbolsRepository.Symbols()
+  for _, symbol := range symbols {
+    h.Repository.Clean(symbol)
   }
   return nil
 }

@@ -135,6 +135,9 @@ func (r *ScalpingRepository) Flush(id string) error {
             return errors.New("order update failed")
           }
         }
+        if timestamp < time.Now().Unix()-900 {
+          r.Db.Model(&trading).Update("status", 6)
+        }
       } else {
         if timestamp < time.Now().Unix()-900 {
           if status == "NEW" {
@@ -186,6 +189,9 @@ func (r *ScalpingRepository) Flush(id string) error {
           if result.RowsAffected == 0 {
             return errors.New("order update failed")
           }
+        }
+        if timestamp < time.Now().Unix()-900 {
+          r.Db.Model(&trading).Update("status", 1)
         }
       } else {
         if timestamp < time.Now().Unix()-900 {

@@ -7,7 +7,7 @@ import (
   "github.com/hibiken/asynq"
   "gorm.io/gorm"
 
-  futuresRepositories "taoniu.local/cryptos/repositories/binance/futures"
+  repositories "taoniu.local/cryptos/repositories/binance/futures"
   tradingsRepositories "taoniu.local/cryptos/repositories/binance/futures/tradings"
   tasks "taoniu.local/cryptos/tasks/binance/futures/tradings"
 )
@@ -29,7 +29,7 @@ func (t *TradingsTask) Scalping() *tasks.ScalpingTask {
     t.ScalpingTask.Repository = &tradingsRepositories.ScalpingRepository{
       Db: t.Db,
     }
-    t.ScalpingTask.ParentRepository = &futuresRepositories.ScalpingRepository{
+    t.ScalpingTask.ParentRepository = &repositories.ScalpingRepository{
       Db: t.Db,
     }
   }

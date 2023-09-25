@@ -24,6 +24,7 @@ type FuturesTask struct {
   TickersTask    *tasks.TickersTask
   KlinesTask     *tasks.KlinesTask
   DepthTask      *tasks.DepthTask
+  PatternsTask   *tasks.PatternsTask
   OrdersTask     *tasks.OrdersTask
   IndicatorsTask *tasks.IndicatorsTask
   StrategiesTask *tasks.StrategiesTask
@@ -143,6 +144,15 @@ func (t *FuturesTask) Depth() *tasks.DepthTask {
   return t.DepthTask
 }
 
+func (t *FuturesTask) Patterns() *tasks.PatternsTask {
+  if t.PatternsTask == nil {
+    t.PatternsTask = &tasks.PatternsTask{
+      Db: t.Db,
+    }
+  }
+  return t.PatternsTask
+}
+
 func (t *FuturesTask) Orders() *tasks.OrdersTask {
   if t.OrdersTask == nil {
     t.OrdersTask = &tasks.OrdersTask{
@@ -244,4 +254,5 @@ func (t *FuturesTask) Analysis() *tasks.AnalysisTask {
 
 func (t *FuturesTask) Clean() {
   t.Klines().Clean()
+  t.Patterns().Candlesticks().Clean()
 }

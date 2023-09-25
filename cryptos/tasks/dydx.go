@@ -22,11 +22,14 @@ type DydxTask struct {
   MarketsTask    *tasks.MarketsTask
   OrderbookTask  *tasks.OrderbookTask
   KlinesTask     *tasks.KlinesTask
+  PatternsTask   *tasks.PatternsTask
   OrdersTask     *tasks.OrdersTask
   IndicatorsTask *tasks.IndicatorsTask
   StrategiesTask *tasks.StrategiesTask
   PlansTask      *tasks.PlansTask
   TradingsTask   *tasks.TradingsTask
+  ScalpingTask   *tasks.ScalpingTask
+  TriggersTask   *tasks.TriggersTask
   ServerTask     *tasks.ServerTask
   CronTask       *tasks.CronTask
 }
@@ -106,6 +109,15 @@ func (t *DydxTask) Klines() *tasks.KlinesTask {
   return t.KlinesTask
 }
 
+func (t *DydxTask) Patterns() *tasks.PatternsTask {
+  if t.PatternsTask == nil {
+    t.PatternsTask = &tasks.PatternsTask{
+      Db: t.Db,
+    }
+  }
+  return t.PatternsTask
+}
+
 func (t *DydxTask) Orders() *tasks.OrdersTask {
   if t.OrdersTask == nil {
     t.OrdersTask = &tasks.OrdersTask{
@@ -174,8 +186,26 @@ func (t *DydxTask) Tradings() *tasks.TradingsTask {
   return t.TradingsTask
 }
 
-func (t *DydxTask) Clean() {
-  t.Klines().Clean()
+func (t *DydxTask) Scalping() *tasks.ScalpingTask {
+  if t.ScalpingTask == nil {
+    t.ScalpingTask = &tasks.ScalpingTask{
+      Db:  t.Db,
+      Rdb: t.Rdb,
+      Ctx: t.Ctx,
+    }
+  }
+  return t.ScalpingTask
+}
+
+func (t *DydxTask) Triggers() *tasks.TriggersTask {
+  if t.TriggersTask == nil {
+    t.TriggersTask = &tasks.TriggersTask{
+      Db:  t.Db,
+      Rdb: t.Rdb,
+      Ctx: t.Ctx,
+    }
+  }
+  return t.TriggersTask
 }
 
 func (t *DydxTask) Cron() *tasks.CronTask {
@@ -201,4 +231,9 @@ func (t *DydxTask) Server() *tasks.ServerTask {
     }
   }
   return t.ServerTask
+}
+
+func (t *DydxTask) Clean() {
+  t.Klines().Clean()
+  t.Patterns().Candlesticks().Clean()
 }

@@ -105,7 +105,7 @@ func (h *TriggersHandler) Capital() error {
 
   log.Println("capital", capital)
 
-  result, err := h.Repository.Capital(capital, entryAmount, places)
+  result, err := h.Repository.PositionRepository.Capital(capital, entryAmount, places)
   if err != nil {
     return err
   }

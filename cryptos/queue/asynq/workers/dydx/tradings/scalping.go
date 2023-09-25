@@ -11,7 +11,7 @@ import (
   "gorm.io/gorm"
 
   "taoniu.local/cryptos/common"
-  futuresRepositories "taoniu.local/cryptos/repositories/dydx"
+  dydxRepositories "taoniu.local/cryptos/repositories/dydx"
   repositories "taoniu.local/cryptos/repositories/dydx/tradings"
 )
 
@@ -31,21 +31,21 @@ func NewScalping() *Scalping {
   h.Repository = &repositories.ScalpingRepository{
     Db: h.Db,
   }
-  h.Repository.MarketsRepository = &futuresRepositories.MarketsRepository{
+  h.Repository.MarketsRepository = &dydxRepositories.MarketsRepository{
     Db:  h.Db,
     Rdb: h.Rdb,
     Ctx: h.Ctx,
   }
-  h.Repository.AccountRepository = &futuresRepositories.AccountRepository{
+  h.Repository.AccountRepository = &dydxRepositories.AccountRepository{
     Rdb: h.Rdb,
     Ctx: h.Ctx,
   }
-  h.Repository.OrdersRepository = &futuresRepositories.OrdersRepository{
+  h.Repository.OrdersRepository = &dydxRepositories.OrdersRepository{
     Db:  h.Db,
     Rdb: h.Rdb,
     Ctx: h.Ctx,
   }
-  h.Repository.PositionRepository = &futuresRepositories.PositionsRepository{
+  h.Repository.PositionRepository = &dydxRepositories.PositionsRepository{
     Db: h.Db,
   }
   return h

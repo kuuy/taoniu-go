@@ -23,6 +23,9 @@ func (m *Dydx) AutoMigrate(db *gorm.DB) error {
     &dydx.ScalpingPlan{},
     &dydx.Trigger{},
   )
+
+  dydx.NewPatterns().AutoMigrate(db)
   dydx.NewTradings().AutoMigrate(db)
+
   return nil
 }

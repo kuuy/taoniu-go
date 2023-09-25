@@ -122,7 +122,7 @@ func (h *OrdersHandler) Flush() error {
   //symbol := "BTCUSDT"
   orderID := "3711916c36e458f7ee62d1727b697b78482b2bc14f780db8755a051a15cf11e"
   h.Repository.Flush(orderID)
-  //orders, err := h.Rdb.SMembers(h.Ctx, "binance:dydx:orders:flush").Result()
+  //orders, err := h.Rdb.SMembers(h.Ctx, "dydx:orders:flush").Result()
   //if err != nil {
   //  return nil
   //}

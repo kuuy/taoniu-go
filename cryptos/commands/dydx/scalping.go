@@ -81,6 +81,21 @@ func NewScalpingCommand() *cli.Command {
           return nil
         },
       },
+      {
+        Name:  "flush",
+        Usage: "",
+        Action: func(c *cli.Context) error {
+          side, _ := strconv.Atoi(c.Args().Get(0))
+          if side != 1 && side != 2 {
+            log.Fatal("side invalid")
+            return nil
+          }
+          if err := h.Flush(side); err != nil {
+            return cli.Exit(err.Error(), 1)
+          }
+          return nil
+        },
+      },
     },
   }
 }
@@ -148,5 +163,41 @@ func (h *ScalpingHandler) Scan() error {
   log.Println("dydx scalping scan...")
   symbols := h.Repository.Scan()
   log.Println("symbols", symbols)
+  return nil
+}
+
+func (h *ScalpingHandler) Flush(side int) error {
+  var scalping []*models.Scalping
+  h.Db.Model(&models.Scalping{}).Where("side=? AND status=1", side).Find(&scalping)
+  for _, entity := range scalping {
+    data, _ := h.Rdb.HMGet(
+      h.Ctx,
+      fmt.Sprintf(
+        "dydx:indicators:4h:%s:%s",
+        entity.Symbol,
+        time.Now().Format("0102"),
+      ),
+      "vah",
+      "val",
+    ).Result()
+    if len(data) == 0 || data[0] == nil || data[1] == nil {
+      log.Println("indicators empty", entity.Symbol)
+      continue
+    }
+
+    takePrice, _ := strconv.ParseFloat(data[0].(string), 64)
+    stopPrice, _ := strconv.ParseFloat(data[1].(string), 64)
+
+    var price float64
+    if side == 1 {
+      price = stopPrice
+    } else {
+      price = takePrice
+    }
+
+    log.Println("scalping update", entity.Symbol, entity.Side, price)
+
+    h.Db.Model(&entity).Update("price", price)
+  }
   return nil
 }
