@@ -12,6 +12,7 @@ import (
 func NewDydxRouter() http.Handler {
   r := chi.NewRouter()
   r.Use(api.Authenticator)
+  r.Mount("/tickers", dydx.NewTickersRouter())
   r.Mount("/indicators", dydx.NewIndicatorsRouter())
   r.Mount("/plans", dydx.NewPlansRouter())
   r.Mount("/orders", dydx.NewOrdersRouter())

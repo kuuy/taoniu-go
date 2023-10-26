@@ -12,6 +12,7 @@ func NewDydxCommand() *cli.Command {
     Subcommands: []*cli.Command{
       dydx.NewServerCommand(),
       dydx.NewMarketsCommand(),
+      dydx.NewTickersCommand(),
       dydx.NewOrderbookCommand(),
       dydx.NewKlinesCommand(),
       dydx.NewIndicatorsCommand(),
