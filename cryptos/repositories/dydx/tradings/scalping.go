@@ -436,7 +436,7 @@ func (r *ScalpingRepository) Place(planID string) error {
       }
     }
 
-    orderID, err := r.OrdersRepository.Create(plan.Symbol, side, buyPrice, buyQuantity)
+    orderID, err := r.OrdersRepository.Create(plan.Symbol, side, buyPrice, buyQuantity, positionSide)
     if err != nil {
       return err
     }
@@ -531,7 +531,7 @@ func (r *ScalpingRepository) Take(scalping *dydxModels.Scalping, price float64) 
     sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
   }
 
-  orderID, err := r.OrdersRepository.Create(trading.Symbol, side, sellPrice, trading.SellQuantity)
+  orderID, err := r.OrdersRepository.Create(trading.Symbol, side, sellPrice, trading.SellQuantity, positionSide)
   if err != nil {
     r.Db.Model(&scalping).Where("version", scalping.Version).Updates(map[string]interface{}{
       "remark":  err.Error(),

@@ -282,7 +282,7 @@ func (r *TriggersRepository) Place(id string) error {
       }
     }
 
-    orderID, err := r.OrdersRepository.Create(trigger.Symbol, side, buyPrice, buyQuantity)
+    orderID, err := r.OrdersRepository.Create(trigger.Symbol, side, buyPrice, buyQuantity, positionSide)
     if err != nil {
       return err
     }
@@ -513,7 +513,7 @@ func (r *TriggersRepository) Take(trigger *dydxModels.Trigger, price float64) er
     sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
   }
 
-  orderID, err := r.OrdersRepository.Create(trading.Symbol, side, sellPrice, trading.SellQuantity)
+  orderID, err := r.OrdersRepository.Create(trading.Symbol, side, sellPrice, trading.SellQuantity, positionSide)
   if err != nil {
     return err
   }

@@ -239,6 +239,8 @@ func (r *KlinesRepository) Request(symbol string, interval string, endtime int64
   var resolution string
   if interval == "1m" {
     resolution = "1MIN"
+  } else if interval == "15m" {
+    resolution = "15MINS"
   } else if interval == "4h" {
     resolution = "4HOURS"
   } else {

@@ -89,6 +89,16 @@ func (r *AccountRepository) Flush() error {
       side = 2
     }
 
+    if side == 1 && position.EntryQuantity < 0 {
+      position.EntryQuantity = 0
+    }
+    if side == 2 && position.EntryQuantity > 0 {
+      position.EntryQuantity = 0
+    }
+    if position.EntryQuantity < 0 {
+      position.EntryQuantity = -position.EntryQuantity
+    }
+
     leverage := 10
     capital := 1000000.0
     timestamp := time.Now().UnixMilli()

@@ -1,13 +1,17 @@
 package v1
 
 import (
-  "github.com/go-chi/chi/v5"
   "net/http"
+
+  "github.com/go-chi/chi/v5"
+
+  "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/api/v1/dydx"
 )
 
 func NewDydxRouter() http.Handler {
   r := chi.NewRouter()
+  r.Use(api.Authenticator)
   r.Mount("/indicators", dydx.NewIndicatorsRouter())
   r.Mount("/plans", dydx.NewPlansRouter())
   r.Mount("/orders", dydx.NewOrdersRouter())

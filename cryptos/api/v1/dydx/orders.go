@@ -104,16 +104,17 @@ func (h *OrdersHandler) Listings(
   data := make([]*OrderInfo, len(orders))
   for i, order := range orders {
     data[i] = &OrderInfo{
-      ID:         order.ID,
-      Symbol:     order.Symbol,
-      OrderID:    order.OrderID,
-      Side:       order.Side,
-      Price:      order.Price,
-      Quantity:   order.Quantity,
-      OpenTime:   order.OpenTime,
-      UpdateTime: order.UpdateTime,
-      ReduceOnly: order.ReduceOnly,
-      Status:     order.Status,
+      ID:           order.ID,
+      Symbol:       order.Symbol,
+      OrderID:      order.OrderID,
+      PositionSide: order.PositionSide,
+      Side:         order.Side,
+      Price:        order.Price,
+      Quantity:     order.Quantity,
+      OpenTime:     order.OpenTime,
+      UpdateTime:   order.UpdateTime,
+      ReduceOnly:   order.ReduceOnly,
+      Status:       order.Status,
     }
   }
 

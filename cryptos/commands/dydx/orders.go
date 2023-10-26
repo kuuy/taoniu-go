@@ -97,7 +97,8 @@ func (h *OrdersHandler) Create() error {
   side := "BUY"
   price := 0.0735
   quantity := 100.0
-  orderID, err := h.Repository.Create(symbol, side, price, quantity)
+  positionSide := "LONG"
+  orderID, err := h.Repository.Create(symbol, side, price, quantity, positionSide)
   if err != nil {
     return err
   }

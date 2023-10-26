@@ -37,6 +37,7 @@ type OrderInfo struct {
   Symbol           string
   OrderID          string
   Type             string
+  PositionSide     string
   Side             string
   Price            float64
   ActivatePrice    float64
@@ -218,6 +219,7 @@ func (r *OrdersRepository) Create(
   side string,
   price float64,
   quantity float64,
+  positionSide string,
 ) (orderID string, err error) {
   tr := &http.Transport{
     DisableKeepAlives: true,
@@ -312,6 +314,7 @@ func (r *OrdersRepository) Create(
   order.Symbol = data["market"].(string)
   order.OrderID = data["id"].(string)
   order.Type = data["type"].(string)
+  order.PositionSide = positionSide
   order.Side = data["side"].(string)
   order.Price, _ = strconv.ParseFloat(data["price"].(string), 64)
   if data["triggerPrice"] != nil {
@@ -508,6 +511,22 @@ func (r *OrdersRepository) Flush(orderID string) (err error) {
     }
   }
 
+  var entity models.Position
+  res := r.Db.Where("symbol=? AND status=1", order.Symbol).Take(&entity)
+  if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+    if order.Side == "BUY" {
+      entity.Side = 1
+    } else if order.Side == "SELL" {
+      entity.Side = 2
+    }
+  }
+
+  if entity.Side == 1 {
+    order.PositionSide = "LONG"
+  } else if entity.Side == 2 {
+    order.PositionSide = "SHORT"
+  }
+
   r.Save(order)
 
   return
@@ -522,6 +541,7 @@ func (r *OrdersRepository) Save(order *OrderInfo) error {
       Symbol:           order.Symbol,
       OrderID:          order.OrderID,
       Type:             order.Type,
+      PositionSide:     fmt.Sprintf("%v", order.PositionSide),
       Side:             order.Side,
       Price:            order.Price,
       ActivatePrice:    order.ActivatePrice,

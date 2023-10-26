@@ -72,7 +72,7 @@ func (r *BridgesRepository) Flush() error {
   tr.DialContext = session.DialContext
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   10 * time.Second,
+    Timeout:   60 * time.Second,
   }
 
   url := "https://raw.githubusercontent.com/scriptzteam/Tor-Bridges-Collector/main/bridges-obfs4"
