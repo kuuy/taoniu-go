@@ -54,7 +54,7 @@ func (h *Plans) Flush(ctx context.Context, t *asynq.Task) error {
   }
   defer mutex.Unlock()
 
-  //h.Repository.Flush(payload.Interval)
+  h.Repository.Flush(payload.Interval)
 
   return nil
 }

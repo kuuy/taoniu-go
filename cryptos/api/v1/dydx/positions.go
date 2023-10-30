@@ -26,6 +26,8 @@ type PositionsInfo struct {
   Capital       float64 `json:"capital"`
   Notional      float64 `json:"notional"`
   EntryPrice    float64 `json:"entry_price"`
+  StopPrice     float64 `json:"stop_price"`
+  TakePrice     float64 `json:"take_price"`
   EntryQuantity float64 `json:"entry_quantity"`
   EntryAmount   float64 `json:"entry_amount"`
   Timestamp     int64   `json:"timestamp"`
@@ -86,6 +88,8 @@ func (h *PositionsHandler) Gets(
       Capital:       position.Capital,
       Notional:      position.Notional,
       EntryPrice:    position.EntryPrice,
+      StopPrice:     position.StopPrice,
+      TakePrice:     position.TakePrice,
       EntryQuantity: position.EntryQuantity,
       EntryAmount:   position.EntryPrice * position.EntryQuantity,
       Timestamp:     position.Timestamp,

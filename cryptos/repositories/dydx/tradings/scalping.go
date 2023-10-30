@@ -4,6 +4,7 @@ import (
   "errors"
   "fmt"
   "log"
+  "math"
   "time"
 
   "github.com/rs/xid"
@@ -113,6 +114,7 @@ func (r *ScalpingRepository) Flush(id string) error {
 
   for _, trading := range tradings {
     if trading.Status == 0 {
+      status := r.OrdersRepository.Status(trading.BuyOrderId)
       timestamp := trading.CreatedAt.Unix()
       if trading.BuyOrderId == "" {
         orderID := r.OrdersRepository.Lost(trading.Symbol, side, trading.BuyQuantity, timestamp-30)
@@ -129,19 +131,21 @@ func (r *ScalpingRepository) Flush(id string) error {
             return errors.New("order update failed")
           }
         }
+        if timestamp < time.Now().Unix()-900 {
+          r.Db.Model(&trading).Update("status", 6)
+        }
       } else {
         if timestamp < time.Now().Unix()-900 {
-          r.OrdersRepository.Flush(trading.BuyOrderId)
-          status := r.OrdersRepository.Status(trading.BuyOrderId)
           if status == "NEW" {
             r.OrdersRepository.Cancel(trading.BuyOrderId)
+          }
+          if status == "" {
+            r.OrdersRepository.Flush(trading.BuyOrderId)
           }
         }
       }
 
-      status := r.OrdersRepository.Status(trading.BuyOrderId)
       if status == "" || status == "NEW" || status == "PARTIALLY_FILLED" {
-        r.OrdersRepository.Flush(trading.BuyOrderId)
         continue
       }
 
@@ -165,6 +169,7 @@ func (r *ScalpingRepository) Flush(id string) error {
     }
 
     if trading.Status == 2 {
+      status := r.OrdersRepository.Status(trading.SellOrderId)
       timestamp := trading.UpdatedAt.Unix()
       if trading.SellOrderId == "" {
         orderID := r.OrdersRepository.Lost(trading.Symbol, side, trading.SellQuantity, timestamp-30)
@@ -181,19 +186,21 @@ func (r *ScalpingRepository) Flush(id string) error {
             return errors.New("order update failed")
           }
         }
+        if timestamp < time.Now().Unix()-900 {
+          r.Db.Model(&trading).Update("status", 1)
+        }
       } else {
         if timestamp < time.Now().Unix()-900 {
-          r.OrdersRepository.Flush(trading.SellOrderId)
-          status := r.OrdersRepository.Status(trading.SellOrderId)
           if status == "NEW" {
             r.OrdersRepository.Cancel(trading.SellOrderId)
+          }
+          if status == "" {
+            r.OrdersRepository.Flush(trading.SellOrderId)
           }
         }
       }
 
-      status := r.OrdersRepository.Status(trading.SellOrderId)
       if status == "" || status == "NEW" || status == "PARTIALLY_FILLED" {
-        r.OrdersRepository.Flush(trading.SellOrderId)
         continue
       }
 
@@ -395,7 +402,7 @@ func (r *ScalpingRepository) Place(planID string) error {
   if buyQuantity < market.MinOrderSize {
     buyQuantity = market.MinOrderSize
   }
-  buyAmount, _ := decimal.NewFromFloat(buyPrice).Mul(decimal.NewFromFloat(buyQuantity)).Float64()
+  //buyAmount, _ := decimal.NewFromFloat(buyPrice).Mul(decimal.NewFromFloat(buyQuantity)).Float64()
 
   if plan.Side == 1 && price > buyPrice {
     return errors.New(fmt.Sprintf("[%s] %s price must reach %v", scalping.Symbol, positionSide, buyPrice))
@@ -414,12 +421,8 @@ func (r *ScalpingRepository) Place(planID string) error {
     return err
   }
 
-  if position.ID != "" && balance["free"] < 5 {
-    return errors.New(fmt.Sprintf("[%s] collateral must reach 5", market.QuoteAsset))
-  }
-
-  if position.ID != "" && buyAmount > balance["free"]*float64(position.Leverage) {
-    return errors.New(fmt.Sprintf("[%s] collateral not enough", market.QuoteAsset))
+  if balance["free"] < math.Max(balance["lock"], 5) {
+    return errors.New(fmt.Sprintf("[%s] free not enough", market.QuoteAsset))
   }
 
   return r.Db.Transaction(func(tx *gorm.DB) (err error) {

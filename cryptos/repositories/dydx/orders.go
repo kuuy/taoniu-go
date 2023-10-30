@@ -9,6 +9,7 @@ import (
   "encoding/json"
   "errors"
   "fmt"
+  "io"
   "log"
   "net"
   "net/http"
@@ -290,6 +291,8 @@ func (r *OrdersRepository) Create(
   defer resp.Body.Close()
 
   if resp.StatusCode < 200 || resp.StatusCode > 300 {
+    body, _ := io.ReadAll(resp.Body)
+    log.Println("response", string(body))
     err = errors.New(
       fmt.Sprintf(
         "request error: status[%s] code[%d]",

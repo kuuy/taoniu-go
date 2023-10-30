@@ -177,6 +177,10 @@ func (r *KlinesRepository) Fix(symbol string, interval string, limit int) error 
     count = int((timestamp - lasttime) / timestep)
   }
 
+  if len(klines) > 0 {
+    count++
+  }
+
   for i := 1; i < len(klines); i++ {
     if lasttime-klines[i].Timestamp != timestep {
       if endtime == 0 {
@@ -199,6 +203,8 @@ func (r *KlinesRepository) Fix(symbol string, interval string, limit int) error 
   if count > limit {
     count = limit
   }
+
+  log.Println("endtime", endtime, count)
 
   if endtime > 0 {
     log.Println("klines fix", symbol, interval, endtime, count)

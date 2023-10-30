@@ -10,6 +10,8 @@ type Position struct {
   Capital       float64   `gorm:"not null"`
   Notional      float64   `gorm:"not null"`
   EntryPrice    float64   `gorm:"not null"`
+  TakePrice     float64   `gorm:"not null"`
+  StopPrice     float64   `gorm:"not null"`
   EntryQuantity float64   `gorm:"not null"`
   Timestamp     int64     `gorm:"not null"`
   Status        int       `gorm:"not null;index:idx_dydx_positions_symbol_status"`

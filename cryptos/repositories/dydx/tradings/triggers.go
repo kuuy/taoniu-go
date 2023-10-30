@@ -233,6 +233,9 @@ func (r *TriggersRepository) Place(id string) error {
 
   buyQuantity, _ = decimal.NewFromFloat(buyAmount).Div(decimal.NewFromFloat(buyPrice)).Float64()
   buyQuantity, _ = decimal.NewFromFloat(buyQuantity).Div(decimal.NewFromFloat(stepSize)).Ceil().Mul(decimal.NewFromFloat(stepSize)).Float64()
+  if buyQuantity < market.MinOrderSize {
+    buyQuantity = market.MinOrderSize
+  }
   entryQuantity, _ = decimal.NewFromFloat(entryQuantity).Add(decimal.NewFromFloat(buyQuantity)).Float64()
 
   buyAmount, _ = decimal.NewFromFloat(buyPrice).Mul(decimal.NewFromFloat(buyQuantity)).Float64()
@@ -260,12 +263,8 @@ func (r *TriggersRepository) Place(id string) error {
     return err
   }
 
-  if position.ID != "" && balance["margin"] < 5 {
-    return errors.New(fmt.Sprintf("[%s] margin must reach 5", market.QuoteAsset))
-  }
-
-  if position.ID != "" && buyAmount > balance["margin"]*float64(position.Leverage) {
-    return errors.New(fmt.Sprintf("[%s] %v margin not enough", trigger.Symbol, buyAmount))
+  if balance["free"] < math.Max(balance["lock"], 5) {
+    return errors.New(fmt.Sprintf("[%s] free not enough", trigger.Symbol))
   }
 
   return r.Db.Transaction(func(tx *gorm.DB) (err error) {
@@ -329,6 +328,7 @@ func (r *TriggersRepository) Flush(id string) error {
 
   for _, trading := range tradings {
     if trading.Status == 0 {
+      status := r.OrdersRepository.Status(trading.BuyOrderId)
       timestamp := trading.CreatedAt.Unix()
       if trading.BuyOrderId == "" {
         orderID := r.OrdersRepository.Lost(trading.Symbol, side, trading.BuyQuantity, timestamp-30)
@@ -345,19 +345,21 @@ func (r *TriggersRepository) Flush(id string) error {
             return errors.New("order update failed")
           }
         }
+        if timestamp < time.Now().Unix()-900 {
+          r.Db.Model(&trading).Update("status", 6)
+        }
       } else {
         if timestamp < time.Now().Unix()-900 {
-          r.OrdersRepository.Flush(trading.BuyOrderId)
-          status := r.OrdersRepository.Status(trading.BuyOrderId)
           if status == "NEW" {
             r.OrdersRepository.Cancel(trading.BuyOrderId)
+          }
+          if status == "" {
+            r.OrdersRepository.Flush(trading.BuyOrderId)
           }
         }
       }
 
-      status := r.OrdersRepository.Status(trading.BuyOrderId)
       if status == "" || status == "NEW" || status == "PARTIALLY_FILLED" {
-        r.OrdersRepository.Flush(trading.BuyOrderId)
         continue
       }
 
@@ -381,6 +383,7 @@ func (r *TriggersRepository) Flush(id string) error {
     }
 
     if trading.Status == 2 {
+      status := r.OrdersRepository.Status(trading.SellOrderId)
       timestamp := trading.UpdatedAt.Unix()
       if trading.SellOrderId == "" {
         orderID := r.OrdersRepository.Lost(trading.Symbol, side, trading.SellQuantity, timestamp-30)
@@ -397,19 +400,21 @@ func (r *TriggersRepository) Flush(id string) error {
             return errors.New("order update failed")
           }
         }
+        if timestamp < time.Now().Unix()-900 {
+          r.Db.Model(&trading).Update("status", 1)
+        }
       } else {
         if timestamp < time.Now().Unix()-900 {
-          r.OrdersRepository.Flush(trading.SellOrderId)
-          status := r.OrdersRepository.Status(trading.SellOrderId)
           if status == "NEW" {
             r.OrdersRepository.Cancel(trading.SellOrderId)
+          }
+          if status == "" {
+            r.OrdersRepository.Flush(trading.SellOrderId)
           }
         }
       }
 
-      status := r.OrdersRepository.Status(trading.SellOrderId)
       if status == "" || status == "NEW" || status == "PARTIALLY_FILLED" {
-        r.OrdersRepository.Flush(trading.SellOrderId)
         continue
       }
 

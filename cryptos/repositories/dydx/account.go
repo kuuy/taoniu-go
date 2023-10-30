@@ -47,6 +47,7 @@ func (r *AccountRepository) Balance() (map[string]float64, error) {
   fields := []string{
     "balance",
     "free",
+    "lock",
   }
   data, _ := r.Rdb.HMGet(r.Ctx, "dydx:balance", fields...).Result()
   balance := map[string]float64{}
@@ -57,6 +58,11 @@ func (r *AccountRepository) Balance() (map[string]float64, error) {
     balance[field], _ = strconv.ParseFloat(data[i].(string), 64)
   }
   return balance, nil
+}
+
+func (r *AccountRepository) Lock(amount float64) error {
+  r.Rdb.HSet(r.Ctx, "dydx:balance", "lock", amount)
+  return nil
 }
 
 func (r *AccountRepository) Flush() error {
@@ -125,13 +131,18 @@ func (r *AccountRepository) Flush() error {
       if position.EntryPrice == entity.EntryPrice && position.EntryQuantity == entity.EntryQuantity {
         continue
       }
-      r.Db.Model(&entity).Where("version", entity.Version).Updates(map[string]interface{}{
+      data := map[string]interface{}{
         "side":           side,
         "entry_price":    position.EntryPrice,
         "entry_quantity": position.EntryQuantity,
         "timestamp":      timestamp,
         "version":        gorm.Expr("version + ?", 1),
-      })
+      }
+      if side != entity.Side {
+        data["stop_price"] = 0
+        data["take_price"] = 0
+      }
+      r.Db.Model(&entity).Where("version", entity.Version).Updates(data)
     }
   }
 
