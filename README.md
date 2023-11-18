@@ -140,5 +140,4 @@ https://github.com/kuuy/taoniu-android
 [淘牛后台（vue）](https://github.com/kuuy/taoniu-admin-web)  
 [淘牛后台（golang）](https://github.com/kuuy/taoniu-admin-go)  
 
-# 推荐链接
-[core.app](https://core.app/) 
+![Codewars](https://github.r2v.ch/codewars?user=ejini战神&top_languages=true&stroke=%23b362ff&theme=purple_dark)
