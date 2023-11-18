@@ -40,11 +40,11 @@ func NewUsersCommand() *cli.Command {
         Usage: "",
         Action: func(c *cli.Context) error {
           email := c.Args().Get(0)
-          password := c.Args().Get(1)
           if email == "" {
             log.Fatal("email can not be empty")
             return nil
           }
+          password := c.Args().Get(1)
           if password == "" {
             log.Fatal("password can not be empty")
             return nil

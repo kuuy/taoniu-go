@@ -227,7 +227,7 @@ func (h *DatafeedHandler) SymbolInfo(
     })
     return
   }
-  tickSize, _, err := h.SymbolsRepository.Filters(entity.Filters)
+  tickSize, _, _, err := h.SymbolsRepository.Filters(entity.Filters)
   if err != nil {
     h.Response.Out(map[string]interface{}{
       "s":      "error",

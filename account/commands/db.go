@@ -5,7 +5,8 @@ import (
 
   "gorm.io/gorm"
 
-  pool "taoniu.local/account/common"
+  "github.com/urfave/cli/v2"
+  "taoniu.local/account/common"
   "taoniu.local/account/models"
 )
 
@@ -20,7 +21,7 @@ func NewDbCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = DbHandler{
-        Db: pool.NewDB(),
+        Db: common.NewDB(),
       }
       return nil
     },
@@ -43,6 +44,7 @@ func (h *DbHandler) migrate() error {
   log.Println("process migrator")
   h.Db.AutoMigrate(
     &models.User{},
+    &models.Profile{},
   )
   return nil
 }

@@ -61,6 +61,7 @@ func (h *DydxHandler) run() error {
   c := cron.New()
   c.AddFunc("@every 5s", func() {
     dydx.Account().Flush()
+    dydx.Tickers().Flush()
     dydx.Orderbook().Flush()
     dydx.Tradings().Triggers().Place()
     dydx.Tradings().Scalping().Place()
@@ -73,13 +74,14 @@ func (h *DydxHandler) run() error {
     dydx.Orders().Open()
   })
   c.AddFunc("@every 5m", func() {
-    dydx.Orderbook().FlushDelay()
-    dydx.Klines().FlushDelay("1m", 30)
-    dydx.Klines().FlushDelay("15m", 2)
+    dydx.Analysis().Flush()
+    //dydx.Orderbook().FlushDelay()
+    //dydx.Klines().FlushDelay("1m", 30)
+    //dydx.Klines().FlushDelay("15m", 2)
   })
   c.AddFunc("@every 15m", func() {
-    dydx.Klines().FlushDelay("4h", 1)
-    dydx.Klines().FlushDelay("1d", 1)
+    //dydx.Klines().FlushDelay("4h", 1)
+    //dydx.Klines().FlushDelay("1d", 1)
   })
   c.AddFunc("@hourly", func() {
     dydx.Cron().Hourly()

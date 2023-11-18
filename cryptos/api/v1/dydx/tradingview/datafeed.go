@@ -15,7 +15,7 @@ import (
 
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
-  dydxRepositories "taoniu.local/cryptos/repositories/dydx"
+  repositories "taoniu.local/cryptos/repositories/dydx"
 )
 
 type DatafeedHandler struct {
@@ -23,10 +23,10 @@ type DatafeedHandler struct {
   Rdb                *redis.Client
   Ctx                context.Context
   Response           *api.ResponseHandler
-  MarketsRepository  *dydxRepositories.MarketsRepository
-  KlinesRepository   *dydxRepositories.KlinesRepository
-  ScalpingRepository *dydxRepositories.ScalpingRepository
-  TriggersRepository *dydxRepositories.TriggersRepository
+  MarketsRepository  *repositories.MarketsRepository
+  KlinesRepository   *repositories.KlinesRepository
+  ScalpingRepository *repositories.ScalpingRepository
+  TriggersRepository *repositories.TriggersRepository
 }
 
 type SearchInfo struct {
@@ -80,16 +80,16 @@ func NewDatafeedRouter() http.Handler {
     Rdb: common.NewRedis(),
     Ctx: context.Background(),
   }
-  h.MarketsRepository = &dydxRepositories.MarketsRepository{
+  h.MarketsRepository = &repositories.MarketsRepository{
     Db: h.Db,
   }
-  h.KlinesRepository = &dydxRepositories.KlinesRepository{
+  h.KlinesRepository = &repositories.KlinesRepository{
     Db: h.Db,
   }
-  h.ScalpingRepository = &dydxRepositories.ScalpingRepository{
+  h.ScalpingRepository = &repositories.ScalpingRepository{
     Db: h.Db,
   }
-  h.TriggersRepository = &dydxRepositories.TriggersRepository{
+  h.TriggersRepository = &repositories.TriggersRepository{
     Db: h.Db,
   }
 
@@ -268,6 +268,8 @@ func (h *DatafeedHandler) History(
   var interval string
   if resolution == "1" {
     interval = "1m"
+  } else if resolution == "15" {
+    interval = "15m"
   } else if resolution == "240" {
     interval = "4h"
   } else if resolution == "1D" {

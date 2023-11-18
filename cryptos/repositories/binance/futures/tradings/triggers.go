@@ -122,7 +122,7 @@ func (r *TriggersRepository) Place(id string) error {
     return err
   }
 
-  tickSize, stepSize, err := r.SymbolsRepository.Filters(entity.Filters)
+  tickSize, stepSize, notional, err := r.SymbolsRepository.Filters(entity.Filters)
   if err != nil {
     return nil
   }
@@ -196,13 +196,13 @@ func (r *TriggersRepository) Place(id string) error {
   }
   ratio := r.PositionRepository.Ratio(capital, entryAmount)
   buyAmount, _ := decimal.NewFromFloat(capital).Mul(decimal.NewFromFloat(ratio)).Float64()
-  if buyAmount < 5 {
-    buyAmount = 5
+  if buyAmount < notional {
+    buyAmount = notional
   }
 
   var buyQuantity float64
   if entryAmount == 0 {
-    buyAmount = 5
+    buyAmount = notional
     buyQuantity, _ = decimal.NewFromFloat(buyAmount).Div(decimal.NewFromFloat(trigger.Price)).Float64()
   } else {
     buyQuantity = r.PositionRepository.BuyQuantity(trigger.Side, buyAmount, entryPrice, entryAmount)
@@ -259,12 +259,8 @@ func (r *TriggersRepository) Place(id string) error {
     return err
   }
 
-  if position.ID != "" && balance["free"] < 5 {
-    return errors.New(fmt.Sprintf("[%s] margin must reach 5", entity.QuoteAsset))
-  }
-
-  if position.ID != "" && buyAmount > balance["free"]*float64(position.Leverage) {
-    return errors.New(fmt.Sprintf("[%s] %v free not enough", trigger.Symbol, buyAmount))
+  if balance["free"] < math.Max(balance["lock"], notional/float64(position.Leverage)) {
+    return errors.New(fmt.Sprintf("[%s] free not enough", entity.QuoteAsset))
   }
 
   return r.Db.Transaction(func(tx *gorm.DB) (err error) {
@@ -485,7 +481,7 @@ func (r *TriggersRepository) Take(trigger *futuresModels.Trigger, price float64)
     return err
   }
 
-  tickSize, _, err := r.SymbolsRepository.Filters(entity.Filters)
+  tickSize, _, _, err := r.SymbolsRepository.Filters(entity.Filters)
   if err != nil {
     return nil
   }

@@ -182,7 +182,6 @@ func (r *StrategiesRepository) Zlema(symbol string, interval string) error {
     Price:     price,
     Signal:    signal,
     Timestamp: timestamp,
-    Remark:    "",
   }
   r.Db.Create(&entity)
 
@@ -244,7 +243,6 @@ func (r *StrategiesRepository) HaZlema(symbol string, interval string) error {
     Price:     price,
     Signal:    signal,
     Timestamp: timestamp,
-    Remark:    "",
   }
   r.Db.Create(&entity)
 
@@ -308,7 +306,6 @@ func (r *StrategiesRepository) Kdj(symbol string, interval string) error {
     Price:     price,
     Signal:    signal,
     Timestamp: timestamp,
-    Remark:    "",
   }
   r.Db.Create(&entity)
 
@@ -386,7 +383,6 @@ func (r *StrategiesRepository) BBands(symbol string, interval string) error {
     Price:     price,
     Signal:    signal,
     Timestamp: timestamp,
-    Remark:    "",
   }
   r.Db.Create(&entity)
   return nil
@@ -397,5 +393,6 @@ func (r *StrategiesRepository) Filters(symbol string) (tickSize float64, stepSiz
   if err != nil {
     return
   }
-  return r.SymbolsRepository.Filters(entity.Filters)
+  tickSize, stepSize, _, err = r.SymbolsRepository.Filters(entity.Filters)
+  return
 }

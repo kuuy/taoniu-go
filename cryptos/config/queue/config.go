@@ -30,6 +30,7 @@ const (
   BINANCE_FUTURES_PLANS                         = "cryptos.jobs.binance.futures.plans"
   BINANCE_FUTURES_TRADINGS_TRIGGERS             = "cryptos.jobs.binance.futures.tradings.triggers"
   BINANCE_FUTURES_TRADINGS_SCALPING             = "cryptos.jobs.binance.futures.tradings.scalping"
+  DYDX_TICKERS                                  = "cryptos.jobs.dydx.tickers"
   DYDX_ORDERBOOK                                = "cryptos.jobs.dydx.orderbook"
   DYDX_ORDERBOOK_DELAY                          = "cryptos.jobs.dydx.orderbook.delay"
   DYDX_KLINES                                   = "cryptos.jobs.dydx.klines"

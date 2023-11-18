@@ -79,14 +79,14 @@ func (h *FuturesHandler) run() error {
     binance.Futures().Orders().Sync(time.Now().Add(-72*time.Hour).UnixMilli(), 200)
   })
   c.AddFunc("@every 5m", func() {
-    binance.Futures().Klines().FlushDelay("1m", 30)
-    binance.Futures().Klines().FlushDelay("15m", 2)
-    binance.Futures().Depth().FlushDelay(1000)
+    //binance.Futures().Klines().FlushDelay("1m", 30)
+    //binance.Futures().Klines().FlushDelay("15m", 2)
+    //binance.Futures().Depth().FlushDelay(1000)
     binance.Futures().Analysis().Flush()
   })
   c.AddFunc("@every 15m", func() {
-    binance.Futures().Klines().FlushDelay("4h", 1)
-    binance.Futures().Klines().FlushDelay("1d", 1)
+    //binance.Futures().Klines().FlushDelay("4h", 1)
+    //binance.Futures().Klines().FlushDelay("1d", 1)
   })
   c.AddFunc("@hourly", func() {
     binance.Futures().Cron().Hourly()

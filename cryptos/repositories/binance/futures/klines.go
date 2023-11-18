@@ -210,13 +210,6 @@ func (r *KlinesRepository) Fix(symbol string, interval string, limit int) error 
     }
   }
 
-  message, _ := json.Marshal(map[string]interface{}{
-    "symbol":   symbol,
-    "interval": interval,
-  })
-  r.Nats.Publish(config.NATS_KLINES_UPDATE, message)
-  r.Nats.Flush()
-
   return nil
 }
 

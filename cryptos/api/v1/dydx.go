@@ -14,6 +14,7 @@ func NewDydxRouter() http.Handler {
   r.Use(api.Authenticator)
   r.Mount("/account", dydx.NewAccountRouter())
   r.Mount("/tickers", dydx.NewTickersRouter())
+  r.Mount("/strategies", dydx.NewStrategiesRouter())
   r.Mount("/indicators", dydx.NewIndicatorsRouter())
   r.Mount("/plans", dydx.NewPlansRouter())
   r.Mount("/orders", dydx.NewOrdersRouter())

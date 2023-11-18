@@ -10,7 +10,6 @@ type Strategy struct {
   Price     float64   `gorm:"not null"`
   Signal    int       `gorm:"not null"`
   Timestamp int64     `gorm:"not null;uniqueIndex:unq_binance_futures_strategies_symbol_indicator_interval_timestamp"`
-  Remark    string    `gorm:"size:5000;not null"`
   CreatedAt time.Time `gorm:"not null;index"`
   UpdatedAt time.Time `gorm:"not null;index"`
 }

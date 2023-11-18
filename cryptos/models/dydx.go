@@ -26,6 +26,7 @@ func (m *Dydx) AutoMigrate(db *gorm.DB) error {
 
   dydx.NewPatterns().AutoMigrate(db)
   dydx.NewTradings().AutoMigrate(db)
+  dydx.NewAnalysis().AutoMigrate(db)
 
   return nil
 }

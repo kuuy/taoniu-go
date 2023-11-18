@@ -10,7 +10,7 @@ import (
   "github.com/go-redis/redis/v8"
   "gorm.io/gorm"
 
-  models "taoniu.local/cryptos/models/binance/futures"
+  models "taoniu.local/cryptos/models/dydx"
 )
 
 type TriggersTask struct {

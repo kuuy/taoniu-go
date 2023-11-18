@@ -33,10 +33,6 @@ func (h *Scalping) AddPlan(m *nats.Msg) {
   var payload *PlansUpdatePayload
   json.Unmarshal(m.Data, &payload)
 
-  if payload.Amount <= 10 {
-    return
-  }
-
   h.Repository.AddPlan(payload.ID)
   message, _ := json.Marshal(&tradings.ScalpingPlacePayload{
     PlanID: payload.ID,

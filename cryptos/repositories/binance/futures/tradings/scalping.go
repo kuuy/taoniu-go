@@ -4,6 +4,7 @@ import (
   "errors"
   "fmt"
   "log"
+  "math"
   "time"
 
   "gorm.io/gorm"
@@ -242,11 +243,6 @@ func (r *ScalpingRepository) Place(planID string) error {
     return errors.New("plan empty")
   }
 
-  if plan.Amount <= 10 {
-    r.Db.Model(&futuresModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 5)
-    return errors.New("plan a bit risk")
-  }
-
   timestamp := time.Now().Unix()
   if plan.Interval == "1m" && plan.CreatedAt.Unix() < timestamp-900 {
     r.Db.Model(&futuresModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 4)
@@ -287,7 +283,7 @@ func (r *ScalpingRepository) Place(planID string) error {
     return err
   }
 
-  tickSize, stepSize, err := r.SymbolsRepository.Filters(entity.Filters)
+  tickSize, stepSize, notional, err := r.SymbolsRepository.Filters(entity.Filters)
   if err != nil {
     return nil
   }
@@ -400,9 +396,8 @@ func (r *ScalpingRepository) Place(planID string) error {
     sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
   }
 
-  buyQuantity, _ := decimal.NewFromFloat(5).Div(decimal.NewFromFloat(buyPrice)).Float64()
+  buyQuantity, _ := decimal.NewFromFloat(notional).Div(decimal.NewFromFloat(buyPrice)).Float64()
   buyQuantity, _ = decimal.NewFromFloat(buyQuantity).Div(decimal.NewFromFloat(stepSize)).Ceil().Mul(decimal.NewFromFloat(stepSize)).Float64()
-  buyAmount, _ := decimal.NewFromFloat(buyPrice).Mul(decimal.NewFromFloat(buyQuantity)).Float64()
 
   if plan.Side == 1 && price > buyPrice {
     return errors.New(fmt.Sprintf("[%s] %s price must reach %v", scalping.Symbol, positionSide, buyPrice))
@@ -421,11 +416,7 @@ func (r *ScalpingRepository) Place(planID string) error {
     return err
   }
 
-  if position.ID != "" && balance["free"] < 5 {
-    return errors.New(fmt.Sprintf("[%s] free must reach 5", entity.QuoteAsset))
-  }
-
-  if position.ID != "" && buyAmount > balance["free"]*float64(position.Leverage) {
+  if balance["free"] < math.Max(balance["lock"], notional/float64(position.Leverage)) {
     return errors.New(fmt.Sprintf("[%s] free not enough", entity.QuoteAsset))
   }
 
@@ -507,7 +498,7 @@ func (r *ScalpingRepository) Take(scalping *futuresModels.Scalping, price float6
     return err
   }
 
-  tickSize, _, err := r.SymbolsRepository.Filters(entity.Filters)
+  tickSize, _, _, err := r.SymbolsRepository.Filters(entity.Filters)
   if err != nil {
     return nil
   }

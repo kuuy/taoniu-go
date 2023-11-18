@@ -876,5 +876,6 @@ func (r *IndicatorsRepository) Filters(symbol string) (tickSize float64, stepSiz
   if err != nil {
     return
   }
-  return r.SymbolsRepository.Filters(entity.Filters)
+  tickSize, stepSize, _, err = r.SymbolsRepository.Filters(entity.Filters)
+  return
 }

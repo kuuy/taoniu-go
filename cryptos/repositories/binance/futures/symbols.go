@@ -45,12 +45,17 @@ func (r *SymbolsRepository) Get(
   return entity, nil
 }
 
-func (r *SymbolsRepository) Filters(params datatypes.JSONMap) (tickSize float64, stepSize float64, err error) {
+func (r *SymbolsRepository) Filters(params datatypes.JSONMap) (tickSize float64, stepSize float64, notional float64, err error) {
   var filters []string
   filters = strings.Split(params["price"].(string), ",")
   tickSize, _ = strconv.ParseFloat(filters[2], 64)
   filters = strings.Split(params["quote"].(string), ",")
   stepSize, _ = strconv.ParseFloat(filters[2], 64)
+  if _, ok := params["notional"]; !ok {
+    notional = 5
+  } else {
+    notional, _ = strconv.ParseFloat(params["notional"].(string), 64)
+  }
   return
 }
 
@@ -109,6 +114,13 @@ func (r *SymbolsRepository) Flush() error {
           strconv.FormatFloat(minQty, 'f', -1, 64),
           strconv.FormatFloat(stepSize, 'f', -1, 64),
         )
+      }
+      if filter["filterType"].(string) == string(binance.SymbolFilterTypeMinNotional) {
+        if _, ok := filter["notional"]; !ok {
+          continue
+        }
+        notional, _ := strconv.ParseFloat(filter["notional"].(string), 64)
+        filters["notional"] = strconv.FormatFloat(notional, 'f', -1, 64)
       }
     }
     if _, ok := filters["price"]; !ok {

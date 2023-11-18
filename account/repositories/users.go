@@ -12,6 +12,15 @@ type UsersRepository struct {
   Db *gorm.DB
 }
 
+func (r *UsersRepository) Find(id string) (*models.User, error) {
+  var entity *models.User
+  result := r.Db.First(&entity, "id=?", id)
+  if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+    return nil, result.Error
+  }
+  return entity, nil
+}
+
 func (r *UsersRepository) Get(email string) *models.User {
   var entity models.User
   result := r.Db.Where(

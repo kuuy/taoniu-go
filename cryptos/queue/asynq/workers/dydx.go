@@ -12,6 +12,7 @@ func NewDydx() *Dydx {
 }
 
 func (h *Dydx) Register(mux *asynq.ServeMux) error {
+  dydx.NewTickers().Register(mux)
   dydx.NewOrderbook().Register(mux)
   dydx.NewKlines().Register(mux)
   dydx.NewIndicators().Register(mux)

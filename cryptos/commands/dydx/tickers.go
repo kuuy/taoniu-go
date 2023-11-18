@@ -14,11 +14,12 @@ import (
 )
 
 type TickersHandler struct {
-  Db         *gorm.DB
-  Rdb        *redis.Client
-  Ctx        context.Context
-  Nats       *nats.Conn
-  Repository *repositories.TickersRepository
+  Db                *gorm.DB
+  Rdb               *redis.Client
+  Ctx               context.Context
+  Nats              *nats.Conn
+  Repository        *repositories.TickersRepository
+  MarketsRepository *repositories.MarketsRepository
 }
 
 func NewTickersCommand() *cli.Command {
@@ -36,6 +37,9 @@ func NewTickersCommand() *cli.Command {
       h.Repository = &repositories.TickersRepository{
         Rdb: h.Rdb,
         Ctx: h.Ctx,
+      }
+      h.MarketsRepository = &repositories.MarketsRepository{
+        Db: h.Db,
       }
       return nil
     },
@@ -56,5 +60,9 @@ func NewTickersCommand() *cli.Command {
 
 func (h *TickersHandler) Flush() error {
   log.Println("tickers flush...")
+  err := h.Repository.Flush()
+  if err != nil {
+    return err
+  }
   return nil
 }

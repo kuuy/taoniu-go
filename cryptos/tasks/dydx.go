@@ -18,6 +18,7 @@ type DydxTask struct {
   Rdb            *redis.Client
   Ctx            context.Context
   Asynq          *asynq.Client
+  TickersTask    *tasks.TickersTask
   AccountTask    *tasks.AccountTask
   MarketsTask    *tasks.MarketsTask
   OrderbookTask  *tasks.OrderbookTask
@@ -30,8 +31,18 @@ type DydxTask struct {
   TradingsTask   *tasks.TradingsTask
   ScalpingTask   *tasks.ScalpingTask
   TriggersTask   *tasks.TriggersTask
+  AnalysisTask   *tasks.AnalysisTask
   ServerTask     *tasks.ServerTask
   CronTask       *tasks.CronTask
+}
+
+func (t *DydxTask) Tickers() *tasks.TickersTask {
+  if t.TickersTask == nil {
+    t.TickersTask = &tasks.TickersTask{
+      Asynq: t.Asynq,
+    }
+  }
+  return t.TickersTask
 }
 
 func (t *DydxTask) Account() *tasks.AccountTask {
@@ -206,6 +217,15 @@ func (t *DydxTask) Triggers() *tasks.TriggersTask {
     }
   }
   return t.TriggersTask
+}
+
+func (t *DydxTask) Analysis() *tasks.AnalysisTask {
+  if t.AnalysisTask == nil {
+    t.AnalysisTask = &tasks.AnalysisTask{
+      Db: t.Db,
+    }
+  }
+  return t.AnalysisTask
 }
 
 func (t *DydxTask) Cron() *tasks.CronTask {

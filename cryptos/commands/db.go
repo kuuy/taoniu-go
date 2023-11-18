@@ -5,7 +5,7 @@ import (
   "gorm.io/gorm"
   "log"
   "taoniu.local/cryptos/common"
-  models "taoniu.local/cryptos/models"
+  "taoniu.local/cryptos/models"
 )
 
 type DbHandler struct {

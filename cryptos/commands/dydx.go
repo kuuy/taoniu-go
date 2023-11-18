@@ -26,6 +26,7 @@ func NewDydxCommand() *cli.Command {
       dydx.NewTradingsCommand(),
       dydx.NewStreamCommand(),
       dydx.NewTasksCommand(),
+      dydx.NewAnalysisCommand(),
     },
   }
 }
