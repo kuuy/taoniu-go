@@ -140,6 +140,6 @@ https://github.com/kuuy/taoniu-android
 [淘牛后台（vue）](https://github.com/kuuy/taoniu-admin-web)  
 [淘牛后台（golang）](https://github.com/kuuy/taoniu-admin-go)  
 
-![Anurag's GitHub stats](https://github-readme-stats.vercel.app/api?username=anuraghazra&show_icons=true&theme=radical)
+![Anurag's GitHub stats](https://github-readme-stats.vercel.app/api?username=kuuy&show_icons=true&theme=radical)
 
 ![Codewars](https://github.r2v.ch/codewars?user=kuuy&top_languages=true&stroke=%23b362ff&theme=purple_dark)
