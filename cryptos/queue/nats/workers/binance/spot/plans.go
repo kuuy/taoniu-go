@@ -36,13 +36,14 @@ func (h *Plans) Create(m *nats.Msg) {
   var payload *StrategiesUpdatePayload
   json.Unmarshal(m.Data, &payload)
 
-  planID, err := h.Repository.Create(payload.Symbol, payload.Interval)
+  plan, err := h.Repository.Create(payload.Symbol, payload.Interval)
   if err != nil {
     log.Println("plan create error", err.Error())
     return
   }
   message, _ := json.Marshal(&PlansUpdatePayload{
-    ID: planID,
+    ID:     plan.ID,
+    Amount: plan.Amount,
   })
   h.NatsContext.Conn.Publish(config.NATS_PLANS_UPDATE, message)
   h.NatsContext.Conn.Flush()

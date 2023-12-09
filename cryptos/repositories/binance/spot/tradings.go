@@ -12,8 +12,6 @@ type TradingsRepository struct {
   Db                  *gorm.DB
   Rdb                 *redis.Client
   Ctx                 context.Context
-  AccountRepository   *AccountRepository
-  ProductsRepository  ProductsRepository
   LaunchpadRepository *tradingsRepositories.LaunchpadRepository
   ScalpingRepository  *tradingsRepositories.ScalpingRepository
   TriggersRepository  *tradingsRepositories.TriggersRepository
@@ -37,60 +35,6 @@ func (r *TradingsRepository) Scan() []string {
     }
   }
   return symbols
-}
-
-func (r *TradingsRepository) Pending() map[string]float64 {
-  data := make(map[string]float64)
-  for symbol, quantity := range r.ScalpingRepository.Pending() {
-    if _, ok := data[symbol]; ok {
-      data[symbol] += quantity
-    } else {
-      data[symbol] = quantity
-    }
-  }
-  for symbol, quantity := range r.TriggersRepository.Pending() {
-    if _, ok := data[symbol]; ok {
-      data[symbol] += quantity
-    } else {
-      data[symbol] = quantity
-    }
-  }
-  return data
-}
-
-func (r *TradingsRepository) Earn() error {
-  //data := r.Pending()
-  //for symbol, pendingQuantity := range data {
-  //  _, balanceQuantity, err := r.AccountRepository.Balance(symbol)
-  //  if err != nil {
-  //    continue
-  //  }
-  //  var entity *models.Symbol
-  //  result := r.Db.Select([]string{"base_asset", "quote_asset"}).Where("symbol", symbol).Take(&entity)
-  //  if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-  //    continue
-  //  }
-  //  product, err := r.ProductsRepository.Get(entity.BaseAsset)
-  //  if err != nil {
-  //    log.Println("error", err)
-  //    continue
-  //  }
-  //  if product.Status != "PURCHASING" {
-  //    log.Println("error", product.Status)
-  //    continue
-  //  }
-  //  minPurchaseAmount := decimal.NewFromFloat(product.MinPurchaseAmount)
-  //  savingQuantity := decimal.NewFromFloat(balanceQuantity).Sub(decimal.NewFromFloat(pendingQuantity)).Div(minPurchaseAmount)
-  //  purchaseQuantity, _ := savingQuantity.Floor().Mul(minPurchaseAmount).Float64()
-  //  if product.MinPurchaseAmount > purchaseQuantity {
-  //    continue
-  //  }
-  //  _, err = r.ProductsRepository.Purchase(product.ProductId, purchaseQuantity)
-  //  if err != nil {
-  //    return err
-  //  }
-  //}
-  return nil
 }
 
 func (r *TradingsRepository) contains(s []string, str string) bool {

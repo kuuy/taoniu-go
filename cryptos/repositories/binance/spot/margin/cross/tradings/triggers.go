@@ -47,7 +47,7 @@ func (r *TriggersRepository) Place(symbol string) error {
     return err
   }
 
-  tickSize, stepSize, err := r.SymbolsRepository.Filters(entity.Filters)
+  tickSize, stepSize, _, err := r.SymbolsRepository.Filters(entity.Filters)
   if err != nil {
     return nil
   }

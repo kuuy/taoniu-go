@@ -3,11 +3,11 @@ package tasks
 import (
   "context"
   "fmt"
-  "github.com/nats-io/nats.go"
   "log"
   "time"
 
   "github.com/go-redis/redis/v8"
+  "github.com/nats-io/nats.go"
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
 

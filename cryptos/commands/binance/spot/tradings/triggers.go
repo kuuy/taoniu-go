@@ -31,9 +31,7 @@ func NewTriggersCommand() *cli.Command {
         Ctx: context.Background(),
       }
       h.Repository = &repositories.TriggersRepository{
-        Db:  h.Db,
-        Rdb: h.Rdb,
-        Ctx: h.Ctx,
+        Db: h.Db,
       }
       h.Repository.SymbolsRepository = &spotRepositories.SymbolsRepository{
         Db:  h.Db,

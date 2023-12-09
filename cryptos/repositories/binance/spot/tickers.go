@@ -5,7 +5,6 @@ import (
   "encoding/json"
   "errors"
   "fmt"
-  "github.com/shopspring/decimal"
   "net"
   "net/http"
   "os"
@@ -14,6 +13,7 @@ import (
   "time"
 
   "github.com/go-redis/redis/v8"
+  "github.com/shopspring/decimal"
 
   "taoniu.local/cryptos/common"
 )

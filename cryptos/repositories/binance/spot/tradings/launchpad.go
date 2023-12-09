@@ -81,7 +81,7 @@ func (r *LaunchpadRepository) Place(id string) error {
     return err
   }
 
-  tickSize, stepSize, err := r.SymbolsRepository.Filters(entity.Filters)
+  tickSize, stepSize, _, err := r.SymbolsRepository.Filters(entity.Filters)
   if err != nil {
     return nil
   }
@@ -102,7 +102,7 @@ func (r *LaunchpadRepository) Place(id string) error {
   buys := r.Buys(launchpad.Capital, launchpad.CorePrice, tickSize, stepSize)
   sells := r.Sells(launchpad.Capital, launchpad.CorePrice, tickSize, stepSize)
   for i := 0; i < len(buys); i++ {
-    if balance < buys[i].BuyAmount {
+    if balance["free"] < buys[i].BuyAmount {
       log.Println(fmt.Sprintf("[%s] balance not enough buy at %v", launchpad.Symbol, buys[i].BuyPrice))
       break
     }
@@ -113,7 +113,7 @@ func (r *LaunchpadRepository) Place(id string) error {
     }
     if !r.CanBuy(launchpad, buys[i].BuyPrice, basePrice) {
       log.Println(fmt.Sprintf("[%s] can not buy at %v", launchpad.Symbol, buys[i].BuyPrice))
-      balance, _ = decimal.NewFromFloat(balance).Sub(decimal.NewFromFloat(buys[i].BuyAmount)).Float64()
+      balance["free"], _ = decimal.NewFromFloat(balance["free"]).Sub(decimal.NewFromFloat(buys[i].BuyAmount)).Float64()
       continue
     }
 
@@ -149,7 +149,7 @@ func (r *LaunchpadRepository) Place(id string) error {
       log.Println(fmt.Sprintf("[%s] can not buy at %v", launchpad.Symbol, buys[i].BuyPrice), err.Error())
       break
     }
-    balance, _ = decimal.NewFromFloat(balance).Sub(decimal.NewFromFloat(buys[i].BuyAmount)).Float64()
+    balance["free"], _ = decimal.NewFromFloat(balance["free"]).Sub(decimal.NewFromFloat(buys[i].BuyAmount)).Float64()
   }
 
   return nil
@@ -189,7 +189,7 @@ func (r *LaunchpadRepository) Buys(
     if buyAmount < 10 {
       buyAmount = 10
     }
-    buyQuantity = r.PositionRepository.BuyQuantity(1, buyAmount, entryPrice, entryAmount)
+    buyQuantity = r.PositionRepository.BuyQuantity(buyAmount, entryPrice, entryAmount)
     buyPrice, _ = decimal.NewFromFloat(buyAmount).Div(decimal.NewFromFloat(buyQuantity)).Float64()
     buyPrice, _ = decimal.NewFromFloat(buyPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
     buyQuantity, _ = decimal.NewFromFloat(buyQuantity).Div(decimal.NewFromFloat(stepSize)).Ceil().Mul(decimal.NewFromFloat(stepSize)).Float64()
@@ -246,7 +246,7 @@ func (r *LaunchpadRepository) Sells(
     if sellAmount < 10 {
       sellAmount = 10
     }
-    sellQuantity = r.PositionRepository.BuyQuantity(2, sellAmount, entryPrice, entryAmount)
+    sellQuantity = r.PositionRepository.SellQuantity(sellAmount, entryPrice, entryAmount)
     sellPrice, _ = decimal.NewFromFloat(sellAmount).Div(decimal.NewFromFloat(sellQuantity)).Float64()
     sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
     sellQuantity, _ = decimal.NewFromFloat(sellQuantity).Div(decimal.NewFromFloat(stepSize)).Ceil().Mul(decimal.NewFromFloat(stepSize)).Float64()
@@ -389,7 +389,7 @@ func (r *LaunchpadRepository) Take(launchpad *spotModels.Launchpad, price float6
     return err
   }
 
-  tickSize, _, err := r.SymbolsRepository.Filters(entity.Filters)
+  tickSize, _, _, err := r.SymbolsRepository.Filters(entity.Filters)
   if err != nil {
     return nil
   }

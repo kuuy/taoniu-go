@@ -53,7 +53,7 @@ func (r *PlansRepository) Count(conditions map[string]interface{}) int64 {
     query.Where("symbol", conditions["symbol"].(string))
   }
   if _, ok := conditions["side"]; ok {
-    query.Where("side", conditions["int"].(string))
+    query.Where("side", conditions["side"].(string))
   }
   query.Count(&total)
   return total
@@ -189,8 +189,7 @@ func (r *PlansRepository) Signals(interval string) (map[string]interface{}, map[
 
   return buys, sells
 }
-
-func (r *PlansRepository) Create(symbol string, interval string) (planID string, err error) {
+func (r *PlansRepository) Create(symbol string, interval string) (plan models.Plan, err error) {
   var strategy models.Strategy
   result := r.Db.Select([]string{"price", "signal", "timestamp"}).Where(
     "symbol = ? AND interval = ? AND indicator = 'kdj' AND timestamp >= ?",
@@ -251,10 +250,10 @@ func (r *PlansRepository) Create(symbol string, interval string) (planID string,
   var entity models.Plan
   result = r.Db.Where("symbol=? AND interval=? AND timestamp=?", symbol, interval, strategy.Timestamp).Take(&entity)
   if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    err = result.Error
+    err = errors.New("plan timestamp has been taken")
     return
   }
-  entity = models.Plan{
+  plan = models.Plan{
     ID:        xid.New().String(),
     Symbol:    symbol,
     Interval:  interval,
@@ -264,16 +263,17 @@ func (r *PlansRepository) Create(symbol string, interval string) (planID string,
     Amount:    amount,
     Timestamp: strategy.Timestamp,
   }
-  r.Db.Create(&entity)
+  r.Db.Create(&plan)
 
-  return entity.ID, nil
+  return
 }
 
 func (r *PlansRepository) Timestep(interval string) int64 {
   if interval == "1m" {
     return 60000
-  }
-  if interval == "4h" {
+  } else if interval == "15m" {
+    return 900000
+  } else if interval == "4h" {
     return 14400000
   }
   return 86400000
@@ -282,7 +282,10 @@ func (r *PlansRepository) Timestep(interval string) int64 {
 func (r *PlansRepository) Timestamp(interval string) int64 {
   now := time.Now().UTC()
   duration := -time.Second * time.Duration(now.Second())
-  if interval == "4h" {
+  if interval == "15m" {
+    minute, _ := decimal.NewFromInt(int64(now.Minute())).Div(decimal.NewFromInt(15)).Floor().Mul(decimal.NewFromInt(15)).Float64()
+    duration = duration - time.Minute*time.Duration(now.Minute()-int(minute))
+  } else if interval == "4h" {
     hour, _ := decimal.NewFromInt(int64(now.Hour())).Div(decimal.NewFromInt(4)).Floor().Mul(decimal.NewFromInt(4)).Float64()
     duration = duration - time.Hour*time.Duration(now.Hour()-int(hour)) - time.Minute*time.Duration(now.Minute())
   } else if interval == "1d" {
@@ -296,5 +299,6 @@ func (r *PlansRepository) Filters(symbol string) (tickSize float64, stepSize flo
   if err != nil {
     return
   }
-  return r.SymbolsRepository.Filters(entity.Filters)
+  tickSize, stepSize, _, err = r.SymbolsRepository.Filters(entity.Filters)
+  return
 }

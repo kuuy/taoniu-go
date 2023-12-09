@@ -2,6 +2,7 @@ package tradings
 
 import (
   "gorm.io/datatypes"
+  models "taoniu.local/cryptos/models/binance/spot"
   spotModels "taoniu.local/cryptos/models/binance/spot"
 )
 
@@ -17,21 +18,24 @@ type AnalysisRepository interface {
 type SymbolsRepository interface {
   Price(symbol string) (float64, error)
   Get(symbol string) (spotModels.Symbol, error)
-  Filters(params datatypes.JSONMap) (float64, float64, error)
+  Filters(params datatypes.JSONMap) (float64, float64, float64, error)
   Flush() error
 }
 
 type AccountRepository interface {
-  Balance(symbol string) (float64, error)
+  Balance(symbol string) (map[string]float64, error)
   Flush() error
 }
 
 type PositionRepository interface {
-  Ratio(capital float64, entryAmount float64) float64
-  BuyQuantity(side int, buyAmount float64, entryPrice float64, entryAmount float64) float64
-  SellPrice(side int, entryPrice float64, entryAmount float64) float64
-  TakePrice(entryPrice float64, side int, tickSize float64) float64
+  Get(symbol string) (models.Position, error)
   Capital(capital float64, entryAmount float64, place int) (float64, error)
+  Ratio(capital float64, entryAmount float64) float64
+  BuyQuantity(buyAmount float64, entryPrice float64, entryAmount float64) float64
+  SellQuantity(sellAmount float64, entryPrice float64, entryAmount float64) float64
+  SellPrice(entryPrice float64, entryAmount float64) float64
+  TakePrice(entryPrice float64, tickSize float64) float64
+  StopPrice(maxCapital float64, price float64, entryPrice float64, entryQuantity float64, tickSize float64, stepSize float64) (float64, error)
 }
 
 type OrdersRepository interface {

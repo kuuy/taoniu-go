@@ -8,7 +8,7 @@ import (
 type SymbolsRepository interface {
   Price(symbol string) (float64, error)
   Get(symbol string) (spotModels.Symbol, error)
-  Filters(params datatypes.JSONMap) (float64, float64, error)
+  Filters(params datatypes.JSONMap) (float64, float64, float64, error)
 }
 
 type AccountRepository interface {

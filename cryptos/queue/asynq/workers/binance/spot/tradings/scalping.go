@@ -16,11 +16,10 @@ import (
 )
 
 type Scalping struct {
-  Db                *gorm.DB
-  Rdb               *redis.Client
-  Ctx               context.Context
-  Repository        *repositories.ScalpingRepository
-  SymbolsRepository *spotRepositories.SymbolsRepository
+  Db         *gorm.DB
+  Rdb        *redis.Client
+  Ctx        context.Context
+  Repository *repositories.ScalpingRepository
 }
 
 func NewScalping() *Scalping {
@@ -30,9 +29,7 @@ func NewScalping() *Scalping {
     Ctx: context.Background(),
   }
   h.Repository = &repositories.ScalpingRepository{
-    Db:  h.Db,
-    Rdb: h.Rdb,
-    Ctx: h.Ctx,
+    Db: h.Db,
   }
   h.Repository.SymbolsRepository = &spotRepositories.SymbolsRepository{
     Db:  h.Db,
@@ -40,7 +37,6 @@ func NewScalping() *Scalping {
     Ctx: h.Ctx,
   }
   h.Repository.AccountRepository = &spotRepositories.AccountRepository{
-    Db:  h.Db,
     Rdb: h.Rdb,
     Ctx: h.Ctx,
   }
@@ -49,7 +45,9 @@ func NewScalping() *Scalping {
     Rdb: h.Rdb,
     Ctx: h.Ctx,
   }
-
+  h.Repository.PositionRepository = &spotRepositories.PositionsRepository{
+    Db: h.Db,
+  }
   return h
 }
 

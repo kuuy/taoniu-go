@@ -2,6 +2,7 @@ package spot
 
 import (
   "context"
+  "errors"
   "fmt"
   "github.com/adshao/go-binance/v2"
   "github.com/go-redis/redis/v8"
@@ -57,16 +58,27 @@ func (r *AccountRepository) Flush() error {
   return nil
 }
 
-func (r *AccountRepository) Balance(asset string) (balance float64, err error) {
-  value, err := r.Rdb.HGet(
-    r.Ctx,
-    fmt.Sprintf("binance:spot:balance:%s", asset),
+func (r *AccountRepository) Balance(asset string) (map[string]float64, error) {
+  fields := []string{
     "free",
-  ).Result()
-  if err == nil {
-    balance, _ = strconv.ParseFloat(value, 64)
+    "lock",
   }
-  return
+  data, _ := r.Rdb.HMGet(
+    r.Ctx,
+    fmt.Sprintf(
+      "binance:spot:balance:%s",
+      asset,
+    ),
+    fields...,
+  ).Result()
+  balance := map[string]float64{}
+  for i, field := range fields {
+    if data[i] == nil {
+      return nil, errors.New("balance not exists")
+    }
+    balance[field], _ = strconv.ParseFloat(data[i].(string), 64)
+  }
+  return balance, nil
 }
 
 func (r *AccountRepository) contains(s []string, str string) bool {

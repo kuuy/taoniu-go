@@ -1,15 +1,16 @@
 package tradings
 
 import (
-  "context"
   "errors"
+  "fmt"
   "log"
+  "math"
   "time"
 
   "gorm.io/gorm"
 
   "github.com/adshao/go-binance/v2/common"
-  "github.com/go-redis/redis/v8"
+  "github.com/rs/xid"
   "github.com/shopspring/decimal"
 
   spotModels "taoniu.local/cryptos/models/binance/spot"
@@ -17,12 +18,11 @@ import (
 )
 
 type ScalpingRepository struct {
-  Db                *gorm.DB
-  Rdb               *redis.Client
-  Ctx               context.Context
-  SymbolsRepository SymbolsRepository
-  AccountRepository AccountRepository
-  OrdersRepository  OrdersRepository
+  Db                 *gorm.DB
+  SymbolsRepository  SymbolsRepository
+  AccountRepository  AccountRepository
+  OrdersRepository   OrdersRepository
+  PositionRepository PositionRepository
 }
 
 func (r *ScalpingRepository) Scan() []string {
@@ -33,7 +33,7 @@ func (r *ScalpingRepository) Scan() []string {
 
 func (r *ScalpingRepository) ScalpingIds() []string {
   var ids []string
-  r.Db.Model(&models.Scalping{}).Select("scalping_id").Where("status", []int{0, 1, 2}).Distinct().Pluck("scalping_id", &ids)
+  r.Db.Model(&models.Scalping{}).Select("scalping_id").Where("status", []int{0, 1, 2}).Distinct("scalping_id").Find(&ids)
   return ids
 }
 
@@ -59,15 +59,18 @@ func (r *ScalpingRepository) Count(conditions map[string]interface{}) int64 {
 }
 
 func (r *ScalpingRepository) Listings(conditions map[string]interface{}, current int, pageSize int) []*models.Scalping {
-  var grids []*models.Scalping
+  var tradings []*models.Scalping
   query := r.Db.Select([]string{
     "id",
     "symbol",
-    "side",
+    "scalping_id",
+    "plan_id",
     "buy_price",
     "buy_quantity",
     "sell_price",
     "sell_quantity",
+    "buy_order_id",
+    "sell_order_id",
     "status",
     "created_at",
     "updated_at",
@@ -81,8 +84,8 @@ func (r *ScalpingRepository) Listings(conditions map[string]interface{}, current
     query.Where("status IN ?", []int{0, 1, 2, 3})
   }
   query.Order("updated_at desc")
-  query.Offset((current - 1) * pageSize).Limit(pageSize).Find(&grids)
-  return grids
+  query.Offset((current - 1) * pageSize).Limit(pageSize).Find(&tradings)
+  return tradings
 }
 
 func (r *ScalpingRepository) Flush(id string) error {
@@ -98,50 +101,48 @@ func (r *ScalpingRepository) Flush(id string) error {
   }
   err = r.Take(scalping, price)
   if err != nil {
-    log.Println("take error", err)
+    log.Println("take error", scalping.Symbol, err)
   }
+
+  var side = "BUY"
 
   var tradings []*models.Scalping
   r.Db.Where("scalping_id=? AND status IN ?", scalping.ID, []int{0, 2}).Find(&tradings)
 
   for _, trading := range tradings {
     if trading.Status == 0 {
+      status := r.OrdersRepository.Status(trading.Symbol, trading.BuyOrderId)
       timestamp := trading.CreatedAt.Unix()
       if trading.BuyOrderId == 0 {
-        orderID := r.OrdersRepository.Lost(trading.Symbol, "BUY", trading.BuyQuantity, timestamp-30)
+        orderID := r.OrdersRepository.Lost(trading.Symbol, side, trading.BuyQuantity, timestamp-30)
         if orderID > 0 {
           trading.BuyOrderId = orderID
-          err := r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+          result := r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
             "buy_order_id": trading.BuyOrderId,
             "version":      gorm.Expr("version + ?", 1),
-          }).Error
-          if err != nil {
-            return err
+          })
+          if result.Error != nil {
+            return result.Error
           }
+          if result.RowsAffected == 0 {
+            return errors.New("order update failed")
+          }
+        }
+        if timestamp < time.Now().Unix()-900 {
+          r.Db.Model(&trading).Update("status", 6)
         }
       } else {
         if timestamp < time.Now().Unix()-900 {
-          r.OrdersRepository.Flush(trading.Symbol, trading.BuyOrderId)
-          status := r.OrdersRepository.Status(trading.Symbol, trading.BuyOrderId)
           if status == "NEW" {
-            err := r.OrdersRepository.Cancel(trading.Symbol, trading.BuyOrderId)
-            if err != nil {
-              apiError, ok := err.(common.APIError)
-              if ok {
-                err := r.ApiError(apiError, scalping)
-                if err != nil {
-                  return err
-                }
-              }
-            }
+            r.OrdersRepository.Cancel(trading.Symbol, trading.BuyOrderId)
+          }
+          if status == "" {
             r.OrdersRepository.Flush(trading.Symbol, trading.BuyOrderId)
           }
         }
       }
 
-      status := r.OrdersRepository.Status(trading.Symbol, trading.BuyOrderId)
       if status == "" || status == "NEW" || status == "PARTIALLY_FILLED" {
-        r.OrdersRepository.Flush(trading.Symbol, trading.BuyOrderId)
         continue
       }
 
@@ -151,49 +152,52 @@ func (r *ScalpingRepository) Flush(id string) error {
         trading.Status = 4
       }
 
-      err := r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+      result := r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
         "buy_order_id": trading.BuyOrderId,
         "status":       trading.Status,
         "version":      gorm.Expr("version + ?", 1),
-      }).Error
-      if err != nil {
-        return err
+      })
+      if result.Error != nil {
+        return result.Error
+      }
+      if result.RowsAffected == 0 {
+        return errors.New("order update failed")
       }
     }
 
     if trading.Status == 2 {
+      status := r.OrdersRepository.Status(trading.Symbol, trading.SellOrderId)
       timestamp := trading.UpdatedAt.Unix()
       if trading.SellOrderId == 0 {
-        orderID := r.OrdersRepository.Lost(trading.Symbol, "SELL", trading.SellQuantity, timestamp-30)
+        orderID := r.OrdersRepository.Lost(trading.Symbol, side, trading.SellQuantity, timestamp-30)
         if orderID > 0 {
           trading.SellOrderId = orderID
-          if err := r.Db.Model(&models.Scalping{ID: trading.ID}).Updates(trading).Error; err != nil {
-            return err
+          result := r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+            "sell_order_id": trading.SellOrderId,
+            "version":       gorm.Expr("version + ?", 1),
+          })
+          if result.Error != nil {
+            return result.Error
           }
+          if result.RowsAffected == 0 {
+            return errors.New("order update failed")
+          }
+        }
+        if timestamp < time.Now().Unix()-900 {
+          r.Db.Model(&trading).Update("status", 1)
         }
       } else {
         if timestamp < time.Now().Unix()-900 {
-          r.OrdersRepository.Flush(trading.Symbol, trading.SellOrderId)
-          status := r.OrdersRepository.Status(trading.Symbol, trading.SellOrderId)
           if status == "NEW" {
-            err := r.OrdersRepository.Cancel(trading.Symbol, trading.SellOrderId)
-            if err != nil {
-              apiError, ok := err.(common.APIError)
-              if ok {
-                err := r.ApiError(apiError, scalping)
-                if err != nil {
-                  return err
-                }
-              }
-            }
+            r.OrdersRepository.Cancel(trading.Symbol, trading.SellOrderId)
+          }
+          if status == "" {
             r.OrdersRepository.Flush(trading.Symbol, trading.SellOrderId)
           }
         }
       }
 
-      status := r.OrdersRepository.Status(trading.Symbol, trading.SellOrderId)
       if status == "" || status == "NEW" || status == "PARTIALLY_FILLED" {
-        r.OrdersRepository.Flush(trading.Symbol, trading.SellOrderId)
         continue
       }
 
@@ -206,13 +210,16 @@ func (r *ScalpingRepository) Flush(id string) error {
         trading.Status = 5
       }
 
-      err := r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+      result := r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
         "sell_order_id": trading.SellOrderId,
         "status":        trading.Status,
         "version":       gorm.Expr("version + ?", 1),
-      }).Error
-      if err != nil {
-        return err
+      })
+      if result.Error != nil {
+        return result.Error
+      }
+      if result.RowsAffected == 0 {
+        return errors.New("order update failed")
       }
     }
   }
@@ -224,34 +231,48 @@ func (r *ScalpingRepository) Place(planID string) error {
   var plan *spotModels.Plan
   result := r.Db.First(&plan, "id=?", planID)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+    r.Db.Model(&spotModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 10)
     return errors.New("plan empty")
   }
 
   if plan.Side != 1 {
-    r.Db.Model(&plan).Update("status", 5)
-    return errors.New("plan buy only")
-  }
-
-  if plan.Amount <= 10 {
-    r.Db.Model(&plan).Update("status", 5)
-    return errors.New("plan a bit risk")
+    r.Db.Model(&spotModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 4)
+    return errors.New("only for long side plan")
   }
 
   timestamp := time.Now().Unix()
-  if plan.Interval == "1d" && plan.CreatedAt.Unix() < timestamp-21600 {
-    r.Db.Model(&plan).Update("status", 4)
+  if plan.Interval == "1m" && plan.CreatedAt.Unix() < timestamp-900 {
+    r.Db.Model(&spotModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 4)
     return errors.New("plan has been expired")
   }
-  if plan.Interval == "1m" && plan.CreatedAt.Unix() < timestamp-900 {
-    r.Db.Model(&plan).Update("status", 4)
+  if plan.Interval == "15m" && plan.CreatedAt.Unix() < timestamp-2700 {
+    r.Db.Model(&spotModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 4)
+    return errors.New("plan has been expired")
+  }
+  if plan.Interval == "4h" && plan.CreatedAt.Unix() < timestamp-5400 {
+    r.Db.Model(&spotModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 4)
+    return errors.New("plan has been expired")
+  }
+  if plan.Interval == "1d" && plan.CreatedAt.Unix() < timestamp-21600 {
+    r.Db.Model(&spotModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 4)
     return errors.New("plan has been expired")
   }
 
   var scalping *spotModels.Scalping
   result = r.Db.Model(&scalping).Where("symbol = ? AND side = ? AND status = 1", plan.Symbol, plan.Side).Take(&scalping)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    r.Db.Model(&plan).Update("status", 5)
+    r.Db.Model(&spotModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 5)
     return errors.New("scalping empty")
+  }
+
+  if plan.Side == 1 && plan.Price > scalping.Price {
+    r.Db.Model(&spotModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 5)
+    return errors.New("plan price too high")
+  }
+
+  if plan.Side == 2 && plan.Price < scalping.Price {
+    r.Db.Model(&spotModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 5)
+    return errors.New("plan price too low")
   }
 
   entity, err := r.SymbolsRepository.Get(plan.Symbol)
@@ -259,10 +280,12 @@ func (r *ScalpingRepository) Place(planID string) error {
     return err
   }
 
-  tickSize, stepSize, err := r.SymbolsRepository.Filters(entity.Filters)
+  tickSize, stepSize, notional, err := r.SymbolsRepository.Filters(entity.Filters)
   if err != nil {
     return nil
   }
+
+  var side = "BUY"
 
   price, err := r.SymbolsRepository.Price(plan.Symbol)
   if err != nil {
@@ -270,306 +293,236 @@ func (r *ScalpingRepository) Place(planID string) error {
   }
 
   buyPrice := plan.Price
+  if price < buyPrice {
+    buyPrice = price
+  }
+  buyPrice, _ = decimal.NewFromFloat(buyPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+
+  var entryPrice float64
+
+  position, err := r.PositionRepository.Get(plan.Symbol)
+  if err == nil {
+    if position.EntryQuantity > 0 {
+      entryPrice = position.EntryPrice
+    }
+    if position.Timestamp > scalping.Timestamp {
+      scalping.Timestamp = position.Timestamp
+      if position.EntryQuantity == 0 {
+        r.Close(scalping)
+      }
+      err := r.Db.Model(&scalping).Where("version", scalping.Version).Updates(map[string]interface{}{
+        "timestamp": scalping.Timestamp,
+        "version":   gorm.Expr("version + ?", 1),
+      }).Error
+      if err != nil {
+        return err
+      }
+    }
+  }
+
+  if entryPrice > 0 {
+    if price > entryPrice {
+      return errors.New(fmt.Sprintf("[%s] price big than entry price", scalping.Symbol))
+    }
+  }
+
+  var sellPrice float64
   if plan.Side == 1 {
-    if price < buyPrice {
-      buyPrice = price
+    if plan.Amount > 15 {
+      if plan.Interval == "1m" {
+        sellPrice = buyPrice * 1.0105
+      } else if plan.Interval == "15m" {
+        sellPrice = buyPrice * 1.0125
+      } else if plan.Interval == "4h" {
+        sellPrice = buyPrice * 1.0185
+      } else if plan.Interval == "1d" {
+        sellPrice = buyPrice * 1.0385
+      }
+    } else {
+      if plan.Interval == "1m" {
+        sellPrice = buyPrice * 1.0085
+      } else if plan.Interval == "15m" {
+        sellPrice = buyPrice * 1.0105
+      } else if plan.Interval == "4h" {
+        sellPrice = buyPrice * 1.012
+      } else if plan.Interval == "1d" {
+        sellPrice = buyPrice * 1.0135
+      }
     }
-    buyPrice, _ = decimal.NewFromFloat(buyPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
   } else {
-    if price > buyPrice {
-      buyPrice = price
+    if plan.Amount > 15 {
+      if plan.Interval == "1m" {
+        sellPrice = buyPrice * 0.9895
+      } else if plan.Interval == "15m" {
+        sellPrice = buyPrice * 0.9875
+      } else if plan.Interval == "4h" {
+        sellPrice = buyPrice * 0.9815
+      } else if plan.Interval == "1d" {
+        sellPrice = buyPrice * 0.9615
+      }
+    } else {
+      if plan.Interval == "1m" {
+        sellPrice = buyPrice * 0.9915
+      } else if plan.Interval == "15m" {
+        sellPrice = buyPrice * 0.9895
+      } else if plan.Interval == "4h" {
+        sellPrice = buyPrice * 0.988
+      } else if plan.Interval == "1d" {
+        sellPrice = buyPrice * 0.9865
+      }
     }
-    buyPrice, _ = decimal.NewFromFloat(buyPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
+    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
   }
 
-  log.Println("ticker", tickSize, stepSize)
-  //var entryPrice float64
-  //
-  //log.Println("account", entryPrice, err)
-  //if err == nil {
-  //  entryPrice = position.EntryPrice
-  //  if position.Timestamp > scalping.Timestamp {
-  //    scalping.Timestamp = position.Timestamp
-  //    if position.EntryQuantity == 0 {
-  //      err := r.Close(scalping)
-  //      if err != nil {
-  //        return err
-  //      }
-  //    }
-  //    err := r.Db.Model(&scalping).Where("version", scalping.Version).Updates(map[string]interface{}{
-  //      "timestamp": scalping.Timestamp,
-  //      "version":   gorm.Expr("version + ?", 1),
-  //    }).Error
-  //    if err != nil {
-  //      return err
-  //    }
-  //  }
-  //}
-  //
-  //if entryPrice > 0 {
-  //  if scalping.Side == 1 && price > entryPrice {
-  //    return errors.New(fmt.Sprintf("[%s] %s price big than entry price", scalping.Symbol, positionSide))
-  //  }
-  //  if scalping.Side == 2 && price < entryPrice {
-  //    return errors.New(fmt.Sprintf("[%s] %s price small than entry price", scalping.Symbol, positionSide))
-  //  }
-  //}
-  //
-  //var sellPrice float64
-  //if plan.Side == 1 {
-  //  if plan.Amount > 15 {
-  //    if plan.Interval == "1d" {
-  //      sellPrice = buyPrice * 1.035
-  //    }
-  //    if plan.Interval == "1m" {
-  //      sellPrice = buyPrice * 1.009
-  //    }
-  //  } else {
-  //    if plan.Interval == "1d" {
-  //      sellPrice = buyPrice * 1.01
-  //    }
-  //    if plan.Interval == "1m" {
-  //      sellPrice = buyPrice * 1.005
-  //    }
-  //  }
-  //  sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
-  //} else {
-  //  if plan.Amount > 15 {
-  //    if plan.Interval == "1d" {
-  //      sellPrice = buyPrice * 0.965
-  //    }
-  //    if plan.Interval == "1m" {
-  //      sellPrice = buyPrice * 0.991
-  //    }
-  //  } else {
-  //    if plan.Interval == "1d" {
-  //      sellPrice = buyPrice * 0.99
-  //    }
-  //    if plan.Interval == "1m" {
-  //      sellPrice = buyPrice * 0.995
-  //    }
-  //  }
-  //  sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
-  //}
-  //
-  //buyQuantity, _ := decimal.NewFromFloat(5).Div(decimal.NewFromFloat(buyPrice)).Float64()
-  //buyQuantity, _ = decimal.NewFromFloat(buyQuantity).Div(decimal.NewFromFloat(stepSize)).Ceil().Mul(decimal.NewFromFloat(stepSize)).Float64()
-  //
-  //buyAmount, _ := decimal.NewFromFloat(buyPrice).Mul(decimal.NewFromFloat(buyQuantity)).Float64()
-  //
-  //if plan.Side == 1 && price > buyPrice {
-  //  return errors.New(fmt.Sprintf("[%s] %s price must reach %v", scalping.Symbol, positionSide, buyPrice))
-  //}
-  //
-  //if plan.Side == 2 && price < buyPrice {
-  //  return errors.New(fmt.Sprintf("[%s] %s price must reach %v", scalping.Symbol, positionSide, buyPrice))
-  //}
-  //
-  //if !r.CanBuy(scalping, buyPrice) {
-  //  return errors.New(fmt.Sprintf("[%s] %s can not buy now", scalping.Symbol, positionSide))
-  //}
-  //
-  //balance, err := r.AccountRepository.Balance(entity.QuoteAsset)
-  //if err != nil {
-  //  return err
-  //}
-  //
-  //if position.ID != "" && balance["margin"] < 5 {
-  //  return errors.New(fmt.Sprintf("[%s] margin must reach 5", entity.QuoteAsset))
-  //} else if buyAmount < balance["margin"]*float64(position.Leverage) {
-  //  return errors.New(fmt.Sprintf("[%s] margin not enough", entity.QuoteAsset))
-  //}
-  //
-  //return r.Db.Transaction(func(tx *gorm.DB) (err error) {
-  //  if position.ID != "" {
-  //    err = tx.Model(&position).Where("version", position.Version).Updates(map[string]interface{}{
-  //      "entry_quantity": gorm.Expr("entry_quantity + ?", buyQuantity),
-  //      "version":        gorm.Expr("version + ?", 1),
-  //    }).Error
-  //    if err != nil {
-  //      return
-  //    }
-  //  }
-  //
-  //  orderID, err := r.OrdersRepository.Create(plan.Symbol, positionSide, side, buyPrice, buyQuantity)
-  //  if err != nil {
-  //    apiError, ok := err.(common.APIError)
-  //    if ok {
-  //      err := r.ApiError(apiError, scalping)
-  //      if err != nil {
-  //        return err
-  //      }
-  //    }
-  //    scalping.Remark = err.Error()
-  //  }
-  //
-  //  err = tx.Model(&scalping).Where("version", scalping.Version).Updates(map[string]interface{}{
-  //    "remark":  scalping.Remark,
-  //    "version": gorm.Expr("version + ?", 1),
-  //  }).Error
-  //  if err != nil {
-  //    return
-  //  }
-  //
-  //  err = tx.Model(&plan).Update("status", 1).Error
-  //  if err != nil {
-  //    return
-  //  }
-  //
-  //  entity := &models.Scalping{
-  //    ID:           xid.New().String(),
-  //    Symbol:       plan.Symbol,
-  //    ScalpingID:   scalping.ID,
-  //    PlanID:       plan.ID,
-  //    BuyOrderId:   orderID,
-  //    BuyPrice:     buyPrice,
-  //    BuyQuantity:  buyQuantity,
-  //    SellPrice:    sellPrice,
-  //    SellQuantity: buyQuantity,
-  //  }
-  //  return tx.Create(&entity).Error
-  //})
+  buyQuantity, _ := decimal.NewFromFloat(notional).Div(decimal.NewFromFloat(buyPrice)).Float64()
+  buyQuantity, _ = decimal.NewFromFloat(buyQuantity).Div(decimal.NewFromFloat(stepSize)).Ceil().Mul(decimal.NewFromFloat(stepSize)).Float64()
 
-  return nil
-}
+  if price > buyPrice {
+    return errors.New(fmt.Sprintf("[%s] price must reach %v", scalping.Symbol, buyPrice))
+  }
 
-func (r *ScalpingRepository) Take(scalping *spotModels.Scalping, price float64) error {
-  //var entryPrice float64
-  //var sellPrice float64
-  //var trading *models.Scalping
-  //
-  //position, err := r.PositionRepository.Get(scalping.Symbol, scalping.Side)
-  //if err == nil {
-  //  entryPrice = position.EntryPrice
-  //  if position.Timestamp > scalping.Timestamp {
-  //    scalping.Timestamp = position.Timestamp
-  //    if position.EntryQuantity == 0 {
-  //      return r.Close(scalping)
-  //    }
-  //  }
-  //}
-  //
-  //entity, err := r.SymbolsRepository.Get(scalping.Symbol)
-  //if err != nil {
-  //  return err
-  //}
-  //
-  //tickSize, _, err := r.SymbolsRepository.Filters(entity.Filters)
-  //if err != nil {
-  //  return nil
-  //}
-  //
-  //if scalping.Side == 1 {
-  //  result := r.Db.Where("scalping_id=? AND status=?", scalping.ID, 1).Order("sell_price asc").Take(&trading)
-  //  if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-  //    return errors.New("empty grid")
-  //  }
-  //  if price < trading.SellPrice {
-  //    if price < entryPrice*1.035 {
-  //      return errors.New("price too low")
-  //    }
-  //    sellPrice = entryPrice * 1.035
-  //  } else {
-  //    sellPrice = trading.SellPrice
-  //  }
-  //  if sellPrice < price*0.9985 {
-  //    sellPrice = price * 0.9985
-  //  }
-  //  sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
-  //}
-  //
-  //if scalping.Side == 2 {
-  //  result := r.Db.Where("scalping_id=? AND status=?", scalping.ID, 1).Order("sell_price desc").Take(&trading)
-  //  if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-  //    return errors.New("empty grid")
-  //  }
-  //  if price > trading.SellPrice {
-  //    if price > entryPrice*0.965 {
-  //      return errors.New("price too high")
-  //    }
-  //    sellPrice = entryPrice * 0.965
-  //  } else {
-  //    sellPrice = trading.SellPrice
-  //  }
-  //  if sellPrice > price*1.0015 {
-  //    sellPrice = price * 1.0015
-  //  }
-  //  sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
-  //}
-  //
-  //orderID, err := r.OrdersRepository.Create(trading.Symbol, positionSide, side, sellPrice, trading.SellQuantity)
-  //if err != nil {
-  //  apiError, ok := err.(common.APIError)
-  //  if ok {
-  //    err := r.ApiError(apiError, scalping)
-  //    if err != nil {
-  //      return err
-  //    }
-  //  }
-  //  scalping.Remark = err.Error()
-  //}
-  //
-  //return r.Db.Transaction(func(tx *gorm.DB) (err error) {
-  //  err = tx.Model(&scalping).Where("version", scalping.Version).Updates(map[string]interface{}{
-  //    "remark":  scalping.Remark,
-  //    "version": gorm.Expr("version + ?", 1),
-  //  }).Error
-  //  if err != nil {
-  //    return
-  //  }
-  //
-  //  err = tx.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
-  //    "sell_order_id": orderID,
-  //    "status":        2,
-  //    "version":       gorm.Expr("version + ?", 1),
-  //  }).Error
-  //  if err != nil {
-  //    return
-  //  }
-  //  return nil
-  //})
-  return nil
-}
+  if !r.CanBuy(scalping, buyPrice) {
+    return errors.New(fmt.Sprintf("[%s] can not buy now", scalping.Symbol))
+  }
 
-func (r *ScalpingRepository) Close(scalping *spotModels.Scalping) error {
-  var total int64
-  r.Db.Model(&models.Scalping{}).Where("scalping_id = ? AND status IN ?", scalping.ID, []int{0, 1, 2}).Count(&total)
-  if total == 0 {
-    return nil
+  balance, err := r.AccountRepository.Balance(entity.QuoteAsset)
+  if err != nil {
+    return err
   }
-  r.Db.Model(&models.Scalping{}).Where("scalping_id = ? AND status = 0", scalping.ID).Count(&total)
-  if total > 0 {
-    return nil
+
+  if balance["free"] < math.Max(balance["lock"], notional) {
+    return errors.New(fmt.Sprintf("[%s] free not enough", entity.QuoteAsset))
   }
-  timestamp := time.Now().Add(-15*time.Minute).UnixNano() / int64(time.Millisecond)
-  if scalping.Timestamp > timestamp {
-    return nil
-  }
+
   return r.Db.Transaction(func(tx *gorm.DB) (err error) {
-    err = tx.Model(&scalping).Where("version", scalping.Version).Updates(map[string]interface{}{
-      "remark":  "position not exists",
-      "version": gorm.Expr("version + ?", 1),
-    }).Error
-    if err != nil {
-      return
+    if position.ID != "" {
+      result := tx.Model(&position).Where("version", position.Version).Updates(map[string]interface{}{
+        "entry_quantity": gorm.Expr("entry_quantity + ?", buyQuantity),
+        "version":        gorm.Expr("version + ?", 1),
+      })
+      if result.Error != nil {
+        return result.Error
+      }
+      if result.RowsAffected == 0 {
+        return errors.New("position update failed")
+      }
     }
-    err = tx.Model(&models.Scalping{}).Where("scalping_id=? AND status IN ?", scalping.ID, []int{0, 1, 2}).Update("status", 5).Error
+
+    orderID, err := r.OrdersRepository.Create(plan.Symbol, side, buyPrice, buyQuantity)
     if err != nil {
-      return
+      _, ok := err.(common.APIError)
+      if ok {
+        return err
+      }
+      tx.Model(&scalping).Where("version", scalping.Version).Updates(map[string]interface{}{
+        "remark":  err.Error(),
+        "version": gorm.Expr("version + ?", 1),
+      })
     }
-    return
+
+    tx.Model(&spotModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 1)
+
+    entity := &models.Scalping{
+      ID:           xid.New().String(),
+      Symbol:       plan.Symbol,
+      ScalpingID:   scalping.ID,
+      PlanID:       plan.ID,
+      BuyOrderId:   orderID,
+      BuyPrice:     buyPrice,
+      BuyQuantity:  buyQuantity,
+      SellPrice:    sellPrice,
+      SellQuantity: buyQuantity,
+    }
+    return tx.Create(&entity).Error
   })
 }
 
-func (r *ScalpingRepository) ApiError(apiError common.APIError, scalping *spotModels.Scalping) error {
-  if apiError.Code == -1111 || apiError.Code == -1121 || apiError.Code == -2010 || apiError.Code == -4016 {
+func (r *ScalpingRepository) Take(scalping *spotModels.Scalping, price float64) error {
+  var side = "SELL"
+
+  var entryPrice float64
+  var sellPrice float64
+  var trading *models.Scalping
+
+  position, err := r.PositionRepository.Get(scalping.Symbol)
+  if err != nil {
+    return err
+  }
+
+  if position.EntryQuantity == 0 {
+    r.Close(scalping)
+    return errors.New(fmt.Sprintf("[%s] empty position", scalping.Symbol))
+  }
+
+  entryPrice = position.EntryPrice
+  if position.Timestamp > scalping.Timestamp {
+    scalping.Timestamp = position.Timestamp
+  }
+
+  entity, err := r.SymbolsRepository.Get(scalping.Symbol)
+  if err != nil {
+    return err
+  }
+
+  tickSize, _, _, err := r.SymbolsRepository.Filters(entity.Filters)
+  if err != nil {
+    return nil
+  }
+
+  result := r.Db.Where("scalping_id=? AND status=?", scalping.ID, 1).Order("sell_price asc").Take(&trading)
+  if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+    return errors.New("empty grid")
+  }
+  if price < trading.SellPrice {
+    if price < entryPrice*1.0385 {
+      return errors.New("price too low")
+    }
+    sellPrice = entryPrice * 1.0385
+  } else {
+    sellPrice = trading.SellPrice
+  }
+  if sellPrice < price*0.9985 {
+    sellPrice = price * 0.9985
+  }
+  sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+
+  orderID, err := r.OrdersRepository.Create(trading.Symbol, side, sellPrice, trading.SellQuantity)
+  if err != nil {
+    _, ok := err.(common.APIError)
+    if ok {
+      return err
+    }
     r.Db.Model(&scalping).Where("version", scalping.Version).Updates(map[string]interface{}{
-      "remark":  apiError.Error(),
+      "remark":  err.Error(),
       "version": gorm.Expr("version + ?", 1),
     })
-    return apiError
   }
+
+  r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+    "sell_order_id": orderID,
+    "status":        2,
+    "version":       gorm.Expr("version + ?", 1),
+  })
+
   return nil
+}
+
+func (r *ScalpingRepository) Close(scalping *spotModels.Scalping) {
+  var total int64
+  r.Db.Model(&models.Scalping{}).Where("scalping_id = ? AND status IN ?", scalping.ID, []int{0, 1, 2}).Count(&total)
+  if total == 0 {
+    return
+  }
+  r.Db.Model(&models.Scalping{}).Where("scalping_id = ? AND status = 0", scalping.ID).Count(&total)
+  if total > 0 {
+    return
+  }
+  timestamp := time.Now().Add(-15*time.Minute).UnixNano() / int64(time.Millisecond)
+  if scalping.Timestamp > timestamp {
+    return
+  }
+  r.Db.Model(&models.Scalping{}).Where("scalping_id=? AND status IN ?", scalping.ID, []int{0, 1, 2}).Update("status", 5)
 }
 
 func (r *ScalpingRepository) Pending() map[string]float64 {
@@ -595,7 +548,7 @@ func (r *ScalpingRepository) CanBuy(
     if trading.Status == 0 {
       return false
     }
-    if price >= trading.BuyPrice*0.965 {
+    if price >= trading.BuyPrice*0.9615 {
       return false
     }
   }

@@ -9,6 +9,7 @@ type Order struct {
   Type             string    `gorm:"size:30;not null"`
   Side             string    `gorm:"size:20;not null"`
   Price            float64   `gorm:"not null"`
+  AvgPrice         float64   `gorm:"not null"`
   StopPrice        float64   `gorm:"not null"`
   Quantity         float64   `gorm:"not null"`
   ExecutedQuantity float64   `gorm:"not null"`

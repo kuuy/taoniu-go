@@ -46,12 +46,17 @@ func (r *SymbolsRepository) Get(symbol string) (models.Symbol, error) {
   return entity, nil
 }
 
-func (r *SymbolsRepository) Filters(params datatypes.JSONMap) (tickSize float64, stepSize float64, err error) {
+func (r *SymbolsRepository) Filters(params datatypes.JSONMap) (tickSize float64, stepSize float64, notional float64, err error) {
   var filters []string
   filters = strings.Split(params["price"].(string), ",")
   tickSize, _ = strconv.ParseFloat(filters[2], 64)
   filters = strings.Split(params["quote"].(string), ",")
   stepSize, _ = strconv.ParseFloat(filters[2], 64)
+  if _, ok := params["notional"]; !ok {
+    notional = 10
+  } else {
+    notional, _ = strconv.ParseFloat(params["notional"].(string), 64)
+  }
   return
 }
 

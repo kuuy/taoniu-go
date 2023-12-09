@@ -121,7 +121,7 @@ func (h *LaunchpadHandler) Calc() error {
     return err
   }
 
-  tickSize, stepSize, err := h.Repository.SymbolsRepository.Filters(entity.Filters)
+  tickSize, stepSize, _, err := h.Repository.SymbolsRepository.Filters(entity.Filters)
   if err != nil {
     return nil
   }

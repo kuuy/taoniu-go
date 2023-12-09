@@ -16,5 +16,6 @@ type StrategiesUpdatePayload struct {
 }
 
 type PlansUpdatePayload struct {
-  ID string `json:"id"`
+  ID     string  `json:"id"`
+  Amount float64 `json:"amount"`
 }
