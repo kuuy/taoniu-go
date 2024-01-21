@@ -34,7 +34,7 @@ func (h *AclHandler) Do(
     Writer: w,
   }
 
-  log.Println("body", r.Header, r.URL.RawQuery)
+  log.Println("acl body", r.Header, r.URL.RawQuery)
 
   h.Response.Json(nil)
 }

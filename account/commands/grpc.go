@@ -47,18 +47,21 @@ func (h *GrpcHandler) Run() error {
 
   s := grpc.NewServer()
 
-  lis, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%v", common.GetEnvString("ACCOUNT_GRPC_PORT")))
+  listener, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%v", common.GetEnvString("ACCOUNT_GRPC_PORT")))
   if err != nil {
     log.Fatalf("net.Listen err: %v", err)
   }
 
-  apiContext := &common.GrpcContext{
+  grpcContext := &common.GrpcContext{
+    Db:   h.Db,
+    Rdb:  h.Rdb,
+    Ctx:  h.Ctx,
     Conn: s,
   }
 
-  services.NewMqtt(apiContext).Register()
+  services.NewMqtt(grpcContext).Register()
 
-  s.Serve(lis)
+  s.Serve(listener)
 
   return nil
 }

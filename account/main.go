@@ -36,6 +36,7 @@ func main() {
       commands.NewDbCommand(),
       commands.NewUsersCommand(),
       commands.NewMqttCommand(),
+      commands.NewGrpcCommand(),
     },
     Version: "0.0.0",
   }

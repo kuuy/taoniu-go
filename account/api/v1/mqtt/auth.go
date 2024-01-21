@@ -34,7 +34,7 @@ func (h *AuthHandler) Do(
     Writer: w,
   }
 
-  log.Println("body", r.Header, r.URL.RawQuery)
+  log.Println("auth body", r.Header, r.URL.RawQuery)
 
   h.Response.Json(nil)
 }

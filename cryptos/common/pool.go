@@ -10,6 +10,7 @@ import (
 
   "database/sql"
 
+  "github.com/eclipse/paho.golang/autopaho"
   "github.com/go-redis/redis/v8"
   "github.com/hibiken/asynq"
   "github.com/nats-io/nats.go"
@@ -36,6 +37,14 @@ type NatsContext struct {
   Rdb  *redis.Client
   Ctx  context.Context
   Conn *nats.Conn
+}
+
+type MqttContext struct {
+  Db   *gorm.DB
+  Rdb  *redis.Client
+  Ctx  context.Context
+  Conn *autopaho.ConnectionManager
+  Nats *nats.Conn
 }
 
 type AnsqServerContext struct {

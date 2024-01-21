@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v3.12.4
-// source: mqtt/publishers/publishers.proto
+// source: account/mqtt/publishers/publishers.proto
 
 package publishers
 
@@ -101,5 +101,5 @@ var Publishers_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "mqtt/publishers/publishers.proto",
+	Metadata: "account/mqtt/publishers/publishers.proto",
 }

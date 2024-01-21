@@ -33,7 +33,7 @@ func NewSpotCommand() *cli.Command {
       return nil
     },
     Action: func(c *cli.Context) error {
-      if err := h.run(); err != nil {
+      if err := h.Run(); err != nil {
         return cli.Exit(err.Error(), 1)
       }
       return nil
@@ -41,7 +41,7 @@ func NewSpotCommand() *cli.Command {
   }
 }
 
-func (h *SpotHandler) run() error {
+func (h *SpotHandler) Run() error {
   log.Println("nats running...")
 
   wg := &sync.WaitGroup{}

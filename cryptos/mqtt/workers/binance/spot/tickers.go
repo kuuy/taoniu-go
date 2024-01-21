@@ -3,6 +3,8 @@ package spot
 import (
   "encoding/json"
   "fmt"
+  "github.com/eclipse/paho.golang/paho"
+  "log"
 
   "github.com/nats-io/nats.go"
   "taoniu.local/cryptos/common"
@@ -10,12 +12,12 @@ import (
 )
 
 type Tickers struct {
-  NatsContext *common.NatsContext
+  MqttContext *common.MqttContext
 }
 
-func NewTickers(natsContext *common.NatsContext) *Tickers {
+func NewTickers(mqttContext *common.MqttContext) *Tickers {
   h := &Tickers{
-    NatsContext: natsContext,
+    MqttContext: mqttContext,
   }
   return h
 }
@@ -32,7 +34,7 @@ type TickersUpdatePayload struct {
 }
 
 func (h *Tickers) Subscribe() error {
-  h.NatsContext.Conn.Subscribe(config.NATS_TICKERS_UPDATE, h.Update)
+  h.MqttContext.Nats.Subscribe(config.NATS_TICKERS_UPDATE, h.Update)
   return nil
 }
 
@@ -40,18 +42,14 @@ func (h *Tickers) Update(m *nats.Msg) {
   var payload *TickersUpdatePayload
   json.Unmarshal(m.Data, &payload)
 
-  h.NatsContext.Rdb.HMSet(
-    h.NatsContext.Ctx,
-    fmt.Sprintf("binance:spot:realtime:%s", payload.Symbol),
-    map[string]interface{}{
-      "symbol":    payload.Symbol,
-      "price":     payload.Price,
-      "open":      payload.Open,
-      "high":      payload.High,
-      "low":       payload.Low,
-      "volume":    payload.Volume,
-      "quota":     payload.Quota,
-      "timestamp": payload.Timestamp,
-    },
-  )
+  props := &paho.PublishProperties{}
+
+  if _, err := h.MqttContext.Conn.Publish(h.MqttContext.Ctx, &paho.Publish{
+    Topic:      fmt.Sprintf(config.MQTT_TOPICS_TICKERS, payload.Symbol),
+    QoS:        0,
+    Payload:    m.Data,
+    Properties: props,
+  }); err != nil {
+    log.Fatalf("failed to publish message: %s", err)
+  }
 }

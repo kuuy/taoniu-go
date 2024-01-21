@@ -111,7 +111,7 @@ func (h *TickersHandler) handler(message map[string]interface{}) {
       "change":    change,
       "timestamp": time.Now().Unix(),
     })
-    h.Nats.Publish(config.NATS_TRADES_UPDATE, data)
+    h.Nats.Publish(config.NATS_TICKERS_UPDATE, data)
     h.Nats.Flush()
   }
 }

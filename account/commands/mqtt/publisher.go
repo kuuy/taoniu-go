@@ -32,7 +32,7 @@ func NewPublishersCommand() *cli.Command {
             log.Fatal("id can not be empty")
             return nil
           }
-          if err := h.AccessToken(id); err != nil {
+          if err := h.Token(id); err != nil {
             return cli.Exit(err.Error(), 1)
           }
           return nil
@@ -42,7 +42,7 @@ func NewPublishersCommand() *cli.Command {
   }
 }
 
-func (h *PublishersHandler) AccessToken(id string) (err error) {
+func (h *PublishersHandler) Token(id string) (err error) {
   log.Println("publishers access token...")
   accessToken, err := h.TokenRepository.AccessToken(id)
   log.Fatalln("publishers access token", accessToken)
