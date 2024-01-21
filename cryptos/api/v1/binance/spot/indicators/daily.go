@@ -3,17 +3,21 @@ package indicators
 import (
   "github.com/go-chi/chi/v5"
   "net/http"
+  "taoniu.local/cryptos/common"
 
   "taoniu.local/cryptos/api"
 )
 
 type DailyHandler struct {
-  Response *api.ResponseHandler
+  ApiContext *common.ApiContext
+  Response   *api.ResponseHandler
   //Repository *repositories.DailyRepository
 }
 
-func NewDailyRouter() http.Handler {
-  h := DailyHandler{}
+func NewDailyRouter(apiContext *common.ApiContext) http.Handler {
+  h := DailyHandler{
+    ApiContext: apiContext,
+  }
   //h.Repository = &repositories.DailyRepository{
   //  Rdb: common.NewRedis(),
   //  Ctx: context.Background(),

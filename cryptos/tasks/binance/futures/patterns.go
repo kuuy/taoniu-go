@@ -1,7 +1,7 @@
 package futures
 
 import (
-  "gorm.io/gorm"
+  "taoniu.local/cryptos/common"
 
   repositories "taoniu.local/cryptos/repositories/binance/futures"
   patternsRepositories "taoniu.local/cryptos/repositories/binance/futures/patterns"
@@ -9,18 +9,24 @@ import (
 )
 
 type PatternsTask struct {
-  Db               *gorm.DB
+  AnsqContext      *common.AnsqClientContext
   CandlesticksTask *tasks.CandlesticksTask
+}
+
+func NewPatternsTask(ansqContext *common.AnsqClientContext) *PatternsTask {
+  return &PatternsTask{
+    AnsqContext: ansqContext,
+  }
 }
 
 func (t *PatternsTask) Candlesticks() *tasks.CandlesticksTask {
   if t.CandlesticksTask == nil {
     t.CandlesticksTask = &tasks.CandlesticksTask{}
     t.CandlesticksTask.Repository = &patternsRepositories.CandlesticksRepository{
-      Db: t.Db,
+      Db: t.AnsqContext.Db,
     }
     t.CandlesticksTask.SymbolsRepository = &repositories.SymbolsRepository{
-      Db: t.Db,
+      Db: t.AnsqContext.Db,
     }
   }
   return t.CandlesticksTask

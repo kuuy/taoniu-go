@@ -9,6 +9,7 @@ const (
   BINANCE_SPOT_DEPTH_DELAY                      = "cryptos.jobs.binance.spot.depth.delay"
   BINANCE_SPOT_ACCOUNT                          = "cryptos.jobs.binance.spot.account"
   BINANCE_SPOT_ORDERS                           = "cryptos.jobs.binance.spot.orders"
+  BINANCE_SPOT_POSITIONS                        = "cryptos.jobs.binance.spot.positions"
   BINANCE_SPOT_INDICATORS                       = "cryptos.jobs.binance.spot.indicators"
   BINANCE_SPOT_STRATEGIES                       = "cryptos.jobs.binance.spot.strategies"
   BINANCE_SPOT_PLANS                            = "cryptos.jobs.binance.spot.plans"

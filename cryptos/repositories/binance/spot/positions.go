@@ -2,8 +2,9 @@ package spot
 
 import (
   "errors"
-  "log"
+  "github.com/rs/xid"
   "math"
+  "time"
 
   "github.com/shopspring/decimal"
   "gorm.io/gorm"
@@ -16,31 +17,9 @@ type PositionsRepository struct {
   SymbolsRepository *SymbolsRepository
 }
 
-func (r *PositionsRepository) Get(symbol string) (models.Position, error) {
-  var entity models.Position
-  result := r.Db.Where("symbol=? AND status=1", symbol).Take(&entity)
-  if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    return entity, result.Error
-  }
-  return entity, nil
-}
-
-func (r *PositionsRepository) Gets(conditions map[string]interface{}) []*models.Position {
-  var positions []*models.Position
-  query := r.Db.Select([]string{
-    "id",
-    "symbol",
-    "capital",
-    "notional",
-    "entry_price",
-    "entry_quantity",
-    "timestamp",
-  })
-  if _, ok := conditions["side"]; ok {
-    query.Where("side", conditions["side"].(int))
-  }
-  query.Where("status=1 AND entry_quantity>0").Find(&positions)
-  return positions
+func (r *PositionsRepository) Get(symbol string) (position *models.Position, err error) {
+  err = r.Db.Where("symbol=? AND status=1", symbol).Take(&position).Error
+  return
 }
 
 func (r *PositionsRepository) Ratio(capital float64, entryAmount float64) float64 {
@@ -217,48 +196,84 @@ func (r *PositionsRepository) Capital(capital float64, entryAmount float64, plac
   return
 }
 
-func (r *PositionsRepository) Flush(symbol string, side int) error {
-  var updateTime int64
-  updateTime = 1693219638260
-
-  var positionSide string
-  if side == 1 {
-    positionSide = "LONG"
-  } else if side == 2 {
-    positionSide = "SHORT"
+func (r *PositionsRepository) Apply(symbol string) error {
+  timestamp := time.Now().UnixMilli() - 300*1e3
+  var entity *models.Position
+  result := r.Db.Where("symbol", symbol).Take(&entity)
+  if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+    entity = &models.Position{
+      ID:        xid.New().String(),
+      Symbol:    symbol,
+      Timestamp: timestamp,
+      Status:    1,
+    }
+    r.Db.Create(&entity)
+  } else {
+    if entity.EntryQuantity == 0 {
+      r.Db.Model(&entity).Updates(map[string]interface{}{
+        "timestamp": timestamp,
+        "status":    1,
+      })
+    }
   }
+  return nil
+}
+
+func (r *PositionsRepository) Flush(position *models.Position) (err error) {
   var orders []*models.Order
   r.Db.Model(models.Order{}).Select([]string{
     "symbol",
-    "position_side",
-    "avg_price",
+    "price",
     "executed_quantity",
     "side",
     "update_time",
-  }).Where("symbol=? AND position_side=? AND update_time>?", symbol, positionSide, updateTime).Order("update_time asc").Find(&orders)
-  var entryAmount float64
+    "status",
+  }).Where(
+    "symbol=? AND update_time>? AND status IN ?",
+    position.Symbol,
+    position.Timestamp,
+    []string{"NEW", "PARTIALLY_FILLED", "FILLED"},
+  ).Order("update_time asc").Find(&orders)
+  if len(orders) == 0 {
+    return
+  }
   var entryPrice float64
+  var entryAmount float64
   var entryQuantity float64
   for _, order := range orders {
-    updateTime = order.UpdateTime
-    if order.Status == "PARTIALLY_FILLED" || order.ExecutedQuantity == 0 {
+    if order.Status != "FILLED" || order.ExecutedQuantity < order.Quantity {
       continue
     }
     executedQuantity := decimal.NewFromFloat(order.ExecutedQuantity)
-    executedAmount := decimal.NewFromFloat(order.AvgPrice).Mul(executedQuantity)
-    if side == 1 && order.Side == "BUY" || side == 2 && order.Side == "SELL" {
+    executedAmount := decimal.NewFromFloat(order.Price).Mul(executedQuantity)
+    if order.Side == "BUY" {
       entryAmount, _ = decimal.NewFromFloat(entryAmount).Add(executedAmount).Float64()
       entryQuantity, _ = decimal.NewFromFloat(entryQuantity).Add(executedQuantity).Float64()
       entryPrice, _ = decimal.NewFromFloat(entryAmount).Div(decimal.NewFromFloat(entryQuantity)).Float64()
     }
-    if side == 1 && order.Side == "SELL" || side == 2 && order.Side == "BUY" {
+    if order.Side == "SELL" {
       entryQuantity, _ = decimal.NewFromFloat(entryQuantity).Sub(executedQuantity).Float64()
-      entryAmount, _ = decimal.NewFromFloat(entryPrice).Mul(decimal.NewFromFloat(entryQuantity)).Float64()
+      if entryQuantity <= 0 {
+        entryPrice = 0
+        entryQuantity = 0
+        entryAmount = 0
+      } else {
+        entryAmount, _ = decimal.NewFromFloat(entryPrice).Mul(decimal.NewFromFloat(entryQuantity)).Float64()
+      }
     }
-    log.Println("order", symbol, side, order.Side, order.AvgPrice, order.ExecutedQuantity, order.UpdateTime, entryQuantity)
+    position.Timestamp = order.UpdateTime
   }
-  log.Println("position flush", symbol, side, entryAmount, entryPrice, entryQuantity, updateTime)
-  return nil
+  values := map[string]interface{}{
+    "entry_price":    entryPrice,
+    "entry_quantity": entryQuantity,
+    "entry_amount":   entryAmount,
+    "version":        gorm.Expr("version + ?", 1),
+  }
+  if entryQuantity == 0 {
+    values["timestamp"] = position.Timestamp
+  }
+  r.Db.Model(&position).Where("version", position.Version).Updates(values)
+  return
 }
 
 func (r *PositionsRepository) Filters(symbol string) (tickSize float64, stepSize float64, err error) {

@@ -1,24 +1,41 @@
 package futures
 
 import (
-  "context"
+  "slices"
   "time"
 
-  "github.com/go-redis/redis/v8"
   "github.com/hibiken/asynq"
 
+  "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/queue"
   jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/futures"
   repositories "taoniu.local/cryptos/repositories/binance/futures"
+  tradingsRepositories "taoniu.local/cryptos/repositories/binance/futures/tradings"
 )
 
 type TickersTask struct {
-  Rdb                *redis.Client
-  Ctx                context.Context
-  Asynq              *asynq.Client
+  AnsqContext        *common.AnsqClientContext
   Job                *jobs.Tickers
   SymbolsRepository  *repositories.SymbolsRepository
   TradingsRepository *repositories.TradingsRepository
+}
+
+func NewTickersTask(ansqContext *common.AnsqClientContext) *TickersTask {
+  return &TickersTask{
+    AnsqContext: ansqContext,
+    SymbolsRepository: &repositories.SymbolsRepository{
+      Db: ansqContext.Db,
+    },
+    TradingsRepository: &repositories.TradingsRepository{
+      Db: ansqContext.Db,
+      ScalpingRepository: &tradingsRepositories.ScalpingRepository{
+        Db: ansqContext.Db,
+      },
+      TriggersRepository: &tradingsRepositories.TriggersRepository{
+        Db: ansqContext.Db,
+      },
+    },
+  }
 }
 
 func (t *TickersTask) Flush() error {
@@ -26,7 +43,7 @@ func (t *TickersTask) Flush() error {
   if err != nil {
     return err
   }
-  t.Asynq.Enqueue(
+  t.AnsqContext.Conn.Enqueue(
     task,
     asynq.Queue(config.BINANCE_FUTURES_TICKERS),
     asynq.MaxRetry(0),
@@ -38,18 +55,9 @@ func (t *TickersTask) Flush() error {
 func (t *TickersTask) Scan() []string {
   var symbols []string
   for _, symbol := range t.TradingsRepository.Scan() {
-    if !t.contains(symbols, symbol) {
+    if !slices.Contains(symbols, symbol) {
       symbols = append(symbols, symbol)
     }
   }
   return symbols
-}
-
-func (t *TickersTask) contains(s []string, str string) bool {
-  for _, v := range s {
-    if v == str {
-      return true
-    }
-  }
-  return false
 }

@@ -1,41 +1,33 @@
 package dydx
 
 import (
-  "context"
-  "github.com/go-redis/redis/v8"
   "net/http"
   "strconv"
   "strings"
 
   "github.com/go-chi/chi/v5"
-  "gorm.io/gorm"
-
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
   repositories "taoniu.local/cryptos/repositories/dydx"
 )
 
 type TickersHandler struct {
-  Db                *gorm.DB
-  Rdb               *redis.Client
-  Ctx               context.Context
+  ApiContext        *common.ApiContext
   Response          *api.ResponseHandler
   Repository        *repositories.TickersRepository
   MarketsRepository *repositories.MarketsRepository
 }
 
-func NewTickersRouter() http.Handler {
+func NewTickersRouter(apiContext *common.ApiContext) http.Handler {
   h := TickersHandler{
-    Db:  common.NewDB(),
-    Rdb: common.NewRedis(),
-    Ctx: context.Background(),
+    ApiContext: apiContext,
   }
   h.Repository = &repositories.TickersRepository{
-    Rdb: h.Rdb,
-    Ctx: h.Ctx,
+    Rdb: h.ApiContext.Rdb,
+    Ctx: h.ApiContext.Ctx,
   }
   h.MarketsRepository = &repositories.MarketsRepository{
-    Db: h.Db,
+    Db: h.ApiContext.Db,
   }
 
   r := chi.NewRouter()

@@ -4,10 +4,11 @@ import (
   "github.com/go-chi/chi/v5"
   "net/http"
   "taoniu.local/cryptos/api/v1/binance/spot/margin/isolated"
+  "taoniu.local/cryptos/common"
 )
 
-func NewIsolatedRouter() http.Handler {
+func NewIsolatedRouter(apiContext *common.ApiContext) http.Handler {
   r := chi.NewRouter()
-  r.Mount("/tradings", isolated.NewTradingsRouter())
+  r.Mount("/tradings", isolated.NewTradingsRouter(apiContext))
   return r
 }

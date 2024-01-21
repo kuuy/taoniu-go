@@ -1,21 +1,19 @@
 package commands
 
 import (
-  "context"
   "crypto/md5"
   "encoding/hex"
   "log"
 
-  "github.com/go-redis/redis/v8"
   "github.com/urfave/cli/v2"
+  "gorm.io/gorm"
 
   "taoniu.local/account/common"
   "taoniu.local/account/repositories"
 )
 
 type UsersHandler struct {
-  Rdb        *redis.Client
-  Ctx        context.Context
+  Db         *gorm.DB
   Repository *repositories.UsersRepository
 }
 
@@ -26,11 +24,10 @@ func NewUsersCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = UsersHandler{
-        Rdb: common.NewRedis(),
-        Ctx: context.Background(),
+        Db: common.NewDB(),
       }
       h.Repository = &repositories.UsersRepository{
-        Db: common.NewDB(),
+        Db: h.Db,
       }
       return nil
     },
@@ -49,7 +46,7 @@ func NewUsersCommand() *cli.Command {
             log.Fatal("password can not be empty")
             return nil
           }
-          if err := h.create(email, password); err != nil {
+          if err := h.Create(email, password); err != nil {
             return cli.Exit(err.Error(), 1)
           }
           return nil
@@ -59,7 +56,7 @@ func NewUsersCommand() *cli.Command {
   }
 }
 
-func (h *UsersHandler) create(email string, password string) error {
+func (h *UsersHandler) Create(email string, password string) error {
   log.Println("users create...")
 
   hash := md5.Sum([]byte(password))

@@ -4,28 +4,33 @@ import (
   "time"
 
   "github.com/hibiken/asynq"
-  "gorm.io/gorm"
 
+  "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/queue"
   models "taoniu.local/cryptos/models/binance/spot"
   jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/spot"
 )
 
 type StrategiesTask struct {
-  Db    *gorm.DB
-  Asynq *asynq.Client
-  Job   *jobs.Strategies
+  AnsqContext *common.AnsqClientContext
+  Job         *jobs.Strategies
+}
+
+func NewStrategiesTask(ansqContext *common.AnsqClientContext) *StrategiesTask {
+  return &StrategiesTask{
+    AnsqContext: ansqContext,
+  }
 }
 
 func (t *StrategiesTask) Atr(interval string) error {
   var symbols []string
-  t.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+  t.AnsqContext.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
   for _, symbol := range symbols {
     task, err := t.Job.Atr(symbol, interval)
     if err != nil {
       return err
     }
-    t.Asynq.Enqueue(
+    t.AnsqContext.Conn.Enqueue(
       task,
       asynq.Queue(config.BINANCE_SPOT_STRATEGIES),
       asynq.MaxRetry(0),
@@ -37,13 +42,13 @@ func (t *StrategiesTask) Atr(interval string) error {
 
 func (t *StrategiesTask) Zlema(interval string) error {
   var symbols []string
-  t.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+  t.AnsqContext.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
   for _, symbol := range symbols {
     task, err := t.Job.Zlema(symbol, interval)
     if err != nil {
       return err
     }
-    t.Asynq.Enqueue(
+    t.AnsqContext.Conn.Enqueue(
       task,
       asynq.Queue(config.BINANCE_SPOT_STRATEGIES),
       asynq.MaxRetry(0),
@@ -55,13 +60,13 @@ func (t *StrategiesTask) Zlema(interval string) error {
 
 func (t *StrategiesTask) HaZlema(interval string) error {
   var symbols []string
-  t.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+  t.AnsqContext.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
   for _, symbol := range symbols {
     task, err := t.Job.HaZlema(symbol, interval)
     if err != nil {
       return err
     }
-    t.Asynq.Enqueue(
+    t.AnsqContext.Conn.Enqueue(
       task,
       asynq.Queue(config.BINANCE_SPOT_STRATEGIES),
       asynq.MaxRetry(0),
@@ -73,13 +78,13 @@ func (t *StrategiesTask) HaZlema(interval string) error {
 
 func (t *StrategiesTask) Kdj(interval string) error {
   var symbols []string
-  t.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+  t.AnsqContext.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
   for _, symbol := range symbols {
     task, err := t.Job.Kdj(symbol, interval)
     if err != nil {
       return err
     }
-    t.Asynq.Enqueue(
+    t.AnsqContext.Conn.Enqueue(
       task,
       asynq.Queue(config.BINANCE_SPOT_STRATEGIES),
       asynq.MaxRetry(0),
@@ -91,13 +96,13 @@ func (t *StrategiesTask) Kdj(interval string) error {
 
 func (t *StrategiesTask) BBands(interval string) error {
   var symbols []string
-  t.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+  t.AnsqContext.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
   for _, symbol := range symbols {
     task, err := t.Job.BBands(symbol, interval)
     if err != nil {
       return err
     }
-    t.Asynq.Enqueue(
+    t.AnsqContext.Conn.Enqueue(
       task,
       asynq.Queue(config.BINANCE_SPOT_STRATEGIES),
       asynq.MaxRetry(0),

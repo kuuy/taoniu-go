@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package taoniu.local.account.grpc.mqtt.publishers;
+option go_package = "taoniu.local/account/grpc/mqtt/publishers";
+
+service Publishers {
+  rpc AccessToken (AccessTokenRequest) returns (AccessTokenReply) {}
+}
+
+message AccessTokenRequest {
+  string id = 1;
+}
+
+message AccessTokenReply {
+  repeated string accessToken = 1;
+}

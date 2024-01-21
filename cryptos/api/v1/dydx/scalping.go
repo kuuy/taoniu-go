@@ -33,7 +33,7 @@ type ScalpingInfo struct {
   CreatedAt   int64   `json:"created_at"`
 }
 
-func NewScalpingRouter() http.Handler {
+func NewScalpingRouter(apiContext *common.ApiContext) http.Handler {
   h := ScalpingHandler{}
   h.Repository = &repositories.ScalpingRepository{
     Db: common.NewDB(),

@@ -1,11 +1,11 @@
 package common
 
-import(
-  "time"
+import (
   "context"
+  "time"
 
-  "github.com/rs/xid"
   "github.com/go-redis/redis/v8"
+  "github.com/rs/xid"
 
   "database/sql"
   "gorm.io/driver/postgres"
@@ -13,23 +13,23 @@ import(
 )
 
 var (
-  rdb *redis.Client
+  rdb    *redis.Client
   dbPool *sql.DB
-  db *gorm.DB
+  db     *gorm.DB
 )
 
 type Mutex struct {
-  rdb *redis.Client
-  ctx context.Context
-  key string
+  rdb   *redis.Client
+  ctx   context.Context
+  key   string
   value string
 }
 
 func NewRedis() *redis.Client {
   rdb = redis.NewClient(&redis.Options{
-    Addr: "localhost:6379",
+    Addr:     "localhost:6379",
     Password: "",
-    DB: 8,
+    DB:       8,
   })
 
   return rdb
@@ -44,7 +44,7 @@ func NewDBPool() *sql.DB {
     }
     pool.SetMaxIdleConns(50)
     pool.SetMaxOpenConns(100)
-    pool.SetConnMaxLifetime(5*time.Minute)
+    pool.SetConnMaxLifetime(5 * time.Minute)
     dbPool = pool
   }
 
@@ -68,14 +68,14 @@ func NewMutex(
   key string,
 ) *Mutex {
   return &Mutex{
-    rdb:rdb,
-    ctx:ctx,
-    key:key,
-    value:xid.New().String(),
+    rdb:   rdb,
+    ctx:   ctx,
+    key:   key,
+    value: xid.New().String(),
   }
 }
 
-func(m *Mutex) Lock(ttl time.Duration) bool {
+func (m *Mutex) Lock(ttl time.Duration) bool {
   result, err := m.rdb.SetNX(
     m.ctx,
     m.key,
@@ -89,8 +89,8 @@ func(m *Mutex) Lock(ttl time.Duration) bool {
   return result
 }
 
-func(m *Mutex) Unlock() {
-        script := redis.NewScript(`
+func (m *Mutex) Unlock() {
+  script := redis.NewScript(`
   if redis.call("GET", KEYS[1]) == ARGV[1] then
     return redis.call("DEL", KEYS[1])
   else
@@ -99,4 +99,3 @@ func(m *Mutex) Unlock() {
   `)
   script.Run(m.ctx, m.rdb, []string{m.key}, m.value).Result()
 }
-

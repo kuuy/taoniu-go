@@ -1,18 +1,22 @@
 package isolated
 
 import (
-  "github.com/hibiken/asynq"
+  "taoniu.local/cryptos/common"
   "taoniu.local/cryptos/queue/asynq/workers/binance/spot/margin/isolated/tradings"
 )
 
-type Tradings struct{}
-
-func NewTradings() *Tradings {
-  return &Tradings{}
+type Tradings struct {
+  AnsqContext *common.AnsqServerContext
 }
 
-func (h *Tradings) Register(mux *asynq.ServeMux) error {
-  mux.HandleFunc("binance:spot:margin:isolated:tradings:fishers:flush", tradings.NewFishers().Flush)
-  mux.HandleFunc("binance:spot:margin:isolated:tradings:fishers:place", tradings.NewFishers().Place)
+func NewTradings(ansqContext *common.AnsqServerContext) *Tradings {
+  return &Tradings{
+    AnsqContext: ansqContext,
+  }
+}
+
+func (h *Tradings) Register() error {
+  h.AnsqContext.Mux.HandleFunc("binance:spot:margin:isolated:tradings:fishers:flush", tradings.NewFishers().Flush)
+  h.AnsqContext.Mux.HandleFunc("binance:spot:margin:isolated:tradings:fishers:place", tradings.NewFishers().Place)
   return nil
 }

@@ -4,31 +4,25 @@ import (
   "context"
   "encoding/json"
   "fmt"
-  "github.com/go-redis/redis/v8"
   "github.com/hibiken/asynq"
-  "gorm.io/gorm"
   "taoniu.local/cryptos/common"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
   "time"
 )
 
 type Klines struct {
-  Db         *gorm.DB
-  Rdb        *redis.Client
-  Ctx        context.Context
-  Repository *repositories.KlinesRepository
+  AnsqContext *common.AnsqServerContext
+  Repository  *repositories.KlinesRepository
 }
 
-func NewKlines() *Klines {
+func NewKlines(ansqContext *common.AnsqServerContext) *Klines {
   h := &Klines{
-    Db:  common.NewDB(),
-    Rdb: common.NewRedis(),
-    Ctx: context.Background(),
+    AnsqContext: ansqContext,
   }
   h.Repository = &repositories.KlinesRepository{
-    Db:  h.Db,
-    Rdb: h.Rdb,
-    Ctx: h.Ctx,
+    Db:  h.AnsqContext.Db,
+    Rdb: h.AnsqContext.Rdb,
+    Ctx: h.AnsqContext.Ctx,
   }
   return h
 }
@@ -49,8 +43,8 @@ func (h *Klines) Flush(ctx context.Context, t *asynq.Task) error {
   }
 
   mutex := common.NewMutex(
-    h.Rdb,
-    h.Ctx,
+    h.AnsqContext.Rdb,
+    h.AnsqContext.Ctx,
     fmt.Sprintf("locks:binance:spot:klines:%s:%s", payload.Symbol, payload.Interval),
   )
   if !mutex.Lock(30 * time.Second) {
@@ -63,7 +57,7 @@ func (h *Klines) Flush(ctx context.Context, t *asynq.Task) error {
   return nil
 }
 
-func (h *Klines) Register(mux *asynq.ServeMux) error {
-  mux.HandleFunc("binance:spot:klines:flush", h.Flush)
+func (h *Klines) Register() error {
+  h.AnsqContext.Mux.HandleFunc("binance:spot:klines:flush", h.Flush)
   return nil
 }

@@ -6,47 +6,40 @@ import (
   "fmt"
   "time"
 
-  "github.com/go-redis/redis/v8"
   "github.com/hibiken/asynq"
-  "gorm.io/gorm"
-
   "taoniu.local/cryptos/common"
   dydxRepositories "taoniu.local/cryptos/repositories/dydx"
   repositories "taoniu.local/cryptos/repositories/dydx/tradings"
 )
 
 type Triggers struct {
-  Db         *gorm.DB
-  Rdb        *redis.Client
-  Ctx        context.Context
-  Repository *repositories.TriggersRepository
+  AnsqContext *common.AnsqServerContext
+  Repository  *repositories.TriggersRepository
 }
 
-func NewTriggers() *Triggers {
+func NewTriggers(ansqContext *common.AnsqServerContext) *Triggers {
   h := &Triggers{
-    Db:  common.NewDB(),
-    Rdb: common.NewRedis(),
-    Ctx: context.Background(),
+    AnsqContext: ansqContext,
   }
   h.Repository = &repositories.TriggersRepository{
-    Db: h.Db,
+    Db: h.AnsqContext.Db,
   }
   h.Repository.MarketsRepository = &dydxRepositories.MarketsRepository{
-    Db:  h.Db,
-    Rdb: h.Rdb,
-    Ctx: h.Ctx,
+    Db:  h.AnsqContext.Db,
+    Rdb: h.AnsqContext.Rdb,
+    Ctx: h.AnsqContext.Ctx,
   }
   h.Repository.AccountRepository = &dydxRepositories.AccountRepository{
-    Rdb: h.Rdb,
-    Ctx: h.Ctx,
+    Rdb: h.AnsqContext.Rdb,
+    Ctx: h.AnsqContext.Ctx,
   }
   h.Repository.OrdersRepository = &dydxRepositories.OrdersRepository{
-    Db:  h.Db,
-    Rdb: h.Rdb,
-    Ctx: h.Ctx,
+    Db:  h.AnsqContext.Db,
+    Rdb: h.AnsqContext.Rdb,
+    Ctx: h.AnsqContext.Ctx,
   }
   h.Repository.PositionRepository = &dydxRepositories.PositionsRepository{
-    Db: h.Db,
+    Db: h.AnsqContext.Db,
   }
   return h
 }
@@ -64,8 +57,8 @@ func (h *Triggers) Place(ctx context.Context, t *asynq.Task) error {
   json.Unmarshal(t.Payload(), &payload)
 
   mutex := common.NewMutex(
-    h.Rdb,
-    h.Ctx,
+    h.AnsqContext.Rdb,
+    h.AnsqContext.Ctx,
     fmt.Sprintf("locks:dydx:tradings:triggers:place:%s", payload.ID),
   )
   if !mutex.Lock(30 * time.Second) {
@@ -83,8 +76,8 @@ func (h *Triggers) Flush(ctx context.Context, t *asynq.Task) error {
   json.Unmarshal(t.Payload(), &payload)
 
   mutex := common.NewMutex(
-    h.Rdb,
-    h.Ctx,
+    h.AnsqContext.Rdb,
+    h.AnsqContext.Ctx,
     fmt.Sprintf("locks:dydx:tradings:triggers:flush:%s", payload.ID),
   )
   if !mutex.Lock(30 * time.Second) {

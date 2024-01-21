@@ -1,17 +1,21 @@
 package workers
 
 import (
-  "github.com/hibiken/asynq"
+  "taoniu.local/cryptos/common"
   "taoniu.local/cryptos/queue/asynq/workers/tradingview"
 )
 
-type Tradingview struct{}
-
-func NewTradingview() *Tradingview {
-  return &Tradingview{}
+type Tradingview struct {
+  AnsqContext *common.AnsqServerContext
 }
 
-func (h *Tradingview) Register(mux *asynq.ServeMux) error {
-  mux.HandleFunc("tradingview:analysis:flush", tradingview.NewAnalysis().Flush)
+func NewTradingview(ansqContext *common.AnsqServerContext) *Tradingview {
+  return &Tradingview{
+    AnsqContext: ansqContext,
+  }
+}
+
+func (h *Tradingview) Register() error {
+  h.AnsqContext.Mux.HandleFunc("tradingview:analysis:flush", tradingview.NewAnalysis(h.AnsqContext).Flush)
   return nil
 }

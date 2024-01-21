@@ -2,7 +2,9 @@ package spot
 
 import (
   "context"
+  "errors"
   "log"
+  "slices"
   "strconv"
 
   "github.com/go-redis/redis/v8"
@@ -54,16 +56,24 @@ func NewKlinesCommand() *cli.Command {
           symbol := c.Args().Get(2)
           interval := c.Args().Get(0)
           limit, _ := strconv.Atoi(c.Args().Get(1))
-          if interval == "1m" && (limit < 1 || limit > 4320) {
-            log.Fatal("limit not in 1~4320")
+          intervals := []string{"1m", "15m", "4h", "1d"}
+          if !slices.Contains(intervals, interval) {
+            return errors.New("interval not valid")
+          }
+          if interval == "1m" && (limit < 1 || limit > 1440) {
+            log.Fatal("limit not in 1~1440")
             return nil
           }
-          if interval == "4h" && (limit < 1 || limit > 672) {
+          if interval == "15m" && (limit < 1 || limit > 672) {
             log.Fatal("limit not in 1~672")
             return nil
           }
-          if interval == "1d" && (limit < 1 || limit > 365) {
-            log.Fatal("limit not in 1~365")
+          if interval == "4h" && (limit < 1 || limit > 126) {
+            log.Fatal("limit not in 1~126")
+            return nil
+          }
+          if interval == "1d" && (limit < 1 || limit > 100) {
+            log.Fatal("limit not in 1~100")
             return nil
           }
           if err := h.Flush(symbol, interval, limit); err != nil {
@@ -79,17 +89,20 @@ func NewKlinesCommand() *cli.Command {
           symbol := c.Args().Get(2)
           interval := c.Args().Get(0)
           limit, _ := strconv.Atoi(c.Args().Get(1))
-          if interval == "1m" && (limit < 1 || limit > 4320) {
-            log.Fatal("limit not in 1~4320")
-            return nil
-          }
-          if interval == "4h" && (limit < 1 || limit > 672) {
+          if interval == "15m" && (limit < 1 || limit > 672) {
             log.Fatal("limit not in 1~672")
             return nil
           }
-          if interval == "1d" && (limit < 1 || limit > 365) {
-            log.Fatal("limit not in 1~365")
+          if interval == "4h" && (limit < 1 || limit > 126) {
+            log.Fatal("limit not in 1~126")
             return nil
+          }
+          if interval == "1d" && (limit < 1 || limit > 100) {
+            log.Fatal("limit not in 1~100")
+            return nil
+          }
+          if err := h.Flush(symbol, interval, limit); err != nil {
+            return cli.Exit(err.Error(), 1)
           }
           if err := h.Fix(symbol, interval, limit); err != nil {
             return cli.Exit(err.Error(), 1)
@@ -112,7 +125,7 @@ func NewKlinesCommand() *cli.Command {
 }
 
 func (h *KlinesHandler) Flush(symbol string, interval string, limit int) error {
-  log.Println("binance spot klines flush...")
+  log.Println("binance spot klines flushing...")
   var symbols []string
   if symbol == "" {
     symbols = h.SymbolsRepository.Symbols()

@@ -39,6 +39,9 @@ func NewScalping(natsContext *common.NatsContext) *Scalping {
     Rdb: h.NatsContext.Rdb,
     Ctx: h.NatsContext.Ctx,
   }
+  h.Repository.PositionRepository = &spotRepositories.PositionsRepository{
+    Db: h.NatsContext.Db,
+  }
   return h
 }
 

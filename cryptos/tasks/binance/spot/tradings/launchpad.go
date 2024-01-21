@@ -1,6 +1,7 @@
 package tradings
 
 import (
+  "taoniu.local/cryptos/common"
   "time"
 
   "github.com/hibiken/asynq"
@@ -11,9 +12,18 @@ import (
 )
 
 type LaunchpadTask struct {
-  Asynq      *asynq.Client
-  Job        *jobs.Launchpad
-  Repository *repositories.LaunchpadRepository
+  AnsqContext *common.AnsqClientContext
+  Job         *jobs.Launchpad
+  Repository  *repositories.LaunchpadRepository
+}
+
+func NewLaunchpadTask(ansqContext *common.AnsqClientContext) *LaunchpadTask {
+  return &LaunchpadTask{
+    AnsqContext: ansqContext,
+    Repository: &repositories.LaunchpadRepository{
+      Db: ansqContext.Db,
+    },
+  }
 }
 
 func (t *LaunchpadTask) Place() error {
@@ -23,7 +33,7 @@ func (t *LaunchpadTask) Place() error {
     if err != nil {
       return err
     }
-    t.Asynq.Enqueue(
+    t.AnsqContext.Conn.Enqueue(
       task,
       asynq.Queue(config.BINANCE_SPOT_TRADINGS_LAUNCHPAD),
       asynq.MaxRetry(0),
@@ -40,7 +50,7 @@ func (t *LaunchpadTask) Flush() error {
     if err != nil {
       return err
     }
-    t.Asynq.Enqueue(
+    t.AnsqContext.Conn.Enqueue(
       task,
       asynq.Queue(config.BINANCE_SPOT_TRADINGS_LAUNCHPAD),
       asynq.MaxRetry(0),

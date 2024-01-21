@@ -17,4 +17,5 @@
 .idea/
 
 .env
-.env.*
+.env.production
+.env.dev

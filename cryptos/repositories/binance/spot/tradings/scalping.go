@@ -92,7 +92,7 @@ func (r *ScalpingRepository) Flush(id string) error {
   var scalping *spotModels.Scalping
   result := r.Db.First(&scalping, "id=?", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    return errors.New("scalping empty")
+    return errors.New("empty scalping to flush")
   }
 
   price, err := r.SymbolsRepository.Price(scalping.Symbol)
@@ -259,7 +259,7 @@ func (r *ScalpingRepository) Place(planID string) error {
   }
 
   var scalping *spotModels.Scalping
-  result = r.Db.Model(&scalping).Where("symbol = ? AND side = ? AND status = 1", plan.Symbol, plan.Side).Take(&scalping)
+  result = r.Db.Model(&scalping).Where("symbol = ? AND status = 1", plan.Symbol).Take(&scalping)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     r.Db.Model(&spotModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 5)
     return errors.New("scalping empty")
@@ -391,7 +391,7 @@ func (r *ScalpingRepository) Place(planID string) error {
     return err
   }
 
-  if balance["free"] < math.Max(balance["lock"], notional) {
+  if balance["free"] < math.Max(balance["locked"], notional) {
     return errors.New(fmt.Sprintf("[%s] free not enough", entity.QuoteAsset))
   }
 
@@ -413,6 +413,7 @@ func (r *ScalpingRepository) Place(planID string) error {
     if err != nil {
       _, ok := err.(common.APIError)
       if ok {
+        log.Println("order palce error", err.Error())
         return err
       }
       tx.Model(&scalping).Where("version", scalping.Version).Updates(map[string]interface{}{
@@ -472,7 +473,7 @@ func (r *ScalpingRepository) Take(scalping *spotModels.Scalping, price float64) 
 
   result := r.Db.Where("scalping_id=? AND status=?", scalping.ID, 1).Order("sell_price asc").Take(&trading)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    return errors.New("empty grid")
+    return errors.New("empty scalping to take")
   }
   if price < trading.SellPrice {
     if price < entryPrice*1.0385 {
@@ -480,6 +481,9 @@ func (r *ScalpingRepository) Take(scalping *spotModels.Scalping, price float64) 
     }
     sellPrice = entryPrice * 1.0385
   } else {
+    if price < entryPrice*1.0385 {
+      return errors.New("price too low")
+    }
     sellPrice = trading.SellPrice
   }
   if sellPrice < price*0.9985 {

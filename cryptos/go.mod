@@ -8,6 +8,7 @@ require (
 	github.com/alecthomas/participle/v2 v2.0.0-beta.5
 	github.com/alecthomas/repr v0.1.0
 	github.com/bitly/go-simplejson v0.5.0
+	github.com/eclipse/paho.golang v0.12.0
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/go-numb/go-dydx v0.0.0-20230714023630-3801998a7d89
 	github.com/go-redis/redis/v8 v8.11.5
@@ -26,7 +27,7 @@ require (
 	github.com/urfave/cli/v2 v2.5.1
 	github.com/vchitai/go-socket.io/v4 v4.1.12
 	github.com/yanue/starkex v0.0.0-20230614033702-2d7a3a7e494e
-	golang.org/x/crypto v0.8.0
+	golang.org/x/crypto v0.14.0
 	google.golang.org/grpc v1.54.0
 	google.golang.org/protobuf v1.30.0
 	gorm.io/datatypes v1.0.7
@@ -83,9 +84,10 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.4.0 // indirect
 	github.com/valyala/fastjson v1.4.1 // indirect
-	golang.org/x/net v0.9.0 // indirect
-	golang.org/x/sys v0.7.0 // indirect
-	golang.org/x/text v0.9.0 // indirect
+	golang.org/x/net v0.17.0 // indirect
+	golang.org/x/sync v0.4.0 // indirect
+	golang.org/x/sys v0.13.0 // indirect
+	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f // indirect
 	gorm.io/driver/mysql v1.3.2 // indirect

@@ -1,26 +1,47 @@
 package futures
 
 import (
-  "context"
   "fmt"
+  "slices"
   "time"
 
   "github.com/go-redis/redis/v8"
   "github.com/hibiken/asynq"
 
+  "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/queue"
   jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/futures"
   repositories "taoniu.local/cryptos/repositories/binance/futures"
+  tradingsRepositories "taoniu.local/cryptos/repositories/binance/futures/tradings"
 )
 
 type KlinesTask struct {
-  Rdb                *redis.Client
-  Ctx                context.Context
-  Asynq              *asynq.Client
+  AnsqContext        *common.AnsqClientContext
   Job                *jobs.Klines
   Repository         *repositories.KlinesRepository
   SymbolsRepository  *repositories.SymbolsRepository
   TradingsRepository *repositories.TradingsRepository
+}
+
+func NewKlinesTask(ansqContext *common.AnsqClientContext) *KlinesTask {
+  return &KlinesTask{
+    AnsqContext: ansqContext,
+    Repository: &repositories.KlinesRepository{
+      Db: ansqContext.Db,
+    },
+    SymbolsRepository: &repositories.SymbolsRepository{
+      Db: ansqContext.Db,
+    },
+    TradingsRepository: &repositories.TradingsRepository{
+      Db: ansqContext.Db,
+      ScalpingRepository: &tradingsRepositories.ScalpingRepository{
+        Db: ansqContext.Db,
+      },
+      TriggersRepository: &tradingsRepositories.TriggersRepository{
+        Db: ansqContext.Db,
+      },
+    },
+  }
 }
 
 func (t *KlinesTask) Flush(interval string, limit int) error {
@@ -30,7 +51,7 @@ func (t *KlinesTask) Flush(interval string, limit int) error {
     if err != nil {
       return err
     }
-    t.Asynq.Enqueue(
+    t.AnsqContext.Conn.Enqueue(
       task,
       asynq.Queue(config.BINANCE_FUTURES_KLINES),
       asynq.MaxRetry(0),
@@ -43,8 +64,8 @@ func (t *KlinesTask) Flush(interval string, limit int) error {
 func (t *KlinesTask) Fix(interval string, limit int, duration int64) error {
   symbols := t.SymbolsRepository.Symbols()
   timestamp := time.Now().Unix() - duration
-  whites, _ := t.Rdb.ZRangeByScore(
-    t.Ctx,
+  whites, _ := t.AnsqContext.Rdb.ZRangeByScore(
+    t.AnsqContext.Ctx,
     fmt.Sprintf(
       "binance:futures:klines:flush:%v",
       interval,
@@ -55,14 +76,14 @@ func (t *KlinesTask) Fix(interval string, limit int, duration int64) error {
     },
   ).Result()
   for _, symbol := range symbols {
-    if t.contains(whites, symbol) {
+    if slices.Contains(whites, symbol) {
       continue
     }
     task, err := t.Job.Flush(symbol, interval, limit, true)
     if err != nil {
       return err
     }
-    t.Asynq.Enqueue(
+    t.AnsqContext.Conn.Enqueue(
       task,
       asynq.Queue(config.BINANCE_FUTURES_KLINES_DELAY),
       asynq.MaxRetry(0),
@@ -80,7 +101,7 @@ func (t *KlinesTask) FlushDelay(interval string, limit int) error {
     if err != nil {
       return err
     }
-    t.Asynq.Enqueue(
+    t.AnsqContext.Conn.Enqueue(
       task,
       asynq.Queue(config.BINANCE_FUTURES_KLINES_DELAY),
       asynq.MaxRetry(0),
@@ -101,18 +122,9 @@ func (t *KlinesTask) Clean() error {
 func (t *KlinesTask) Scan() []string {
   var symbols []string
   for _, symbol := range t.TradingsRepository.Scan() {
-    if !t.contains(symbols, symbol) {
+    if !slices.Contains(symbols, symbol) {
       symbols = append(symbols, symbol)
     }
   }
   return symbols
-}
-
-func (t *KlinesTask) contains(s []string, str string) bool {
-  for _, v := range s {
-    if v == str {
-      return true
-    }
-  }
-  return false
 }

@@ -1,26 +1,31 @@
 package binance
 
 import (
-  "github.com/hibiken/asynq"
+  "taoniu.local/cryptos/common"
   "taoniu.local/cryptos/queue/asynq/workers/binance/spot"
 )
 
-type Spot struct{}
-
-func NewSpot() *Spot {
-  return &Spot{}
+type Spot struct {
+  AnsqContext *common.AnsqServerContext
 }
 
-func (h *Spot) Register(mux *asynq.ServeMux) error {
-  spot.NewTickers().Register(mux)
-  spot.NewKlines().Register(mux)
-  spot.NewDepth().Register(mux)
-  spot.NewIndicators().Register(mux)
-  spot.NewStrategies().Register(mux)
-  spot.NewPlans().Register(mux)
-  spot.NewAccount().Register(mux)
-  spot.NewOrders().Register(mux)
-  spot.NewTradings().Register(mux)
-  spot.NewMargin().Register(mux)
+func NewSpot(ansqContext *common.AnsqServerContext) *Spot {
+  return &Spot{
+    AnsqContext: ansqContext,
+  }
+}
+
+func (h *Spot) Register() error {
+  spot.NewTickers(h.AnsqContext).Register()
+  spot.NewKlines(h.AnsqContext).Register()
+  spot.NewDepth(h.AnsqContext).Register()
+  spot.NewIndicators(h.AnsqContext).Register()
+  spot.NewStrategies(h.AnsqContext).Register()
+  spot.NewPlans(h.AnsqContext).Register()
+  spot.NewAccount(h.AnsqContext).Register()
+  spot.NewOrders(h.AnsqContext).Register()
+  spot.NewPositions(h.AnsqContext).Register()
+  spot.NewTradings(h.AnsqContext).Register()
+  spot.NewMargin(h.AnsqContext).Register()
   return nil
 }

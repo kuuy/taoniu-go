@@ -1,23 +1,47 @@
 package futures
 
 import (
+  "slices"
   "time"
 
   "github.com/hibiken/asynq"
-  "gorm.io/gorm"
 
+  "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/queue"
   jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/futures"
   repositories "taoniu.local/cryptos/repositories/binance/futures"
+  tradingsRepositories "taoniu.local/cryptos/repositories/binance/futures/tradings"
 )
 
 type OrdersTask struct {
-  Db                 *gorm.DB
-  Asynq              *asynq.Client
+  AnsqContext        *common.AnsqClientContext
   Job                *jobs.Orders
   Repository         *repositories.OrdersRepository
   SymbolsRepository  *repositories.SymbolsRepository
   TradingsRepository *repositories.TradingsRepository
+}
+
+func NewOrdersTask(ansqContext *common.AnsqClientContext) *OrdersTask {
+  return &OrdersTask{
+    AnsqContext: ansqContext,
+    Repository: &repositories.OrdersRepository{
+      Db:  ansqContext.Db,
+      Rdb: ansqContext.Rdb,
+      Ctx: ansqContext.Ctx,
+    },
+    SymbolsRepository: &repositories.SymbolsRepository{
+      Db: ansqContext.Db,
+    },
+    TradingsRepository: &repositories.TradingsRepository{
+      Db: ansqContext.Db,
+      ScalpingRepository: &tradingsRepositories.ScalpingRepository{
+        Db: ansqContext.Db,
+      },
+      TriggersRepository: &tradingsRepositories.TriggersRepository{
+        Db: ansqContext.Db,
+      },
+    },
+  }
 }
 
 func (t *OrdersTask) Open() error {
@@ -27,7 +51,7 @@ func (t *OrdersTask) Open() error {
     if err != nil {
       return err
     }
-    t.Asynq.Enqueue(
+    t.AnsqContext.Conn.Enqueue(
       task,
       asynq.Queue(config.BINANCE_FUTURES_ORDERS),
       asynq.MaxRetry(0),
@@ -44,7 +68,7 @@ func (t *OrdersTask) Flush() error {
     if err != nil {
       return err
     }
-    t.Asynq.Enqueue(
+    t.AnsqContext.Conn.Enqueue(
       task,
       asynq.Queue(config.BINANCE_FUTURES_ORDERS),
       asynq.MaxRetry(0),
@@ -61,7 +85,7 @@ func (t *OrdersTask) Sync(startTime int64, limit int) error {
     if err != nil {
       return err
     }
-    t.Asynq.Enqueue(
+    t.AnsqContext.Conn.Enqueue(
       task,
       asynq.Queue(config.BINANCE_FUTURES_ORDERS),
       asynq.MaxRetry(0),
@@ -74,18 +98,9 @@ func (t *OrdersTask) Sync(startTime int64, limit int) error {
 func (t *OrdersTask) Scan() []string {
   var symbols []string
   for _, symbol := range t.TradingsRepository.Scan() {
-    if !t.contains(symbols, symbol) {
+    if !slices.Contains(symbols, symbol) {
       symbols = append(symbols, symbol)
     }
   }
   return symbols
-}
-
-func (t *OrdersTask) contains(s []string, str string) bool {
-  for _, v := range s {
-    if v == str {
-      return true
-    }
-  }
-  return false
 }

@@ -27,7 +27,7 @@ type PlansInfo struct {
   Status    int     `json:"status"`
 }
 
-func NewPlansRouter() http.Handler {
+func NewPlansRouter(apiContext *common.ApiContext) http.Handler {
   h := PlansHandler{}
   h.Repository = &repositories.PlansRepository{
     Db: common.NewDB(),

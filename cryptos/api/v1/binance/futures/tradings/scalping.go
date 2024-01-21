@@ -13,14 +13,17 @@ import (
 )
 
 type ScalpingHandler struct {
+  ApiContext *common.ApiContext
   Response   *api.ResponseHandler
   Repository *repositories.ScalpingRepository
 }
 
-func NewScalpingRouter() http.Handler {
-  h := ScalpingHandler{}
+func NewScalpingRouter(apiContext *common.ApiContext) http.Handler {
+  h := ScalpingHandler{
+    ApiContext: apiContext,
+  }
   h.Repository = &repositories.ScalpingRepository{
-    Db: common.NewDB(),
+    Db: h.ApiContext.Db,
   }
 
   r := chi.NewRouter()

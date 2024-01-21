@@ -1,10 +1,9 @@
 package dydx
 
 import (
-  "context"
-  "github.com/go-chi/chi/v5"
-  "github.com/go-redis/redis/v8"
   "net/http"
+
+  "github.com/go-chi/chi/v5"
 
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
@@ -12,20 +11,18 @@ import (
 )
 
 type AccountHandler struct {
-  Rdb        *redis.Client
-  Ctx        context.Context
+  ApiContext *common.ApiContext
   Response   *api.ResponseHandler
   Repository *repositories.AccountRepository
 }
 
-func NewAccountRouter() http.Handler {
+func NewAccountRouter(apiContext *common.ApiContext) http.Handler {
   h := AccountHandler{
-    Rdb: common.NewRedis(),
-    Ctx: context.Background(),
+    ApiContext: apiContext,
   }
   h.Repository = &repositories.AccountRepository{
-    Rdb: h.Rdb,
-    Ctx: h.Ctx,
+    Rdb: h.ApiContext.Rdb,
+    Ctx: h.ApiContext.Ctx,
   }
 
   r := chi.NewRouter()

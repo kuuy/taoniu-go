@@ -59,31 +59,35 @@ func (h *SpotHandler) run() error {
   //  Asynq: h.Asynq,
   //}
 
-  binance := tasks.BinanceTask{
-    Db:    h.Db,
-    Rdb:   h.Rdb,
-    Ctx:   h.Ctx,
-    Asynq: h.Asynq,
+  ansqContext := &common.AnsqClientContext{
+    Db:   h.Db,
+    Rdb:  h.Rdb,
+    Ctx:  h.Ctx,
+    Conn: h.Asynq,
   }
+
+  binance := tasks.NewBinanceTask(ansqContext)
 
   c := cron.New()
   c.AddFunc("@every 5s", func() {
     binance.Spot().Account().Flush()
     binance.Spot().Tickers().Flush()
-    binance.Spot().Tradings().Launchpad().Place()
-    //binance.Spot().Tradings().Triggers().Place()
-    //binance.Spot().Tradings().Scalping().Place()
+    //binance.Spot().Tradings().Launchpad().Place()
+    binance.Spot().Tradings().Triggers().Place()
+    binance.Spot().Tradings().Scalping().Place()
     //binance.Spot().Margin().Cross().Tradings().Triggers().Place()
   })
   c.AddFunc("@every 15s", func() {
-    binance.Spot().Tradings().Launchpad().Flush()
-    //binance.Spot().Tradings().Triggers().Flush()
-    //binance.Spot().Tradings().Scalping().Flush()
+    //binance.Spot().Tradings().Launchpad().Flush()
+    binance.Spot().Tradings().Triggers().Flush()
+    binance.Spot().Tradings().Scalping().Flush()
     //binance.Spot().Margin().Cross().Tradings().Triggers().Flush()
     //tradingview.Analysis().Flush()
   })
   c.AddFunc("@every 30s", func() {
     binance.Spot().Orders().Open()
+    binance.Spot().Orders().Flush()
+    binance.Spot().Positions().Flush()
   })
   c.AddFunc("@every 1m", func() {
     binance.Spot().Depth().Flush(1000)

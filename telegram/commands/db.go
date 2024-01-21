@@ -7,6 +7,7 @@ import (
   "gorm.io/gorm"
 
   "taoniu.local/telegram/common"
+  "taoniu.local/telegram/models"
 )
 
 type DbHandler struct {
@@ -41,6 +42,8 @@ func NewDbCommand() *cli.Command {
 
 func (h *DbHandler) migrate() error {
   log.Println("process migrator")
-  h.Db.AutoMigrate()
+  h.Db.AutoMigrate(
+    &models.Apps{},
+  )
   return nil
 }

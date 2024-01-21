@@ -80,3 +80,21 @@ func (r *ScalpingRepository) Apply(
   }
   return nil
 }
+
+func (r *ScalpingRepository) PlanIds(status int) []string {
+  var ids []string
+  r.Db.Model(&models.ScalpingPlan{}).Select("plan_id").Where("status", status).Find(&ids)
+  return ids
+}
+
+func (r *ScalpingRepository) AddPlan(planID string) error {
+  var scalping *models.ScalpingPlan
+  result := r.Db.Where("plan_id", planID).Take(&scalping)
+  if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+    entity := &models.ScalpingPlan{
+      PlanID: planID,
+    }
+    r.Db.Create(&entity)
+  }
+  return nil
+}

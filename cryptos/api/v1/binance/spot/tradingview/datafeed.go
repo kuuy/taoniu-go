@@ -3,16 +3,20 @@ package tradingview
 import (
   "github.com/go-chi/chi/v5"
   "net/http"
+  "taoniu.local/cryptos/common"
 
   "taoniu.local/cryptos/api"
 )
 
 type DatafeedHandler struct {
-  Response *api.ResponseHandler
+  ApiContext *common.ApiContext
+  Response   *api.ResponseHandler
 }
 
-func NewDatafeedRouter() http.Handler {
-  h := DatafeedHandler{}
+func NewDatafeedRouter(apiContext *common.ApiContext) http.Handler {
+  h := DatafeedHandler{
+    ApiContext: apiContext,
+  }
 
   r := chi.NewRouter()
   r.Get("/config", h.Config)

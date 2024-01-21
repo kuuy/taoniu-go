@@ -64,7 +64,7 @@ func (r *AccountRepository) SpotBalance() (float64, error) {
     priceVal, err := r.Rdb.HGet(
       r.Ctx,
       fmt.Sprintf(
-        "binance:spot:realtime:%sBUSD",
+        "binance:spot:realtime:%sUSDT",
         currency,
       ),
       "price",

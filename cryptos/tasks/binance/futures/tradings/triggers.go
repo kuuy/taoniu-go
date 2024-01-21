@@ -5,15 +5,25 @@ import (
 
   "github.com/hibiken/asynq"
 
+  "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/queue"
   jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/futures/tradings"
   repositories "taoniu.local/cryptos/repositories/binance/futures/tradings"
 )
 
 type TriggersTask struct {
-  Asynq      *asynq.Client
-  Job        *jobs.Triggers
-  Repository *repositories.TriggersRepository
+  AnsqContext *common.AnsqClientContext
+  Job         *jobs.Triggers
+  Repository  *repositories.TriggersRepository
+}
+
+func NewTriggersTask(ansqContext *common.AnsqClientContext) *TriggersTask {
+  return &TriggersTask{
+    AnsqContext: ansqContext,
+    Repository: &repositories.TriggersRepository{
+      Db: ansqContext.Db,
+    },
+  }
 }
 
 func (t *TriggersTask) Place() error {
@@ -23,7 +33,7 @@ func (t *TriggersTask) Place() error {
     if err != nil {
       return err
     }
-    t.Asynq.Enqueue(
+    t.AnsqContext.Conn.Enqueue(
       task,
       asynq.Queue(config.BINANCE_FUTURES_TRADINGS_TRIGGERS),
       asynq.MaxRetry(0),
@@ -40,7 +50,7 @@ func (t *TriggersTask) Flush() error {
     if err != nil {
       return err
     }
-    t.Asynq.Enqueue(
+    t.AnsqContext.Conn.Enqueue(
       task,
       asynq.Queue(config.BINANCE_FUTURES_TRADINGS_TRIGGERS),
       asynq.MaxRetry(0),

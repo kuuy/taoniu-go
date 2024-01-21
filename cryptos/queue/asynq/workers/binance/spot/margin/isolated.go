@@ -1,17 +1,21 @@
 package margin
 
 import (
-  "github.com/hibiken/asynq"
+  "taoniu.local/cryptos/common"
   "taoniu.local/cryptos/queue/asynq/workers/binance/spot/margin/isolated"
 )
 
-type Isolated struct{}
-
-func NewIsolated() *Isolated {
-  return &Isolated{}
+type Isolated struct {
+  AnsqContext *common.AnsqServerContext
 }
 
-func (h *Isolated) Register(mux *asynq.ServeMux) error {
-  isolated.NewTradings().Register(mux)
+func NewIsolated(ansqContext *common.AnsqServerContext) *Isolated {
+  return &Isolated{
+    AnsqContext: ansqContext,
+  }
+}
+
+func (h *Isolated) Register() error {
+  isolated.NewTradings(h.AnsqContext).Register()
   return nil
 }

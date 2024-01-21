@@ -2,11 +2,11 @@ package spot
 
 import (
   "context"
-  "gorm.io/gorm"
   "log"
 
   "github.com/go-redis/redis/v8"
   "github.com/urfave/cli/v2"
+  "gorm.io/gorm"
 
   "taoniu.local/cryptos/common"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
@@ -119,7 +119,7 @@ func (h *SymbolsHandler) Slippage() error {
 
 func (h *SymbolsHandler) Adjust() error {
   log.Println("symbols adjust...")
-  symbol := "AVAXBUSD"
+  symbol := "AVAXUSDT"
   price := 11.81 * 1.02
   price, quantity, err := h.Repository.Adjust(symbol, price, 20)
   log.Println("price", price, quantity, err)

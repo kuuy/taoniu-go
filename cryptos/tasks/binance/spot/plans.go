@@ -5,13 +5,20 @@ import (
 
   "github.com/hibiken/asynq"
 
+  "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/queue"
   jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/spot"
 )
 
 type PlansTask struct {
-  Asynq *asynq.Client
-  Job   *jobs.Plans
+  AnsqContext *common.AnsqClientContext
+  Job         *jobs.Plans
+}
+
+func NewPlansTask(ansqContext *common.AnsqClientContext) *PlansTask {
+  return &PlansTask{
+    AnsqContext: ansqContext,
+  }
 }
 
 func (t *PlansTask) Flush(interval string) error {
@@ -19,7 +26,7 @@ func (t *PlansTask) Flush(interval string) error {
   if err != nil {
     return err
   }
-  t.Asynq.Enqueue(
+  t.AnsqContext.Conn.Enqueue(
     task,
     asynq.Queue(config.BINANCE_SPOT_PLANS),
     asynq.MaxRetry(0),

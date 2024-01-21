@@ -4,13 +4,15 @@ import (
   "github.com/go-chi/chi/v5"
   "net/http"
   "taoniu.local/account/api"
+  "taoniu.local/account/common"
   "taoniu.local/account/repositories"
 )
 
 type ProfileHandler struct {
+  ApiContext      *common.ApiContext
   Response        *api.ResponseHandler
-  Repository      repositories.ProfileRepository
-  UsersRepository repositories.UsersRepository
+  Repository      *repositories.ProfileRepository
+  UsersRepository *repositories.UsersRepository
 }
 
 type ProfileInfo struct {
@@ -19,8 +21,16 @@ type ProfileInfo struct {
   Avatar   string `json:"avatar"`
 }
 
-func NewProfileRouter() http.Handler {
-  h := ProfileHandler{}
+func NewProfileRouter(apiContext *common.ApiContext) http.Handler {
+  h := ProfileHandler{
+    ApiContext: apiContext,
+  }
+  h.Repository = &repositories.ProfileRepository{
+    Db: h.ApiContext.Db,
+  }
+  h.UsersRepository = &repositories.UsersRepository{
+    Db: h.ApiContext.Db,
+  }
 
   r := chi.NewRouter()
   r.Use(api.Authenticator)

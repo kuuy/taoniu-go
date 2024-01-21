@@ -2,12 +2,10 @@ package isolated
 
 import (
   "context"
-  "gorm.io/gorm"
-  "log"
-  "taoniu.local/cryptos/tasks"
-
   "github.com/go-redis/redis/v8"
   "github.com/urfave/cli/v2"
+  "gorm.io/gorm"
+  "log"
 
   "taoniu.local/cryptos/common"
   repositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated"
@@ -106,16 +104,6 @@ func NewAccountCommand() *cli.Command {
           return nil
         },
       },
-      {
-        Name:  "test",
-        Usage: "",
-        Action: func(c *cli.Context) error {
-          if err := h.Test(); err != nil {
-            return cli.Exit(err.Error(), 1)
-          }
-          return nil
-        },
-      },
     },
   }
 }
@@ -128,7 +116,7 @@ func (h *AccountHandler) Flush() error {
 func (h *AccountHandler) Transfer() error {
   log.Println("margin isolated account transfer...")
   asset := "AAVE"
-  symbol := "AAVEBUSD"
+  symbol := "AAVEUSDT"
   quantity := 0.01
   from := "ISOLATED_MARGIN"
   to := "SPOT"
@@ -141,8 +129,8 @@ func (h *AccountHandler) Transfer() error {
 }
 
 func (h *AccountHandler) Loan() error {
-  asset := "BUSD"
-  symbol := "ATOMBUSD"
+  asset := "USDT"
+  symbol := "ATOMUSDT"
   amount := 0.01
   transferId, err := h.Repository.Loan(asset, symbol, amount, true)
   if err != nil {
@@ -153,8 +141,8 @@ func (h *AccountHandler) Loan() error {
 }
 
 func (h *AccountHandler) Repay() error {
-  asset := "BUSD"
-  symbol := "ATOMBUSD"
+  asset := "USDT"
+  symbol := "ATOMUSDT"
   amount := 0.01
   transferId, err := h.Repository.Repay(asset, symbol, amount, true)
   if err != nil {
@@ -172,15 +160,4 @@ func (h *AccountHandler) Collect() error {
 func (h *AccountHandler) Liquidate() error {
   log.Println("margin isolated account liquidate...")
   return h.Repository.Liquidate()
-}
-
-func (h *AccountHandler) Test() error {
-  binance := tasks.BinanceTask{
-    Db:  h.Db,
-    Rdb: h.Rdb,
-    Ctx: h.Ctx,
-  }
-  binance.Spot().Tradings().Scalping().Flush()
-  //binance.Spot().Cron().Hourly()
-  return nil
 }

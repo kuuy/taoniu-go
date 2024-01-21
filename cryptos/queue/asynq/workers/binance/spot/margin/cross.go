@@ -1,17 +1,21 @@
 package margin
 
 import (
-  "github.com/hibiken/asynq"
+  "taoniu.local/cryptos/common"
   "taoniu.local/cryptos/queue/asynq/workers/binance/spot/margin/cross"
 )
 
-type Cross struct{}
-
-func NewCross() *Cross {
-  return &Cross{}
+type Cross struct {
+  AnsqContext *common.AnsqServerContext
 }
 
-func (h *Cross) Register(mux *asynq.ServeMux) error {
-  cross.NewTradings().Register(mux)
+func NewCross(ansqContext *common.AnsqServerContext) *Cross {
+  return &Cross{
+    AnsqContext: ansqContext,
+  }
+}
+
+func (h *Cross) Register() error {
+  cross.NewTradings(h.AnsqContext).Register()
   return nil
 }

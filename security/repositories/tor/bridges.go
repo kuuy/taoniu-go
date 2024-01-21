@@ -6,8 +6,7 @@ import (
   "encoding/binary"
   "errors"
   "fmt"
-  "github.com/go-redis/redis/v8"
-  "io/ioutil"
+  "io"
   "log"
   "math/rand"
   "net"
@@ -19,6 +18,7 @@ import (
   "syscall"
   "time"
 
+  "github.com/go-redis/redis/v8"
   "github.com/rs/xid"
   "gorm.io/gorm"
 
@@ -87,7 +87,7 @@ func (r *BridgesRepository) Flush() error {
     return errors.New(fmt.Sprintf("request error: status[%s] code[%d]", resp.Status, resp.StatusCode))
   }
 
-  body, err := ioutil.ReadAll(resp.Body)
+  body, err := io.ReadAll(resp.Body)
   if err != nil {
     return err
   }
@@ -154,7 +154,7 @@ func (r *BridgesRepository) Monitor(id int, bridges []string, isChecker bool) er
 
   var args []string
   args = append(args, "-f")
-  args = append(args, "/opt/tor/torrc")
+  args = append(args, "/data/tor/.torrc")
   for _, bridge := range bridges {
     args = append(args, "--Bridge")
     args = append(args, bridge)
@@ -177,7 +177,7 @@ func (r *BridgesRepository) Monitor(id int, bridges []string, isChecker bool) er
   args = append(args, fmt.Sprintf("127.0.0.1:%d", port))
   args = append(args, "--DataDirectory")
   args = append(args, fmt.Sprintf("/opt/tor/data/%02d", id))
-  cmd := exec.Command("/opt/tor/bin/tor", args...)
+  cmd := exec.Command("/usr/local/sbin/tor", args...)
   stdout, err := cmd.StdoutPipe()
   cmd.Stderr = cmd.Stdout
   if err != nil {

@@ -1,30 +1,31 @@
 package futures
 
 import (
-  "context"
   "fmt"
   "log"
   "strconv"
   "time"
 
-  "github.com/go-redis/redis/v8"
-  "gorm.io/gorm"
-
+  "taoniu.local/cryptos/common"
   models "taoniu.local/cryptos/models/binance/futures"
 )
 
 type ScalpingTask struct {
-  Db  *gorm.DB
-  Rdb *redis.Client
-  Ctx context.Context
+  AnsqContext *common.AnsqClientContext
+}
+
+func NewScalpingTask(ansqContext *common.AnsqClientContext) *ScalpingTask {
+  return &ScalpingTask{
+    AnsqContext: ansqContext,
+  }
 }
 
 func (t *ScalpingTask) Flush() error {
   var scalping []*models.Scalping
-  t.Db.Model(&models.Scalping{}).Where("status", 1).Find(&scalping)
+  t.AnsqContext.Db.Model(&models.Scalping{}).Where("status", 1).Find(&scalping)
   for _, entity := range scalping {
-    data, _ := t.Rdb.HMGet(
-      t.Ctx,
+    data, _ := t.AnsqContext.Rdb.HMGet(
+      t.AnsqContext.Ctx,
       fmt.Sprintf(
         "binance:futures:indicators:4h:%s:%s",
         entity.Symbol,
@@ -48,7 +49,7 @@ func (t *ScalpingTask) Flush() error {
       price = takePrice
     }
 
-    t.Db.Model(&entity).Update("price", price)
+    t.AnsqContext.Db.Model(&entity).Update("price", price)
   }
 
   return nil

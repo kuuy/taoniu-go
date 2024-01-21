@@ -74,7 +74,7 @@ type HistoryInfo struct {
   Volume    []float64 `json:"v"`
 }
 
-func NewDatafeedRouter() http.Handler {
+func NewDatafeedRouter(apiContext *common.ApiContext) http.Handler {
   h := DatafeedHandler{
     Db:  common.NewDB(),
     Rdb: common.NewRedis(),

@@ -26,7 +26,7 @@ type ChartInfo struct {
   Timestamp  int64  `json:"timestamp"`
 }
 
-func NewChartsRouter() http.Handler {
+func NewChartsRouter(apiContext *common.ApiContext) http.Handler {
   h := ChartsHandler{
     Db:  common.NewDB(),
     Rdb: common.NewRedis(),

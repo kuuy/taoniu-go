@@ -1,20 +1,24 @@
 package dydx
 
 import (
-  "github.com/hibiken/asynq"
+  "taoniu.local/cryptos/common"
   "taoniu.local/cryptos/queue/asynq/workers/dydx/tradings"
 )
 
-type Tradings struct{}
-
-func NewTradings() *Tradings {
-  return &Tradings{}
+type Tradings struct {
+  AnsqContext *common.AnsqServerContext
 }
 
-func (h *Tradings) Register(mux *asynq.ServeMux) error {
-  mux.HandleFunc("dydx:tradings:scalping:place", tradings.NewScalping().Place)
-  mux.HandleFunc("dydx:tradings:scalping:flush", tradings.NewScalping().Flush)
-  mux.HandleFunc("dydx:tradings:triggers:place", tradings.NewTriggers().Place)
-  mux.HandleFunc("dydx:tradings:triggers:flush", tradings.NewTriggers().Flush)
+func NewTradings(ansqContext *common.AnsqServerContext) *Tradings {
+  return &Tradings{
+    AnsqContext: ansqContext,
+  }
+}
+
+func (h *Tradings) Register() error {
+  h.AnsqContext.Mux.HandleFunc("dydx:tradings:scalping:place", tradings.NewScalping(h.AnsqContext).Place)
+  h.AnsqContext.Mux.HandleFunc("dydx:tradings:scalping:flush", tradings.NewScalping(h.AnsqContext).Flush)
+  h.AnsqContext.Mux.HandleFunc("dydx:tradings:triggers:place", tradings.NewTriggers(h.AnsqContext).Place)
+  h.AnsqContext.Mux.HandleFunc("dydx:tradings:triggers:flush", tradings.NewTriggers(h.AnsqContext).Flush)
   return nil
 }

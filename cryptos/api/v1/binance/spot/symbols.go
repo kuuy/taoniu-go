@@ -9,6 +9,7 @@ import (
 )
 
 type SymbolsHandler struct {
+  ApiContext *common.ApiContext
   Response   *api.ResponseHandler
   Repository *repositories.SymbolsRepository
 }
@@ -19,10 +20,12 @@ type SymbolInfo struct {
   QuoteAsset string `json:"quote_asset"`
 }
 
-func NewSymbolsRouter() http.Handler {
-  h := SymbolsHandler{}
+func NewSymbolsRouter(apiContext *common.ApiContext) http.Handler {
+  h := SymbolsHandler{
+    ApiContext: apiContext,
+  }
   h.Repository = &repositories.SymbolsRepository{
-    Db: common.NewDB(),
+    Db: h.ApiContext.Db,
   }
 
   r := chi.NewRouter()

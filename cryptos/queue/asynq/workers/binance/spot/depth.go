@@ -3,34 +3,28 @@ package spot
 import (
   "context"
   "encoding/json"
-  "github.com/go-redis/redis/v8"
   "github.com/hibiken/asynq"
-  "gorm.io/gorm"
   "taoniu.local/cryptos/common"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
 type Depth struct {
-  Db                *gorm.DB
-  Rdb               *redis.Client
-  Ctx               context.Context
+  AnsqContext       *common.AnsqServerContext
   Repository        *repositories.DepthRepository
   SymbolsRepository *repositories.SymbolsRepository
 }
 
-func NewDepth() *Depth {
+func NewDepth(ansqContext *common.AnsqServerContext) *Depth {
   h := &Depth{
-    Db:  common.NewDB(),
-    Rdb: common.NewRedis(),
-    Ctx: context.Background(),
+    AnsqContext: ansqContext,
   }
   h.Repository = &repositories.DepthRepository{
-    Db: h.Db,
+    Db: h.AnsqContext.Db,
   }
   h.SymbolsRepository = &repositories.SymbolsRepository{
-    Db:  h.Db,
-    Rdb: h.Rdb,
-    Ctx: h.Ctx,
+    Db:  h.AnsqContext.Db,
+    Rdb: h.AnsqContext.Rdb,
+    Ctx: h.AnsqContext.Ctx,
   }
   return h
 }
@@ -55,7 +49,7 @@ func (h *Depth) Flush(ctx context.Context, t *asynq.Task) error {
   return nil
 }
 
-func (h *Depth) Register(mux *asynq.ServeMux) error {
-  mux.HandleFunc("binance:spot:depth:flush", h.Flush)
+func (h *Depth) Register() error {
+  h.AnsqContext.Mux.HandleFunc("binance:spot:depth:flush", h.Flush)
   return nil
 }

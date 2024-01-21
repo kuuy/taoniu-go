@@ -12,6 +12,7 @@ import (
 )
 
 type PlansHandler struct {
+  ApiContext *common.ApiContext
   Response   *api.ResponseHandler
   Repository *repositories.PlansRepository
 }
@@ -27,10 +28,12 @@ type PlansInfo struct {
   Status    int     `json:"status"`
 }
 
-func NewPlansRouter() http.Handler {
-  h := PlansHandler{}
+func NewPlansRouter(apiContext *common.ApiContext) http.Handler {
+  h := PlansHandler{
+    ApiContext: apiContext,
+  }
   h.Repository = &repositories.PlansRepository{
-    Db: common.NewDB(),
+    Db: h.ApiContext.Db,
   }
 
   r := chi.NewRouter()

@@ -1,13 +1,14 @@
 package tradings
 
 import (
-	"github.com/go-chi/chi/v5"
-	"net/http"
-	"taoniu.local/cryptos/api/v1/binance/spot/analysis/margin/isolated/tradings/fishers"
+  "github.com/go-chi/chi/v5"
+  "net/http"
+  "taoniu.local/cryptos/api/v1/binance/spot/analysis/margin/isolated/tradings/fishers"
+  "taoniu.local/cryptos/common"
 )
 
-func NewFishersRouter() http.Handler {
-	r := chi.NewRouter()
-	r.Mount("/grids", fishers.NewGridsRouter())
-	return r
+func NewFishersRouter(apiContext *common.ApiContext) http.Handler {
+  r := chi.NewRouter()
+  r.Mount("/grids", fishers.NewGridsRouter(apiContext))
+  return r
 }

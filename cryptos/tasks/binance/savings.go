@@ -1,25 +1,24 @@
 package binance
 
 import (
-	"context"
-	"gorm.io/gorm"
-	repositories "taoniu.local/cryptos/repositories/binance/savings"
-	tasks "taoniu.local/cryptos/tasks/binance/savings"
+  "taoniu.local/cryptos/common"
+  tasks "taoniu.local/cryptos/tasks/binance/savings"
 )
 
 type SavingsTask struct {
-	Db           *gorm.DB
-	Ctx          context.Context
-	ProductsTask *tasks.ProductsTask
+  AnsqContext  *common.AnsqClientContext
+  ProductsTask *tasks.ProductsTask
+}
+
+func NewSavingsTask(ansqContext *common.AnsqClientContext) *SavingsTask {
+  return &SavingsTask{
+    AnsqContext: ansqContext,
+  }
 }
 
 func (t *SavingsTask) Products() *tasks.ProductsTask {
-	if t.ProductsTask == nil {
-		t.ProductsTask = &tasks.ProductsTask{}
-		t.ProductsTask.Repository = &repositories.ProductsRepository{
-			Db:  t.Db,
-			Ctx: t.Ctx,
-		}
-	}
-	return t.ProductsTask
+  if t.ProductsTask == nil {
+    t.ProductsTask = tasks.NewProductsTask(t.AnsqContext)
+  }
+  return t.ProductsTask
 }

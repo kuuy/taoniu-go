@@ -6,19 +6,14 @@ import (
   "fmt"
   "time"
 
-  "github.com/go-redis/redis/v8"
   "github.com/hibiken/asynq"
-  "gorm.io/gorm"
-
   "taoniu.local/cryptos/common"
   repositories "taoniu.local/cryptos/repositories/binance/futures"
 )
 
 type Indicators struct {
-  Db         *gorm.DB
-  Rdb        *redis.Client
-  Ctx        context.Context
-  Repository *repositories.IndicatorsRepository
+  AnsqContext *common.AnsqServerContext
+  Repository  *repositories.IndicatorsRepository
 }
 
 type IndicatorPayload struct {
@@ -47,19 +42,17 @@ type VolumeProfilePayload struct {
   Limit    int
 }
 
-func NewIndicators() *Indicators {
+func NewIndicators(ansqContext *common.AnsqServerContext) *Indicators {
   h := &Indicators{
-    Db:  common.NewDB(),
-    Rdb: common.NewRedis(),
-    Ctx: context.Background(),
+    AnsqContext: ansqContext,
   }
   h.Repository = &repositories.IndicatorsRepository{
-    Db:  h.Db,
-    Rdb: h.Rdb,
-    Ctx: h.Ctx,
+    Db:  h.AnsqContext.Db,
+    Rdb: h.AnsqContext.Rdb,
+    Ctx: h.AnsqContext.Ctx,
   }
   h.Repository.SymbolsRepository = &repositories.SymbolsRepository{
-    Db: h.Db,
+    Db: h.AnsqContext.Db,
   }
   return h
 }
@@ -69,8 +62,8 @@ func (h *Indicators) Pivot(ctx context.Context, t *asynq.Task) error {
   json.Unmarshal(t.Payload(), &payload)
 
   mutex := common.NewMutex(
-    h.Rdb,
-    h.Ctx,
+    h.AnsqContext.Rdb,
+    h.AnsqContext.Ctx,
     fmt.Sprintf("locks:binance:futures:indicators:pivot:%s:%s", payload.Symbol, payload.Interval),
   )
   if !mutex.Lock(30 * time.Second) {
@@ -88,8 +81,8 @@ func (h *Indicators) Atr(ctx context.Context, t *asynq.Task) error {
   json.Unmarshal(t.Payload(), &payload)
 
   mutex := common.NewMutex(
-    h.Rdb,
-    h.Ctx,
+    h.AnsqContext.Rdb,
+    h.AnsqContext.Ctx,
     fmt.Sprintf("locks:binance:futures:indicators:atr:%s:%s", payload.Symbol, payload.Interval),
   )
   if !mutex.Lock(30 * time.Second) {
@@ -107,8 +100,8 @@ func (h *Indicators) Zlema(ctx context.Context, t *asynq.Task) error {
   json.Unmarshal(t.Payload(), &payload)
 
   mutex := common.NewMutex(
-    h.Rdb,
-    h.Ctx,
+    h.AnsqContext.Rdb,
+    h.AnsqContext.Ctx,
     fmt.Sprintf("locks:binance:futures:indicators:zlema:%s:%s", payload.Symbol, payload.Interval),
   )
   if !mutex.Lock(30 * time.Second) {
@@ -126,8 +119,8 @@ func (h *Indicators) HaZlema(ctx context.Context, t *asynq.Task) error {
   json.Unmarshal(t.Payload(), &payload)
 
   mutex := common.NewMutex(
-    h.Rdb,
-    h.Ctx,
+    h.AnsqContext.Rdb,
+    h.AnsqContext.Ctx,
     fmt.Sprintf("locks:binance:futures:indicators:ha_zlema:%s:%s", payload.Symbol, payload.Interval),
   )
   if !mutex.Lock(30 * time.Second) {
@@ -145,8 +138,8 @@ func (h *Indicators) Kdj(ctx context.Context, t *asynq.Task) error {
   json.Unmarshal(t.Payload(), &payload)
 
   mutex := common.NewMutex(
-    h.Rdb,
-    h.Ctx,
+    h.AnsqContext.Rdb,
+    h.AnsqContext.Ctx,
     fmt.Sprintf("locks:binance:futures:indicators:kdj:%s:%s", payload.Symbol, payload.Interval),
   )
   if !mutex.Lock(30 * time.Second) {
@@ -164,8 +157,8 @@ func (h *Indicators) BBands(ctx context.Context, t *asynq.Task) error {
   json.Unmarshal(t.Payload(), &payload)
 
   mutex := common.NewMutex(
-    h.Rdb,
-    h.Ctx,
+    h.AnsqContext.Rdb,
+    h.AnsqContext.Ctx,
     fmt.Sprintf("locks:binance:futures:indicators:bbands:%s:%s", payload.Symbol, payload.Interval),
   )
   if !mutex.Lock(30 * time.Second) {
@@ -183,8 +176,8 @@ func (h *Indicators) VolumeProfile(ctx context.Context, t *asynq.Task) error {
   json.Unmarshal(t.Payload(), &payload)
 
   mutex := common.NewMutex(
-    h.Rdb,
-    h.Ctx,
+    h.AnsqContext.Rdb,
+    h.AnsqContext.Ctx,
     fmt.Sprintf("locks:binance:futures:indicators:volume_profile:%s:%s", payload.Symbol, payload.Interval),
   )
   if !mutex.Lock(30 * time.Second) {
@@ -197,13 +190,13 @@ func (h *Indicators) VolumeProfile(ctx context.Context, t *asynq.Task) error {
   return nil
 }
 
-func (h *Indicators) Register(mux *asynq.ServeMux) error {
-  mux.HandleFunc("binance:futures:indicators:atr", h.Atr)
-  mux.HandleFunc("binance:futures:indicators:zlema", h.Zlema)
-  mux.HandleFunc("binance:futures:indicators:ha_zlema", h.HaZlema)
-  mux.HandleFunc("binance:futures:indicators:kdj", h.Kdj)
-  mux.HandleFunc("binance:futures:indicators:bbands", h.BBands)
-  mux.HandleFunc("binance:futures:indicators:pivot", h.Pivot)
-  mux.HandleFunc("binance:futures:indicators:volume_profile", h.VolumeProfile)
+func (h *Indicators) Register() error {
+  h.AnsqContext.Mux.HandleFunc("binance:futures:indicators:atr", h.Atr)
+  h.AnsqContext.Mux.HandleFunc("binance:futures:indicators:zlema", h.Zlema)
+  h.AnsqContext.Mux.HandleFunc("binance:futures:indicators:ha_zlema", h.HaZlema)
+  h.AnsqContext.Mux.HandleFunc("binance:futures:indicators:kdj", h.Kdj)
+  h.AnsqContext.Mux.HandleFunc("binance:futures:indicators:bbands", h.BBands)
+  h.AnsqContext.Mux.HandleFunc("binance:futures:indicators:pivot", h.Pivot)
+  h.AnsqContext.Mux.HandleFunc("binance:futures:indicators:volume_profile", h.VolumeProfile)
   return nil
 }

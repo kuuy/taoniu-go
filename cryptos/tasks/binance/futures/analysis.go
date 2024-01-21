@@ -1,24 +1,24 @@
 package futures
 
 import (
-  "context"
-  "github.com/go-redis/redis/v8"
-  "gorm.io/gorm"
+  "taoniu.local/cryptos/common"
   tasks "taoniu.local/cryptos/tasks/binance/futures/analysis"
 )
 
 type AnalysisTask struct {
-  Db           *gorm.DB
-  Rdb          *redis.Client
-  Ctx          context.Context
+  AnsqContext  *common.AnsqClientContext
   TradingsTask *tasks.TradingsTask
+}
+
+func NewAnalysisTask(ansqContext *common.AnsqClientContext) *AnalysisTask {
+  return &AnalysisTask{
+    AnsqContext: ansqContext,
+  }
 }
 
 func (t *AnalysisTask) Tradings() *tasks.TradingsTask {
   if t.TradingsTask == nil {
-    t.TradingsTask = &tasks.TradingsTask{
-      Db: t.Db,
-    }
+    t.TradingsTask = tasks.NewTradingsTask(t.AnsqContext)
   }
   return t.TradingsTask
 }

@@ -5,6 +5,7 @@ import (
 
   "github.com/hibiken/asynq"
 
+  "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/queue"
   jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/futures/tradings"
   futuresRepositories "taoniu.local/cryptos/repositories/binance/futures"
@@ -12,10 +13,22 @@ import (
 )
 
 type ScalpingTask struct {
-  Asynq            *asynq.Client
+  AnsqContext      *common.AnsqClientContext
   Job              *jobs.Scalping
   Repository       *repositories.ScalpingRepository
   ParentRepository *futuresRepositories.ScalpingRepository
+}
+
+func NewScalpingTask(ansqContext *common.AnsqClientContext) *ScalpingTask {
+  return &ScalpingTask{
+    AnsqContext: ansqContext,
+    Repository: &repositories.ScalpingRepository{
+      Db: ansqContext.Db,
+    },
+    ParentRepository: &futuresRepositories.ScalpingRepository{
+      Db: ansqContext.Db,
+    },
+  }
 }
 
 func (t *ScalpingTask) Place() error {
@@ -25,7 +38,7 @@ func (t *ScalpingTask) Place() error {
     if err != nil {
       return err
     }
-    t.Asynq.Enqueue(
+    t.AnsqContext.Conn.Enqueue(
       task,
       asynq.Queue(config.BINANCE_FUTURES_TRADINGS_SCALPING),
       asynq.MaxRetry(0),
@@ -42,7 +55,7 @@ func (t *ScalpingTask) Flush() error {
     if err != nil {
       return err
     }
-    t.Asynq.Enqueue(
+    t.AnsqContext.Conn.Enqueue(
       task,
       asynq.Queue(config.BINANCE_FUTURES_TRADINGS_SCALPING),
       asynq.MaxRetry(0),

@@ -4,31 +4,25 @@ import (
   "context"
   "encoding/json"
   "fmt"
-  "github.com/go-redis/redis/v8"
   "github.com/hibiken/asynq"
-  "gorm.io/gorm"
   "taoniu.local/cryptos/common"
   repositories "taoniu.local/cryptos/repositories/binance/futures"
   "time"
 )
 
 type Orders struct {
-  Db         *gorm.DB
-  Rdb        *redis.Client
-  Ctx        context.Context
-  Repository *repositories.OrdersRepository
+  AnsqContext *common.AnsqServerContext
+  Repository  *repositories.OrdersRepository
 }
 
-func NewOrders() *Orders {
+func NewOrders(ansqContext *common.AnsqServerContext) *Orders {
   h := &Orders{
-    Db:  common.NewDB(),
-    Rdb: common.NewRedis(),
-    Ctx: context.Background(),
+    AnsqContext: ansqContext,
   }
   h.Repository = &repositories.OrdersRepository{
-    Db:  h.Db,
-    Rdb: h.Rdb,
-    Ctx: h.Ctx,
+    Db:  h.AnsqContext.Db,
+    Rdb: h.AnsqContext.Rdb,
+    Ctx: h.AnsqContext.Ctx,
   }
   return h
 }
@@ -53,8 +47,8 @@ func (h *Orders) Open(ctx context.Context, t *asynq.Task) error {
   json.Unmarshal(t.Payload(), &payload)
 
   mutex := common.NewMutex(
-    h.Rdb,
-    h.Ctx,
+    h.AnsqContext.Rdb,
+    h.AnsqContext.Ctx,
     fmt.Sprintf("locks:binance:futures:orders:open:%s", payload.Symbol),
   )
   if !mutex.Lock(5 * time.Second) {
@@ -72,8 +66,8 @@ func (h *Orders) Flush(ctx context.Context, t *asynq.Task) error {
   json.Unmarshal(t.Payload(), &payload)
 
   mutex := common.NewMutex(
-    h.Rdb,
-    h.Ctx,
+    h.AnsqContext.Rdb,
+    h.AnsqContext.Ctx,
     fmt.Sprintf("locks:binance:futures:orders:flush:%s:%d", payload.Symbol, payload.OrderID),
   )
   if !mutex.Lock(5 * time.Second) {
@@ -91,8 +85,8 @@ func (h *Orders) Sync(ctx context.Context, t *asynq.Task) error {
   json.Unmarshal(t.Payload(), &payload)
 
   mutex := common.NewMutex(
-    h.Rdb,
-    h.Ctx,
+    h.AnsqContext.Rdb,
+    h.AnsqContext.Ctx,
     fmt.Sprintf("locks:binance:futures:orders:sync:%s", payload.Symbol),
   )
   if !mutex.Lock(5 * time.Second) {
@@ -105,9 +99,9 @@ func (h *Orders) Sync(ctx context.Context, t *asynq.Task) error {
   return nil
 }
 
-func (h *Orders) Register(mux *asynq.ServeMux) error {
-  mux.HandleFunc("binance:futures:orders:open", h.Open)
-  mux.HandleFunc("binance:futures:orders:flush", h.Flush)
-  mux.HandleFunc("binance:futures:orders:sync", h.Sync)
+func (h *Orders) Register() error {
+  h.AnsqContext.Mux.HandleFunc("binance:futures:orders:open", h.Open)
+  h.AnsqContext.Mux.HandleFunc("binance:futures:orders:flush", h.Flush)
+  h.AnsqContext.Mux.HandleFunc("binance:futures:orders:sync", h.Sync)
   return nil
 }

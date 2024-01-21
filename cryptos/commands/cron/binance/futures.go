@@ -52,12 +52,14 @@ func (h *FuturesHandler) run() error {
   wg := &sync.WaitGroup{}
   wg.Add(1)
 
-  binance := tasks.BinanceTask{
-    Db:    h.Db,
-    Rdb:   h.Rdb,
-    Ctx:   h.Ctx,
-    Asynq: h.Asynq,
+  ansqContext := &common.AnsqClientContext{
+    Db:   h.Db,
+    Rdb:  h.Rdb,
+    Ctx:  h.Ctx,
+    Conn: h.Asynq,
   }
+
+  binance := tasks.NewBinanceTask(ansqContext)
 
   c := cron.New()
   c.AddFunc("@every 5s", func() {

@@ -1,62 +1,62 @@
 package routers
 
 import (
-  "os"
-  "io"
+  "crypto/sha1"
+  "encoding/json"
   "fmt"
   "image"
+  "io"
   "math/rand"
-	"net/http"
-	"encoding/json"
-  "crypto/sha1"
+  "net/http"
+  "os"
 
   _ "image/gif"
-  _ "image/png"
   _ "image/jpeg"
+  _ "image/png"
 
-  "github.com/rs/xid"
-	"github.com/go-chi/chi/v5"
+  "github.com/go-chi/chi/v5"
   "github.com/h2non/filetype"
+  "github.com/rs/xid"
 
-	pool "taoniu.local/images/common"
-	"taoniu.local/images/repositories"
+  pool "taoniu.local/images/common"
+  "taoniu.local/images/repositories"
 )
 
-type ImageHandler struct{
+type ImageHandler struct {
   repository *repositories.ImageRepository
 }
 
-type Image struct{
-  ID string `json:"id"`
-  Title string `json:"title"`
-  Intro string `json:"intro"`
+type Image struct {
+  ID       string `json:"id"`
+  Title    string `json:"title"`
+  Intro    string `json:"intro"`
   Filepath string `json:"filepath"`
   Filename string `json:"filename"`
 }
 
-type ImageDetail struct{
-  ID string `json:"id"`
-  Title string `json:"title"`
-  Intro string `json:"intro"`
-  Width int `json:"width"`
-  Height int `json:"height"`
-  Mime string `json:"mime"`
-  Size uint64 `json:"size"`
+type ImageDetail struct {
+  ID       string `json:"id"`
+  Title    string `json:"title"`
+  Intro    string `json:"intro"`
+  Width    int    `json:"width"`
+  Height   int    `json:"height"`
+  Mime     string `json:"mime"`
+  Size     uint64 `json:"size"`
   Filepath string `json:"filepath"`
   Filename string `json:"filename"`
   FileHash string `json:"file_hash"`
 }
 
-type ListImageResponse struct{
+type ListImageResponse struct {
   Images []Image `json:"images"`
 }
 
-type UploadImageResponse struct{
+type UploadImageResponse struct {
   Filename string `json:"filename"`
 }
 
 const (
-  MB = 1 << 20
+  MB              = 1 << 20
   MAX_UPLOAD_SIZE = 5 * MB
 )
 
@@ -65,7 +65,7 @@ func NewImageRouter() http.Handler {
   repository := repositories.NewImageRepository(db)
 
   handler := ImageHandler{
-    repository : repository,
+    repository: repository,
   }
 
   r := chi.NewRouter()
@@ -83,7 +83,7 @@ func (h *ImageHandler) Listings(w http.ResponseWriter, r *http.Request) {
   }
 
   var response ListImageResponse
-  for _,entity := range(orders) {
+  for _, entity := range orders {
     var image Image
     image.ID = entity.ID
 
@@ -123,7 +123,7 @@ func (h *ImageHandler) Upload(
     return
   }
 
-  kind,_ := filetype.Image(head)
+  kind, _ := filetype.Image(head)
   if kind == filetype.Unknown {
     http.Error(
       w,
@@ -176,7 +176,7 @@ func (h *ImageHandler) Upload(
       filename,
     ),
   )
-	if err != nil {
+  if err != nil {
     http.Error(w, err.Error(), http.StatusInternalServerError)
     return
   }
@@ -185,24 +185,24 @@ func (h *ImageHandler) Upload(
   t := io.TeeReader(file, hash)
 
   _, err = io.Copy(dst, t)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
 
   if _, err := file.Seek(0, 0); err != nil {
     http.Error(w, err.Error(), http.StatusInternalServerError)
     return
   }
 
-  config, _,  err := image.DecodeConfig(file)
-	if err != nil {
+  config, _, err := image.DecodeConfig(file)
+  if err != nil {
     http.Error(w, err.Error(), http.StatusInternalServerError)
     return
   }
 
   info, err := dst.Stat()
-	if err != nil {
+  if err != nil {
     http.Error(w, err.Error(), http.StatusInternalServerError)
     return
   }
@@ -280,6 +280,5 @@ func (h *ImageHandler) Display(
   }
 
   w.Header().Set("Content-Type", entity.Mime)
-	http.ServeContent(w, r, "", entity.CreatedAt, file)
+  http.ServeContent(w, r, "", entity.CreatedAt, file)
 }
-

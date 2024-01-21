@@ -1,18 +1,22 @@
 package workers
 
 import (
-  "github.com/hibiken/asynq"
+  "taoniu.local/cryptos/common"
   "taoniu.local/cryptos/queue/asynq/workers/binance"
 )
 
-type Binance struct{}
-
-func NewBinance() *Binance {
-  return &Binance{}
+type Binance struct {
+  AnsqContext *common.AnsqServerContext
 }
 
-func (h *Binance) Register(mux *asynq.ServeMux) error {
-  binance.NewSpot().Register(mux)
-  binance.NewFutures().Register(mux)
+func NewBinance(ansqContext *common.AnsqServerContext) *Binance {
+  return &Binance{
+    AnsqContext: ansqContext,
+  }
+}
+
+func (h *Binance) Register() error {
+  binance.NewSpot(h.AnsqContext).Register()
+  binance.NewFutures(h.AnsqContext).Register()
   return nil
 }

@@ -1,49 +1,32 @@
 package futures
 
 import (
-  "context"
-
-  "github.com/go-redis/redis/v8"
-  "github.com/hibiken/asynq"
-  "gorm.io/gorm"
-
-  repositories "taoniu.local/cryptos/repositories/binance/futures"
-  tradingsRepositories "taoniu.local/cryptos/repositories/binance/futures/tradings"
+  "taoniu.local/cryptos/common"
   tasks "taoniu.local/cryptos/tasks/binance/futures/tradings"
 )
 
 type TradingsTask struct {
-  Db           *gorm.DB
-  Rdb          *redis.Client
-  Ctx          context.Context
-  Asynq        *asynq.Client
+  AnsqContext  *common.AnsqClientContext
   TriggersTask *tasks.TriggersTask
   ScalpingTask *tasks.ScalpingTask
 }
 
+func NewTradingsTask(ansqContext *common.AnsqClientContext) *TradingsTask {
+  return &TradingsTask{
+    AnsqContext: ansqContext,
+  }
+}
+
 func (t *TradingsTask) Scalping() *tasks.ScalpingTask {
   if t.ScalpingTask == nil {
-    t.ScalpingTask = &tasks.ScalpingTask{
-      Asynq: t.Asynq,
-    }
-    t.ScalpingTask.Repository = &tradingsRepositories.ScalpingRepository{
-      Db: t.Db,
-    }
-    t.ScalpingTask.ParentRepository = &repositories.ScalpingRepository{
-      Db: t.Db,
-    }
+    t.ScalpingTask = tasks.NewScalpingTask(t.AnsqContext)
   }
   return t.ScalpingTask
 }
 
 func (t *TradingsTask) Triggers() *tasks.TriggersTask {
   if t.TriggersTask == nil {
-    t.TriggersTask = &tasks.TriggersTask{
-      Asynq: t.Asynq,
-    }
-    t.TriggersTask.Repository = &tradingsRepositories.TriggersRepository{
-      Db: t.Db,
-    }
+    t.TriggersTask = tasks.NewTriggersTask(t.AnsqContext)
   }
   return t.TriggersTask
 }

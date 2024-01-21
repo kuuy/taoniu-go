@@ -4,30 +4,24 @@ import (
   "context"
   "encoding/json"
   "fmt"
-  "github.com/go-redis/redis/v8"
   "github.com/hibiken/asynq"
-  "github.com/nats-io/nats.go"
   "taoniu.local/cryptos/common"
   repositories "taoniu.local/cryptos/repositories/dydx"
   "time"
 )
 
 type Orderbook struct {
-  Rdb        *redis.Client
-  Ctx        context.Context
-  Nats       *nats.Conn
-  Repository *repositories.OrderbookRepository
+  AnsqContext *common.AnsqServerContext
+  Repository  *repositories.OrderbookRepository
 }
 
-func NewOrderbook() *Orderbook {
+func NewOrderbook(ansqContext *common.AnsqServerContext) *Orderbook {
   h := &Orderbook{
-    Rdb:  common.NewRedis(),
-    Ctx:  context.Background(),
-    Nats: common.NewNats(),
+    AnsqContext: ansqContext,
   }
   h.Repository = &repositories.OrderbookRepository{
-    Rdb: h.Rdb,
-    Ctx: h.Ctx,
+    Rdb: h.AnsqContext.Rdb,
+    Ctx: h.AnsqContext.Ctx,
   }
   return h
 }
@@ -46,8 +40,8 @@ func (h *Orderbook) Flush(ctx context.Context, t *asynq.Task) error {
   }
 
   mutex := common.NewMutex(
-    h.Rdb,
-    h.Ctx,
+    h.AnsqContext.Rdb,
+    h.AnsqContext.Ctx,
     fmt.Sprintf("locks:dydx:orderbook:%s:%t", payload.Symbol, payload.UseProxy),
   )
   if !mutex.Lock(30 * time.Second) {
@@ -60,7 +54,7 @@ func (h *Orderbook) Flush(ctx context.Context, t *asynq.Task) error {
   return nil
 }
 
-func (h *Orderbook) Register(mux *asynq.ServeMux) error {
-  mux.HandleFunc("dydx:orderbook:flush", h.Flush)
+func (h *Orderbook) Register() error {
+  h.AnsqContext.Mux.HandleFunc("dydx:orderbook:flush", h.Flush)
   return nil
 }

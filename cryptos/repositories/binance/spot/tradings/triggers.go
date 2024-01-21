@@ -231,7 +231,7 @@ func (r *TriggersRepository) Place(id string) error {
     return err
   }
 
-  if balance["free"] < math.Max(balance["lock"], notional) {
+  if balance["free"] < math.Max(balance["locked"], notional) {
     return errors.New(fmt.Sprintf("[%s] free not enough", entity.QuoteAsset))
   }
 
@@ -456,6 +456,9 @@ func (r *TriggersRepository) Take(trigger *spotModels.Trigger, price float64) er
     }
     sellPrice = entryPrice * 1.0138
   } else {
+    if price < entryPrice*1.0138 {
+      return errors.New("price too low")
+    }
     sellPrice = trading.SellPrice
   }
   if sellPrice < price*0.9985 {

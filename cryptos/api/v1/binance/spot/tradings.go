@@ -4,8 +4,6 @@ import (
   "net/http"
 
   "github.com/go-chi/chi/v5"
-  "gorm.io/gorm"
-
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/api/v1/binance/spot/tradings"
   "taoniu.local/cryptos/common"
@@ -14,26 +12,26 @@ import (
 )
 
 type TradingsHandler struct {
-  Db         *gorm.DB
+  ApiContext *common.ApiContext
   Response   *api.ResponseHandler
   Repository *repositories.TradingsRepository
 }
 
-func NewTradingsRouter() http.Handler {
+func NewTradingsRouter(apiContext *common.ApiContext) http.Handler {
   h := TradingsHandler{
-    Db: common.NewDB(),
+    ApiContext: apiContext,
   }
   h.Repository = &repositories.TradingsRepository{
-    Db: h.Db,
+    Db: h.ApiContext.Db,
   }
   //h.Repository.FishersRepository = &tradingsRepositories.FishersRepository{
   //  Db: h.Db,
   //}
   h.Repository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
-    Db: h.Db,
+    Db: h.ApiContext.Db,
   }
   h.Repository.TriggersRepository = &tradingsRepositories.TriggersRepository{
-    Db: h.Db,
+    Db: h.ApiContext.Db,
   }
 
   r := chi.NewRouter()

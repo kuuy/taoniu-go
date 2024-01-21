@@ -38,7 +38,7 @@ type OrderInfo struct {
   Status       string  `json:"status"`
 }
 
-func NewOrdersRouter() http.Handler {
+func NewOrdersRouter(apiContext *common.ApiContext) http.Handler {
   h := OrdersHandler{
     Db:  common.NewDB(),
     Rdb: common.NewRedis(),

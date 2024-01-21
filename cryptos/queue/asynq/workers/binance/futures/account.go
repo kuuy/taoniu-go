@@ -3,39 +3,33 @@ package futures
 import (
   "context"
   "fmt"
-  "github.com/go-redis/redis/v8"
   "github.com/hibiken/asynq"
-  "gorm.io/gorm"
   "taoniu.local/cryptos/common"
   repositories "taoniu.local/cryptos/repositories/binance/futures"
   "time"
 )
 
 type Account struct {
-  Db         *gorm.DB
-  Rdb        *redis.Client
-  Ctx        context.Context
-  Repository *repositories.AccountRepository
+  AnsqContext *common.AnsqServerContext
+  Repository  *repositories.AccountRepository
 }
 
-func NewAccount() *Account {
+func NewAccount(ansqContext *common.AnsqServerContext) *Account {
   h := &Account{
-    Db:  common.NewDB(),
-    Rdb: common.NewRedis(),
-    Ctx: context.Background(),
+    AnsqContext: ansqContext,
   }
   h.Repository = &repositories.AccountRepository{
-    Db:  h.Db,
-    Rdb: h.Rdb,
-    Ctx: h.Ctx,
+    Db:  h.AnsqContext.Db,
+    Rdb: h.AnsqContext.Rdb,
+    Ctx: h.AnsqContext.Ctx,
   }
   return h
 }
 
 func (h *Account) Flush(ctx context.Context, t *asynq.Task) error {
   mutex := common.NewMutex(
-    h.Rdb,
-    h.Ctx,
+    h.AnsqContext.Rdb,
+    h.AnsqContext.Ctx,
     fmt.Sprintf("locks:binance:futures:account:flush"),
   )
   if !mutex.Lock(30 * time.Second) {
@@ -47,7 +41,7 @@ func (h *Account) Flush(ctx context.Context, t *asynq.Task) error {
   return nil
 }
 
-func (h *Account) Register(mux *asynq.ServeMux) error {
-  mux.HandleFunc("binance:futures:account:flush", h.Flush)
+func (h *Account) Register() error {
+  h.AnsqContext.Mux.HandleFunc("binance:futures:account:flush", h.Flush)
   return nil
 }

@@ -1,49 +1,42 @@
 package spot
 
 import (
-  "context"
-  "github.com/go-redis/redis/v8"
-  "github.com/hibiken/asynq"
-  "gorm.io/gorm"
-  repositories "taoniu.local/cryptos/repositories/binance/spot/margin"
+  "taoniu.local/cryptos/common"
   tasks "taoniu.local/cryptos/tasks/binance/spot/margin"
 )
 
 type MarginTask struct {
-  Db    *gorm.DB
-  Rdb   *redis.Client
-  Ctx   context.Context
-  Asynq *asynq.Client
+  AnsqContext  *common.AnsqClientContext
+  CrossTask    *tasks.CrossTask
+  IsolatedTask *tasks.IsolatedTask
+  OrdersTask   *tasks.OrdersTask
+}
+
+func NewMarginTask(ansqContext *common.AnsqClientContext) *MarginTask {
+  return &MarginTask{
+    AnsqContext: ansqContext,
+  }
 }
 
 func (t *MarginTask) Cross() *tasks.CrossTask {
-  return &tasks.CrossTask{
-    Db:    t.Db,
-    Rdb:   t.Rdb,
-    Ctx:   t.Ctx,
-    Asynq: t.Asynq,
+  if t.CrossTask == nil {
+    t.CrossTask = tasks.NewCrossTask(t.AnsqContext)
   }
+  return t.CrossTask
 }
 
 func (t *MarginTask) Isolated() *tasks.IsolatedTask {
-  return &tasks.IsolatedTask{
-    Db:    t.Db,
-    Rdb:   t.Rdb,
-    Ctx:   t.Ctx,
-    Asynq: t.Asynq,
+  if t.IsolatedTask == nil {
+    t.IsolatedTask = tasks.NewIsolatedTask(t.AnsqContext)
   }
+  return t.IsolatedTask
 }
 
 func (t *MarginTask) Orders() *tasks.OrdersTask {
-  return &tasks.OrdersTask{
-    Rdb: t.Rdb,
-    Ctx: t.Ctx,
-    Repository: &repositories.OrdersRepository{
-      Db:  t.Db,
-      Rdb: t.Rdb,
-      Ctx: t.Ctx,
-    },
+  if t.OrdersTask == nil {
+    t.OrdersTask = tasks.NewOrdersTask(t.AnsqContext)
   }
+  return t.OrdersTask
 }
 
 func (t *MarginTask) Flush() {

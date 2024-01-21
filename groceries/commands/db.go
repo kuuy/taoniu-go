@@ -1,57 +1,50 @@
-package main
+package commands
 
 import (
-	"os"
-  "fmt"
-	
   "github.com/urfave/cli/v2"
-  "gorm.io/driver/postgres"
   "gorm.io/gorm"
-
-  . "taoniu.local/groceries/models"
+  "log"
+  "taoniu.local/groceries/common"
+  "taoniu.local/groceries/models"
 )
 
-func main() {
-  app := &cli.App{
-    Name: "binance futures rules",
+type DbHandler struct {
+  Db *gorm.DB
+}
+
+func NewDbCommand() *cli.Command {
+  var h DbHandler
+  return &cli.Command{
+    Name:  "db",
     Usage: "",
-    Action: func(c *cli.Context) error {
-      fmt.Println("error", c.Err)
+    Before: func(c *cli.Context) error {
+      h = DbHandler{
+        Db: common.NewDB(),
+      }
       return nil
     },
-    Commands: []*cli.Command{
+    Subcommands: []*cli.Command{
       {
-        Name: "migrate",
+        Name:  "migrate",
         Usage: "",
         Action: func(c *cli.Context) error {
-          if err := migrate(); err != nil {
-            return cli.NewExitError(err.Error(), 1)
+          if err := h.migrate(); err != nil {
+            return cli.Exit(err.Error(), 1)
           }
           return nil
         },
       },
     },
-    Version: "0.0.0",
-  }
-
-  err := app.Run(os.Args)
-  if err != nil {
-    fmt.Println("app start fatal", err)
   }
 }
 
-func migrate() error {
-  fmt.Println("process migrator")
-  dsn := "host=localhost user=taoniu password=64EQJMn1O9JrZ2G4 dbname=taoniu     sslmode=disable"
-  db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-  if err != nil {
-    fmt.Println("database connect failed")
-    return err
-  }
-  db.AutoMigrate(
-    &Product{},
-    &ProductBarcode{},
+func (h *DbHandler) migrate() error {
+  log.Println("process migrator")
+  h.Db.AutoMigrate(
+    &models.Store{},
+    &models.Product{},
+    &models.Barcode{},
+    &models.Feed{},
   )
   return nil
 }
-

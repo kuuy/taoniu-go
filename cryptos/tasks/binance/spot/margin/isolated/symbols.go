@@ -1,11 +1,26 @@
 package isolated
 
-import repositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated"
+import (
+  "taoniu.local/cryptos/common"
+  repositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated"
+)
 
 type SymbolsTask struct {
-	Repository *repositories.SymbolsRepository
+  AnsqContext *common.AnsqClientContext
+  Repository  *repositories.SymbolsRepository
+}
+
+func NewSymbolsTask(ansqContext *common.AnsqClientContext) *SymbolsTask {
+  return &SymbolsTask{
+    AnsqContext: ansqContext,
+    Repository: &repositories.SymbolsRepository{
+      Db:  ansqContext.Db,
+      Rdb: ansqContext.Rdb,
+      Ctx: ansqContext.Ctx,
+    },
+  }
 }
 
 func (t *SymbolsTask) Flush() error {
-	return t.Repository.Flush()
+  return t.Repository.Flush()
 }

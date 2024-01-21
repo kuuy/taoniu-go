@@ -4,31 +4,25 @@ import (
   "context"
   "encoding/json"
   "fmt"
-  "github.com/go-redis/redis/v8"
   "github.com/hibiken/asynq"
-  "gorm.io/gorm"
   "taoniu.local/cryptos/common"
   repositories "taoniu.local/cryptos/repositories/dydx"
   "time"
 )
 
 type Orders struct {
-  Db         *gorm.DB
-  Rdb        *redis.Client
-  Ctx        context.Context
-  Repository *repositories.OrdersRepository
+  AnsqContext *common.AnsqServerContext
+  Repository  *repositories.OrdersRepository
 }
 
-func NewOrders() *Orders {
+func NewOrders(ansqContext *common.AnsqServerContext) *Orders {
   h := &Orders{
-    Db:  common.NewDB(),
-    Rdb: common.NewRedis(),
-    Ctx: context.Background(),
+    AnsqContext: ansqContext,
   }
   h.Repository = &repositories.OrdersRepository{
-    Db:  h.Db,
-    Rdb: h.Rdb,
-    Ctx: h.Ctx,
+    Db:  h.AnsqContext.Db,
+    Rdb: h.AnsqContext.Rdb,
+    Ctx: h.AnsqContext.Ctx,
   }
   return h
 }
@@ -46,8 +40,8 @@ func (h *Orders) Open(ctx context.Context, t *asynq.Task) error {
   json.Unmarshal(t.Payload(), &payload)
 
   mutex := common.NewMutex(
-    h.Rdb,
-    h.Ctx,
+    h.AnsqContext.Rdb,
+    h.AnsqContext.Ctx,
     fmt.Sprintf("locks:dydx:orders:open:%s", payload.Symbol),
   )
   if !mutex.Lock(5 * time.Second) {
@@ -65,8 +59,8 @@ func (h *Orders) Flush(ctx context.Context, t *asynq.Task) error {
   json.Unmarshal(t.Payload(), &payload)
 
   mutex := common.NewMutex(
-    h.Rdb,
-    h.Ctx,
+    h.AnsqContext.Rdb,
+    h.AnsqContext.Ctx,
     fmt.Sprintf("locks:dydx:orders:flush:%d", payload.OrderID),
   )
   if !mutex.Lock(5 * time.Second) {
@@ -79,8 +73,8 @@ func (h *Orders) Flush(ctx context.Context, t *asynq.Task) error {
   return nil
 }
 
-func (h *Orders) Register(mux *asynq.ServeMux) error {
-  mux.HandleFunc("dydx:orders:open", h.Open)
-  mux.HandleFunc("dydx:orders:flush", h.Flush)
+func (h *Orders) Register() error {
+  h.AnsqContext.Mux.HandleFunc("dydx:orders:open", h.Open)
+  h.AnsqContext.Mux.HandleFunc("dydx:orders:flush", h.Flush)
   return nil
 }

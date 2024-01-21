@@ -5,15 +5,27 @@ import (
 
   "github.com/hibiken/asynq"
 
+  "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/queue"
   jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/futures"
   repositories "taoniu.local/cryptos/repositories/binance/futures"
 )
 
 type AccountTask struct {
-  Asynq      *asynq.Client
-  Job        *jobs.Account
-  Repository *repositories.AccountRepository
+  AnsqContext *common.AnsqClientContext
+  Job         *jobs.Account
+  Repository  *repositories.AccountRepository
+}
+
+func NewAccountTask(ansqContext *common.AnsqClientContext) *AccountTask {
+  return &AccountTask{
+    AnsqContext: ansqContext,
+    Repository: &repositories.AccountRepository{
+      Db:  ansqContext.Db,
+      Rdb: ansqContext.Rdb,
+      Ctx: ansqContext.Ctx,
+    },
+  }
 }
 
 func (t *AccountTask) Flush() error {
@@ -21,7 +33,7 @@ func (t *AccountTask) Flush() error {
   if err != nil {
     return err
   }
-  t.Asynq.Enqueue(
+  t.AnsqContext.Conn.Enqueue(
     task,
     asynq.Queue(config.BINANCE_FUTURES_ACCOUNT),
     asynq.MaxRetry(0),

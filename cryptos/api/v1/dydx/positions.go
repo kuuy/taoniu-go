@@ -47,7 +47,7 @@ type CalcResponse struct {
   Tradings  []*TradingInfo `json:"tradings"`
 }
 
-func NewPositionsRouter() http.Handler {
+func NewPositionsRouter(apiContext *common.ApiContext) http.Handler {
   h := PositionsHandler{}
   h.Repository = &repositories.PositionsRepository{
     Db: common.NewDB(),

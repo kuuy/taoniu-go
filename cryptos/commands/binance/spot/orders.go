@@ -2,13 +2,11 @@ package spot
 
 import (
   "context"
-  "log"
-  "strconv"
-  "strings"
-
   "github.com/go-redis/redis/v8"
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
+  "log"
+  "strconv"
 
   "taoniu.local/cryptos/common"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
@@ -141,15 +139,10 @@ func (h *OrdersHandler) Open() error {
 
 func (h *OrdersHandler) Flush() error {
   log.Println("margin orders flush...")
-  orders, err := h.Rdb.SMembers(h.Ctx, "binance:spot:orders:flush").Result()
-  if err != nil {
-    return nil
-  }
+  orders := h.Repository.Gets(map[string]interface{}{})
   for _, order := range orders {
-    data := strings.Split(order, ",")
-    symbol := data[0]
-    orderID, _ := strconv.ParseInt(data[1], 10, 64)
-    h.Repository.Flush(symbol, orderID)
+    log.Println("order flush", order.Symbol, order.OrderID)
+    h.Repository.Flush(order.Symbol, order.OrderID)
   }
   return nil
 }

@@ -1,6 +1,7 @@
 package spot
 
 import (
+  "taoniu.local/cryptos/common"
   "time"
 
   "github.com/hibiken/asynq"
@@ -11,9 +12,20 @@ import (
 )
 
 type AccountTask struct {
-  Asynq      *asynq.Client
-  Job        *jobs.Account
-  Repository *repositories.AccountRepository
+  AnsqContext *common.AnsqClientContext
+  Job         *jobs.Account
+  Repository  *repositories.AccountRepository
+}
+
+func NewAccountTask(ansqContext *common.AnsqClientContext) *AccountTask {
+  return &AccountTask{
+    AnsqContext: ansqContext,
+    Repository: &repositories.AccountRepository{
+      Db:  ansqContext.Db,
+      Rdb: ansqContext.Rdb,
+      Ctx: ansqContext.Ctx,
+    },
+  }
 }
 
 func (t *AccountTask) Flush() error {
@@ -21,7 +33,7 @@ func (t *AccountTask) Flush() error {
   if err != nil {
     return err
   }
-  t.Asynq.Enqueue(
+  t.AnsqContext.Conn.Enqueue(
     task,
     asynq.Queue(config.BINANCE_SPOT_ACCOUNT),
     asynq.MaxRetry(0),

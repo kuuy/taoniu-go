@@ -22,5 +22,6 @@ func (h *Spot) Subscribe() error {
   spot.NewPlans(h.NatsContext).Subscribe()
   spot.NewAccount(h.NatsContext).Subscribe()
   spot.NewOrders(h.NatsContext).Subscribe()
+  spot.NewScalping(h.NatsContext).Subscribe()
   return nil
 }

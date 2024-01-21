@@ -1,33 +1,32 @@
 package analysis
 
 import (
-  "gorm.io/gorm"
-  repositories "taoniu.local/cryptos/repositories/binance/futures/analysis/tradings"
+  "taoniu.local/cryptos/common"
   tasks "taoniu.local/cryptos/tasks/binance/futures/analysis/tradings"
 )
 
 type TradingsTask struct {
-  Db           *gorm.DB
+  AnsqContext  *common.AnsqClientContext
   ScalpingTask *tasks.ScalpingTask
   TriggersTask *tasks.TriggersTask
 }
 
+func NewTradingsTask(ansqContext *common.AnsqClientContext) *TradingsTask {
+  return &TradingsTask{
+    AnsqContext: ansqContext,
+  }
+}
+
 func (t *TradingsTask) Scalping() *tasks.ScalpingTask {
   if t.ScalpingTask == nil {
-    t.ScalpingTask = &tasks.ScalpingTask{}
-    t.ScalpingTask.Repository = &repositories.ScalpingRepository{
-      Db: t.Db,
-    }
+    t.ScalpingTask = tasks.NewScalpingTask(t.AnsqContext)
   }
   return t.ScalpingTask
 }
 
 func (t *TradingsTask) Triggers() *tasks.TriggersTask {
   if t.TriggersTask == nil {
-    t.TriggersTask = &tasks.TriggersTask{}
-    t.TriggersTask.Repository = &repositories.TriggersRepository{
-      Db: t.Db,
-    }
+    t.TriggersTask = tasks.NewTriggersTask(t.AnsqContext)
   }
   return t.TriggersTask
 }

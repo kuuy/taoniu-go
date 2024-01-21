@@ -12,6 +12,7 @@ import (
   "github.com/go-redis/redis/v8"
   "github.com/hibiken/asynq"
   "github.com/rs/xid"
+  "google.golang.org/grpc"
 
   "gorm.io/driver/postgres"
   "gorm.io/gorm"
@@ -20,6 +21,19 @@ import (
 var (
   dbPool *sql.DB
 )
+
+type ApiContext struct {
+  Db  *gorm.DB
+  Rdb *redis.Client
+  Ctx context.Context
+}
+
+type GrpcContext struct {
+  Db   *gorm.DB
+  Rdb  *redis.Client
+  Ctx  context.Context
+  Conn *grpc.Server
+}
 
 type Mutex struct {
   rdb   *redis.Client

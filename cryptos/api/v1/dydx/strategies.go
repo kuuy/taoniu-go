@@ -12,6 +12,7 @@ import (
 )
 
 type StrategiesHandler struct {
+  ApiContext *common.ApiContext
   Response   *api.ResponseHandler
   Repository *repositories.StrategiesRepository
 }
@@ -25,10 +26,12 @@ type StrategiesInfo struct {
   Timestamp int64   `json:"timestamp"`
 }
 
-func NewStrategiesRouter() http.Handler {
-  h := StrategiesHandler{}
+func NewStrategiesRouter(apiContext *common.ApiContext) http.Handler {
+  h := StrategiesHandler{
+    ApiContext: apiContext,
+  }
   h.Repository = &repositories.StrategiesRepository{
-    Db: common.NewDB(),
+    Db: h.ApiContext.Db,
   }
 
   r := chi.NewRouter()

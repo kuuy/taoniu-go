@@ -1,41 +1,33 @@
 package futures
 
 import (
-  "context"
   "net/http"
   "strconv"
   "strings"
 
   "github.com/go-chi/chi/v5"
-  "github.com/go-redis/redis/v8"
-  "gorm.io/gorm"
-
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
   repositories "taoniu.local/cryptos/repositories/binance/futures"
 )
 
 type IndicatorsHandler struct {
-  Db                *gorm.DB
-  Rdb               *redis.Client
-  Ctx               context.Context
+  ApiContext        *common.ApiContext
   Response          *api.ResponseHandler
   Repository        *repositories.IndicatorsRepository
   SymbolsRepository *repositories.SymbolsRepository
 }
 
-func NewIndicatorsRouter() http.Handler {
+func NewIndicatorsRouter(apiContext *common.ApiContext) http.Handler {
   h := IndicatorsHandler{
-    Db:  common.NewDB(),
-    Rdb: common.NewRedis(),
-    Ctx: context.Background(),
+    ApiContext: apiContext,
   }
   h.Repository = &repositories.IndicatorsRepository{
-    Rdb: h.Rdb,
-    Ctx: h.Ctx,
+    Rdb: h.ApiContext.Rdb,
+    Ctx: h.ApiContext.Ctx,
   }
   h.SymbolsRepository = &repositories.SymbolsRepository{
-    Db: h.Db,
+    Db: h.ApiContext.Db,
   }
 
   r := chi.NewRouter()

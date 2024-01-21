@@ -4,11 +4,12 @@ import (
   "github.com/go-chi/chi/v5"
   "net/http"
   "taoniu.local/cryptos/api/v1/binance/futures/tradingview/templates"
+  "taoniu.local/cryptos/common"
 )
 
-func NewTemplatesRouter() http.Handler {
+func NewTemplatesRouter(apiContext *common.ApiContext) http.Handler {
   r := chi.NewRouter()
-  r.Mount("/study", templates.NewStudyRouter())
-  r.Mount("/drawing", templates.NewDrawingRouter())
+  r.Mount("/study", templates.NewStudyRouter(apiContext))
+  r.Mount("/drawing", templates.NewDrawingRouter(apiContext))
   return r
 }

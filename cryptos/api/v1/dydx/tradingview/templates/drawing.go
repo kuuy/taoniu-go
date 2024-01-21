@@ -18,7 +18,7 @@ type DrawingHandler struct {
   Response *api.ResponseHandler
 }
 
-func NewDrawingRouter() http.Handler {
+func NewDrawingRouter(apiContext *common.ApiContext) http.Handler {
   h := DrawingHandler{
     Db:  common.NewDB(),
     Rdb: common.NewRedis(),

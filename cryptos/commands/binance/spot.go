@@ -19,6 +19,7 @@ func NewSpotCommand() *cli.Command {
       spot.NewStrategiesCommand(),
       spot.NewAccountCommand(),
       spot.NewOrdersCommand(),
+      spot.NewPositionsCommand(),
       spot.NewMarginCommand(),
       spot.NewAnalysisCommand(),
       spot.NewPlansCommand(),

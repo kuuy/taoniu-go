@@ -329,7 +329,7 @@ func (h *FishersHandler) Apply() error {
   //	tickers,
   //)
 
-  //symbol := "BNBUSDT"
+  //symbol := "BNUSDTT"
   //amount := 10.0
   //balance := 500.0
   //targetBalance := 900.0

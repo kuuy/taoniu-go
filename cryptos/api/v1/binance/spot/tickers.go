@@ -1,7 +1,6 @@
 package spot
 
 import (
-  "context"
   "net/http"
   "strings"
 
@@ -13,15 +12,18 @@ import (
 )
 
 type TickersHandler struct {
+  ApiContext *common.ApiContext
   Response   *api.ResponseHandler
   Repository *repositories.TickersRepository
 }
 
-func NewTickersRouter() http.Handler {
-  h := TickersHandler{}
+func NewTickersRouter(apiContext *common.ApiContext) http.Handler {
+  h := TickersHandler{
+    ApiContext: apiContext,
+  }
   h.Repository = &repositories.TickersRepository{
-    Rdb: common.NewRedis(),
-    Ctx: context.Background(),
+    Rdb: h.ApiContext.Rdb,
+    Ctx: h.ApiContext.Ctx,
   }
 
   r := chi.NewRouter()

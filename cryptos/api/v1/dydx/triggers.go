@@ -33,7 +33,7 @@ type TriggersInfo struct {
   CreatedAt   int64   `json:"created_at"`
 }
 
-func NewTriggersRouter() http.Handler {
+func NewTriggersRouter(apiContext *common.ApiContext) http.Handler {
   h := TriggersHandler{}
   h.Repository = &repositories.TriggersRepository{
     Db: common.NewDB(),

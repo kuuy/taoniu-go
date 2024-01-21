@@ -2,10 +2,12 @@ package tradingview
 
 import (
   "context"
+  "log"
+
   "github.com/go-redis/redis/v8"
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
-  "log"
+
   "taoniu.local/cryptos/common"
   repositories "taoniu.local/cryptos/repositories/tradingview"
 )
@@ -70,7 +72,7 @@ func NewAnalysisCommand() *cli.Command {
 
 func (h *AnalysisHandler) Flush() error {
   log.Println("analysis flush processing...")
-  err := h.Repository.Flush("BINANCE", "AVAXBUSD", "1m")
+  err := h.Repository.Flush("BINANCE", "AVAXUSDT", "1m")
   if err != nil {
     return err
   }

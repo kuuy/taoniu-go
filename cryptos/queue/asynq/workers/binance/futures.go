@@ -1,25 +1,29 @@
 package binance
 
 import (
-  "github.com/hibiken/asynq"
+  "taoniu.local/cryptos/common"
   "taoniu.local/cryptos/queue/asynq/workers/binance/futures"
 )
 
-type Futures struct{}
-
-func NewFutures() *Futures {
-  return &Futures{}
+type Futures struct {
+  AnsqContext *common.AnsqServerContext
 }
 
-func (h *Futures) Register(mux *asynq.ServeMux) error {
-  futures.NewTickers().Register(mux)
-  futures.NewKlines().Register(mux)
-  futures.NewDepth().Register(mux)
-  futures.NewIndicators().Register(mux)
-  futures.NewStrategies().Register(mux)
-  futures.NewPlans().Register(mux)
-  futures.NewAccount().Register(mux)
-  futures.NewOrders().Register(mux)
-  futures.NewTradings().Register(mux)
+func NewFutures(ansqContext *common.AnsqServerContext) *Futures {
+  return &Futures{
+    AnsqContext: ansqContext,
+  }
+}
+
+func (h *Futures) Register() error {
+  futures.NewTickers(h.AnsqContext).Register()
+  futures.NewKlines(h.AnsqContext).Register()
+  futures.NewDepth(h.AnsqContext).Register()
+  futures.NewIndicators(h.AnsqContext).Register()
+  futures.NewStrategies(h.AnsqContext).Register()
+  futures.NewPlans(h.AnsqContext).Register()
+  futures.NewAccount(h.AnsqContext).Register()
+  futures.NewOrders(h.AnsqContext).Register()
+  futures.NewTradings(h.AnsqContext).Register()
   return nil
 }

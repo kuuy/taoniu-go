@@ -36,7 +36,7 @@ func NewGrpcCommand() *cli.Command {
       return nil
     },
     Action: func(c *cli.Context) error {
-      if err := h.run(); err != nil {
+      if err := h.Run(); err != nil {
         return cli.Exit(err.Error(), 1)
       }
       return nil
@@ -44,7 +44,7 @@ func NewGrpcCommand() *cli.Command {
   }
 }
 
-func (h *GrpcHandler) run() error {
+func (h *GrpcHandler) Run() error {
   log.Println("grpc running...")
 
   s := grpc.NewServer()

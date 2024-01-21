@@ -1,71 +1,48 @@
 package tasks
 
 import (
-  "context"
-
-  "github.com/go-redis/redis/v8"
-  "github.com/hibiken/asynq"
-  "gorm.io/gorm"
-
-  repositories "taoniu.local/cryptos/repositories/binance"
+  "taoniu.local/cryptos/common"
   tasks "taoniu.local/cryptos/tasks/binance"
 )
 
 type BinanceTask struct {
-  Db          *gorm.DB
-  Rdb         *redis.Client
-  Ctx         context.Context
-  Asynq       *asynq.Client
+  AnsqContext *common.AnsqClientContext
   SpotTask    *tasks.SpotTask
   FuturesTask *tasks.FuturesTask
   SavingsTask *tasks.SavingsTask
   ServerTask  *tasks.ServerTask
 }
 
+func NewBinanceTask(ansqContext *common.AnsqClientContext) *BinanceTask {
+  return &BinanceTask{
+    AnsqContext: ansqContext,
+  }
+}
+
 func (t *BinanceTask) Spot() *tasks.SpotTask {
   if t.SpotTask == nil {
-    t.SpotTask = &tasks.SpotTask{
-      Db:    t.Db,
-      Rdb:   t.Rdb,
-      Ctx:   t.Ctx,
-      Asynq: t.Asynq,
-    }
+    t.SpotTask = tasks.NewSpotTask(t.AnsqContext)
   }
   return t.SpotTask
 }
 
 func (t *BinanceTask) Futures() *tasks.FuturesTask {
   if t.FuturesTask == nil {
-    t.FuturesTask = &tasks.FuturesTask{
-      Db:    t.Db,
-      Rdb:   t.Rdb,
-      Ctx:   t.Ctx,
-      Asynq: t.Asynq,
-    }
+    t.FuturesTask = tasks.NewFuturesTask(t.AnsqContext)
   }
   return t.FuturesTask
 }
 
 func (t *BinanceTask) Savings() *tasks.SavingsTask {
   if t.SavingsTask == nil {
-    t.SavingsTask = &tasks.SavingsTask{
-      Db:  t.Db,
-      Ctx: t.Ctx,
-    }
+    t.SavingsTask = tasks.NewSavingsTask(t.AnsqContext)
   }
   return t.SavingsTask
 }
 
 func (t *BinanceTask) Server() *tasks.ServerTask {
   if t.ServerTask == nil {
-    t.ServerTask = &tasks.ServerTask{
-      Rdb: t.Rdb,
-      Ctx: t.Ctx,
-    }
-    t.ServerTask.Repository = &repositories.ServerRepository{
-      Rdb: t.Rdb,
-      Ctx: t.Ctx,
-    }
+    t.ServerTask = tasks.NewServerTask(t.AnsqContext)
   }
   return t.ServerTask
 }

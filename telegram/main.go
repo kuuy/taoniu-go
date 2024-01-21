@@ -34,6 +34,7 @@ func main() {
     },
     Commands: []*cli.Command{
       commands.NewDbCommand(),
+      commands.NewAppsCommand(),
       commands.NewBotsCommand(),
     },
     Version: "0.0.0",

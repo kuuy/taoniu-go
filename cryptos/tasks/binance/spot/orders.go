@@ -1,23 +1,49 @@
 package spot
 
 import (
+  "slices"
+  "taoniu.local/cryptos/common"
+  tradingsRepositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
   "time"
 
   "github.com/hibiken/asynq"
-  "gorm.io/gorm"
-
   config "taoniu.local/cryptos/config/queue"
   jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/spot"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
 type OrdersTask struct {
-  Db                 *gorm.DB
-  Asynq              *asynq.Client
+  AnsqContext        *common.AnsqClientContext
   Job                *jobs.Orders
   Repository         *repositories.OrdersRepository
   SymbolsRepository  *repositories.SymbolsRepository
   TradingsRepository *repositories.TradingsRepository
+}
+
+func NewOrdersTask(ansqContext *common.AnsqClientContext) *OrdersTask {
+  return &OrdersTask{
+    AnsqContext: ansqContext,
+    Repository: &repositories.OrdersRepository{
+      Db:  ansqContext.Db,
+      Rdb: ansqContext.Rdb,
+      Ctx: ansqContext.Ctx,
+    },
+    SymbolsRepository: &repositories.SymbolsRepository{
+      Db: ansqContext.Db,
+    },
+    TradingsRepository: &repositories.TradingsRepository{
+      Db: ansqContext.Db,
+      LaunchpadRepository: &tradingsRepositories.LaunchpadRepository{
+        Db: ansqContext.Db,
+      },
+      ScalpingRepository: &tradingsRepositories.ScalpingRepository{
+        Db: ansqContext.Db,
+      },
+      TriggersRepository: &tradingsRepositories.TriggersRepository{
+        Db: ansqContext.Db,
+      },
+    },
+  }
 }
 
 func (t *OrdersTask) Open() error {
@@ -27,7 +53,24 @@ func (t *OrdersTask) Open() error {
     if err != nil {
       return err
     }
-    t.Asynq.Enqueue(
+    t.AnsqContext.Conn.Enqueue(
+      task,
+      asynq.Queue(config.BINANCE_SPOT_ORDERS),
+      asynq.MaxRetry(0),
+      asynq.Timeout(5*time.Minute),
+    )
+  }
+  return nil
+}
+
+func (t *OrdersTask) Flush() error {
+  orders := t.Repository.Gets(map[string]interface{}{})
+  for _, order := range orders {
+    task, err := t.Job.Flush(order.Symbol, order.OrderID)
+    if err != nil {
+      return err
+    }
+    t.AnsqContext.Conn.Enqueue(
       task,
       asynq.Queue(config.BINANCE_SPOT_ORDERS),
       asynq.MaxRetry(0),
@@ -44,7 +87,7 @@ func (t *OrdersTask) Sync(startTime int64, limit int) error {
     if err != nil {
       return err
     }
-    t.Asynq.Enqueue(
+    t.AnsqContext.Conn.Enqueue(
       task,
       asynq.Queue(config.BINANCE_SPOT_ORDERS),
       asynq.MaxRetry(0),
@@ -62,18 +105,9 @@ func (t *OrdersTask) Fix() error {
 func (t *OrdersTask) Scan() []string {
   var symbols []string
   for _, symbol := range t.TradingsRepository.Scan() {
-    if !t.contains(symbols, symbol) {
+    if !slices.Contains(symbols, symbol) {
       symbols = append(symbols, symbol)
     }
   }
   return symbols
-}
-
-func (t *OrdersTask) contains(s []string, str string) bool {
-  for _, v := range s {
-    if v == str {
-      return true
-    }
-  }
-  return false
 }

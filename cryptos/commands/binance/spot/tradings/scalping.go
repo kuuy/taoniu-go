@@ -13,11 +13,11 @@ import (
 )
 
 type ScalpingHandler struct {
-  Db              *gorm.DB
-  Rdb             *redis.Client
-  Ctx             context.Context
-  PlansRepository *spotRepositories.PlansRepository
-  Repository      *repositories.ScalpingRepository
+  Db               *gorm.DB
+  Rdb              *redis.Client
+  Ctx              context.Context
+  Repository       *repositories.ScalpingRepository
+  ParentRepository *spotRepositories.ScalpingRepository
 }
 
 func NewScalpingCommand() *cli.Command {
@@ -48,10 +48,10 @@ func NewScalpingCommand() *cli.Command {
         Rdb: h.Rdb,
         Ctx: h.Ctx,
       }
-      //h.Repository.PositionRepository = &spotRepositories.PositionsRepository{
-      //  Db: h.Db,
-      //}
-      h.PlansRepository = &spotRepositories.PlansRepository{
+      h.Repository.PositionRepository = &spotRepositories.PositionsRepository{
+        Db: h.Db,
+      }
+      h.ParentRepository = &spotRepositories.ScalpingRepository{
         Db: h.Db,
       }
       return nil
@@ -93,7 +93,7 @@ func (h *ScalpingHandler) Flush() error {
 }
 
 func (h *ScalpingHandler) Place() error {
-  ids := h.PlansRepository.Ids(0)
+  ids := h.ParentRepository.PlanIds(0)
   for _, id := range ids {
     err := h.Repository.Place(id)
     if err != nil {

@@ -5,13 +5,13 @@ import (
   "math"
   "strconv"
   "strings"
-  models "taoniu.local/cryptos/models/binance/futures"
 
   "github.com/shopspring/decimal"
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
 
   "taoniu.local/cryptos/common"
+  models "taoniu.local/cryptos/models/binance/futures"
   repositories "taoniu.local/cryptos/repositories/binance/futures"
 )
 

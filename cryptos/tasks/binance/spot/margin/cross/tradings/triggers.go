@@ -1,25 +1,28 @@
 package tradings
 
 import (
-  "context"
+  "taoniu.local/cryptos/common"
   "time"
 
-  "github.com/go-redis/redis/v8"
   "github.com/hibiken/asynq"
-  "gorm.io/gorm"
-
   config "taoniu.local/cryptos/config/queue"
   jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/spot/margin/cross/tradings"
   repositories "taoniu.local/cryptos/repositories/binance/spot/margin/cross/tradings"
 )
 
 type TriggersTask struct {
-  Db         *gorm.DB
-  Rdb        *redis.Client
-  Ctx        context.Context
-  Asynq      *asynq.Client
-  Job        *jobs.Triggers
-  Repository *repositories.TriggersRepository
+  AnsqContext *common.AnsqClientContext
+  Job         *jobs.Triggers
+  Repository  *repositories.TriggersRepository
+}
+
+func NewTriggersTask(ansqContext *common.AnsqClientContext) *TriggersTask {
+  return &TriggersTask{
+    AnsqContext: ansqContext,
+    Repository: &repositories.TriggersRepository{
+      Db: ansqContext.Db,
+    },
+  }
 }
 
 func (t *TriggersTask) Flush() error {
@@ -29,7 +32,7 @@ func (t *TriggersTask) Flush() error {
     if err != nil {
       return err
     }
-    t.Asynq.Enqueue(
+    t.AnsqContext.Conn.Enqueue(
       task,
       asynq.Queue(config.BINANCE_SPOT_MARGIN_CROSS_TRADINGS_TRIGGERS),
       asynq.MaxRetry(0),
@@ -46,7 +49,7 @@ func (t *TriggersTask) Place() error {
     if err != nil {
       return err
     }
-    t.Asynq.Enqueue(
+    t.AnsqContext.Conn.Enqueue(
       task,
       asynq.Queue(config.BINANCE_SPOT_MARGIN_CROSS_TRADINGS_TRIGGERS),
       asynq.MaxRetry(0),

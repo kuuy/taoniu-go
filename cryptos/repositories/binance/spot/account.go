@@ -8,6 +8,7 @@ import (
   "github.com/go-redis/redis/v8"
   "gorm.io/gorm"
   "os"
+  "slices"
   "strconv"
 )
 
@@ -49,7 +50,7 @@ func (r *AccountRepository) Flush() error {
     currencies = append(currencies, coin.Asset)
   }
   for _, currency := range oldCurrencies {
-    if !r.contains(currencies, currency) {
+    if !slices.Contains(currencies, currency) {
       r.Rdb.SRem(r.Ctx, "binance:spot:currencies", currency)
       r.Rdb.Del(r.Ctx, fmt.Sprintf("binance:spot:balance:%s", currency))
     }
@@ -61,7 +62,7 @@ func (r *AccountRepository) Flush() error {
 func (r *AccountRepository) Balance(asset string) (map[string]float64, error) {
   fields := []string{
     "free",
-    "lock",
+    "locked",
   }
   data, _ := r.Rdb.HMGet(
     r.Ctx,
@@ -79,13 +80,4 @@ func (r *AccountRepository) Balance(asset string) (map[string]float64, error) {
     balance[field], _ = strconv.ParseFloat(data[i].(string), 64)
   }
   return balance, nil
-}
-
-func (r *AccountRepository) contains(s []string, str string) bool {
-  for _, v := range s {
-    if v == str {
-      return true
-    }
-  }
-  return false
 }

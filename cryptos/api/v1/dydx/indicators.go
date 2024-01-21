@@ -24,7 +24,7 @@ type IndicatorsHandler struct {
   MarketsRepository *repositories.MarketsRepository
 }
 
-func NewIndicatorsRouter() http.Handler {
+func NewIndicatorsRouter(apiContext *common.ApiContext) http.Handler {
   h := IndicatorsHandler{
     Db:  common.NewDB(),
     Rdb: common.NewRedis(),

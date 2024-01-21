@@ -14,6 +14,7 @@ import (
   "encoding/pem"
   "errors"
   "fmt"
+  "log"
   "net"
   "net/http"
   "net/url"
@@ -34,6 +35,30 @@ type OrdersRepository struct {
   Db  *gorm.DB
   Rdb *redis.Client
   Ctx context.Context
+}
+
+func (r *OrdersRepository) Find(id string) (*models.Order, error) {
+  var entity *models.Order
+  result := r.Db.First(&entity, "id=?", id)
+  if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+    return nil, result.Error
+  }
+  return entity, nil
+}
+
+func (r *OrdersRepository) Gets(conditions map[string]interface{}) []*models.Order {
+  var positions []*models.Order
+  query := r.Db.Select([]string{
+    "symbol",
+    "order_id",
+  })
+  if _, ok := conditions["status"]; ok {
+    query.Where("status IN ?", conditions["status"].([]string))
+  } else {
+    query.Where("status IN ?", []string{"NEW", "PARTIALLY_FILLED"})
+  }
+  query.Find(&positions)
+  return positions
 }
 
 func (r *OrdersRepository) Count(conditions map[string]interface{}) int64 {
@@ -281,6 +306,8 @@ func (r *OrdersRepository) Create(
     return
   }
 
+  log.Println("order place response", response)
+
   r.Flush(symbol, response.OrderID)
 
   return response.OrderID, nil
@@ -374,18 +401,12 @@ func (r *OrdersRepository) Flush(symbol string, orderID int64) error {
     os.Getenv("BINANCE_SPOT_ACCOUNT_API_SECRET"),
   )
   client.BaseURL = os.Getenv("BINANCE_SPOT_API_ENDPOINT")
-
   order, err := client.NewGetOrderService().Symbol(symbol).OrderID(orderID).Do(r.Ctx)
   if err != nil {
     return err
   }
-  r.Save(order)
 
-  r.Rdb.SRem(
-    r.Ctx,
-    "binance:spot:orders:flush",
-    fmt.Sprintf("%s,%d,%d", symbol, orderID),
-  ).Result()
+  r.Save(order)
 
   return nil
 }

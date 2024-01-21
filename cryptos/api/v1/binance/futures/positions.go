@@ -13,6 +13,7 @@ import (
 )
 
 type PositionsHandler struct {
+  ApiContext        *common.ApiContext
   Response          *api.ResponseHandler
   Repository        *repositories.PositionsRepository
   SymbolsRepository *repositories.SymbolsRepository
@@ -45,13 +46,15 @@ type CalcResponse struct {
   Tradings  []*TradingInfo `json:"tradings"`
 }
 
-func NewPositionsRouter() http.Handler {
-  h := PositionsHandler{}
+func NewPositionsRouter(apiContext *common.ApiContext) http.Handler {
+  h := PositionsHandler{
+    ApiContext: apiContext,
+  }
   h.Repository = &repositories.PositionsRepository{
-    Db: common.NewDB(),
+    Db: h.ApiContext.Db,
   }
   h.Repository.SymbolsRepository = &repositories.SymbolsRepository{
-    Db: common.NewDB(),
+    Db: h.ApiContext.Db,
   }
 
   r := chi.NewRouter()

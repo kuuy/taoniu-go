@@ -1,18 +1,26 @@
 package binance
 
 import (
-	"context"
-	"github.com/go-redis/redis/v8"
-	repositories "taoniu.local/cryptos/repositories/binance"
+  "taoniu.local/cryptos/common"
+  repositories "taoniu.local/cryptos/repositories/binance"
 )
 
 type ServerTask struct {
-	Rdb        *redis.Client
-	Ctx        context.Context
-	Repository *repositories.ServerRepository
+  AnsqContext *common.AnsqClientContext
+  Repository  *repositories.ServerRepository
+}
+
+func NewServerTask(ansqContext *common.AnsqClientContext) *ServerTask {
+  return &ServerTask{
+    AnsqContext: ansqContext,
+    Repository: &repositories.ServerRepository{
+      Rdb: ansqContext.Rdb,
+      Ctx: ansqContext.Ctx,
+    },
+  }
 }
 
 func (t *ServerTask) Time() error {
-	t.Repository.Time()
-	return nil
+  t.Repository.Time()
+  return nil
 }

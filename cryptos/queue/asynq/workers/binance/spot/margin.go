@@ -1,18 +1,22 @@
 package spot
 
 import (
-  "github.com/hibiken/asynq"
+  "taoniu.local/cryptos/common"
   "taoniu.local/cryptos/queue/asynq/workers/binance/spot/margin"
 )
 
-type Margin struct{}
-
-func NewMargin() *Margin {
-  return &Margin{}
+type Margin struct {
+  AnsqContext *common.AnsqServerContext
 }
 
-func (h *Margin) Register(mux *asynq.ServeMux) error {
-  margin.NewCross().Register(mux)
-  margin.NewIsolated().Register(mux)
+func NewMargin(ansqContext *common.AnsqServerContext) *Margin {
+  return &Margin{
+    AnsqContext: ansqContext,
+  }
+}
+
+func (h *Margin) Register() error {
+  margin.NewCross(h.AnsqContext).Register()
+  margin.NewIsolated(h.AnsqContext).Register()
   return nil
 }

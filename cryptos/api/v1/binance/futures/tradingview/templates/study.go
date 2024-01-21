@@ -18,7 +18,7 @@ type StudyHandler struct {
   Response *api.ResponseHandler
 }
 
-func NewStudyRouter() http.Handler {
+func NewStudyRouter(apiContext *common.ApiContext) http.Handler {
   h := StudyHandler{
     Db:  common.NewDB(),
     Rdb: common.NewRedis(),

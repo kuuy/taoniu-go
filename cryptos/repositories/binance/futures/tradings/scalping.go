@@ -92,7 +92,7 @@ func (r *ScalpingRepository) Flush(id string) error {
   var scalping *futuresModels.Scalping
   result := r.Db.First(&scalping, "id=?", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    return errors.New("scalping empty")
+    return errors.New("empty scalping to flush")
   }
 
   price, err := r.SymbolsRepository.Price(scalping.Symbol)
@@ -514,6 +514,9 @@ func (r *ScalpingRepository) Take(scalping *futuresModels.Scalping, price float6
       }
       sellPrice = entryPrice * 1.0385
     } else {
+      if price < entryPrice*1.0385 {
+        return errors.New("price too low")
+      }
       sellPrice = trading.SellPrice
     }
     if sellPrice < price*0.9985 {
@@ -533,6 +536,9 @@ func (r *ScalpingRepository) Take(scalping *futuresModels.Scalping, price float6
       }
       sellPrice = entryPrice * 0.9615
     } else {
+      if price > entryPrice*0.9615 {
+        return errors.New("price too high")
+      }
       sellPrice = trading.SellPrice
     }
     if sellPrice > price*1.0015 {

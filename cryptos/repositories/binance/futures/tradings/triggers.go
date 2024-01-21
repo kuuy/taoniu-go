@@ -521,6 +521,12 @@ func (r *TriggersRepository) Take(trigger *futuresModels.Trigger, price float64)
       }
       sellPrice = entryPrice * 0.9862
     } else {
+      if price > entryPrice*0.9862 {
+        return errors.New("price too high")
+      }
+      if price > entryPrice*0.9862 {
+        return errors.New("price too high")
+      }
       sellPrice = trading.SellPrice
     }
     if sellPrice > price*1.0015 {

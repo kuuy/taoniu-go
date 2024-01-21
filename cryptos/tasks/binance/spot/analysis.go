@@ -1,39 +1,41 @@
 package spot
 
 import (
-	"context"
-	"github.com/go-redis/redis/v8"
-	"gorm.io/gorm"
-	tasks "taoniu.local/cryptos/tasks/binance/spot/analysis"
+  "taoniu.local/cryptos/common"
+  tasks "taoniu.local/cryptos/tasks/binance/spot/analysis"
 )
 
 type AnalysisTask struct {
-	Db           *gorm.DB
-	Rdb          *redis.Client
-	Ctx          context.Context
-	TradingsTask *tasks.TradingsTask
-	MarginTask   *tasks.MarginTask
+  AnsqContext  *common.AnsqClientContext
+  TradingsTask *tasks.TradingsTask
+  MarginTask   *tasks.MarginTask
+}
+
+func NewAnalysisTask(ansqContext *common.AnsqClientContext) *AnalysisTask {
+  return &AnalysisTask{
+    AnsqContext: ansqContext,
+  }
 }
 
 func (t *AnalysisTask) Tradings() *tasks.TradingsTask {
-	if t.TradingsTask == nil {
-		t.TradingsTask = &tasks.TradingsTask{
-			Db: t.Db,
-		}
-	}
-	return t.TradingsTask
+  if t.TradingsTask == nil {
+    t.TradingsTask = &tasks.TradingsTask{
+      Db: t.AnsqContext.Db,
+    }
+  }
+  return t.TradingsTask
 }
 
 func (t *AnalysisTask) Margin() *tasks.MarginTask {
-	if t.MarginTask == nil {
-		t.MarginTask = &tasks.MarginTask{
-			Db: t.Db,
-		}
-	}
-	return t.MarginTask
+  if t.MarginTask == nil {
+    t.MarginTask = &tasks.MarginTask{
+      Db: t.AnsqContext.Db,
+    }
+  }
+  return t.MarginTask
 }
 
 func (t *AnalysisTask) Flush() {
-	t.Tradings().Flush()
-	t.Margin().Flush()
+  t.Tradings().Flush()
+  t.Margin().Flush()
 }
