@@ -4,6 +4,7 @@ import (
   "context"
   "errors"
   "fmt"
+  "math"
   "sort"
   "strconv"
   "strings"
@@ -832,6 +833,112 @@ func (r *IndicatorsRepository) VolumeProfile(symbol string, interval string, lim
   }
 
   return nil
+}
+
+func (r *IndicatorsRepository) AndeanOscillator(symbol string, interval string, period int, length int, limit int) (err error) {
+  var klines []*models.Kline
+  r.Db.Select(
+    []string{"open", "close", "timestamp"},
+  ).Where(
+    "symbol=? AND interval=?", symbol, interval,
+  ).Order(
+    "timestamp desc",
+  ).Limit(
+    limit,
+  ).Find(
+    &klines,
+  )
+
+  var opens []float64
+  var closes []float64
+  var timestamp int64
+  for _, item := range klines {
+    if timestamp > 0 && (timestamp-item.Timestamp) != r.Timestep(interval) {
+      return errors.New(fmt.Sprintf("[%s] %s klines lost", symbol, interval))
+    }
+    opens = append([]float64{item.Open}, opens...)
+    closes = append([]float64{item.Close}, closes...)
+    timestamp = item.Timestamp
+  }
+
+  if len(opens) < limit {
+    return errors.New(fmt.Sprintf("[%s] %s klines not enough", symbol, interval))
+  }
+
+  up1 := make([]float64, limit)
+  up2 := make([]float64, limit)
+  dn1 := make([]float64, limit)
+  dn2 := make([]float64, limit)
+  bulls := make([]float64, limit)
+  bears := make([]float64, limit)
+  signals := make([]float64, limit)
+
+  up1[0] = closes[0]
+  up2[0] = math.Pow(closes[0], 2)
+  dn1[0] = closes[0]
+  dn2[0] = math.Pow(closes[0], 2)
+  signals[0] = closes[0]
+
+  alpha, _ := decimal.NewFromInt(2).Div(decimal.NewFromInt(int64(period + 1))).Float64()
+  alphaSignal, _ := decimal.NewFromInt(2).Div(decimal.NewFromInt(int64(length + 1))).Float64()
+
+  for i := 1; i < len(opens); i++ {
+    up1[i], _ = decimal.Max(
+      decimal.NewFromFloat(closes[i]),
+      decimal.NewFromFloat(opens[i]),
+      decimal.NewFromFloat(up1[i-1]).Sub(decimal.NewFromFloat(alpha).Mul(decimal.NewFromFloat(up1[i-1]).Sub(decimal.NewFromFloat(closes[i])))),
+    ).Float64()
+    up2[i], _ = decimal.Max(
+      decimal.NewFromFloat(closes[i]).Pow(decimal.NewFromInt(2)),
+      decimal.NewFromFloat(opens[i]).Pow(decimal.NewFromInt(2)),
+      decimal.NewFromFloat(up2[i-1]).Sub(decimal.NewFromFloat(alpha).Mul(decimal.NewFromFloat(up2[i-1]).Sub(decimal.NewFromFloat(closes[i]).Pow(decimal.NewFromInt(2))))),
+    ).Float64()
+    dn1[i], _ = decimal.Min(
+      decimal.NewFromFloat(closes[i]),
+      decimal.NewFromFloat(opens[i]),
+      decimal.NewFromFloat(dn1[i-1]).Add(decimal.NewFromFloat(alpha).Mul(decimal.NewFromFloat(closes[i]).Sub(decimal.NewFromFloat(dn1[i-1])))),
+    ).Float64()
+    dn2[i], _ = decimal.Min(
+      decimal.NewFromFloat(closes[i]).Pow(decimal.NewFromInt(2)),
+      decimal.NewFromFloat(opens[i]).Pow(decimal.NewFromInt(2)),
+      decimal.NewFromFloat(dn2[i-1]).Add(decimal.NewFromFloat(alpha).Mul(decimal.NewFromFloat(closes[i]).Pow(decimal.NewFromInt(2)).Sub(decimal.NewFromFloat(dn2[i-1])))),
+    ).Float64()
+    bulls[i], _ = decimal.NewFromFloat(dn2[i]).Sub(decimal.NewFromFloat(dn1[i]).Pow(decimal.NewFromInt(2))).Float64()
+    bears[i], _ = decimal.NewFromFloat(up2[i]).Sub(decimal.NewFromFloat(up1[i]).Pow(decimal.NewFromInt(2))).Float64()
+    bulls[i] = math.Sqrt(bulls[i])
+    bears[i] = math.Sqrt(bears[i])
+    signals[i], _ = decimal.NewFromFloat(signals[i-1]).Add(decimal.NewFromFloat(alphaSignal).Mul(decimal.Max(
+      decimal.NewFromFloat(bulls[i]),
+      decimal.NewFromFloat(bears[i]),
+    ).Sub(decimal.NewFromFloat(signals[i-1])))).Float64()
+  }
+
+  day, err := r.Day(klines[0].Timestamp / 1000)
+  if err != nil {
+    return err
+  }
+
+  redisKey := fmt.Sprintf(
+    "binance:spot:indicators:%s:%s:%s",
+    interval,
+    symbol,
+    day,
+  )
+  r.Rdb.HMSet(
+    r.Ctx,
+    redisKey,
+    map[string]interface{}{
+      "ao_bull":   bulls[len(opens)-1],
+      "ao_bear":   bears[len(opens)-1],
+      "ao_signal": signals[len(opens)-1],
+    },
+  )
+  ttl, _ := r.Rdb.TTL(r.Ctx, redisKey).Result()
+  if -1 == ttl.Nanoseconds() {
+    r.Rdb.Expire(r.Ctx, redisKey, time.Hour*24)
+  }
+
+  return
 }
 
 func (r *IndicatorsRepository) Day(timestamp int64) (day string, err error) {

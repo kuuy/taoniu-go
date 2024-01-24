@@ -1,6 +1,6 @@
 module taoniu.local/cryptos
 
-go 1.18
+go 1.21.5
 
 require (
 	github.com/PuerkitoBio/goquery v1.8.0

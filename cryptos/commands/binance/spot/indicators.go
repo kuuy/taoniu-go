@@ -169,6 +169,22 @@ func NewIndicatorsCommand() *cli.Command {
           return nil
         },
       },
+      {
+        Name:  "andean-oscillator",
+        Usage: "",
+        Action: func(c *cli.Context) error {
+          symbol := c.Args().Get(1)
+          interval := c.Args().Get(0)
+          if interval == "" {
+            log.Fatal("interval can not be empty")
+            return nil
+          }
+          if err := h.AndeanOscillator(symbol, interval); err != nil {
+            return cli.Exit(err.Error(), 1)
+          }
+          return nil
+        },
+      },
     },
   }
 }
@@ -322,6 +338,33 @@ func (h *IndicatorsHandler) VolumeProfile(symbol string, interval string) error 
 
   for _, symbol := range symbols {
     err := h.Repository.VolumeProfile(symbol, interval, limit)
+    if err != nil {
+      log.Println("error", symbol, err)
+    }
+  }
+  return nil
+}
+
+func (h *IndicatorsHandler) AndeanOscillator(symbol string, interval string) error {
+  log.Println("indicators andean oscillator indicator...")
+  var symbols []string
+  if symbol == "" {
+    h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+  } else {
+    symbols = append(symbols, symbol)
+  }
+
+  var limit int
+  if interval == "1m" {
+    limit = 1440
+  } else if interval == "4h" {
+    limit = 126
+  } else {
+    limit = 100
+  }
+
+  for _, symbol := range symbols {
+    err := h.Repository.AndeanOscillator(symbol, interval, 50, 9, limit)
     if err != nil {
       log.Println("error", symbol, err)
     }

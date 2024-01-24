@@ -42,6 +42,14 @@ type VolumeProfilePayload struct {
   Limit    int
 }
 
+type AndeanOscillatorPayload struct {
+  Symbol   string
+  Interval string
+  Period   int
+  Length   int
+  Limit    int
+}
+
 func NewIndicators(ansqContext *common.AnsqServerContext) *Indicators {
   h := &Indicators{
     AnsqContext: ansqContext,
@@ -190,6 +198,25 @@ func (h *Indicators) VolumeProfile(ctx context.Context, t *asynq.Task) error {
   return nil
 }
 
+func (h *Indicators) AndeanOscillator(ctx context.Context, t *asynq.Task) error {
+  var payload AndeanOscillatorPayload
+  json.Unmarshal(t.Payload(), &payload)
+
+  mutex := common.NewMutex(
+    h.AnsqContext.Rdb,
+    h.AnsqContext.Ctx,
+    fmt.Sprintf("locks:binance:futures:indicators:andean_oscillator:%s:%s", payload.Symbol, payload.Interval),
+  )
+  if !mutex.Lock(30 * time.Second) {
+    return nil
+  }
+  defer mutex.Unlock()
+
+  h.Repository.AndeanOscillator(payload.Symbol, payload.Interval, payload.Period, payload.Length, payload.Limit)
+
+  return nil
+}
+
 func (h *Indicators) Register() error {
   h.AnsqContext.Mux.HandleFunc("binance:futures:indicators:atr", h.Atr)
   h.AnsqContext.Mux.HandleFunc("binance:futures:indicators:zlema", h.Zlema)
@@ -198,5 +225,6 @@ func (h *Indicators) Register() error {
   h.AnsqContext.Mux.HandleFunc("binance:futures:indicators:bbands", h.BBands)
   h.AnsqContext.Mux.HandleFunc("binance:futures:indicators:pivot", h.Pivot)
   h.AnsqContext.Mux.HandleFunc("binance:futures:indicators:volume_profile", h.VolumeProfile)
+  h.AnsqContext.Mux.HandleFunc("binance:futures:indicators:andean_oscillator", h.AndeanOscillator)
   return nil
 }

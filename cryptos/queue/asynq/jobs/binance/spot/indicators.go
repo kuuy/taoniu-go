@@ -33,6 +33,14 @@ type VolumeProfilePayload struct {
   Limit    int
 }
 
+type AndeanOscillatorPayload struct {
+  Symbol   string
+  Interval string
+  Period   int
+  Length   int
+  Limit    int
+}
+
 func (h *Indicators) Pivot(symbol string, interval string) (*asynq.Task, error) {
   payload, err := json.Marshal(PivotPayload{symbol, interval})
   if err != nil {
@@ -87,4 +95,12 @@ func (h *Indicators) VolumeProfile(symbol string, interval string, limit int) (*
     return nil, err
   }
   return asynq.NewTask("binance:spot:indicators:volume_profile", payload), nil
+}
+
+func (h *Indicators) AndeanOscillator(symbol string, interval string, period int, length int, limit int) (*asynq.Task, error) {
+  payload, err := json.Marshal(AndeanOscillatorPayload{symbol, interval, period, length, limit})
+  if err != nil {
+    return nil, err
+  }
+  return asynq.NewTask("binance:spot:indicators:andean_oscillator", payload), nil
 }

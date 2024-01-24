@@ -157,6 +157,33 @@ func (t *IndicatorsTask) VolumeProfile(interval string) error {
   return nil
 }
 
+func (t *IndicatorsTask) AndeanOscillator(interval string, period int, length int) error {
+  var limit int
+  if interval == "1m" {
+    limit = 1440
+  } else if interval == "4h" {
+    limit = 126
+  } else {
+    limit = 100
+  }
+
+  var symbols []string
+  t.AnsqContext.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+  for _, symbol := range symbols {
+    task, err := t.Job.AndeanOscillator(symbol, interval, period, length, limit)
+    if err != nil {
+      return err
+    }
+    t.AnsqContext.Conn.Enqueue(
+      task,
+      asynq.Queue(config.BINANCE_FUTURES_INDICATORS),
+      asynq.MaxRetry(0),
+      asynq.Timeout(5*time.Minute),
+    )
+  }
+  return nil
+}
+
 func (t *IndicatorsTask) Flush(interval string) error {
   t.Pivot(interval)
   t.Atr(interval, 14, 100)
@@ -165,5 +192,6 @@ func (t *IndicatorsTask) Flush(interval string) error {
   t.Kdj(interval, 9, 3, 100)
   t.BBands(interval, 14, 100)
   t.VolumeProfile(interval)
+  t.AndeanOscillator(interval, 90, 5)
   return nil
 }
