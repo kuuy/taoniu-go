@@ -330,6 +330,8 @@ func (h *IndicatorsHandler) VolumeProfile(symbol string, interval string) error 
   var limit int
   if interval == "1m" {
     limit = 1440
+  } else if interval == "15m" {
+    limit = 672
   } else if interval == "4h" {
     limit = 126
   } else {
@@ -357,6 +359,8 @@ func (h *IndicatorsHandler) AndeanOscillator(symbol string, interval string) err
   var limit int
   if interval == "1m" {
     limit = 1440
+  } else if interval == "15m" {
+    limit = 672
   } else if interval == "4h" {
     limit = 126
   } else {

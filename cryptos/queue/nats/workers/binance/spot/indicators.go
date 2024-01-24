@@ -61,12 +61,28 @@ func (h *Indicators) VolumeProfile(symbol string, interval string) error {
   var limit int
   if interval == "1m" {
     limit = 1440
+  } else if interval == "15m" {
+    limit = 672
   } else if interval == "4h" {
     limit = 126
   } else {
     limit = 100
   }
   return h.Repository.VolumeProfile(symbol, interval, limit)
+}
+
+func (h *Indicators) AndeanOscillator(symbol string, interval string, period int, length int) error {
+  var limit int
+  if interval == "1m" {
+    limit = 1440
+  } else if interval == "15m" {
+    limit = 672
+  } else if interval == "4h" {
+    limit = 126
+  } else {
+    limit = 100
+  }
+  return h.Repository.AndeanOscillator(symbol, interval, period, length, limit)
 }
 
 func (h *Indicators) Flush(m *nats.Msg) {
@@ -80,6 +96,7 @@ func (h *Indicators) Flush(m *nats.Msg) {
   h.Kdj(payload.Symbol, payload.Interval)
   h.BBands(payload.Symbol, payload.Interval)
   h.VolumeProfile(payload.Symbol, payload.Interval)
+  h.AndeanOscillator(payload.Symbol, payload.Interval, 50, 9)
 
   h.NatsContext.Conn.Publish(config.NATS_INDICATORS_UPDATE, m.Data)
   h.NatsContext.Conn.Flush()

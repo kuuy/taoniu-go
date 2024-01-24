@@ -133,6 +133,8 @@ func (t *IndicatorsTask) VolumeProfile(interval string) error {
   var limit int
   if interval == "1m" {
     limit = 1440
+  } else if interval == "15m" {
+    limit = 672
   } else if interval == "4h" {
     limit = 126
   } else {
@@ -160,6 +162,8 @@ func (t *IndicatorsTask) AndeanOscillator(interval string, period int, length in
   var limit int
   if interval == "1m" {
     limit = 1440
+  } else if interval == "15m" {
+    limit = 672
   } else if interval == "4h" {
     limit = 126
   } else {
@@ -191,6 +195,6 @@ func (t *IndicatorsTask) Flush(interval string) error {
   t.Kdj(interval, 9, 3, 100)
   t.BBands(interval, 14, 100)
   t.VolumeProfile(interval)
-  t.AndeanOscillator(interval, 90, 5)
+  t.AndeanOscillator(interval, 50, 9)
   return nil
 }
