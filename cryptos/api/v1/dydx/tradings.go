@@ -9,7 +9,7 @@ import (
 
 func NewTradingsouter(apiContext *common.ApiContext) http.Handler {
   r := chi.NewRouter()
-  r.Mount("/scalping", tradings.NewScalpingRouter())
-  r.Mount("/triggers", tradings.NewTriggersRouter())
+  r.Mount("/scalping", tradings.NewScalpingRouter(apiContext))
+  r.Mount("/triggers", tradings.NewTriggersRouter(apiContext))
   return r
 }

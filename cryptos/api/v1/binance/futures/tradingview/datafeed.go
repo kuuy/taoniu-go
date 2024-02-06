@@ -1,7 +1,6 @@
 package tradingview
 
 import (
-  "context"
   "fmt"
   "math"
   "net/http"
@@ -10,24 +9,19 @@ import (
   "time"
 
   "github.com/go-chi/chi/v5"
-  "github.com/go-redis/redis/v8"
-  "gorm.io/gorm"
-
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
-  futuresRepositories "taoniu.local/cryptos/repositories/binance/futures"
+  repositories "taoniu.local/cryptos/repositories/binance/futures"
 )
 
 type DatafeedHandler struct {
-  Db                 *gorm.DB
-  Rdb                *redis.Client
-  Ctx                context.Context
+  ApiContext         *common.ApiContext
   Response           *api.ResponseHandler
-  SymbolsRepository  *futuresRepositories.SymbolsRepository
-  KlinesRepository   *futuresRepositories.KlinesRepository
-  TickersRepository  *futuresRepositories.TickersRepository
-  ScalpingRepository *futuresRepositories.ScalpingRepository
-  TriggersRepository *futuresRepositories.TriggersRepository
+  SymbolsRepository  *repositories.SymbolsRepository
+  KlinesRepository   *repositories.KlinesRepository
+  TickersRepository  *repositories.TickersRepository
+  ScalpingRepository *repositories.ScalpingRepository
+  TriggersRepository *repositories.TriggersRepository
 }
 
 type SearchInfo struct {
@@ -77,25 +71,23 @@ type HistoryInfo struct {
 
 func NewDatafeedRouter(apiContext *common.ApiContext) http.Handler {
   h := DatafeedHandler{
-    Db:  common.NewDB(),
-    Rdb: common.NewRedis(),
-    Ctx: context.Background(),
+    ApiContext: apiContext,
   }
-  h.SymbolsRepository = &futuresRepositories.SymbolsRepository{
-    Db: h.Db,
+  h.SymbolsRepository = &repositories.SymbolsRepository{
+    Db: h.ApiContext.Db,
   }
-  h.KlinesRepository = &futuresRepositories.KlinesRepository{
-    Db: h.Db,
+  h.KlinesRepository = &repositories.KlinesRepository{
+    Db: h.ApiContext.Db,
   }
-  h.TickersRepository = &futuresRepositories.TickersRepository{
-    Rdb: h.Rdb,
-    Ctx: h.Ctx,
+  h.TickersRepository = &repositories.TickersRepository{
+    Rdb: h.ApiContext.Rdb,
+    Ctx: h.ApiContext.Ctx,
   }
-  h.ScalpingRepository = &futuresRepositories.ScalpingRepository{
-    Db: h.Db,
+  h.ScalpingRepository = &repositories.ScalpingRepository{
+    Db: h.ApiContext.Db,
   }
-  h.TriggersRepository = &futuresRepositories.TriggersRepository{
-    Db: h.Db,
+  h.TriggersRepository = &repositories.TriggersRepository{
+    Db: h.ApiContext.Db,
   }
 
   r := chi.NewRouter()
@@ -112,6 +104,9 @@ func (h *DatafeedHandler) Time(
   w http.ResponseWriter,
   r *http.Request,
 ) {
+  h.ApiContext.Mux.Lock()
+  defer h.ApiContext.Mux.Unlock()
+
   h.Response = &api.ResponseHandler{
     Writer: w,
   }
@@ -125,6 +120,9 @@ func (h *DatafeedHandler) Config(
   w http.ResponseWriter,
   r *http.Request,
 ) {
+  h.ApiContext.Mux.Lock()
+  defer h.ApiContext.Mux.Unlock()
+
   h.Response = &api.ResponseHandler{
     Writer: w,
   }
@@ -165,6 +163,9 @@ func (h *DatafeedHandler) Search(
   w http.ResponseWriter,
   r *http.Request,
 ) {
+  h.ApiContext.Mux.Lock()
+  defer h.ApiContext.Mux.Unlock()
+
   h.Response = &api.ResponseHandler{
     Writer: w,
   }
@@ -214,6 +215,9 @@ func (h *DatafeedHandler) SymbolInfo(
   w http.ResponseWriter,
   r *http.Request,
 ) {
+  h.ApiContext.Mux.Lock()
+  defer h.ApiContext.Mux.Unlock()
+
   h.Response = &api.ResponseHandler{
     Writer: w,
   }
@@ -270,6 +274,9 @@ func (h *DatafeedHandler) History(
   w http.ResponseWriter,
   r *http.Request,
 ) {
+  h.ApiContext.Mux.Lock()
+  defer h.ApiContext.Mux.Unlock()
+
   h.Response = &api.ResponseHandler{
     Writer: w,
   }

@@ -6,7 +6,6 @@ import (
   "fmt"
   "log"
   "strconv"
-  models "taoniu.local/cryptos/models/binance/futures"
   "time"
 
   "github.com/go-redis/redis/v8"
@@ -14,6 +13,7 @@ import (
   "gorm.io/gorm"
 
   "taoniu.local/cryptos/common"
+  models "taoniu.local/cryptos/models/binance/futures"
   repositories "taoniu.local/cryptos/repositories/binance/futures"
 )
 

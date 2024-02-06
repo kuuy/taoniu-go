@@ -49,6 +49,9 @@ func (h *GridsHandler) Listings(
   w http.ResponseWriter,
   r *http.Request,
 ) {
+  h.ApiContext.Mux.Lock()
+  defer h.ApiContext.Mux.Unlock()
+
   h.Response = &api.ResponseHandler{
     Writer: w,
   }

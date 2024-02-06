@@ -1,20 +1,21 @@
 package templates
 
 import (
-  "github.com/go-chi/chi/v5"
   "net/http"
+
+  "github.com/go-chi/chi/v5"
 
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
 )
 
-type StudyHandler struct {
+type DrawingHandler struct {
   ApiContext *common.ApiContext
   Response   *api.ResponseHandler
 }
 
-func NewStudyRouter(apiContext *common.ApiContext) http.Handler {
-  h := StudyHandler{
+func NewDrawingRouter(apiContext *common.ApiContext) http.Handler {
+  h := DrawingHandler{
     ApiContext: apiContext,
   }
 
@@ -24,7 +25,7 @@ func NewStudyRouter(apiContext *common.ApiContext) http.Handler {
   return r
 }
 
-func (h *StudyHandler) Gets(
+func (h *DrawingHandler) Gets(
   w http.ResponseWriter,
   r *http.Request,
 ) {

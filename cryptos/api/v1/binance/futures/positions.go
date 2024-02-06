@@ -68,6 +68,9 @@ func (h *PositionsHandler) Gets(
   w http.ResponseWriter,
   r *http.Request,
 ) {
+  h.ApiContext.Mux.Lock()
+  defer h.ApiContext.Mux.Unlock()
+
   h.Response = &api.ResponseHandler{
     Writer: w,
   }
@@ -102,6 +105,9 @@ func (h *PositionsHandler) Calc(
   w http.ResponseWriter,
   r *http.Request,
 ) {
+  h.ApiContext.Mux.Lock()
+  defer h.ApiContext.Mux.Unlock()
+
   h.Response = &api.ResponseHandler{
     Writer: w,
   }

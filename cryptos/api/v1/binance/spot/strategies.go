@@ -1,4 +1,4 @@
-package dydx
+package spot
 
 import (
   "net/http"
@@ -8,31 +8,29 @@ import (
 
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
-  repositories "taoniu.local/cryptos/repositories/dydx"
+  repositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
-type PlansHandler struct {
+type StrategiesHandler struct {
   ApiContext *common.ApiContext
   Response   *api.ResponseHandler
-  Repository *repositories.PlansRepository
+  Repository *repositories.StrategiesRepository
 }
 
-type PlansInfo struct {
+type StrategiesInfo struct {
   ID        string  `json:"id"`
   Symbol    string  `json:"symbol"`
-  Side      int     `json:"side"`
+  Indicator string  `json:"indicator"`
+  Signal    int     `json:"signal"`
   Price     float64 `json:"price"`
-  Quantity  float64 `json:"quantity"`
-  Amount    float64 `json:"amount"`
   Timestamp int64   `json:"timestamp"`
-  Status    int     `json:"status"`
 }
 
-func NewPlansRouter(apiContext *common.ApiContext) http.Handler {
-  h := PlansHandler{
+func NewStrategiesRouter(apiContext *common.ApiContext) http.Handler {
+  h := StrategiesHandler{
     ApiContext: apiContext,
   }
-  h.Repository = &repositories.PlansRepository{
+  h.Repository = &repositories.StrategiesRepository{
     Db: h.ApiContext.Db,
   }
 
@@ -42,7 +40,7 @@ func NewPlansRouter(apiContext *common.ApiContext) http.Handler {
   return r
 }
 
-func (h *PlansHandler) Listings(
+func (h *StrategiesHandler) Listings(
   w http.ResponseWriter,
   r *http.Request,
 ) {
@@ -58,8 +56,8 @@ func (h *PlansHandler) Listings(
   if q.Get("symbol") != "" {
     conditions["symbol"] = q.Get("symbol")
   }
-  if q.Get("side") != "" {
-    conditions["side"], _ = strconv.Atoi(q.Get("side"))
+  if q.Get("signal") != "" {
+    conditions["signal"], _ = strconv.Atoi(q.Get("signal"))
   }
 
   var current int
@@ -84,18 +82,16 @@ func (h *PlansHandler) Listings(
   }
 
   total := h.Repository.Count(conditions)
-  plans := h.Repository.Listings(conditions, current, pageSize)
-  data := make([]*PlansInfo, len(plans))
-  for i, plan := range plans {
-    data[i] = &PlansInfo{
-      ID:        plan.ID,
-      Symbol:    plan.Symbol,
-      Side:      plan.Side,
-      Price:     plan.Price,
-      Quantity:  plan.Quantity,
-      Amount:    plan.Amount,
-      Status:    plan.Status,
-      Timestamp: plan.Timestamp,
+  strategies := h.Repository.Listings(conditions, current, pageSize)
+  data := make([]*StrategiesInfo, len(strategies))
+  for i, strategy := range strategies {
+    data[i] = &StrategiesInfo{
+      ID:        strategy.ID,
+      Symbol:    strategy.Symbol,
+      Indicator: strategy.Indicator,
+      Signal:    strategy.Signal,
+      Price:     strategy.Price,
+      Timestamp: strategy.Timestamp,
     }
   }
 

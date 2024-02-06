@@ -52,6 +52,9 @@ func (h *OrdersHandler) Listings(
   w http.ResponseWriter,
   r *http.Request,
 ) {
+  h.ApiContext.Mux.Lock()
+  defer h.ApiContext.Mux.Unlock()
+
   h.Response = &api.ResponseHandler{
     Writer: w,
   }
@@ -117,6 +120,9 @@ func (h *OrdersHandler) Cancel(
   w http.ResponseWriter,
   r *http.Request,
 ) {
+  h.ApiContext.Mux.Lock()
+  defer h.ApiContext.Mux.Unlock()
+
   h.Response = &api.ResponseHandler{
     Writer: w,
   }

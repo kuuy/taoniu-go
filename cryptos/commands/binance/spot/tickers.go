@@ -4,7 +4,6 @@ import (
   "context"
   "fmt"
   "log"
-  tasks "taoniu.local/cryptos/queue/asynq/jobs/binance/spot"
   "time"
 
   "github.com/go-redis/redis/v8"
@@ -12,6 +11,7 @@ import (
   "gorm.io/gorm"
 
   "taoniu.local/cryptos/common"
+  tasks "taoniu.local/cryptos/queue/asynq/jobs/binance/spot"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 

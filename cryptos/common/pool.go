@@ -6,6 +6,7 @@ import (
   "fmt"
   "strconv"
   "strings"
+  "sync"
   "time"
 
   "database/sql"
@@ -30,6 +31,7 @@ type ApiContext struct {
   Db  *gorm.DB
   Rdb *redis.Client
   Ctx context.Context
+  Mux sync.Mutex
 }
 
 type NatsContext struct {

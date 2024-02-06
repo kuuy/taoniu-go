@@ -22,6 +22,24 @@ func (r *PositionsRepository) Get(symbol string) (position *models.Position, err
   return
 }
 
+func (r *PositionsRepository) Gets(conditions map[string]interface{}) []*models.Position {
+  var positions []*models.Position
+  query := r.Db.Select([]string{
+    "id",
+    "symbol",
+    "notional",
+    "entry_price",
+    "entry_quantity",
+    "entry_amount",
+    "timestamp",
+  })
+  if _, ok := conditions["side"]; ok {
+    query.Where("side", conditions["side"].(int))
+  }
+  query.Where("status=1 AND entry_quantity>0").Find(&positions)
+  return positions
+}
+
 func (r *PositionsRepository) Ratio(capital float64, entryAmount float64) float64 {
   totalAmount := 0.0
   lastAmount := 0.0

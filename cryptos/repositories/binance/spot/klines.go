@@ -59,6 +59,24 @@ func (r *KlinesRepository) Count(symbol string, interval string) int64 {
   return total
 }
 
+func (r *KlinesRepository) History(
+  symbol string,
+  interval string,
+  from int64,
+  to int64,
+  limit int,
+) []*models.Kline {
+  var klines []*models.Kline
+  r.Db.Model(&models.Kline{}).Where(
+    "symbol=? AND interval=? AND timestamp BETWEEN ? AND ?",
+    symbol,
+    interval,
+    from,
+    to,
+  ).Order("timestamp desc").Limit(limit).Find(&klines)
+  return klines
+}
+
 func (r *KlinesRepository) Flush(symbol string, interval string, endtime int64, limit int) error {
   klines, err := r.Request(symbol, interval, endtime, limit)
   if err != nil {

@@ -54,20 +54,20 @@ func NewKlinesCommand() *cli.Command {
           symbol := c.Args().Get(2)
           interval := c.Args().Get(0)
           limit, _ := strconv.Atoi(c.Args().Get(1))
-          if interval == "1m" && (limit < 1 || limit > 4320) {
-            log.Fatal("limit not in 1~4320")
+          if interval == "1m" && (limit < 1 || limit > 1440) {
+            log.Fatal("limit not in 1~1440")
             return nil
           }
-          if interval == "15m" && (limit < 1 || limit > 1344) {
-            log.Fatal("limit not in 1~1344")
-            return nil
-          }
-          if interval == "4h" && (limit < 1 || limit > 672) {
+          if interval == "15m" && (limit < 1 || limit > 672) {
             log.Fatal("limit not in 1~672")
             return nil
           }
-          if interval == "1d" && (limit < 1 || limit > 365) {
-            log.Fatal("limit not in 1~365")
+          if interval == "4h" && (limit < 1 || limit > 126) {
+            log.Fatal("limit not in 1~126")
+            return nil
+          }
+          if interval == "1d" && (limit < 1 || limit > 100) {
+            log.Fatal("limit not in 1~100")
             return nil
           }
           if err := h.Flush(symbol, interval, limit); err != nil {
@@ -83,20 +83,20 @@ func NewKlinesCommand() *cli.Command {
           symbol := c.Args().Get(2)
           interval := c.Args().Get(0)
           limit, _ := strconv.Atoi(c.Args().Get(1))
-          if interval == "1m" && (limit < 1 || limit > 4320) {
-            log.Fatal("limit not in 1~4320")
+          if interval == "1m" && (limit < 1 || limit > 1440) {
+            log.Fatal("limit not in 1~1440")
             return nil
           }
-          if interval == "15m" && (limit < 1 || limit > 1344) {
-            log.Fatal("limit not in 1~1344")
-            return nil
-          }
-          if interval == "4h" && (limit < 1 || limit > 672) {
+          if interval == "15m" && (limit < 1 || limit > 672) {
             log.Fatal("limit not in 1~672")
             return nil
           }
-          if interval == "1d" && (limit < 1 || limit > 365) {
-            log.Fatal("limit not in 1~365")
+          if interval == "4h" && (limit < 1 || limit > 126) {
+            log.Fatal("limit not in 1~126")
+            return nil
+          }
+          if interval == "1d" && (limit < 1 || limit > 100) {
+            log.Fatal("limit not in 1~100")
             return nil
           }
           if err := h.Fix(symbol, interval, limit); err != nil {

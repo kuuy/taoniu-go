@@ -10,5 +10,7 @@ import (
 func NewTradingViewRouter(apiContext *common.ApiContext) http.Handler {
   r := chi.NewRouter()
   r.Mount("/datafeed", tradingview.NewDatafeedRouter(apiContext))
+  r.Mount("/charts", tradingview.NewChartsRouter(apiContext))
+  r.Mount("/templates", tradingview.NewTemplatesRouter(apiContext))
   return r
 }

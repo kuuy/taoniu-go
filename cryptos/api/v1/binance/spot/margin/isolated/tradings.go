@@ -31,7 +31,7 @@ func NewTradingsRouter(apiContext *common.ApiContext) http.Handler {
 
   r := chi.NewRouter()
   r.Get("/scan", h.Scan)
-  r.Mount("/fishers", tradings.NewFishersRouter())
+  r.Mount("/fishers", tradings.NewFishersRouter(apiContext))
   return r
 }
 
@@ -39,6 +39,9 @@ func (h *TradingsHandler) Scan(
   w http.ResponseWriter,
   r *http.Request,
 ) {
+  h.ApiContext.Mux.Lock()
+  defer h.ApiContext.Mux.Unlock()
+
   h.Response = &api.ResponseHandler{
     Writer: w,
   }

@@ -13,14 +13,17 @@ import (
 )
 
 type TriggersHandler struct {
+  ApiContext *common.ApiContext
   Response   *api.ResponseHandler
   Repository *repositories.TriggersRepository
 }
 
-func NewTriggersRouter() http.Handler {
-  h := TriggersHandler{}
+func NewTriggersRouter(apiContext *common.ApiContext) http.Handler {
+  h := TriggersHandler{
+    ApiContext: apiContext,
+  }
   h.Repository = &repositories.TriggersRepository{
-    Db: common.NewDB(),
+    Db: h.ApiContext.Db,
   }
 
   r := chi.NewRouter()
@@ -33,6 +36,9 @@ func (h *TriggersHandler) Listings(
   w http.ResponseWriter,
   r *http.Request,
 ) {
+  h.ApiContext.Mux.Lock()
+  defer h.ApiContext.Mux.Unlock()
+
   h.Response = &api.ResponseHandler{
     Writer: w,
   }

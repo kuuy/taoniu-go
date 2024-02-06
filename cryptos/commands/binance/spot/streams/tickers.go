@@ -5,18 +5,17 @@ import (
   "encoding/json"
   "errors"
   "fmt"
-  "github.com/shopspring/decimal"
   "log"
   "os"
   "strconv"
   "strings"
   "time"
 
+  "github.com/nats-io/nats.go"
+  "github.com/shopspring/decimal"
+  "github.com/urfave/cli/v2"
   "gorm.io/gorm"
   "nhooyr.io/websocket"
-
-  "github.com/nats-io/nats.go"
-  "github.com/urfave/cli/v2"
 
   "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/spot"

@@ -2,11 +2,12 @@ package spot
 
 import (
   "context"
+  "log"
+  "strconv"
+
   "github.com/go-redis/redis/v8"
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
-  "log"
-  "strconv"
 
   "taoniu.local/cryptos/common"
   repositories "taoniu.local/cryptos/repositories/binance/spot"

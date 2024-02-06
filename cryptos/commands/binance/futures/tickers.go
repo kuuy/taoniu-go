@@ -2,12 +2,12 @@ package futures
 
 import (
   "context"
-  "github.com/nats-io/nats.go"
-  "gorm.io/gorm"
   "log"
 
   "github.com/go-redis/redis/v8"
+  "github.com/nats-io/nats.go"
   "github.com/urfave/cli/v2"
+  "gorm.io/gorm"
 
   "taoniu.local/cryptos/common"
   repositories "taoniu.local/cryptos/repositories/binance/futures"

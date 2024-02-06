@@ -1,24 +1,18 @@
 package spot
 
 import (
-  "context"
   "net/http"
   "strconv"
   "strings"
 
   "github.com/go-chi/chi/v5"
-  "github.com/go-redis/redis/v8"
-  "gorm.io/gorm"
-
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
 type OrdersHandler struct {
-  Db         *gorm.DB
-  Rdb        *redis.Client
-  Ctx        context.Context
+  ApiContext *common.ApiContext
   Response   *api.ResponseHandler
   Repository *repositories.OrdersRepository
 }
@@ -34,16 +28,14 @@ type OrderInfo struct {
   TimestampFormat string  `json:"timestamp_fmt"`
 }
 
-func NewOrdersRouter() http.Handler {
+func NewOrdersRouter(apiContext *common.ApiContext) http.Handler {
   h := OrdersHandler{
-    Db:  common.NewDB(),
-    Rdb: common.NewRedis(),
-    Ctx: context.Background(),
+    ApiContext: apiContext,
   }
   h.Repository = &repositories.OrdersRepository{
-    Db:  h.Db,
-    Rdb: h.Rdb,
-    Ctx: h.Ctx,
+    Db:  h.ApiContext.Db,
+    Rdb: h.ApiContext.Rdb,
+    Ctx: h.ApiContext.Ctx,
   }
 
   r := chi.NewRouter()
@@ -56,6 +48,9 @@ func (h *OrdersHandler) Listings(
   w http.ResponseWriter,
   r *http.Request,
 ) {
+  h.ApiContext.Mux.Lock()
+  defer h.ApiContext.Mux.Unlock()
+
   h.Response = &api.ResponseHandler{
     Writer: w,
   }

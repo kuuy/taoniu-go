@@ -1,7 +1,6 @@
 package tradingview
 
 import (
-  "context"
   "fmt"
   "math"
   "net/http"
@@ -10,18 +9,13 @@ import (
   "time"
 
   "github.com/go-chi/chi/v5"
-  "github.com/go-redis/redis/v8"
-  "gorm.io/gorm"
-
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
   repositories "taoniu.local/cryptos/repositories/dydx"
 )
 
 type DatafeedHandler struct {
-  Db                 *gorm.DB
-  Rdb                *redis.Client
-  Ctx                context.Context
+  ApiContext         *common.ApiContext
   Response           *api.ResponseHandler
   MarketsRepository  *repositories.MarketsRepository
   KlinesRepository   *repositories.KlinesRepository
@@ -76,21 +70,19 @@ type HistoryInfo struct {
 
 func NewDatafeedRouter(apiContext *common.ApiContext) http.Handler {
   h := DatafeedHandler{
-    Db:  common.NewDB(),
-    Rdb: common.NewRedis(),
-    Ctx: context.Background(),
+    ApiContext: apiContext,
   }
   h.MarketsRepository = &repositories.MarketsRepository{
-    Db: h.Db,
+    Db: h.ApiContext.Db,
   }
   h.KlinesRepository = &repositories.KlinesRepository{
-    Db: h.Db,
+    Db: h.ApiContext.Db,
   }
   h.ScalpingRepository = &repositories.ScalpingRepository{
-    Db: h.Db,
+    Db: h.ApiContext.Db,
   }
   h.TriggersRepository = &repositories.TriggersRepository{
-    Db: h.Db,
+    Db: h.ApiContext.Db,
   }
 
   r := chi.NewRouter()
@@ -107,6 +99,9 @@ func (h *DatafeedHandler) Time(
   w http.ResponseWriter,
   r *http.Request,
 ) {
+  h.ApiContext.Mux.Lock()
+  defer h.ApiContext.Mux.Unlock()
+
   h.Response = &api.ResponseHandler{
     Writer: w,
   }
@@ -120,6 +115,9 @@ func (h *DatafeedHandler) Config(
   w http.ResponseWriter,
   r *http.Request,
 ) {
+  h.ApiContext.Mux.Lock()
+  defer h.ApiContext.Mux.Unlock()
+
   h.Response = &api.ResponseHandler{
     Writer: w,
   }
@@ -160,6 +158,9 @@ func (h *DatafeedHandler) Search(
   w http.ResponseWriter,
   r *http.Request,
 ) {
+  h.ApiContext.Mux.Lock()
+  defer h.ApiContext.Mux.Unlock()
+
   h.Response = &api.ResponseHandler{
     Writer: w,
   }
@@ -209,6 +210,9 @@ func (h *DatafeedHandler) SymbolInfo(
   w http.ResponseWriter,
   r *http.Request,
 ) {
+  h.ApiContext.Mux.Lock()
+  defer h.ApiContext.Mux.Unlock()
+
   h.Response = &api.ResponseHandler{
     Writer: w,
   }
@@ -258,6 +262,9 @@ func (h *DatafeedHandler) History(
   w http.ResponseWriter,
   r *http.Request,
 ) {
+  h.ApiContext.Mux.Lock()
+  defer h.ApiContext.Mux.Unlock()
+
   h.Response = &api.ResponseHandler{
     Writer: w,
   }
