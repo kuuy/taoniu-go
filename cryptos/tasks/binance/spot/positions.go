@@ -6,7 +6,7 @@ import (
   "github.com/hibiken/asynq"
 
   "taoniu.local/cryptos/common"
-  config "taoniu.local/cryptos/config/queue"
+  config "taoniu.local/cryptos/config/binance/spot"
   jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/spot"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
   tradingsRepositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
@@ -27,9 +27,6 @@ func NewPositionsTask(ansqContext *common.AnsqClientContext) *PositionsTask {
     },
     TradingsRepository: &repositories.TradingsRepository{
       Db: ansqContext.Db,
-      LaunchpadRepository: &tradingsRepositories.LaunchpadRepository{
-        Db: ansqContext.Db,
-      },
       ScalpingRepository: &tradingsRepositories.ScalpingRepository{
         Db: ansqContext.Db,
       },
@@ -48,7 +45,7 @@ func (t *PositionsTask) Flush() error {
     }
     t.AnsqContext.Conn.Enqueue(
       task,
-      asynq.Queue(config.BINANCE_SPOT_POSITIONS),
+      asynq.Queue(config.ASYNQ_QUEUE_POSITIONS),
       asynq.MaxRetry(0),
       asynq.Timeout(5*time.Minute),
     )

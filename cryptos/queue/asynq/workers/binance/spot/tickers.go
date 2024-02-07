@@ -5,6 +5,7 @@ import (
   "encoding/json"
   "github.com/hibiken/asynq"
   "taoniu.local/cryptos/common"
+  config "taoniu.local/cryptos/config/binance/spot"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
@@ -24,11 +25,6 @@ func NewTickers(ansqContext *common.AnsqServerContext) *Tickers {
   return h
 }
 
-type TickersFlushPayload struct {
-  Symbols  []string
-  UseProxy bool
-}
-
 func (h *Tickers) Flush(ctx context.Context, t *asynq.Task) error {
   var payload TickersFlushPayload
   json.Unmarshal(t.Payload(), &payload)
@@ -43,6 +39,6 @@ func (h *Tickers) Flush(ctx context.Context, t *asynq.Task) error {
 }
 
 func (h *Tickers) Register() error {
-  h.AnsqContext.Mux.HandleFunc("binance:spot:tickers:flush", h.Flush)
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_TICKERS_FLUSH, h.Flush)
   return nil
 }

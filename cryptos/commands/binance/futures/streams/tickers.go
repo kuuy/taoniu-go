@@ -58,12 +58,12 @@ func NewTickersCommand() *cli.Command {
       return nil
     },
     Action: func(c *cli.Context) error {
-      no, _ := strconv.Atoi(c.Args().Get(0))
-      if no < 1 {
-        log.Fatal("no is less than 1")
+      current, _ := strconv.Atoi(c.Args().Get(0))
+      if current < 1 {
+        log.Fatal("current is less than 1")
         return nil
       }
-      if err := h.start(no); err != nil {
+      if err := h.Start(current); err != nil {
         return cli.Exit(err.Error(), 1)
       }
       return nil
@@ -107,12 +107,12 @@ func (h *TickersHandler) handler(message map[string]interface{}) {
       "change":    change,
       "timestamp": time.Now().Unix(),
     })
-    h.Nats.Publish(config.NATS_TRADES_UPDATE, data)
+    h.Nats.Publish(config.NATS_TICKERS_UPDATE, data)
     h.Nats.Flush()
   }
 }
 
-func (h *TickersHandler) start(current int) (err error) {
+func (h *TickersHandler) Start(current int) (err error) {
   log.Println("stream start")
 
   symbols := h.Scan()

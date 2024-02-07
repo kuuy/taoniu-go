@@ -46,9 +46,6 @@ func NewKlinesCommand() *cli.Command {
       h.TradingsRepository = &repositories.TradingsRepository{
         Db: h.Db,
       }
-      h.TradingsRepository.LaunchpadRepository = &tradingsRepositories.LaunchpadRepository{
-        Db: h.Db,
-      }
       h.TradingsRepository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
         Db: h.Db,
       }
@@ -109,7 +106,7 @@ func (h *KlinesHandler) Fix() error {
     mutex := common.NewMutex(
       h.Rdb,
       h.Ctx,
-      fmt.Sprintf("locks:binance:spot:klines:flush:%s", symbol),
+      fmt.Sprintf("locks:binance:spot:klines:fix:%s", symbol),
     )
     if !mutex.Lock(30 * time.Second) {
       continue

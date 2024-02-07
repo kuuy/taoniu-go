@@ -94,15 +94,8 @@ func (h *SpotHandler) run() error {
     binance.Spot().Orders().Sync(time.Now().Add(-15*time.Minute).UnixNano()/int64(time.Millisecond), 20)
   })
   c.AddFunc("@every 5m", func() {
-    binance.Spot().Tickers().FlushDelay()
-    binance.Spot().Klines().FlushDelay("1m", 30)
-    binance.Spot().Klines().FlushDelay("15m", 2)
-    binance.Spot().Depth().FlushDelay(1000)
-    //tradingview.Analysis().FlushDelay()
   })
   c.AddFunc("@every 15m", func() {
-    binance.Spot().Klines().FlushDelay("4h", 1)
-    binance.Spot().Klines().FlushDelay("1d", 1)
   })
   c.AddFunc("@hourly", func() {
     binance.Spot().Cron().Hourly()

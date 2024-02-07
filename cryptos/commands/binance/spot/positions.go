@@ -46,9 +46,6 @@ func NewPositionsCommand() *cli.Command {
       h.TradingsRepository = &repositories.TradingsRepository{
         Db: h.Db,
       }
-      h.TradingsRepository.LaunchpadRepository = &tradingsRepositories.LaunchpadRepository{
-        Db: h.Db,
-      }
       h.TradingsRepository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
         Db: h.Db,
       }

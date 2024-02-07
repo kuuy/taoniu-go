@@ -2,11 +2,11 @@ package spot
 
 import (
   "context"
-  "log"
-
   "github.com/go-redis/redis/v8"
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
+  "log"
+  "slices"
 
   "taoniu.local/cryptos/common"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
@@ -87,18 +87,9 @@ func (h *DepthHandler) Flush() error {
 func (h *DepthHandler) Scan() []string {
   var symbols []string
   for _, symbol := range h.TradingsRepository.Scan() {
-    if !h.contains(symbols, symbol) {
+    if !slices.Contains(symbols, symbol) {
       symbols = append(symbols, symbol)
     }
   }
   return symbols
-}
-
-func (h *DepthHandler) contains(s []string, str string) bool {
-  for _, v := range s {
-    if v == str {
-      return true
-    }
-  }
-  return false
 }

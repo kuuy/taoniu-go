@@ -31,6 +31,11 @@ type KlinesRepository struct {
   UseProxy bool
 }
 
+func (r *KlinesRepository) Get(symbol string, interval string, timestamp int64) (kline *models.Kline, err error) {
+  err = r.Db.Where("symbol=? AND interval=? AND timestamp=?", symbol, interval, timestamp).Take(&kline).Error
+  return
+}
+
 func (r *KlinesRepository) Series(symbol string, interval string, timestamp int64, limit int) []interface{} {
   var klines []*models.Kline
   r.Db.Where(
@@ -75,6 +80,42 @@ func (r *KlinesRepository) History(
     to,
   ).Order("timestamp desc").Limit(limit).Find(&klines)
   return klines
+}
+
+func (r *KlinesRepository) Create(
+  symbol string,
+  interval string,
+  open float64,
+  close float64,
+  high float64,
+  low float64,
+  volume float64,
+  quota float64,
+  timestamp int64,
+) (id string, err error) {
+  id = xid.New().String()
+  kline := &models.Kline{
+    ID:        id,
+    Symbol:    symbol,
+    Interval:  interval,
+    Open:      open,
+    Close:     close,
+    High:      high,
+    Low:       low,
+    Volume:    volume,
+    Quota:     quota,
+    Timestamp: timestamp,
+  }
+  err = r.Db.Create(&kline).Error
+  return
+}
+
+func (r *KlinesRepository) Update(kline *models.Kline, column string, value interface{}) (err error) {
+  return r.Db.Model(&kline).Update(column, value).Error
+}
+
+func (r *KlinesRepository) Updates(kline *models.Kline, values map[string]interface{}) (err error) {
+  return r.Db.Model(&kline).Updates(values).Error
 }
 
 func (r *KlinesRepository) Flush(symbol string, interval string, endtime int64, limit int) error {

@@ -1,16 +1,7 @@
 package spot
 
 import (
-  "fmt"
-  "slices"
   "taoniu.local/cryptos/common"
-  tradingsRepositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
-  "time"
-
-  "github.com/go-redis/redis/v8"
-  "github.com/hibiken/asynq"
-
-  config "taoniu.local/cryptos/config/queue"
   jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/spot"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
 )
@@ -32,86 +23,7 @@ func NewKlinesTask(ansqContext *common.AnsqClientContext) *KlinesTask {
     SymbolsRepository: &repositories.SymbolsRepository{
       Db: ansqContext.Db,
     },
-    TradingsRepository: &repositories.TradingsRepository{
-      Db: ansqContext.Db,
-      LaunchpadRepository: &tradingsRepositories.LaunchpadRepository{
-        Db: ansqContext.Db,
-      },
-      ScalpingRepository: &tradingsRepositories.ScalpingRepository{
-        Db: ansqContext.Db,
-      },
-      TriggersRepository: &tradingsRepositories.TriggersRepository{
-        Db: ansqContext.Db,
-      },
-    },
   }
-}
-
-func (t *KlinesTask) Flush(interval string, limit int) error {
-  symbols := t.Scan()
-  for _, symbol := range symbols {
-    task, err := t.Job.Flush(symbol, interval, limit, false)
-    if err != nil {
-      return err
-    }
-    t.AnsqContext.Conn.Enqueue(
-      task,
-      asynq.Queue(config.BINANCE_SPOT_KLINES),
-      asynq.MaxRetry(0),
-      asynq.Timeout(5*time.Minute),
-    )
-  }
-  return nil
-}
-
-func (t *KlinesTask) Fix(interval string, limit int, duration int64) error {
-  symbols := t.SymbolsRepository.Symbols()
-  timestamp := time.Now().Unix() - duration
-  whites, _ := t.AnsqContext.Rdb.ZRangeByScore(
-    t.AnsqContext.Ctx,
-    fmt.Sprintf(
-      "binance:spot:klines:flush:%v",
-      interval,
-    ),
-    &redis.ZRangeBy{
-      Min: fmt.Sprintf("%v", timestamp),
-      Max: "+inf",
-    },
-  ).Result()
-  for _, symbol := range symbols {
-    if slices.Contains(whites, symbol) {
-      continue
-    }
-    task, err := t.Job.Flush(symbol, interval, limit, true)
-    if err != nil {
-      return err
-    }
-    t.AnsqContext.Conn.Enqueue(
-      task,
-      asynq.Queue(config.BINANCE_SPOT_KLINES_DELAY),
-      asynq.MaxRetry(0),
-      asynq.Timeout(5*time.Minute),
-    )
-  }
-
-  return nil
-}
-
-func (t *KlinesTask) FlushDelay(interval string, limit int) error {
-  symbols := t.SymbolsRepository.Symbols()
-  for _, symbol := range symbols {
-    task, err := t.Job.Flush(symbol, interval, limit, true)
-    if err != nil {
-      return err
-    }
-    t.AnsqContext.Conn.Enqueue(
-      task,
-      asynq.Queue(config.BINANCE_SPOT_KLINES_DELAY),
-      asynq.MaxRetry(0),
-      asynq.Timeout(5*time.Minute),
-    )
-  }
-  return nil
 }
 
 func (t *KlinesTask) Clean() error {
@@ -120,14 +32,4 @@ func (t *KlinesTask) Clean() error {
     t.Repository.Clean(symbol)
   }
   return nil
-}
-
-func (t *KlinesTask) Scan() []string {
-  var symbols []string
-  for _, symbol := range t.TradingsRepository.Scan() {
-    if !slices.Contains(symbols, symbol) {
-      symbols = append(symbols, symbol)
-    }
-  }
-  return symbols
 }

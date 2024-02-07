@@ -1,11 +1,12 @@
 package spot
 
 import (
-  "github.com/hibiken/asynq"
-  "taoniu.local/cryptos/common"
   "time"
 
-  config "taoniu.local/cryptos/config/queue"
+  "github.com/hibiken/asynq"
+
+  "taoniu.local/cryptos/common"
+  config "taoniu.local/cryptos/config/binance/spot"
   models "taoniu.local/cryptos/models/binance/spot"
   jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/spot"
 )
@@ -31,7 +32,7 @@ func (t *IndicatorsTask) Pivot(interval string) error {
     }
     t.AnsqContext.Conn.Enqueue(
       task,
-      asynq.Queue(config.BINANCE_SPOT_INDICATORS),
+      asynq.Queue(config.ASYNQ_QUEUE_INDICATORS),
       asynq.MaxRetry(0),
       asynq.Timeout(5*time.Minute),
     )
@@ -49,7 +50,7 @@ func (t *IndicatorsTask) Atr(interval string, period int, limit int) error {
     }
     t.AnsqContext.Conn.Enqueue(
       task,
-      asynq.Queue(config.BINANCE_SPOT_INDICATORS),
+      asynq.Queue(config.ASYNQ_QUEUE_INDICATORS),
       asynq.MaxRetry(0),
       asynq.Timeout(5*time.Minute),
     )
@@ -67,7 +68,7 @@ func (t *IndicatorsTask) Zlema(interval string, period int, limit int) error {
     }
     t.AnsqContext.Conn.Enqueue(
       task,
-      asynq.Queue(config.BINANCE_SPOT_INDICATORS),
+      asynq.Queue(config.ASYNQ_QUEUE_INDICATORS),
       asynq.MaxRetry(0),
       asynq.Timeout(5*time.Minute),
     )
@@ -85,7 +86,7 @@ func (t *IndicatorsTask) HaZlema(interval string, period int, limit int) error {
     }
     t.AnsqContext.Conn.Enqueue(
       task,
-      asynq.Queue(config.BINANCE_SPOT_INDICATORS),
+      asynq.Queue(config.ASYNQ_QUEUE_INDICATORS),
       asynq.MaxRetry(0),
       asynq.Timeout(5*time.Minute),
     )
@@ -103,7 +104,7 @@ func (t *IndicatorsTask) Kdj(interval string, longPeriod int, shortPeriod int, l
     }
     t.AnsqContext.Conn.Enqueue(
       task,
-      asynq.Queue(config.BINANCE_SPOT_INDICATORS),
+      asynq.Queue(config.ASYNQ_QUEUE_INDICATORS),
       asynq.MaxRetry(0),
       asynq.Timeout(5*time.Minute),
     )
@@ -121,7 +122,7 @@ func (t *IndicatorsTask) BBands(interval string, period int, limit int) error {
     }
     t.AnsqContext.Conn.Enqueue(
       task,
-      asynq.Queue(config.BINANCE_SPOT_INDICATORS),
+      asynq.Queue(config.ASYNQ_QUEUE_INDICATORS),
       asynq.MaxRetry(0),
       asynq.Timeout(5*time.Minute),
     )
@@ -150,7 +151,7 @@ func (t *IndicatorsTask) VolumeProfile(interval string) error {
     }
     t.AnsqContext.Conn.Enqueue(
       task,
-      asynq.Queue(config.BINANCE_SPOT_INDICATORS),
+      asynq.Queue(config.ASYNQ_QUEUE_INDICATORS),
       asynq.MaxRetry(0),
       asynq.Timeout(5*time.Minute),
     )
@@ -179,7 +180,7 @@ func (t *IndicatorsTask) AndeanOscillator(interval string, period int, length in
     }
     t.AnsqContext.Conn.Enqueue(
       task,
-      asynq.Queue(config.BINANCE_SPOT_INDICATORS),
+      asynq.Queue(config.ASYNQ_QUEUE_INDICATORS),
       asynq.MaxRetry(0),
       asynq.Timeout(5*time.Minute),
     )

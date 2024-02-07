@@ -7,40 +7,52 @@ import (
   "fmt"
   "log"
   "os"
+  "slices"
   "strconv"
   "strings"
   "time"
 
-  "github.com/nats-io/nats.go"
-  "github.com/shopspring/decimal"
+  "github.com/go-redis/redis/v8"
+  "github.com/hibiken/asynq"
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
   "nhooyr.io/websocket"
 
   "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/spot"
+  jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/spot/streams"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
   tradingsRepositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
 )
 
-type TickersHandler struct {
+type KlinesHandler struct {
   Db                 *gorm.DB
-  Ctx                context.Context
+  Rdb                *redis.Client
   Socket             *websocket.Conn
-  Nats               *nats.Conn
+  Asynq              *asynq.Client
+  Ctx                context.Context
+  AnsqContext        *common.AnsqClientContext
+  Job                *jobs.Klines
   TradingsRepository *repositories.TradingsRepository
 }
 
-func NewTickersCommand() *cli.Command {
-  var h TickersHandler
+func NewKlinesCommand() *cli.Command {
+  var h KlinesHandler
   return &cli.Command{
-    Name:  "tickers",
+    Name:  "klines",
     Usage: "",
     Before: func(c *cli.Context) error {
-      h = TickersHandler{
-        Db:   common.NewDB(),
-        Ctx:  context.Background(),
-        Nats: common.NewNats(),
+      h = KlinesHandler{
+        Db:    common.NewDB(),
+        Rdb:   common.NewRedis(),
+        Asynq: common.NewAsynqClient("BINANCE_SPOT"),
+        Ctx:   context.Background(),
+      }
+      h.AnsqContext = &common.AnsqClientContext{
+        Db:   h.Db,
+        Rdb:  h.Rdb,
+        Ctx:  h.Ctx,
+        Conn: h.Asynq,
       }
       h.TradingsRepository = &repositories.TradingsRepository{
         Db: h.Db,
@@ -59,7 +71,12 @@ func NewTickersCommand() *cli.Command {
         log.Fatal("current is less than 1")
         return nil
       }
-      if err := h.Start(current); err != nil {
+      interval := c.Args().Get(1)
+      if !slices.Contains([]string{"1m", "15m", "4h", "1d"}, interval) {
+        log.Fatal("interval not valid")
+        return nil
+      }
+      if err := h.Start(current, interval); err != nil {
         return cli.Exit(err.Error(), 1)
       }
       return nil
@@ -67,49 +84,65 @@ func NewTickersCommand() *cli.Command {
   }
 }
 
-func (h *TickersHandler) read() (message map[string]interface{}, err error) {
+func (h *KlinesHandler) read() (message map[string]interface{}, err error) {
   var data []byte
   _, data, err = h.Socket.Read(h.Ctx)
   json.Unmarshal(data, &message)
   return
 }
 
-func (h *TickersHandler) ping() error {
+func (h *KlinesHandler) ping() error {
   ctx, cancel := context.WithTimeout(h.Ctx, time.Second*1)
   defer cancel()
   return h.Socket.Ping(ctx)
 }
 
-func (h *TickersHandler) handler(message map[string]interface{}) {
+func (h *KlinesHandler) handler(message map[string]interface{}) {
   data := message["data"].(map[string]interface{})
+  kline := data["k"].(map[string]interface{})
   event := data["e"].(string)
 
-  log.Println("ticker", data)
-  if event == "24hrMiniTicker" {
-    open, _ := strconv.ParseFloat(data["o"].(string), 64)
-    price, _ := strconv.ParseFloat(data["c"].(string), 64)
-    high, _ := strconv.ParseFloat(data["h"].(string), 64)
-    low, _ := strconv.ParseFloat(data["l"].(string), 64)
-    volume, _ := strconv.ParseFloat(data["v"].(string), 64)
-    quota, _ := strconv.ParseFloat(data["q"].(string), 64)
-    change, _ := decimal.NewFromFloat(price).Sub(decimal.NewFromFloat(open)).Div(decimal.NewFromFloat(open)).Round(4).Float64()
-    data, _ := json.Marshal(map[string]interface{}{
-      "symbol":    data["s"].(string),
-      "price":     price,
-      "open":      open,
-      "high":      high,
-      "low":       low,
-      "volume":    volume,
-      "quota":     quota,
-      "change":    change,
-      "timestamp": time.Now().Unix(),
-    })
-    h.Nats.Publish(config.NATS_TICKERS_UPDATE, data)
-    h.Nats.Flush()
+  log.Println("kline", data)
+  if event == "kline" {
+    symbol := data["s"].(string)
+    interval := kline["i"].(string)
+    open, _ := strconv.ParseFloat(kline["o"].(string), 64)
+    close, _ := strconv.ParseFloat(kline["c"].(string), 64)
+    high, _ := strconv.ParseFloat(kline["h"].(string), 64)
+    low, _ := strconv.ParseFloat(kline["l"].(string), 64)
+    volume, _ := strconv.ParseFloat(kline["v"].(string), 64)
+    quota, _ := strconv.ParseFloat(kline["q"].(string), 64)
+    timestamp := int64(kline["t"].(float64))
+
+    task, err := h.Job.Update(
+      symbol,
+      interval,
+      open,
+      close,
+      high,
+      low,
+      volume,
+      quota,
+      timestamp,
+    )
+    if err != nil {
+      log.Println("err", err)
+      return
+    }
+    _, err = h.AnsqContext.Conn.Enqueue(
+      task,
+      asynq.Queue(config.ASYNQ_QUEUE_KLINES),
+      asynq.MaxRetry(0),
+      asynq.Timeout(5*time.Minute),
+    )
+    if err != nil {
+      log.Println("err", err)
+      return
+    }
   }
 }
 
-func (h *TickersHandler) Start(current int) (err error) {
+func (h *KlinesHandler) Start(current int, interval string) (err error) {
   log.Println("stream start")
 
   symbols := h.Scan()
@@ -128,7 +161,7 @@ func (h *TickersHandler) Start(current int) (err error) {
   for _, symbol := range symbols[offset:endPos] {
     streams = append(
       streams,
-      fmt.Sprintf("%s@miniTicker", strings.ToLower(symbol)),
+      fmt.Sprintf("%s@kline_%s", strings.ToLower(symbol), interval),
     )
   }
 
@@ -192,21 +225,12 @@ func (h *TickersHandler) Start(current int) (err error) {
   }
 }
 
-func (h *TickersHandler) Scan() []string {
+func (h *KlinesHandler) Scan() []string {
   var symbols []string
   for _, symbol := range h.TradingsRepository.Scan() {
-    if !h.contains(symbols, symbol) {
+    if !slices.Contains(symbols, symbol) {
       symbols = append(symbols, symbol)
     }
   }
   return symbols
-}
-
-func (h *TickersHandler) contains(s []string, str string) bool {
-  for _, v := range s {
-    if v == str {
-      return true
-    }
-  }
-  return false
 }

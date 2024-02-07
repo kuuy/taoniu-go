@@ -35,7 +35,7 @@ func (h *Tickers) Flush(symbols []string) error {
   if h.FlushSubscribe != nil && h.FlushSubscribe.IsValid() {
     h.FlushSubscribe.Unsubscribe()
   }
-  h.FlushSubscribe, _ = h.SocketContext.Nats.Subscribe(config.NATS_TRADES_UPDATE, func(msg *nats.Msg) {
+  h.FlushSubscribe, _ = h.SocketContext.Nats.Subscribe(config.NATS_TICKERS_UPDATE, func(msg *nats.Msg) {
     var payload *TickersUpdatePayload
     json.Unmarshal(msg.Data, &payload)
     if h.contains(symbols, payload.Symbol) {

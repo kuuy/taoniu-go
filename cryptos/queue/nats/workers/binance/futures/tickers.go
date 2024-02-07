@@ -31,7 +31,7 @@ type TickersUpdatePayload struct {
 }
 
 func (h *Tickers) Subscribe() error {
-  h.NatsContext.Conn.Subscribe(config.NATS_TRADES_UPDATE, h.Update)
+  h.NatsContext.Conn.Subscribe(config.NATS_TICKERS_UPDATE, h.Update)
   return nil
 }
 

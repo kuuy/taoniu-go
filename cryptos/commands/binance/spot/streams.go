@@ -14,6 +14,7 @@ func NewStreamCommand() *cli.Command {
     Subcommands: []*cli.Command{
       streams.NewAccountCommand(),
       streams.NewTickersCommand(),
+      streams.NewKlinesCommand(),
     },
   }
 }

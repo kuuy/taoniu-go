@@ -905,6 +905,10 @@ func (r *IndicatorsRepository) AndeanOscillator(symbol string, interval string, 
     ).Float64()
     bulls[i], _ = decimal.NewFromFloat(dn2[i]).Sub(decimal.NewFromFloat(dn1[i]).Pow(decimal.NewFromInt(2))).Float64()
     bears[i], _ = decimal.NewFromFloat(up2[i]).Sub(decimal.NewFromFloat(up1[i]).Pow(decimal.NewFromInt(2))).Float64()
+    if bulls[i] < 0 || bears[i] < 0 {
+      err = errors.New("calc Andean Oscillator Failed")
+      return
+    }
     bulls[i] = math.Sqrt(bulls[i])
     bears[i] = math.Sqrt(bears[i])
     signals[i], _ = decimal.NewFromFloat(signals[i-1]).Add(decimal.NewFromFloat(alphaSignal).Mul(decimal.Max(

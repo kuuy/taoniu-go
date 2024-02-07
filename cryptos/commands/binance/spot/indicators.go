@@ -190,7 +190,7 @@ func NewIndicatorsCommand() *cli.Command {
 }
 
 func (h *IndicatorsHandler) Ranking(interval string) error {
-  log.Println("indicators atr processing...")
+  log.Println("indicators ranking...")
   var symbols []string
   h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
   fields := []string{
@@ -268,7 +268,7 @@ func (h *IndicatorsHandler) Zlema(symbol string, interval string) error {
 }
 
 func (h *IndicatorsHandler) HaZlema(symbol string, interval string) error {
-  log.Println("indicators ha_zlema processing...")
+  log.Println("indicators ha-zlema processing...")
   var symbols []string
   if symbol == "" {
     h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
