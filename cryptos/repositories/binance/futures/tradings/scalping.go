@@ -519,7 +519,7 @@ func (r *ScalpingRepository) Take(scalping *futuresModels.Scalping, price float6
       }
       timestamp := time.Now().Add(-15 * time.Minute).UnixMicro()
       if trading.UpdatedAt.UnixMicro() > timestamp {
-        return errors.New("waiting for long time")
+        return errors.New("waiting for more time")
       }
       sellPrice = trading.SellPrice
     }
@@ -545,7 +545,7 @@ func (r *ScalpingRepository) Take(scalping *futuresModels.Scalping, price float6
       }
       timestamp := time.Now().Add(-15 * time.Minute).UnixMicro()
       if trading.UpdatedAt.UnixMicro() > timestamp {
-        return errors.New("waiting for long time")
+        return errors.New("waiting for more time")
       }
       sellPrice = trading.SellPrice
     }

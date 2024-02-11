@@ -1,11 +1,13 @@
 package markets
 
 import (
-  "gorm.io/gorm"
   "strconv"
   "strings"
-  models "taoniu.local/cryptos/models/binance/spot"
   "time"
+
+  "gorm.io/gorm"
+
+  models "taoniu.local/cryptos/models/binance/spot"
 )
 
 type LiveRepository struct {
