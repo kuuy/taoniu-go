@@ -128,7 +128,7 @@ func (r *OrdersRepository) Create(
   }
   timediff, _ := strconv.ParseInt(value, 10, 64)
 
-  timestamp := time.Now().UnixNano()/int64(time.Millisecond) - timediff
+  timestamp := time.Now().UnixMicro() - timediff
   payload := fmt.Sprintf("%s&timestamp=%v", params.Encode(), timestamp)
 
   block, _ := pem.Decode([]byte(os.Getenv("BINANCE_SPOT_ACCOUNT_API_SECRET")))
@@ -213,7 +213,7 @@ func (r *OrdersRepository) Cancel(id string) error {
   }
   params.Add("recvWindow", "60000")
 
-  timestamp := time.Now().UnixNano() / int64(time.Millisecond)
+  timestamp := time.Now().UnixMicro()
   payload := fmt.Sprintf("%s&timestamp=%v", params.Encode(), timestamp)
 
   block, _ := pem.Decode([]byte(os.Getenv("BINANCE_SPOT_TRADE_API_SECRET")))

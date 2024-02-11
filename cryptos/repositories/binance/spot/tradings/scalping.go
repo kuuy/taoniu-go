@@ -484,6 +484,10 @@ func (r *ScalpingRepository) Take(scalping *spotModels.Scalping, price float64) 
     if price < entryPrice*1.0385 {
       return errors.New("price too low")
     }
+    timestamp := time.Now().Add(-15 * time.Minute).UnixMicro()
+    if trading.UpdatedAt.UnixMicro() > timestamp {
+      return errors.New("waiting for more time")
+    }
     sellPrice = trading.SellPrice
   }
   if sellPrice < price*0.9985 {
@@ -514,19 +518,19 @@ func (r *ScalpingRepository) Take(scalping *spotModels.Scalping, price float64) 
 
 func (r *ScalpingRepository) Close(scalping *spotModels.Scalping) {
   var total int64
-  r.Db.Model(&models.Scalping{}).Where("scalping_id = ? AND status IN ?", scalping.ID, []int{0, 1, 2}).Count(&total)
+  r.Db.Model(&scalping).Where("scalping_id = ? AND status IN ?", scalping.ID, []int{0, 1, 2}).Count(&total)
   if total == 0 {
     return
   }
-  r.Db.Model(&models.Scalping{}).Where("scalping_id = ? AND status = 0", scalping.ID).Count(&total)
+  r.Db.Model(&scalping).Where("scalping_id = ? AND status = 0", scalping.ID).Count(&total)
   if total > 0 {
     return
   }
-  timestamp := time.Now().Add(-15*time.Minute).UnixNano() / int64(time.Millisecond)
+  timestamp := time.Now().Add(-15 * time.Minute).UnixMicro()
   if scalping.Timestamp > timestamp {
     return
   }
-  r.Db.Model(&models.Scalping{}).Where("scalping_id=? AND status IN ?", scalping.ID, []int{0, 1, 2}).Update("status", 5)
+  r.Db.Model(&scalping).Where("scalping_id=? AND status IN ?", scalping.ID, []int{0, 1, 2}).Update("status", 5)
 }
 
 func (r *ScalpingRepository) Pending() map[string]float64 {

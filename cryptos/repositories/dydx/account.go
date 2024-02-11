@@ -180,7 +180,7 @@ func (r *AccountRepository) Request() (account *AccountInfo, err error) {
 
   path := fmt.Sprintf("/v3/accounts/%s", accountID)
 
-  isoTimestamp := time.Unix(0, r.Timestamp()*int64(time.Millisecond)).UTC().Format("2006-01-02T15:04:05.000Z")
+  isoTimestamp := time.Unix(0, r.Timestamp()).UTC().Format("2006-01-02T15:04:05.000Z")
   payload := fmt.Sprintf("%sGET%s", isoTimestamp, path)
 
   secret, _ := base64.URLEncoding.DecodeString(os.Getenv("DYDX_ACCOUNT_API_SECRET"))
@@ -244,7 +244,7 @@ func (r *AccountRepository) Request() (account *AccountInfo, err error) {
 }
 
 func (r *AccountRepository) Timestamp() int64 {
-  timestamp := time.Now().UnixMilli()
+  timestamp := time.Now().UnixMicro()
   value, err := r.Rdb.HGet(r.Ctx, "dydx:server", "timediff").Result()
   if err != nil {
     return timestamp

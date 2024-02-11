@@ -68,7 +68,7 @@ func (h *AccountHandler) ping() error {
 
 func (h *AccountHandler) handler(message map[string]interface{}) {
   if message["type"] == "connected" {
-    isoTimestamp := time.Unix(0, h.Timestamp()*int64(time.Millisecond)).UTC().Format("2006-01-02T15:04:05.000Z")
+    isoTimestamp := time.Unix(0, h.Timestamp()).UTC().Format("2006-01-02T15:04:05.000Z")
     payload := fmt.Sprintf("%sGET/ws/accounts", isoTimestamp)
     secret, _ := base64.URLEncoding.DecodeString(os.Getenv("DYDX_TRADE_API_SECRET"))
     mac := hmac.New(sha256.New, secret)
@@ -166,7 +166,7 @@ func (h *AccountHandler) contains(s []string, str string) bool {
 }
 
 func (h *AccountHandler) Timestamp() int64 {
-  timestamp := time.Now().UnixMilli()
+  timestamp := time.Now().UnixMicro()
   value, err := h.Rdb.HGet(h.Ctx, "dydx:server", "timediff").Result()
   if err != nil {
     return timestamp

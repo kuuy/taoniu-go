@@ -151,7 +151,7 @@ func (r *AccountRepository) Flush() error {
       entryQuantity = -entryQuantity
     }
 
-    timestamp := time.Now().UnixNano() / int64(time.Millisecond)
+    timestamp := time.Now().UnixMicro()
 
     var entity models.Position
     result := r.Db.Where(
@@ -225,7 +225,7 @@ func (r *AccountRepository) Request() (*AccountInfo, error) {
   }
   timediff, _ := strconv.ParseInt(value, 10, 64)
 
-  timestamp := time.Now().UnixNano()/int64(time.Millisecond) - timediff
+  timestamp := time.Now().UnixMicro() - timediff
   params.Add("timestamp", fmt.Sprintf("%v", timestamp))
 
   mac := hmac.New(sha256.New, []byte(os.Getenv("BINANCE_FUTURES_ACCOUNT_API_SECRET")))

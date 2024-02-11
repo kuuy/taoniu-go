@@ -517,6 +517,10 @@ func (r *ScalpingRepository) Take(scalping *futuresModels.Scalping, price float6
       if price < entryPrice*1.0385 {
         return errors.New("price too low")
       }
+      timestamp := time.Now().Add(-15 * time.Minute).UnixMicro()
+      if trading.UpdatedAt.UnixMicro() > timestamp {
+        return errors.New("waiting for long time")
+      }
       sellPrice = trading.SellPrice
     }
     if sellPrice < price*0.9985 {
@@ -538,6 +542,10 @@ func (r *ScalpingRepository) Take(scalping *futuresModels.Scalping, price float6
     } else {
       if price > entryPrice*0.9615 {
         return errors.New("price too high")
+      }
+      timestamp := time.Now().Add(-15 * time.Minute).UnixMicro()
+      if trading.UpdatedAt.UnixMicro() > timestamp {
+        return errors.New("waiting for long time")
       }
       sellPrice = trading.SellPrice
     }
@@ -578,7 +586,7 @@ func (r *ScalpingRepository) Close(scalping *futuresModels.Scalping) {
   if total > 0 {
     return
   }
-  timestamp := time.Now().Add(-15*time.Minute).UnixNano() / int64(time.Millisecond)
+  timestamp := time.Now().Add(-15 * time.Minute).UnixMicro()
   if scalping.Timestamp > timestamp {
     return
   }

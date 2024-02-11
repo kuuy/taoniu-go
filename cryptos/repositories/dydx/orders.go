@@ -158,7 +158,7 @@ func (r *OrdersRepository) Open(symbol string) (err error) {
 
   path := fmt.Sprintf("/v3/active-orders?%s", q.Encode())
 
-  isoTimestamp := time.Unix(0, r.Timestamp()*int64(time.Millisecond)).UTC().Format("2006-01-02T15:04:05.000Z")
+  isoTimestamp := time.Unix(0, r.Timestamp()).UTC().Format("2006-01-02T15:04:05.000Z")
   payload := fmt.Sprintf("%sGET%s", isoTimestamp, path)
 
   secret, _ := base64.URLEncoding.DecodeString(os.Getenv("DYDX_TRADE_API_SECRET"))
@@ -265,7 +265,7 @@ func (r *OrdersRepository) Create(
     return
   }
 
-  isoTimestamp := time.Unix(0, r.Timestamp()*int64(time.Millisecond)).UTC().Format("2006-01-02T15:04:05.000Z")
+  isoTimestamp := time.Unix(0, r.Timestamp()).UTC().Format("2006-01-02T15:04:05.000Z")
   payload := fmt.Sprintf("%sPOST%s%s", isoTimestamp, path, string(body))
   log.Println("payload", payload)
 
@@ -380,7 +380,7 @@ func (r *OrdersRepository) Cancel(orderID string) (err error) {
 
   path := fmt.Sprintf("/v3/orders/%s", orderID)
 
-  isoTimestamp := time.Unix(0, r.Timestamp()*int64(time.Millisecond)).UTC().Format("2006-01-02T15:04:05.000Z")
+  isoTimestamp := time.Unix(0, r.Timestamp()).UTC().Format("2006-01-02T15:04:05.000Z")
   payload := fmt.Sprintf("%sDELETE%s", isoTimestamp, path)
 
   secret, _ := base64.URLEncoding.DecodeString(os.Getenv("DYDX_TRADE_API_SECRET"))
@@ -440,7 +440,7 @@ func (r *OrdersRepository) Flush(orderID string) (err error) {
 
   path := fmt.Sprintf("/v3/orders/%s", orderID)
 
-  isoTimestamp := time.Unix(0, r.Timestamp()*int64(time.Millisecond)).UTC().Format("2006-01-02T15:04:05.000Z")
+  isoTimestamp := time.Unix(0, r.Timestamp()).UTC().Format("2006-01-02T15:04:05.000Z")
   payload := fmt.Sprintf("%sGET%s", isoTimestamp, path)
 
   secret, _ := base64.URLEncoding.DecodeString(os.Getenv("DYDX_TRADE_API_SECRET"))

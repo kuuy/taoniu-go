@@ -542,7 +542,7 @@ func (r *TriggersRepository) Close(trigger *dydxModels.Trigger) {
   if total > 0 {
     return
   }
-  timestamp := time.Now().Add(-15*time.Minute).UnixNano() / int64(time.Millisecond)
+  timestamp := time.Now().Add(-15 * time.Minute).UnixMicro()
   if trigger.Timestamp > timestamp {
     return
   }

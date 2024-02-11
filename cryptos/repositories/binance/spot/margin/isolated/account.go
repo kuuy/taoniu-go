@@ -208,7 +208,7 @@ func (r *AccountRepository) Transfer(
   params.Add("amount", strconv.FormatFloat(quantity, 'f', -1, 64))
   params.Add("recvWindow", "60000")
 
-  timestamp := time.Now().UnixNano() / int64(time.Millisecond)
+  timestamp := time.Now().UnixMicro()
   payload := fmt.Sprintf("%s&timestamp=%v", params.Encode(), timestamp)
 
   block, _ := pem.Decode([]byte(os.Getenv("BINANCE_FUND_API_SECRET")))
@@ -287,7 +287,7 @@ func (r *AccountRepository) Loan(
   }
   params.Add("recvWindow", "60000")
 
-  timestamp := time.Now().UnixNano() / int64(time.Millisecond)
+  timestamp := time.Now().UnixMicro()
   payload := fmt.Sprintf("%s&timestamp=%v", params.Encode(), timestamp)
 
   block, _ := pem.Decode([]byte(os.Getenv("BINANCE_FUND_API_SECRET")))
@@ -366,7 +366,7 @@ func (r *AccountRepository) Repay(
   }
   params.Add("recvWindow", "60000")
 
-  timestamp := time.Now().UnixNano() / int64(time.Millisecond)
+  timestamp := time.Now().UnixMicro()
   payload := fmt.Sprintf("%s&timestamp=%v", params.Encode(), timestamp)
 
   block, _ := pem.Decode([]byte(os.Getenv("BINANCE_FUND_API_SECRET")))

@@ -40,7 +40,7 @@ func (h *Positions) Flush(ctx context.Context, t *asynq.Task) error {
     h.AnsqContext.Ctx,
     fmt.Sprintf("locks:binance:spot:positions:flush:%s", payload.Symbol),
   )
-  if !mutex.Lock(30 * time.Second) {
+  if !mutex.Lock(3 * time.Minute) {
     return nil
   }
   defer mutex.Unlock()

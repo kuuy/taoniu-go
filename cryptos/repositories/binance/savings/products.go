@@ -84,7 +84,7 @@ func (r *ProductsRepository) Purchase(productId string, amount float64) (int64, 
   params.Add("amount", strconv.FormatFloat(amount, 'f', -1, 64))
   params.Add("recvWindow", "60000")
 
-  timestamp := time.Now().UnixNano() / int64(time.Millisecond)
+  timestamp := time.Now().UnixMicro()
   payload := fmt.Sprintf("%s&timestamp=%v", params.Encode(), timestamp)
 
   block, _ := pem.Decode([]byte(os.Getenv("BINANCE_FUND_API_SECRET")))

@@ -357,7 +357,7 @@ func (r *OrdersRepository) Take(
   }
   timediff, _ := strconv.ParseInt(value, 10, 64)
 
-  timestamp := time.Now().UnixNano()/int64(time.Millisecond) - timediff
+  timestamp := time.Now().UnixMicro() - timediff
   payload := fmt.Sprintf("%s&timestamp=%v", params.Encode(), timestamp)
 
   data := url.Values{}
@@ -466,7 +466,7 @@ func (r *OrdersRepository) Stop(
   }
   timediff, _ := strconv.ParseInt(value, 10, 64)
 
-  timestamp := time.Now().UnixNano()/int64(time.Millisecond) - timediff
+  timestamp := time.Now().UnixMicro() - timediff
   payload := fmt.Sprintf("%s&timestamp=%v", params.Encode(), timestamp)
 
   data := url.Values{}
@@ -558,7 +558,7 @@ func (r *OrdersRepository) Cancel(symbol string, orderId int64) error {
   }
   timediff, _ := strconv.ParseInt(value, 10, 64)
 
-  timestamp := time.Now().UnixNano()/int64(time.Millisecond) - timediff
+  timestamp := time.Now().UnixMicro() - timediff
   payload := fmt.Sprintf("%s&timestamp=%v", params.Encode(), timestamp)
 
   data := url.Values{}

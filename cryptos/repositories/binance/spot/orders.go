@@ -159,7 +159,7 @@ func (r *OrdersRepository) Sync(symbol string, startTime int64, limit int) error
   }
   timediff, _ := strconv.ParseInt(value, 10, 64)
 
-  timestamp := time.Now().UnixNano()/int64(time.Millisecond) - timediff
+  timestamp := time.Now().UnixMicro() - timediff
   params.Add("timestamp", fmt.Sprintf("%v", timestamp))
 
   mac := hmac.New(sha256.New, []byte(os.Getenv("BINANCE_SPOT_ACCOUNT_API_SECRET")))
@@ -255,7 +255,7 @@ func (r *OrdersRepository) Create(
   }
   timediff, _ := strconv.ParseInt(value, 10, 64)
 
-  timestamp := time.Now().UnixNano()/int64(time.Millisecond) - timediff
+  timestamp := time.Now().UnixMicro() - timediff
   payload := fmt.Sprintf("%s&timestamp=%v", params.Encode(), timestamp)
 
   block, _ := pem.Decode([]byte(os.Getenv("BINANCE_SPOT_TRADE_API_SECRET")))
@@ -336,7 +336,7 @@ func (r *OrdersRepository) Cancel(symbol string, orderId int64) error {
   }
   timediff, _ := strconv.ParseInt(value, 10, 64)
 
-  timestamp := time.Now().UnixNano()/int64(time.Millisecond) - timediff
+  timestamp := time.Now().UnixMicro() - timediff
   payload := fmt.Sprintf("%s&timestamp=%v", params.Encode(), timestamp)
 
   data := url.Values{}

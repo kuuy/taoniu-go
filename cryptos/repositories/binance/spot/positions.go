@@ -281,6 +281,9 @@ func (r *PositionsRepository) Flush(position *models.Position) (err error) {
     }
     position.Timestamp = order.UpdateTime
   }
+  if position.EntryPrice == entryPrice && position.EntryQuantity == entryQuantity && position.EntryAmount == entryAmount {
+    return
+  }
   values := map[string]interface{}{
     "entry_price":    entryPrice,
     "entry_quantity": entryQuantity,
