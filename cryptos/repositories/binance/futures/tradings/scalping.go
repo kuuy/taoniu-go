@@ -370,7 +370,7 @@ func (r *ScalpingRepository) Place(planID string) error {
         sellPrice = buyPrice * 1.0135
       }
     }
-    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
   } else {
     if plan.Amount > 15 {
       if plan.Interval == "1m" {
@@ -393,7 +393,7 @@ func (r *ScalpingRepository) Place(planID string) error {
         sellPrice = buyPrice * 0.9865
       }
     }
-    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
+    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
   }
 
   buyQuantity, _ := decimal.NewFromFloat(notional).Div(decimal.NewFromFloat(buyPrice)).Float64()
@@ -512,21 +512,21 @@ func (r *ScalpingRepository) Take(scalping *futuresModels.Scalping, price float6
       if price < entryPrice*1.0385 {
         return errors.New("price too low")
       }
+      timestamp := time.Now().Add(-15 * time.Minute).UnixMicro()
+      if trading.UpdatedAt.UnixMicro() > timestamp {
+        return errors.New("waiting for more time")
+      }
       sellPrice = entryPrice * 1.0385
     } else {
       if price < entryPrice*1.0385 {
         return errors.New("price too low")
-      }
-      timestamp := time.Now().Add(-15 * time.Minute).UnixMicro()
-      if trading.CreatedAt.UnixMicro() > timestamp {
-        return errors.New("waiting for more time")
       }
       sellPrice = trading.SellPrice
     }
     if sellPrice < price*0.9985 {
       sellPrice = price * 0.9985
     }
-    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
   }
 
   if scalping.Side == 2 {
@@ -538,21 +538,21 @@ func (r *ScalpingRepository) Take(scalping *futuresModels.Scalping, price float6
       if price > entryPrice*0.9615 {
         return errors.New("price too high")
       }
+      timestamp := time.Now().Add(-15 * time.Minute).UnixMicro()
+      if trading.UpdatedAt.UnixMicro() > timestamp {
+        return errors.New("waiting for more time")
+      }
       sellPrice = entryPrice * 0.9615
     } else {
       if price > entryPrice*0.9615 {
         return errors.New("price too high")
-      }
-      timestamp := time.Now().Add(-15 * time.Minute).UnixMicro()
-      if trading.CreatedAt.UnixMicro() > timestamp {
-        return errors.New("waiting for more time")
       }
       sellPrice = trading.SellPrice
     }
     if sellPrice > price*1.0015 {
       sellPrice = price * 1.0015
     }
-    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
+    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
   }
 
   orderID, err := r.OrdersRepository.Create(trading.Symbol, positionSide, side, sellPrice, trading.SellQuantity)

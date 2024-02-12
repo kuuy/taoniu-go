@@ -245,9 +245,9 @@ func (r *TriggersRepository) Place(id string) error {
 
   sellPrice := r.PositionRepository.SellPrice(trigger.Side, entryPrice, entryAmount)
   if trigger.Side == 1 {
-    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
-  } else {
     sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
+  } else {
+    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
   }
 
   if !r.CanBuy(trigger, buyPrice) {
@@ -507,7 +507,7 @@ func (r *TriggersRepository) Take(trigger *futuresModels.Trigger, price float64)
     if sellPrice < price*0.9985 {
       sellPrice = price * 0.9985
     }
-    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
   }
 
   if trigger.Side == 2 {
@@ -532,7 +532,7 @@ func (r *TriggersRepository) Take(trigger *futuresModels.Trigger, price float64)
     if sellPrice > price*1.0015 {
       sellPrice = price * 1.0015
     }
-    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
+    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
   }
 
   orderID, err := r.OrdersRepository.Create(trading.Symbol, positionSide, side, sellPrice, trading.SellQuantity)

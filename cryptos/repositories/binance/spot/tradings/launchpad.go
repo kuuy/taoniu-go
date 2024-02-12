@@ -408,7 +408,7 @@ func (r *LaunchpadRepository) Take(launchpad *spotModels.Launchpad, price float6
   } else {
     sellPrice = trading.SellPrice
   }
-  sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+  sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
 
   orderID, err := r.OrdersRepository.Create(trading.Symbol, "SELL", sellPrice, trading.SellQuantity)
   if err != nil {

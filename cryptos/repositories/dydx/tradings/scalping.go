@@ -371,7 +371,7 @@ func (r *ScalpingRepository) Place(planID string) error {
         sellPrice = buyPrice * 1.0135
       }
     }
-    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
   } else {
     if plan.Amount > 15 {
       if plan.Interval == "1m" {
@@ -394,7 +394,7 @@ func (r *ScalpingRepository) Place(planID string) error {
         sellPrice = buyPrice * 0.9865
       }
     }
-    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
+    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
   }
 
   buyQuantity, _ := decimal.NewFromFloat(5).Div(decimal.NewFromFloat(buyPrice)).Float64()
@@ -512,7 +512,7 @@ func (r *ScalpingRepository) Take(scalping *dydxModels.Scalping, price float64) 
     if sellPrice < price*0.9985 {
       sellPrice = price * 0.9985
     }
-    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
   }
 
   if scalping.Side == 2 {
@@ -531,7 +531,7 @@ func (r *ScalpingRepository) Take(scalping *dydxModels.Scalping, price float64) 
     if sellPrice > price*1.0015 {
       sellPrice = price * 1.0015
     }
-    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
+    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
   }
 
   orderID, err := r.OrdersRepository.Create(trading.Symbol, side, sellPrice, trading.SellQuantity, positionSide)

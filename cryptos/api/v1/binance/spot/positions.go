@@ -146,7 +146,7 @@ func (h *PositionsHandler) Calc(
     entryQuantity = buyQuantity
     entryAmount = buyAmount
     sellPrice = h.Repository.SellPrice(entryPrice, entryAmount)
-    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
     takePrice = h.Repository.TakePrice(entryPrice, tickSize)
   } else {
     takePrice = h.Repository.TakePrice(entryPrice, tickSize)
