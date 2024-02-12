@@ -388,6 +388,60 @@ func (r *StrategiesRepository) BBands(symbol string, interval string) error {
   return nil
 }
 
+func (r *StrategiesRepository) IchimokuCloud(symbol string, interval string) error {
+  indicator := "ichimoku_cloud"
+  val, err := r.Rdb.HGet(
+    r.Ctx,
+    fmt.Sprintf(
+      "binance:spot:indicators:%s:%s:%s",
+      interval,
+      symbol,
+      time.Now().Format("0102"),
+    ),
+    indicator,
+  ).Result()
+  if err != nil {
+    return err
+  }
+  data := strings.Split(val, ",")
+
+  signal, _ := strconv.Atoi(data[0])
+  price, _ := strconv.ParseFloat(data[6], 64)
+  timestamp, _ := strconv.ParseInt(data[7], 10, 64)
+
+  if signal == 0 {
+    return nil
+  }
+  var entity models.Strategy
+  result := r.Db.Where(
+    "symbol=? AND indicator=? AND interval=?",
+    symbol,
+    indicator,
+    interval,
+  ).Order(
+    "timestamp DESC",
+  ).Take(&entity)
+  if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+    if entity.Signal == signal {
+      return nil
+    }
+    if entity.Timestamp >= timestamp {
+      return nil
+    }
+  }
+  entity = models.Strategy{
+    ID:        xid.New().String(),
+    Symbol:    symbol,
+    Indicator: indicator,
+    Interval:  interval,
+    Price:     price,
+    Signal:    signal,
+    Timestamp: timestamp,
+  }
+  r.Db.Create(&entity)
+  return nil
+}
+
 func (r *StrategiesRepository) Filters(symbol string) (tickSize float64, stepSize float64, err error) {
   entity, err := r.SymbolsRepository.Get(symbol)
   if err != nil {

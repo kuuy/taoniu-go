@@ -130,6 +130,24 @@ func (t *IndicatorsTask) BBands(interval string, period int, limit int) error {
   return nil
 }
 
+func (t *IndicatorsTask) IchimokuCloud(interval string) error {
+  var symbols []string
+  t.AnsqContext.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+  for _, symbol := range symbols {
+    task, err := t.Job.IchimokuCloud(symbol, interval)
+    if err != nil {
+      return err
+    }
+    t.AnsqContext.Conn.Enqueue(
+      task,
+      asynq.Queue(config.BINANCE_FUTURES_INDICATORS),
+      asynq.MaxRetry(0),
+      asynq.Timeout(5*time.Minute),
+    )
+  }
+  return nil
+}
+
 func (t *IndicatorsTask) VolumeProfile(interval string) error {
   var limit int
   if interval == "1m" {
@@ -195,6 +213,7 @@ func (t *IndicatorsTask) Flush(interval string) error {
   t.HaZlema(interval, 14, 100)
   t.Kdj(interval, 9, 3, 100)
   t.BBands(interval, 14, 100)
+  t.IchimokuCloud(interval)
   t.VolumeProfile(interval)
   t.AndeanOscillator(interval, 90, 5)
   return nil

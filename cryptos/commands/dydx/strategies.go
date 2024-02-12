@@ -154,7 +154,7 @@ func (h *StrategiesHandler) Zlema(symbol string, interval string) error {
 }
 
 func (h *StrategiesHandler) HaZlema(symbol string, interval string) error {
-  log.Println("strategies haZlema strategy...")
+  log.Println("strategies haZlema calc...")
   var symbols []string
   if symbol == "" {
     symbols = h.Repository.MarketsRepository.Symbols()
@@ -168,7 +168,7 @@ func (h *StrategiesHandler) HaZlema(symbol string, interval string) error {
 }
 
 func (h *StrategiesHandler) Kdj(symbol string, interval string) error {
-  log.Println("strategies zlema strategy...")
+  log.Println("strategies zlema calc...")
   var symbols []string
   if symbol == "" {
     symbols = h.Repository.MarketsRepository.Symbols()
@@ -182,7 +182,7 @@ func (h *StrategiesHandler) Kdj(symbol string, interval string) error {
 }
 
 func (h *StrategiesHandler) BBands(symbol string, interval string) error {
-  log.Println("strategies bbands strategy...")
+  log.Println("strategies bbands calc...")
   var symbols []string
   if symbol == "" {
     symbols = h.Repository.MarketsRepository.Symbols()

@@ -646,6 +646,118 @@ func (r *IndicatorsRepository) BBands(symbol string, interval string, period int
   return nil
 }
 
+func (r *IndicatorsRepository) IchimokuCloud(symbol string, interval string, tenkanPeriod int, kijunPeriod int, senkouPeriod int, limit int) error {
+  var klines []*models.Kline
+  r.Db.Select(
+    []string{"open", "close", "high", "low", "timestamp"},
+  ).Where(
+    "symbol=? AND interval=?", symbol, interval,
+  ).Order(
+    "timestamp desc",
+  ).Limit(
+    limit,
+  ).Find(
+    &klines,
+  )
+
+  var prices []decimal.Decimal
+  var timestamp int64
+  for _, item := range klines {
+    if timestamp > 0 && (timestamp-item.Timestamp) != r.Timestep(interval) {
+      return errors.New(fmt.Sprintf("[%s] %s klines lost", symbol, interval))
+    }
+    avgPrice, _ := decimal.Avg(
+      decimal.NewFromFloat(item.Close),
+      decimal.NewFromFloat(item.High),
+      decimal.NewFromFloat(item.Low),
+    ).Float64()
+    prices = append(prices, decimal.NewFromFloat(avgPrice))
+    timestamp = item.Timestamp
+  }
+
+  if len(klines) < limit {
+    return errors.New(fmt.Sprintf("[%s] %s klines not enough", symbol, interval))
+  }
+
+  if klines[0].Timestamp < r.Timestamp(interval)-60000 {
+    return errors.New(fmt.Sprintf("[%s] waiting for %s klines flush", symbol, interval))
+  }
+
+  lastConversionLine, _ := decimal.Avg(prices[1], prices[2:tenkanPeriod]...).Float64()
+  lastBaseLine, _ := decimal.Avg(prices[1], prices[2:kijunPeriod]...).Float64()
+
+  conversionLine, _ := decimal.Avg(prices[0], prices[1:tenkanPeriod]...).Float64()
+  baseLine, _ := decimal.Avg(prices[0], prices[1:kijunPeriod]...).Float64()
+  senkouSpanA := (conversionLine + baseLine) / 2
+  senkouSpanB, _ := decimal.Avg(prices[0], prices[1:senkouPeriod]...).Float64()
+  chikouSpan, _ := decimal.Avg(
+    decimal.Min(prices[0], prices[1:kijunPeriod]...),
+    decimal.Max(prices[0], prices[1:kijunPeriod]...),
+  ).Float64()
+
+  var signal int
+  if conversionLine > baseLine && lastConversionLine < lastBaseLine {
+    signal = 1
+  }
+  if conversionLine < baseLine && lastConversionLine > lastBaseLine {
+    signal = 2
+  }
+
+  day, err := r.Day(klines[0].Timestamp / 1000)
+  if err != nil {
+    return err
+  }
+
+  redisKey := fmt.Sprintf(
+    "binance:futures:indicators:%s:%s:%s",
+    interval,
+    symbol,
+    day,
+  )
+
+  if signal == 0 {
+    val, _ := r.Rdb.HGet(
+      r.Ctx,
+      redisKey,
+      "ichimoku_cloud",
+    ).Result()
+    data := strings.Split(val, ",")
+    if len(data) == 8 {
+      lastConversionLine, _ = strconv.ParseFloat(data[1], 64)
+      lastBaseLine, _ = strconv.ParseFloat(data[2], 64)
+      if conversionLine > baseLine && lastConversionLine < lastBaseLine {
+        signal = 1
+      }
+      if conversionLine < baseLine && lastConversionLine > lastBaseLine {
+        signal = 2
+      }
+    }
+  }
+
+  r.Rdb.HSet(
+    r.Ctx,
+    redisKey,
+    "ichimoku_cloud",
+    fmt.Sprintf(
+      "%d,%s,%s,%s,%s,%s,%s,%d",
+      signal,
+      strconv.FormatFloat(conversionLine, 'f', -1, 64),
+      strconv.FormatFloat(baseLine, 'f', -1, 64),
+      strconv.FormatFloat(senkouSpanA, 'f', -1, 64),
+      strconv.FormatFloat(senkouSpanB, 'f', -1, 64),
+      strconv.FormatFloat(chikouSpan, 'f', -1, 64),
+      strconv.FormatFloat(klines[0].Close, 'f', -1, 64),
+      klines[0].Timestamp,
+    ),
+  )
+  ttl, _ := r.Rdb.TTL(r.Ctx, redisKey).Result()
+  if -1 == ttl.Nanoseconds() {
+    r.Rdb.Expire(r.Ctx, redisKey, time.Hour*24)
+  }
+
+  return nil
+}
+
 func (r *IndicatorsRepository) VolumeProfile(symbol string, interval string, limit int) error {
   tickSize, _, err := r.Filters(symbol)
   if err != nil {

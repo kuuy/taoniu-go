@@ -179,6 +179,33 @@ func (h *Indicators) BBands(ctx context.Context, t *asynq.Task) error {
   return nil
 }
 
+func (h *Indicators) IchimokuCloud(ctx context.Context, t *asynq.Task) error {
+  var payload IndicatorPayload
+  json.Unmarshal(t.Payload(), &payload)
+
+  mutex := common.NewMutex(
+    h.AnsqContext.Rdb,
+    h.AnsqContext.Ctx,
+    fmt.Sprintf("locks:binance:spot:indicators:ichimoku_cloud:%s:%s", payload.Symbol, payload.Interval),
+  )
+  if !mutex.Lock(30 * time.Second) {
+    return nil
+  }
+  defer mutex.Unlock()
+
+  if payload.Interval == "1m" {
+    h.Repository.IchimokuCloud(payload.Symbol, payload.Interval, 129, 374, 748, 1440)
+  } else if payload.Interval == "15m" {
+    h.Repository.IchimokuCloud(payload.Symbol, payload.Interval, 60, 174, 349, 672)
+  } else if payload.Interval == "4h" {
+    h.Repository.IchimokuCloud(payload.Symbol, payload.Interval, 11, 32, 65, 126)
+  } else {
+    h.Repository.IchimokuCloud(payload.Symbol, payload.Interval, 9, 26, 52, 100)
+  }
+
+  return nil
+}
+
 func (h *Indicators) VolumeProfile(ctx context.Context, t *asynq.Task) error {
   var payload VolumeProfilePayload
   json.Unmarshal(t.Payload(), &payload)
@@ -223,6 +250,7 @@ func (h *Indicators) Register() error {
   h.AnsqContext.Mux.HandleFunc("binance:spot:indicators:ha_zlema", h.HaZlema)
   h.AnsqContext.Mux.HandleFunc("binance:spot:indicators:kdj", h.Kdj)
   h.AnsqContext.Mux.HandleFunc("binance:spot:indicators:bbands", h.BBands)
+  h.AnsqContext.Mux.HandleFunc("binance:spot:indicators:ichimoku_cloud", h.IchimokuCloud)
   h.AnsqContext.Mux.HandleFunc("binance:spot:indicators:pivot", h.Pivot)
   h.AnsqContext.Mux.HandleFunc("binance:spot:indicators:volume_profile", h.VolumeProfile)
   h.AnsqContext.Mux.HandleFunc("binance:spot:indicators:andean_oscillator", h.AndeanOscillator)

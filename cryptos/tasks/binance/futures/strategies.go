@@ -112,11 +112,30 @@ func (t *StrategiesTask) BBands(interval string) error {
   return nil
 }
 
+func (t *StrategiesTask) IchimokuCloud(interval string) error {
+  var symbols []string
+  t.AnsqContext.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+  for _, symbol := range symbols {
+    task, err := t.Job.IchimokuCloud(symbol, interval)
+    if err != nil {
+      return err
+    }
+    t.AnsqContext.Conn.Enqueue(
+      task,
+      asynq.Queue(config.BINANCE_FUTURES_STRATEGIES),
+      asynq.MaxRetry(0),
+      asynq.Timeout(5*time.Minute),
+    )
+  }
+  return nil
+}
+
 func (t *StrategiesTask) Flush(interval string) error {
   t.Atr(interval)
   t.Zlema(interval)
   t.HaZlema(interval)
   t.Kdj(interval)
   t.BBands(interval)
+  t.IchimokuCloud(interval)
   return nil
 }

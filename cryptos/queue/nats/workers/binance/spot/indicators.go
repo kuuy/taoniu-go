@@ -57,6 +57,18 @@ func (h *Indicators) BBands(symbol string, interval string) error {
   return h.Repository.BBands(symbol, interval, 14, 100)
 }
 
+func (h *Indicators) IchimokuCloud(symbol string, interval string) error {
+  if interval == "1m" {
+    return h.Repository.IchimokuCloud(symbol, interval, 129, 374, 748, 1440)
+  } else if interval == "15m" {
+    return h.Repository.IchimokuCloud(symbol, interval, 60, 174, 349, 672)
+  } else if interval == "4h" {
+    return h.Repository.IchimokuCloud(symbol, interval, 11, 32, 65, 126)
+  } else {
+    return h.Repository.IchimokuCloud(symbol, interval, 9, 26, 52, 100)
+  }
+}
+
 func (h *Indicators) VolumeProfile(symbol string, interval string) error {
   var limit int
   if interval == "1m" {
@@ -95,6 +107,7 @@ func (h *Indicators) Flush(m *nats.Msg) {
   h.HaZlema(payload.Symbol, payload.Interval)
   h.Kdj(payload.Symbol, payload.Interval)
   h.BBands(payload.Symbol, payload.Interval)
+  h.IchimokuCloud(payload.Symbol, payload.Interval)
   h.VolumeProfile(payload.Symbol, payload.Interval)
   h.AndeanOscillator(payload.Symbol, payload.Interval, 50, 9)
 

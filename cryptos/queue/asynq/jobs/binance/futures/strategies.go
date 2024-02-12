@@ -51,3 +51,11 @@ func (h *Strategies) BBands(symbol string, interval string) (*asynq.Task, error)
   }
   return asynq.NewTask("binance:futures:strategies:bbands", payload), nil
 }
+
+func (h *Strategies) IchimokuCloud(symbol string, interval string) (*asynq.Task, error) {
+  payload, err := json.Marshal(StrategyPayload{symbol, interval})
+  if err != nil {
+    return nil, err
+  }
+  return asynq.NewTask("binance:futures:strategies:ichimoku_cloud", payload), nil
+}

@@ -27,6 +27,11 @@ type KdjPayload struct {
   Limit       int
 }
 
+type IchimokuCloud struct {
+  Symbol   string
+  Interval string
+}
+
 type VolumeProfilePayload struct {
   Symbol   string
   Interval string
@@ -87,6 +92,14 @@ func (h *Indicators) BBands(symbol string, interval string, period int, limit in
     return nil, err
   }
   return asynq.NewTask("binance:spot:indicators:bbands", payload), nil
+}
+
+func (h *Indicators) IchimokuCloud(symbol string, interval string) (*asynq.Task, error) {
+  payload, err := json.Marshal(IchimokuCloud{symbol, interval})
+  if err != nil {
+    return nil, err
+  }
+  return asynq.NewTask("binance:spot:indicators:ichimoku_cloud", payload), nil
 }
 
 func (h *Indicators) VolumeProfile(symbol string, interval string, limit int) (*asynq.Task, error) {

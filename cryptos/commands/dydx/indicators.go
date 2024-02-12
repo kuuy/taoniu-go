@@ -199,7 +199,7 @@ func (h *IndicatorsHandler) Ranking(interval string) error {
 }
 
 func (h *IndicatorsHandler) Pivot(symbol string, interval string) error {
-  log.Println("indicators pivot indicator...")
+  log.Println("indicators pivot calc...")
   var symbols []string
   if symbol == "" {
     symbols = h.Repository.MarketsRepository.Symbols()
@@ -267,7 +267,7 @@ func (h *IndicatorsHandler) HaZlema(symbol string, interval string) error {
 }
 
 func (h *IndicatorsHandler) Kdj(symbol string, interval string) error {
-  log.Println("indicators kdj indicator...")
+  log.Println("indicators kdj calc...")
   var symbols []string
   if symbol == "" {
     symbols = h.Repository.MarketsRepository.Symbols()
@@ -284,7 +284,7 @@ func (h *IndicatorsHandler) Kdj(symbol string, interval string) error {
 }
 
 func (h *IndicatorsHandler) BBands(symbol string, interval string) error {
-  log.Println("indicators boll bands indicator...")
+  log.Println("indicators boll bands calc...")
   var symbols []string
   if symbol == "" {
     symbols = h.Repository.MarketsRepository.Symbols()
@@ -301,7 +301,7 @@ func (h *IndicatorsHandler) BBands(symbol string, interval string) error {
 }
 
 func (h *IndicatorsHandler) VolumeProfile(symbol string, interval string) error {
-  log.Println("indicators volume profile indicator...")
+  log.Println("indicators volume profile calc...")
   var symbols []string
   if symbol == "" {
     symbols = h.Repository.MarketsRepository.Symbols()

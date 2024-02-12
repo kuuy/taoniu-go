@@ -122,6 +122,22 @@ func NewStrategiesCommand() *cli.Command {
           return nil
         },
       },
+      {
+        Name:  "ichimoku-cloud",
+        Usage: "",
+        Action: func(c *cli.Context) error {
+          symbol := c.Args().Get(1)
+          interval := c.Args().Get(0)
+          if interval == "" {
+            log.Fatal("interval can not be empty")
+            return nil
+          }
+          if err := h.IchimokuCloud(symbol, interval); err != nil {
+            return cli.Exit(err.Error(), 1)
+          }
+          return nil
+        },
+      },
     },
   }
 }
@@ -155,7 +171,7 @@ func (h *StrategiesHandler) Zlema(symbol string, interval string) error {
 }
 
 func (h *StrategiesHandler) HaZlema(symbol string, interval string) error {
-  log.Println("strategies haZlema strategy...")
+  log.Println("strategies haZlema calc...")
   var symbols []string
   if symbol == "" {
     h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
@@ -169,7 +185,7 @@ func (h *StrategiesHandler) HaZlema(symbol string, interval string) error {
 }
 
 func (h *StrategiesHandler) Kdj(symbol string, interval string) error {
-  log.Println("strategies zlema strategy...")
+  log.Println("strategies zlema calc...")
   var symbols []string
   if symbol == "" {
     h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
@@ -183,7 +199,7 @@ func (h *StrategiesHandler) Kdj(symbol string, interval string) error {
 }
 
 func (h *StrategiesHandler) BBands(symbol string, interval string) error {
-  log.Println("strategies bbands strategy...")
+  log.Println("strategies bbands calc...")
   var symbols []string
   if symbol == "" {
     h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
@@ -192,6 +208,20 @@ func (h *StrategiesHandler) BBands(symbol string, interval string) error {
   }
   for _, symbol := range symbols {
     h.Repository.BBands(symbol, interval)
+  }
+  return nil
+}
+
+func (h *StrategiesHandler) IchimokuCloud(symbol string, interval string) error {
+  log.Println("strategies ichimoku cloud calc...")
+  var symbols []string
+  if symbol == "" {
+    h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+  } else {
+    symbols = append(symbols, symbol)
+  }
+  for _, symbol := range symbols {
+    h.Repository.IchimokuCloud(symbol, interval)
   }
   return nil
 }

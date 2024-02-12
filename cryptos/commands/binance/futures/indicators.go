@@ -154,6 +154,22 @@ func NewIndicatorsCommand() *cli.Command {
         },
       },
       {
+        Name:  "ichimoku-cloud",
+        Usage: "",
+        Action: func(c *cli.Context) error {
+          symbol := c.Args().Get(1)
+          interval := c.Args().Get(0)
+          if interval == "" {
+            log.Fatal("interval can not be empty")
+            return nil
+          }
+          if err := h.IchimokuCloud(symbol, interval); err != nil {
+            return cli.Exit(err.Error(), 1)
+          }
+          return nil
+        },
+      },
+      {
         Name:  "volume-profile",
         Usage: "",
         Action: func(c *cli.Context) error {
@@ -201,7 +217,7 @@ func (h *IndicatorsHandler) Ranking(interval string) error {
 }
 
 func (h *IndicatorsHandler) Pivot(symbol string, interval string) error {
-  log.Println("indicators pivot indicator...")
+  log.Println("indicators pivot calc...")
   var symbols []string
   if symbol == "" {
     h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
@@ -269,7 +285,7 @@ func (h *IndicatorsHandler) HaZlema(symbol string, interval string) error {
 }
 
 func (h *IndicatorsHandler) Kdj(symbol string, interval string) error {
-  log.Println("indicators kdj indicator...")
+  log.Println("indicators kdj calc...")
   var symbols []string
   if symbol == "" {
     h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
@@ -286,7 +302,7 @@ func (h *IndicatorsHandler) Kdj(symbol string, interval string) error {
 }
 
 func (h *IndicatorsHandler) BBands(symbol string, interval string) error {
-  log.Println("indicators boll bands indicator...")
+  log.Println("indicators boll bands calc...")
   var symbols []string
   if symbol == "" {
     h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
@@ -302,8 +318,34 @@ func (h *IndicatorsHandler) BBands(symbol string, interval string) error {
   return nil
 }
 
+func (h *IndicatorsHandler) IchimokuCloud(symbol string, interval string) error {
+  log.Println("indicators ichimoku cloud calc...")
+  var symbols []string
+  if symbol == "" {
+    h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+  } else {
+    symbols = append(symbols, symbol)
+  }
+  for _, symbol := range symbols {
+    var err error
+    if interval == "1m" {
+      err = h.Repository.IchimokuCloud(symbol, interval, 129, 374, 748, 1440)
+    } else if interval == "15m" {
+      err = h.Repository.IchimokuCloud(symbol, interval, 60, 174, 349, 672)
+    } else if interval == "4h" {
+      err = h.Repository.IchimokuCloud(symbol, interval, 11, 32, 65, 126)
+    } else {
+      err = h.Repository.IchimokuCloud(symbol, interval, 9, 26, 52, 100)
+    }
+    if err != nil {
+      log.Println("error", err.Error())
+    }
+  }
+  return nil
+}
+
 func (h *IndicatorsHandler) VolumeProfile(symbol string, interval string) error {
-  log.Println("indicators volume profile indicator...")
+  log.Println("indicators volume profile calc...")
   var symbols []string
   if symbol == "" {
     h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
