@@ -128,7 +128,7 @@ func (r *OrdersRepository) Create(
   }
   timediff, _ := strconv.ParseInt(value, 10, 64)
 
-  timestamp := time.Now().UnixMicro() - timediff
+  timestamp := time.Now().UnixMilli() - timediff
   payload := fmt.Sprintf("%s&timestamp=%v", params.Encode(), timestamp)
 
   block, _ := pem.Decode([]byte(os.Getenv("BINANCE_SPOT_ACCOUNT_API_SECRET")))

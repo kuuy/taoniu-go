@@ -225,7 +225,7 @@ func (r *AccountRepository) Request() (*AccountInfo, error) {
   }
   timediff, _ := strconv.ParseInt(value, 10, 64)
 
-  timestamp := time.Now().UnixMicro() - timediff
+  timestamp := time.Now().UnixMilli() - timediff
   params.Add("timestamp", fmt.Sprintf("%v", timestamp))
 
   mac := hmac.New(sha256.New, []byte(os.Getenv("BINANCE_FUTURES_ACCOUNT_API_SECRET")))
