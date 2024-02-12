@@ -451,15 +451,23 @@ func (r *TriggersRepository) Take(trigger *spotModels.Trigger, price float64) er
     return errors.New(fmt.Sprintf("[%s] empty trading", trigger.Symbol))
   }
   if price < trading.SellPrice {
-    if price < entryPrice*1.0138 {
-      return errors.New("price too low")
+    if price < entryPrice*1.0385 {
+      return errors.New("compare with sell price too low")
     }
-    sellPrice = entryPrice * 1.0138
+    timestamp := time.Now().Add(-15 * time.Minute).UnixMicro()
+    if trading.UpdatedAt.UnixMicro() > timestamp {
+      return errors.New("waiting for more time")
+    }
+    sellPrice = entryPrice * 1.0385
   } else {
-    if price < entryPrice*1.0138 {
-      return errors.New("price too low")
+    if entryPrice > trading.SellPrice {
+      if price < entryPrice*1.0385 {
+        return errors.New("compare with entry price too low")
+      }
+      sellPrice = entryPrice * 1.0385
+    } else {
+      sellPrice = trading.SellPrice
     }
-    sellPrice = trading.SellPrice
   }
   if sellPrice < price*0.9985 {
     sellPrice = price * 0.9985

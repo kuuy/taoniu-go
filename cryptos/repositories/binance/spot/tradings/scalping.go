@@ -477,7 +477,7 @@ func (r *ScalpingRepository) Take(scalping *spotModels.Scalping, price float64) 
   }
   if price < trading.SellPrice {
     if price < entryPrice*1.0385 {
-      return errors.New("price too low")
+      return errors.New("compare with sell price too low")
     }
     timestamp := time.Now().Add(-15 * time.Minute).UnixMicro()
     if trading.UpdatedAt.UnixMicro() > timestamp {
@@ -485,10 +485,14 @@ func (r *ScalpingRepository) Take(scalping *spotModels.Scalping, price float64) 
     }
     sellPrice = entryPrice * 1.0385
   } else {
-    if price < entryPrice*1.0385 {
-      return errors.New("price too low")
+    if entryPrice > trading.SellPrice {
+      if price < entryPrice*1.0385 {
+        return errors.New("compare with entry price too low")
+      }
+      sellPrice = entryPrice * 1.0385
+    } else {
+      sellPrice = trading.SellPrice
     }
-    sellPrice = trading.SellPrice
   }
   if sellPrice < price*0.9985 {
     sellPrice = price * 0.9985

@@ -510,7 +510,7 @@ func (r *ScalpingRepository) Take(scalping *futuresModels.Scalping, price float6
     }
     if price < trading.SellPrice {
       if price < entryPrice*1.0385 {
-        return errors.New("price too low")
+        return errors.New("compare with sell price too low")
       }
       timestamp := time.Now().Add(-15 * time.Minute).UnixMicro()
       if trading.UpdatedAt.UnixMicro() > timestamp {
@@ -518,10 +518,14 @@ func (r *ScalpingRepository) Take(scalping *futuresModels.Scalping, price float6
       }
       sellPrice = entryPrice * 1.0385
     } else {
-      if price < entryPrice*1.0385 {
-        return errors.New("price too low")
+      if entryPrice > trading.SellPrice {
+        if price < entryPrice*1.0385 {
+          return errors.New("compare with entry price too low")
+        }
+        sellPrice = entryPrice * 1.0385
+      } else {
+        sellPrice = trading.SellPrice
       }
-      sellPrice = trading.SellPrice
     }
     if sellPrice < price*0.9985 {
       sellPrice = price * 0.9985
@@ -544,10 +548,14 @@ func (r *ScalpingRepository) Take(scalping *futuresModels.Scalping, price float6
       }
       sellPrice = entryPrice * 0.9615
     } else {
-      if price > entryPrice*0.9615 {
-        return errors.New("price too high")
+      if entryPrice < trading.SellPrice {
+        if price > entryPrice*0.9615 {
+          return errors.New("compare with entry price too high")
+        }
+        sellPrice = entryPrice * 0.9615
+      } else {
+        sellPrice = trading.SellPrice
       }
-      sellPrice = trading.SellPrice
     }
     if sellPrice > price*1.0015 {
       sellPrice = price * 1.0015
