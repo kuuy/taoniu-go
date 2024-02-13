@@ -53,6 +53,10 @@ func (h *Strategies) BBands(symbol string, interval string) error {
   return h.Repository.BBands(symbol, interval)
 }
 
+func (h *Strategies) IchimokuCloud(symbol string, interval string) error {
+  return h.Repository.IchimokuCloud(symbol, interval)
+}
+
 func (h *Strategies) Flush(m *nats.Msg) {
   var payload *IndicatorsUpdatePayload
   json.Unmarshal(m.Data, &payload)
@@ -62,6 +66,7 @@ func (h *Strategies) Flush(m *nats.Msg) {
   h.HaZlema(payload.Symbol, payload.Interval)
   h.Kdj(payload.Symbol, payload.Interval)
   h.BBands(payload.Symbol, payload.Interval)
+  h.IchimokuCloud(payload.Symbol, payload.Interval)
 
   h.NatsContext.Conn.Publish(config.NATS_STRATEGIES_UPDATE, m.Data)
   h.NatsContext.Conn.Flush()
