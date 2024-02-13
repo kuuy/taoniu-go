@@ -6,15 +6,17 @@
 在对自动交易的监督和调整过程中，不断地优化自己的资金规划意识，让自己的资金能够更安全、有效地运转起来。
 
 # 技术指标
-|符号     |名称                    |
-|--------|----                    |
-|ATR     |均幅指标                 |
-|PIVOT   |轴点                    |
-|KDJ     |随机指标                 |
-|BBANDS  |布林带（布林极值、布林带宽）|
-|ZLEMA   |零延迟指数平均数          |
-|HA-ZLEMA |平滑零延迟指数平均数       |
-|VOLUME-PROFILE |成交量分布（控制点，价值区间）       |
+| 符号                |名称                   |
+|-------------------|----                   |
+| ATR               |均幅指标                 |
+| PIVOT             |轴点                    |
+| KDJ               |随机指标                 |
+| Boll BANDS        |布林带（布林极值、布林带宽） |
+| Ichimoku Cloud    |一目均衡图                |
+| ZLEMA             |零延迟指数平均数           |
+| HA ZLEMA          |平滑零延迟指数平均数        |
+| Volume Profile    |成交量分布（控制点，价值区间）|
+| Andean Oscillator |安第斯振荡器               |
 
 # Scalping
 
@@ -127,17 +129,19 @@ https://github.com/kuuy/taoniu-android
 |名称               |说明                                             |
 |--------          |----                                             | 
 |现货交易计划        | binance spot plans                              |
-|现货抢先交易        | binance spot tradings scalping                  |
-|杠杆网格交易        | binance margin isolated tradings grids          |
-|现货抢先交易日报     | binance spot tradings grids daily analysis      |                                               |
-|杠杆网格交易日报     | binance margin isolated tradings daily analysis |
+|现货短线交易        | binance spot tradings scalping                  |
+|现货补仓交易        | binance spot tradings triggers                  |
+|合约交易计划        | binance futures plans                              |
+|合约短线交易        | binance futures tradings scalping                  |
+|合约补仓交易        | binance futures tradings triggers                  |
 
 # 免责声明
 本项目仅为个人交易测试项目，风险意识完全靠自己把握，出现任何交易失误与本项目无关，请谨慎评估交易的合理性。
 
 # 相关项目
+[淘牛（react）](https://github.com/kuuy/taoniu-ts)  
 [淘牛客户端（android）](https://github.com/kuuy/taoniu-android)  
-[淘牛后台（vue）](https://github.com/kuuy/taoniu-admin-web)  
+[淘牛后台（react）](https://github.com/kuuy/taoniu-admin-ts)  
 [淘牛后台（golang）](https://github.com/kuuy/taoniu-admin-go)  
 
 ![Anurag's GitHub stats](https://github-readme-stats.vercel.app/api?username=kuuy&show_icons=true&theme=radical)
