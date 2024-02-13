@@ -231,7 +231,7 @@ func (r *PlansRepository) Create(symbol string, interval string) (plan models.Pl
     if entity.Signal != strategy.Signal {
       continue
     }
-    if entity.Indicator == "bbands" {
+    if entity.Indicator == "bbands" || entity.Indicator == "ichimoku_cloud" {
       amount += 10
     }
     if entity.Indicator == "zlema" || entity.Indicator == "ha_zlema" {
