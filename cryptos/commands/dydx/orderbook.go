@@ -23,7 +23,7 @@ func NewOrderbookCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = OrderbookHandler{
-        Rdb: common.NewRedis(),
+        Rdb: common.NewRedis(1),
         Ctx: context.Background(),
       }
       h.Repository = &repositories.OrderbookRepository{

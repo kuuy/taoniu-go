@@ -30,8 +30,8 @@ func NewSpotCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = SpotHandler{
-        Db:    common.NewDB(),
-        Rdb:   common.NewRedis(),
+        Db:    common.NewDB(1),
+        Rdb:   common.NewRedis(1),
         Asynq: common.NewAsynqClient("BINANCE_SPOT"),
         Ctx:   context.Background(),
       }
@@ -108,6 +108,7 @@ func (h *SpotHandler) run() error {
     //binance.Spot().Tradings().Earn()
   })
   c.AddFunc("30 23 * * *", func() {
+    binance.Server().Time()
     binance.Spot().Clean()
   })
   c.Start()

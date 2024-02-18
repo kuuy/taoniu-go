@@ -28,8 +28,8 @@ func NewOrdersCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = OrdersHandler{
-        Db:  common.NewDB(),
-        Rdb: common.NewRedis(),
+        Db:  common.NewDB(2),
+        Rdb: common.NewRedis(2),
         Ctx: context.Background(),
       }
       h.Repository = &repositories.OrdersRepository{

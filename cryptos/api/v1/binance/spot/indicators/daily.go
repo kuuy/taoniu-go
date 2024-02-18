@@ -19,7 +19,7 @@ func NewDailyRouter(apiContext *common.ApiContext) http.Handler {
     ApiContext: apiContext,
   }
   //h.Repository = &repositories.DailyRepository{
-  //  Rdb: common.NewRedis(),
+  //  Rdb: common.NewRedis(1),
   //  Ctx: context.Background(),
   //}
 

@@ -22,7 +22,7 @@ func NewAccountCommand() *cli.Command {
     Before: func(c *cli.Context) error {
       h = AccountHandler{}
       h.Repository = &repositories.AccountRepository{
-        Rdb: common.NewRedis(),
+        Rdb: common.NewRedis(1),
         Ctx: context.Background(),
       }
       return nil

@@ -39,7 +39,7 @@ func NewTradesCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = TradesHandler{
-        Db:   common.NewDB(),
+        Db:   common.NewDB(1),
         Ctx:  context.Background(),
         Nats: common.NewNats(),
         //TradesJob: &jobs.Trades{},

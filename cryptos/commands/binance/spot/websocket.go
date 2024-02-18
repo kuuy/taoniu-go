@@ -28,7 +28,7 @@ func NewWebsocketCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = WebsocketHandler{
-        Rdb: common.NewRedis(),
+        Rdb: common.NewRedis(1),
         Ctx: context.Background(),
       }
       return nil

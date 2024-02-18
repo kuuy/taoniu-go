@@ -22,7 +22,7 @@ func NewServerCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = ServerHandler{
-        Rdb: common.NewRedis(),
+        Rdb: common.NewRedis(1),
         Ctx: context.Background(),
       }
       h.Repository = &repositories.ServerRepository{

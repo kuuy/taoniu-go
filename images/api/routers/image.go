@@ -9,6 +9,7 @@ import (
   "math/rand"
   "net/http"
   "os"
+  "time"
 
   _ "image/gif"
   _ "image/jpeg"
@@ -144,10 +145,12 @@ func (h *ImageHandler) Upload(
     return
   }
 
+  rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
+
   filepath := fmt.Sprintf(
     "%d/%d",
-    rand.Intn(50),
-    rand.Intn(50),
+    rnd.Intn(50),
+    rnd.Intn(50),
   )
   filename := fmt.Sprintf(
     "%s.%s",

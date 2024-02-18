@@ -5,12 +5,12 @@ import (
   "log"
   "strconv"
   "strings"
-  pool "taoniu.local/cryptos/common"
   "time"
 
   "github.com/go-redis/redis/v8"
   "github.com/urfave/cli/v2"
 
+  "taoniu.local/cryptos/common"
   repositories "taoniu.local/cryptos/repositories/binance/spot/margin"
 )
 
@@ -27,11 +27,11 @@ func NewOrdersCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = OrdersHandler{
-        Rdb: pool.NewRedis(),
+        Rdb: common.NewRedis(1),
         Ctx: context.Background(),
       }
       h.Repository = &repositories.OrdersRepository{
-        Db:  pool.NewDB(),
+        Db:  common.NewDB(1),
         Rdb: h.Rdb,
         Ctx: h.Ctx,
       }

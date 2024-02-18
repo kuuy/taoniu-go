@@ -7,7 +7,7 @@ import (
   "github.com/hibiken/asynq"
 
   "taoniu.local/cryptos/common"
-  config "taoniu.local/cryptos/config/queue"
+  config "taoniu.local/cryptos/config/binance/futures"
   jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/futures"
   repositories "taoniu.local/cryptos/repositories/binance/futures"
   tradingsRepositories "taoniu.local/cryptos/repositories/binance/futures/tradings"
@@ -47,7 +47,7 @@ func (t *DepthTask) Flush(limit int) error {
     }
     t.AnsqContext.Conn.Enqueue(
       task,
-      asynq.Queue(config.BINANCE_FUTURES_DEPTH),
+      asynq.Queue(config.ASYNQ_QUEUE_DEPTH),
       asynq.MaxRetry(0),
       asynq.Timeout(5*time.Minute),
     )
@@ -64,7 +64,7 @@ func (t *DepthTask) FlushDelay(limit int) error {
     }
     t.AnsqContext.Conn.Enqueue(
       task,
-      asynq.Queue(config.BINANCE_FUTURES_DEPTH_DELAY),
+      asynq.Queue(config.ASYNQ_QUEUE_DEPTH),
       asynq.MaxRetry(0),
       asynq.Timeout(5*time.Minute),
     )

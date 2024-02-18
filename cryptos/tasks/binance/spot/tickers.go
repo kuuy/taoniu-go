@@ -43,8 +43,8 @@ func NewTickersTask(ansqContext *common.AnsqClientContext) *TickersTask {
 
 func (t *TickersTask) Flush() error {
   symbols := t.Scan()
-  rand.Seed(time.Now().UnixNano())
-  rand.Shuffle(len(symbols), func(i, j int) { symbols[i], symbols[j] = symbols[j], symbols[i] })
+  rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
+  rnd.Shuffle(len(symbols), func(i, j int) { symbols[i], symbols[j] = symbols[j], symbols[i] })
   for i := 0; i < len(symbols); i += 20 {
     j := i + 20
     if j > len(symbols) {
@@ -82,8 +82,8 @@ func (t *TickersTask) Fix() error {
       items = append(items, symbol)
     }
   }
-  rand.Seed(time.Now().UnixNano())
-  rand.Shuffle(len(items), func(i, j int) { items[i], items[j] = items[j], items[i] })
+  rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
+  rnd.Shuffle(len(items), func(i, j int) { items[i], items[j] = items[j], items[i] })
   for i := 0; i < len(symbols); i += 20 {
     j := i + 20
     if j > len(symbols) {
@@ -106,8 +106,8 @@ func (t *TickersTask) Fix() error {
 
 func (t *TickersTask) FlushDelay() error {
   symbols := t.SymbolsRepository.Symbols()
-  rand.Seed(time.Now().UnixNano())
-  rand.Shuffle(len(symbols), func(i, j int) { symbols[i], symbols[j] = symbols[j], symbols[i] })
+  rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
+  rnd.Shuffle(len(symbols), func(i, j int) { symbols[i], symbols[j] = symbols[j], symbols[i] })
   for i := 0; i < len(symbols); i += 20 {
     j := i + 20
     if j > len(symbols) {

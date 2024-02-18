@@ -41,7 +41,7 @@ func NewTickersCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = TickersHandler{
-        Db:         common.NewDB(),
+        Db:         common.NewDB(2),
         Ctx:        context.Background(),
         Nats:       common.NewNats(),
         TickersJob: &jobs.Tickers{},

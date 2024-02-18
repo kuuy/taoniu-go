@@ -22,7 +22,7 @@ func NewPlansCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = PlansHandler{
-        Db: common.NewDB(),
+        Db: common.NewDB(1),
       }
       h.Repository = &repositories.PlansRepository{
         Db: h.Db,

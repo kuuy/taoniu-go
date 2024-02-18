@@ -28,8 +28,8 @@ func NewGridsCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = GridsHandler{
-        Db:  common.NewDB(),
-        Rdb: common.NewRedis(),
+        Db:  common.NewDB(1),
+        Rdb: common.NewRedis(1),
         Ctx: context.Background(),
       }
       h.Repository = &repositories.GridsRepository{

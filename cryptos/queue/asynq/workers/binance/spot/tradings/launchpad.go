@@ -24,8 +24,8 @@ type Launchpad struct {
 
 func NewLaunchpad() *Launchpad {
   h := &Launchpad{
-    Db:  common.NewDB(),
-    Rdb: common.NewRedis(),
+    Db:  common.NewDB(1),
+    Rdb: common.NewRedis(1),
     Ctx: context.Background(),
   }
   h.Repository = &repositories.LaunchpadRepository{

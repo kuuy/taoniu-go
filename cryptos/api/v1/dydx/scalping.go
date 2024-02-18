@@ -39,7 +39,7 @@ func NewScalpingRouter(apiContext *common.ApiContext) http.Handler {
     ApiContext: apiContext,
   }
   h.Repository = &repositories.ScalpingRepository{
-    Db: common.NewDB(),
+    Db: common.NewDB(1),
   }
 
   r := chi.NewRouter()

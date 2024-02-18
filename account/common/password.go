@@ -17,9 +17,9 @@ func GeneratePassword(password string, salt string) string {
 func GenerateSalt(size int) string {
   characters := []byte("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
   result := make([]byte, size)
-  rand.Seed(time.Now().UnixNano())
+  rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
   for i := range result {
-    result[i] = characters[rand.Intn(len(characters))]
+    result[i] = characters[rnd.Intn(len(characters))]
   }
   return string(result)
 }

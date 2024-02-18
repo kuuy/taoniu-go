@@ -303,11 +303,12 @@ func (r *BridgesRepository) Random(i int, limit int) ([]string, error) {
     return nil, errors.New("bridges not enough")
   }
 
+  rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
+
   var ids []string
   var bridges []string
   for len(bridges) < limit {
-    rand.Seed(time.Now().UnixNano())
-    offset := rand.Uint64() % uint64(count)
+    offset := rnd.Uint64() % uint64(count)
     var entity models.Bridge
     query := r.Db.Where("status", []int{0, 1, 3})
     if len(onlines) > 0 {

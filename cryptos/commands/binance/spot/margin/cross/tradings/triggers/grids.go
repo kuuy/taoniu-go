@@ -26,7 +26,7 @@ func NewGridsCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = GridsHandler{
-        Db: common.NewDB(),
+        Db: common.NewDB(1),
       }
       h.Repository = &repositories.GridsRepository{
         Db: h.Db,

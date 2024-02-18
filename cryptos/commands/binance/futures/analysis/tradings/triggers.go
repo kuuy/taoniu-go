@@ -23,7 +23,7 @@ func NewTriggersCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = TriggersHandler{
-        Db: common.NewDB(),
+        Db: common.NewDB(2),
       }
       h.Repository = &repositories.TriggersRepository{
         Db: h.Db,

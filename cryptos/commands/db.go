@@ -19,7 +19,7 @@ func NewDbCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = DbHandler{
-        Db: common.NewDB(),
+        Db: common.NewDB(1),
       }
       return nil
     },

@@ -23,7 +23,7 @@ func NewProductsCommand() *cli.Command {
     Before: func(c *cli.Context) error {
       h = ProductsHandler{}
       h.Repository = &repositories.ProductsRepository{
-        Db:  common.NewDB(),
+        Db:  common.NewDB(1),
         Ctx: context.Background(),
       }
       return nil

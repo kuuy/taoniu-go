@@ -2,7 +2,6 @@ package binance
 
 import (
   "taoniu.local/cryptos/common"
-
   tasks "taoniu.local/cryptos/tasks/binance/futures"
 )
 
@@ -19,8 +18,6 @@ type FuturesTask struct {
   IndicatorsTask *tasks.IndicatorsTask
   StrategiesTask *tasks.StrategiesTask
   PlansTask      *tasks.PlansTask
-  ScalpingTask   *tasks.ScalpingTask
-  TriggersTask   *tasks.TriggersTask
   TradingsTask   *tasks.TradingsTask
   AnalysisTask   *tasks.AnalysisTask
 }
@@ -106,20 +103,6 @@ func (t *FuturesTask) Plans() *tasks.PlansTask {
     t.PlansTask = tasks.NewPlansTask(t.AnsqContext)
   }
   return t.PlansTask
-}
-
-func (t *FuturesTask) Scalping() *tasks.ScalpingTask {
-  if t.ScalpingTask == nil {
-    t.ScalpingTask = tasks.NewScalpingTask(t.AnsqContext)
-  }
-  return t.ScalpingTask
-}
-
-func (t *FuturesTask) Triggers() *tasks.TriggersTask {
-  if t.TriggersTask == nil {
-    t.TriggersTask = tasks.NewTriggersTask(t.AnsqContext)
-  }
-  return t.TriggersTask
 }
 
 func (t *FuturesTask) Tradings() *tasks.TradingsTask {

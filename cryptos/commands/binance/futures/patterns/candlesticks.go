@@ -25,7 +25,7 @@ func NewCandlesticksCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = CandlesticksHandler{
-        Db: common.NewDB(),
+        Db: common.NewDB(2),
       }
       h.Repository = &repositories.CandlesticksRepository{
         Db: h.Db,

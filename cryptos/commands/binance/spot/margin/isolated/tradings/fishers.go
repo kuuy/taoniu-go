@@ -32,8 +32,8 @@ func NewFishersCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = FishersHandler{
-        Db:  common.NewDB(),
-        Rdb: common.NewRedis(),
+        Db:  common.NewDB(1),
+        Rdb: common.NewRedis(1),
         Ctx: context.Background(),
       }
       h.Repository = &repositories.FishersRepository{

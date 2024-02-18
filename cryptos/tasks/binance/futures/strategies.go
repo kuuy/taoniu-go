@@ -6,7 +6,7 @@ import (
   "github.com/hibiken/asynq"
 
   "taoniu.local/cryptos/common"
-  config "taoniu.local/cryptos/config/queue"
+  config "taoniu.local/cryptos/config/binance/futures"
   models "taoniu.local/cryptos/models/binance/futures"
   jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/futures"
 )
@@ -32,7 +32,7 @@ func (t *StrategiesTask) Atr(interval string) error {
     }
     t.AnsqContext.Conn.Enqueue(
       task,
-      asynq.Queue(config.BINANCE_FUTURES_STRATEGIES),
+      asynq.Queue(config.ASYNQ_QUEUE_STRATEGIES),
       asynq.MaxRetry(0),
       asynq.Timeout(5*time.Minute),
     )
@@ -50,7 +50,7 @@ func (t *StrategiesTask) Zlema(interval string) error {
     }
     t.AnsqContext.Conn.Enqueue(
       task,
-      asynq.Queue(config.BINANCE_FUTURES_STRATEGIES),
+      asynq.Queue(config.ASYNQ_QUEUE_STRATEGIES),
       asynq.MaxRetry(0),
       asynq.Timeout(5*time.Minute),
     )
@@ -68,7 +68,7 @@ func (t *StrategiesTask) HaZlema(interval string) error {
     }
     t.AnsqContext.Conn.Enqueue(
       task,
-      asynq.Queue(config.BINANCE_FUTURES_STRATEGIES),
+      asynq.Queue(config.ASYNQ_QUEUE_STRATEGIES),
       asynq.MaxRetry(0),
       asynq.Timeout(5*time.Minute),
     )
@@ -86,7 +86,7 @@ func (t *StrategiesTask) Kdj(interval string) error {
     }
     t.AnsqContext.Conn.Enqueue(
       task,
-      asynq.Queue(config.BINANCE_FUTURES_STRATEGIES),
+      asynq.Queue(config.ASYNQ_QUEUE_STRATEGIES),
       asynq.MaxRetry(0),
       asynq.Timeout(5*time.Minute),
     )
@@ -104,7 +104,7 @@ func (t *StrategiesTask) BBands(interval string) error {
     }
     t.AnsqContext.Conn.Enqueue(
       task,
-      asynq.Queue(config.BINANCE_FUTURES_STRATEGIES),
+      asynq.Queue(config.ASYNQ_QUEUE_STRATEGIES),
       asynq.MaxRetry(0),
       asynq.Timeout(5*time.Minute),
     )
@@ -122,7 +122,7 @@ func (t *StrategiesTask) IchimokuCloud(interval string) error {
     }
     t.AnsqContext.Conn.Enqueue(
       task,
-      asynq.Queue(config.BINANCE_FUTURES_STRATEGIES),
+      asynq.Queue(config.ASYNQ_QUEUE_STRATEGIES),
       asynq.MaxRetry(0),
       asynq.Timeout(5*time.Minute),
     )

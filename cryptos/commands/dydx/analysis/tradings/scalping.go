@@ -23,7 +23,7 @@ func NewScalpingCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = ScalpingHandler{
-        Db: common.NewDB(),
+        Db: common.NewDB(1),
       }
       h.Repository = &repositories.ScalpingRepository{
         Db: h.Db,

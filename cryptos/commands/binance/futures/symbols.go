@@ -20,8 +20,8 @@ func NewSymbolsCommand() *cli.Command {
     Before: func(c *cli.Context) error {
       h = SymbolsHandler{}
       h.Repository = &repositories.SymbolsRepository{
-        Db:  pool.NewDB(),
-        Rdb: pool.NewRedis(),
+        Db:  pool.NewDB(2),
+        Rdb: pool.NewRedis(2),
         Ctx: context.Background(),
       }
       return nil

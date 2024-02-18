@@ -29,8 +29,8 @@ func NewDydxCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = DydxHandler{
-        Db:    common.NewDB(),
-        Rdb:   common.NewRedis(),
+        Db:    common.NewDB(1),
+        Rdb:   common.NewRedis(1),
         Asynq: common.NewAsynqClient("DYDX"),
         Ctx:   context.Background(),
       }

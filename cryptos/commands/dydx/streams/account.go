@@ -38,7 +38,7 @@ func NewAccountCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = AccountHandler{
-        Rdb:  common.NewRedis(),
+        Rdb:  common.NewRedis(1),
         Ctx:  context.Background(),
         Nats: common.NewNats(),
       }

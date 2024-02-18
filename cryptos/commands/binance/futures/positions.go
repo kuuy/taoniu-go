@@ -28,7 +28,7 @@ func NewPositionsCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = PositionsHandler{
-        Db: common.NewDB(),
+        Db: common.NewDB(2),
       }
       h.Repository = &repositories.PositionsRepository{
         Db: h.Db,

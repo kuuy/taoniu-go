@@ -32,8 +32,8 @@ func NewKlinesCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = KlinesHandler{
-        Db:   common.NewDB(),
-        Rdb:  common.NewRedis(),
+        Db:   common.NewDB(1),
+        Rdb:  common.NewRedis(1),
         Ctx:  context.Background(),
         Nats: common.NewNats(),
       }
@@ -86,7 +86,7 @@ func (h *KlinesHandler) Flush() error {
     mutex := common.NewMutex(
       h.Rdb,
       h.Ctx,
-      fmt.Sprintf("locks:binance:spot:klines:flush:%s", symbol),
+      fmt.Sprintf("locks:binance:spot:klines:fix:%s", symbol),
     )
     if !mutex.Lock(5 * time.Second) {
       continue

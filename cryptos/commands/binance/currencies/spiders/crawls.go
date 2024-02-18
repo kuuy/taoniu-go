@@ -24,7 +24,7 @@ func NewCrawlsCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = CrawlsHandler{
-        Db: common.NewDB(),
+        Db: common.NewDB(1),
       }
       h.Repository = &repositories.CrawlsRepository{
         Db: h.Db,

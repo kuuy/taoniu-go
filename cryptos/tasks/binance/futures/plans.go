@@ -6,7 +6,7 @@ import (
   "github.com/hibiken/asynq"
 
   "taoniu.local/cryptos/common"
-  config "taoniu.local/cryptos/config/queue"
+  config "taoniu.local/cryptos/config/binance/futures"
   jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/futures"
 )
 
@@ -28,7 +28,7 @@ func (t *PlansTask) Flush(interval string) error {
   }
   t.AnsqContext.Conn.Enqueue(
     task,
-    asynq.Queue(config.BINANCE_FUTURES_PLANS),
+    asynq.Queue(config.ASYNQ_QUEUE_PLANS),
     asynq.MaxRetry(0),
     asynq.Timeout(5*time.Minute),
   )

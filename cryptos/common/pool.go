@@ -78,17 +78,17 @@ type Mutex struct {
   value string
 }
 
-func NewRedis() *redis.Client {
+func NewRedis(i int) *redis.Client {
   return redis.NewClient(&redis.Options{
-    Addr:     GetEnvString("REDIS_HOST"),
-    Password: GetEnvString("REDIS_PASSWORD"),
-    DB:       GetEnvInt("REDIS_DB"),
+    Addr:     GetEnvString(fmt.Sprintf("REDIS_%02d_HOST", i)),
+    Password: GetEnvString(fmt.Sprintf("REDIS_%02d_PASSWORD", i)),
+    DB:       GetEnvInt(fmt.Sprintf("REDIS_%02d_DB", i)),
   })
 }
 
-func NewDBPool() *sql.DB {
+func NewDBPool(i int) *sql.DB {
   if dbPool == nil {
-    dsn := GetEnvString("DB_DSN")
+    dsn := GetEnvString(fmt.Sprintf("DB_%02d_DSN", i))
     pool, err := sql.Open("pgx", dsn)
     if err != nil {
       panic(err)
@@ -101,12 +101,12 @@ func NewDBPool() *sql.DB {
   return dbPool
 }
 
-func NewDB() *gorm.DB {
+func NewDB(i int) *gorm.DB {
   db, err := gorm.Open(postgres.New(postgres.Config{
-    Conn: NewDBPool(),
+    Conn: NewDBPool(i),
   }), &gorm.Config{})
   if errors.Is(err, context.DeadlineExceeded) {
-    return NewDB()
+    return NewDB(i)
   }
   if err != nil {
     panic(err)

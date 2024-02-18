@@ -47,8 +47,8 @@ func (t *AnalysisTask) Flush() error {
 
 func (t *AnalysisTask) FlushDelay() error {
   symbols := t.SymbolsRepository.Symbols()
-  rand.Seed(time.Now().UnixNano())
-  rand.Shuffle(len(symbols), func(i, j int) { symbols[i], symbols[j] = symbols[j], symbols[i] })
+  rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
+  rnd.Shuffle(len(symbols), func(i, j int) { symbols[i], symbols[j] = symbols[j], symbols[i] })
   for _, symbol := range symbols {
     task, err := t.Job.Flush("BINANCE", symbol, "1m", true)
     if err != nil {

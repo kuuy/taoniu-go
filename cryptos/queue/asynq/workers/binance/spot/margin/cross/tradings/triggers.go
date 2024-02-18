@@ -25,8 +25,8 @@ type Triggers struct {
 
 func NewTriggers() *Triggers {
   h := &Triggers{
-    Db:  common.NewDB(),
-    Rdb: common.NewRedis(),
+    Db:  common.NewDB(1),
+    Rdb: common.NewRedis(1),
     Ctx: context.Background(),
   }
   h.Repository = &repositories.TriggersRepository{

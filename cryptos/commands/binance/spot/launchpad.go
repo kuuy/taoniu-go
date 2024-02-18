@@ -23,7 +23,7 @@ func NewLaunchpadCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = LaunchpadHandler{
-        Db: common.NewDB(),
+        Db: common.NewDB(1),
       }
       h.Repository = &repositories.LaunchpadRepository{
         Db: h.Db,

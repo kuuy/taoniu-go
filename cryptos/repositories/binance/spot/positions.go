@@ -290,7 +290,7 @@ func (r *PositionsRepository) Flush(position *models.Position) (err error) {
     "entry_amount":   entryAmount,
     "version":        gorm.Expr("version + ?", 1),
   }
-  if entryQuantity == 0 {
+  if position.EntryQuantity == 0 {
     values["timestamp"] = position.Timestamp
   }
   r.Db.Model(&position).Where("version", position.Version).Updates(values)

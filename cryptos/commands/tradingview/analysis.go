@@ -26,8 +26,8 @@ func NewAnalysisCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = AnalysisHandler{
-        Db:  common.NewDB(),
-        Rdb: common.NewRedis(),
+        Db:  common.NewDB(1),
+        Rdb: common.NewRedis(1),
         Ctx: context.Background(),
       }
       h.Repository = &repositories.AnalysisRepository{

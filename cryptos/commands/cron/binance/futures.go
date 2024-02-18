@@ -30,8 +30,8 @@ func NewFuturesCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = FuturesHandler{
-        Db:    common.NewDB(),
-        Rdb:   common.NewRedis(),
+        Db:    common.NewDB(2),
+        Rdb:   common.NewRedis(2),
         Asynq: common.NewAsynqClient("BINANCE_FUTURES"),
         Ctx:   context.Background(),
       }
@@ -81,23 +81,16 @@ func (h *FuturesHandler) run() error {
     binance.Futures().Orders().Sync(time.Now().Add(-72*time.Hour).UnixMilli(), 200)
   })
   c.AddFunc("@every 5m", func() {
-    //binance.Futures().Klines().FlushDelay("1m", 30)
-    //binance.Futures().Klines().FlushDelay("15m", 2)
-    //binance.Futures().Depth().FlushDelay(1000)
     binance.Futures().Analysis().Flush()
   })
   c.AddFunc("@every 15m", func() {
-    //binance.Futures().Klines().FlushDelay("4h", 1)
-    //binance.Futures().Klines().FlushDelay("1d", 1)
   })
   c.AddFunc("@hourly", func() {
     binance.Futures().Cron().Hourly()
   })
   c.AddFunc("0 20 * * * *", func() {
-    binance.Futures().Scalping().Flush()
   })
   c.AddFunc("0 */336 * * * 1", func() {
-    binance.Futures().Triggers().Flush()
   })
   c.AddFunc("30 23 * * * *", func() {
     binance.Server().Time()

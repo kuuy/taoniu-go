@@ -6,7 +6,7 @@ import (
   "github.com/hibiken/asynq"
 
   "taoniu.local/cryptos/common"
-  config "taoniu.local/cryptos/config/queue"
+  config "taoniu.local/cryptos/config/binance/futures"
   jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/futures/tradings"
   futuresRepositories "taoniu.local/cryptos/repositories/binance/futures"
   repositories "taoniu.local/cryptos/repositories/binance/futures/tradings"
@@ -40,7 +40,7 @@ func (t *ScalpingTask) Place() error {
     }
     t.AnsqContext.Conn.Enqueue(
       task,
-      asynq.Queue(config.BINANCE_FUTURES_TRADINGS_SCALPING),
+      asynq.Queue(config.ASYNQ_QUEUE_TRADINGS_SCALPING),
       asynq.MaxRetry(0),
       asynq.Timeout(5*time.Minute),
     )
@@ -57,7 +57,7 @@ func (t *ScalpingTask) Flush() error {
     }
     t.AnsqContext.Conn.Enqueue(
       task,
-      asynq.Queue(config.BINANCE_FUTURES_TRADINGS_SCALPING),
+      asynq.Queue(config.ASYNQ_QUEUE_TRADINGS_SCALPING),
       asynq.MaxRetry(0),
       asynq.Timeout(5*time.Minute),
     )

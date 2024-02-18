@@ -31,7 +31,7 @@ func NewGridsRouter(apiContext *common.ApiContext) http.Handler {
     ApiContext: apiContext,
   }
   h.Repository = &repositories.GridsRepository{
-    Db: common.NewDB(),
+    Db: common.NewDB(1),
   }
 
   r := chi.NewRouter()
