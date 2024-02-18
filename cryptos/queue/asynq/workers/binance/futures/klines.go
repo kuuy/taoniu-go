@@ -93,6 +93,13 @@ func (h *Klines) Update(ctx context.Context, t *asynq.Task) error {
     })
   }
 
+  message, _ := json.Marshal(map[string]interface{}{
+    "symbol":   payload.Symbol,
+    "interval": payload.Interval,
+  })
+  h.AnsqContext.Nats.Publish(config.NATS_KLINES_UPDATE, message)
+  h.AnsqContext.Nats.Flush()
+
   return nil
 }
 

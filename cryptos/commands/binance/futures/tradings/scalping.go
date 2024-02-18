@@ -105,12 +105,13 @@ func (h *ScalpingHandler) Place() error {
     if !mutex.Lock(30 * time.Second) {
       return nil
     }
-    defer mutex.Unlock()
 
     err := h.Repository.Place(id)
     if err != nil {
       log.Println("scalping place error", err)
     }
+
+    mutex.Unlock()
   }
   return nil
 }

@@ -586,11 +586,12 @@ func (r *ScalpingRepository) Take(scalping *futuresModels.Scalping, price float6
 
 func (r *ScalpingRepository) Close(scalping *futuresModels.Scalping) {
   var total int64
-  r.Db.Model(&models.Scalping{}).Where("scalping_id = ? AND status IN ?", scalping.ID, []int{0, 1, 2}).Count(&total)
+  var tradings []*models.Scalping
+  r.Db.Model(&tradings).Where("scalping_id = ? AND status IN ?", scalping.ID, []int{0, 1, 2}).Count(&total)
   if total == 0 {
     return
   }
-  r.Db.Model(&models.Scalping{}).Where("scalping_id = ? AND status = 0", scalping.ID).Count(&total)
+  r.Db.Model(&tradings).Where("scalping_id = ? AND status = 0", scalping.ID).Count(&total)
   if total > 0 {
     return
   }
@@ -598,7 +599,7 @@ func (r *ScalpingRepository) Close(scalping *futuresModels.Scalping) {
   if scalping.Timestamp > timestamp {
     return
   }
-  r.Db.Model(&models.Scalping{}).Where("scalping_id=? AND status IN ?", scalping.ID, []int{0, 1, 2}).Update("status", 5)
+  r.Db.Model(&tradings).Where("scalping_id=? AND status IN ?", scalping.ID, []int{0, 1, 2}).Update("status", 5)
 }
 
 func (r *ScalpingRepository) Pending() map[string]float64 {

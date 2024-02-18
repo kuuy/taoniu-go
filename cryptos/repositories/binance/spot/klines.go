@@ -164,6 +164,13 @@ func (r *KlinesRepository) Flush(symbol string, interval string, endtime int64, 
     }
   }
 
+  message, _ := json.Marshal(map[string]interface{}{
+    "symbol":   symbol,
+    "interval": interval,
+  })
+  r.Nats.Publish(config.NATS_KLINES_UPDATE, message)
+  r.Nats.Flush()
+
   return nil
 }
 
@@ -236,13 +243,6 @@ func (r *KlinesRepository) Fix(symbol string, interval string, limit int) error 
       log.Println("klines fix error", err.Error())
     }
   }
-
-  message, _ := json.Marshal(map[string]interface{}{
-    "symbol":   symbol,
-    "interval": interval,
-  })
-  r.Nats.Publish(config.NATS_KLINES_UPDATE, message)
-  r.Nats.Flush()
 
   return nil
 }

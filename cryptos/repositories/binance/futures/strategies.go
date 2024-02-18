@@ -4,13 +4,13 @@ import (
   "context"
   "errors"
   "fmt"
-  "github.com/shopspring/decimal"
   "strconv"
   "strings"
   "time"
 
   "github.com/go-redis/redis/v8"
   "github.com/rs/xid"
+  "github.com/shopspring/decimal"
   "gorm.io/gorm"
 
   models "taoniu.local/cryptos/models/binance/futures"
