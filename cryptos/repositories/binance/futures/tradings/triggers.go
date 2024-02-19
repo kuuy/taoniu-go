@@ -468,7 +468,9 @@ func (r *TriggersRepository) Take(trigger *futuresModels.Trigger, price float64)
   }
 
   if position.EntryQuantity == 0 {
-    r.Close(trigger)
+    if position.Timestamp > trigger.Timestamp {
+      r.Close(trigger)
+    }
     return errors.New(fmt.Sprintf("[%s] %s empty position", trigger.Symbol, positionSide))
   }
 
@@ -558,19 +560,12 @@ func (r *TriggersRepository) Take(trigger *futuresModels.Trigger, price float64)
 
 func (r *TriggersRepository) Close(trigger *futuresModels.Trigger) {
   var total int64
-  r.Db.Model(&models.Trigger{}).Where("trigger_id = ? AND status IN ?", trigger.ID, []int{0, 1, 2}).Count(&total)
+  var tradings []*models.Scalping
+  r.Db.Model(&tradings).Where("trigger_id = ? AND status IN ?", trigger.ID, []int{0, 1, 2}).Count(&total)
   if total == 0 {
     return
   }
-  r.Db.Model(&models.Trigger{}).Where("trigger_id = ? AND status IN ?", trigger.ID, []int{0, 2}).Count(&total)
-  if total > 0 {
-    return
-  }
-  timestamp := time.Now().Add(-15 * time.Minute).UnixMicro()
-  if trigger.Timestamp > timestamp {
-    return
-  }
-  r.Db.Model(&models.Trigger{}).Where("trigger_id=? AND status IN ?", trigger.ID, []int{0, 1, 2}).Update("status", 5)
+  r.Db.Model(&tradings).Where("trigger_id=? AND status IN ?", trigger.ID, []int{0, 1, 2}).Update("status", 5)
 }
 
 func (r *TriggersRepository) CanBuy(

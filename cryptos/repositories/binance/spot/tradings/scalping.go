@@ -452,7 +452,9 @@ func (r *ScalpingRepository) Take(scalping *spotModels.Scalping, price float64) 
   }
 
   if position.EntryQuantity == 0 {
-    r.Close(scalping)
+    if position.Timestamp > scalping.Timestamp {
+      r.Close(scalping)
+    }
     return errors.New(fmt.Sprintf("[%s] empty position", scalping.Symbol))
   }
 
@@ -525,14 +527,6 @@ func (r *ScalpingRepository) Close(scalping *spotModels.Scalping) {
   var tradings []*models.Scalping
   r.Db.Model(&tradings).Where("scalping_id = ? AND status IN ?", scalping.ID, []int{0, 1, 2}).Count(&total)
   if total == 0 {
-    return
-  }
-  r.Db.Model(&tradings).Where("scalping_id = ? AND status IN ?", scalping.ID, []int{0, 2}).Count(&total)
-  if total > 0 {
-    return
-  }
-  timestamp := time.Now().Add(-15 * time.Minute).UnixMicro()
-  if scalping.Timestamp > timestamp {
     return
   }
   r.Db.Model(&tradings).Where("scalping_id=? AND status IN ?", scalping.ID, []int{0, 1, 2}).Update("status", 5)
