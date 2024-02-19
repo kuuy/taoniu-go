@@ -562,7 +562,7 @@ func (r *TriggersRepository) Close(trigger *futuresModels.Trigger) {
   if total == 0 {
     return
   }
-  r.Db.Model(&models.Trigger{}).Where("trigger_id = ? AND status = 0", trigger.ID).Count(&total)
+  r.Db.Model(&models.Trigger{}).Where("trigger_id = ? AND status IN ?", trigger.ID, []int{0, 2}).Count(&total)
   if total > 0 {
     return
   }

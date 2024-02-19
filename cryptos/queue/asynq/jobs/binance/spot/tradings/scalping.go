@@ -3,16 +3,17 @@ package tradings
 import (
   "encoding/json"
   "github.com/hibiken/asynq"
+  config "taoniu.local/cryptos/config/binance/spot"
 )
 
 type Scalping struct{}
 
-type ScalpingPlacePayload struct {
-  PlanID string `json:"plan_id"`
-}
-
-type ScalpingFlushPayload struct {
-  ID string `json:"id"`
+func (h *Scalping) Place(id string) (*asynq.Task, error) {
+  payload, err := json.Marshal(ScalpingPlacePayload{id})
+  if err != nil {
+    return nil, err
+  }
+  return asynq.NewTask(config.ASYNQ_JOBS_TRADINGS_SCALPING_PLACE, payload), nil
 }
 
 func (h *Scalping) Flush(planID string) (*asynq.Task, error) {
@@ -20,13 +21,5 @@ func (h *Scalping) Flush(planID string) (*asynq.Task, error) {
   if err != nil {
     return nil, err
   }
-  return asynq.NewTask("binance:spot:tradings:scalping:flush", payload), nil
-}
-
-func (h *Scalping) Place(id string) (*asynq.Task, error) {
-  payload, err := json.Marshal(ScalpingPlacePayload{id})
-  if err != nil {
-    return nil, err
-  }
-  return asynq.NewTask("binance:spot:tradings:scalping:place", payload), nil
+  return asynq.NewTask(config.ASYNQ_JOBS_TRADINGS_SCALPING_FLUSH, payload), nil
 }

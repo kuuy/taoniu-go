@@ -6,56 +6,43 @@ import (
   "fmt"
   "time"
 
-  "github.com/go-redis/redis/v8"
   "github.com/hibiken/asynq"
-  "gorm.io/gorm"
 
   "taoniu.local/cryptos/common"
+  config "taoniu.local/cryptos/config/binance/spot"
   spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
   repositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
 )
 
 type Launchpad struct {
-  Db         *gorm.DB
-  Rdb        *redis.Client
-  Ctx        context.Context
-  Repository *repositories.LaunchpadRepository
+  AnsqContext *common.AnsqServerContext
+  Repository  *repositories.LaunchpadRepository
 }
 
-func NewLaunchpad() *Launchpad {
+func NewLaunchpad(ansqContext *common.AnsqServerContext) *Launchpad {
   h := &Launchpad{
-    Db:  common.NewDB(1),
-    Rdb: common.NewRedis(1),
-    Ctx: context.Background(),
+    AnsqContext: ansqContext,
   }
   h.Repository = &repositories.LaunchpadRepository{
-    Db: h.Db,
+    Db: h.AnsqContext.Db,
   }
   h.Repository.SymbolsRepository = &spotRepositories.SymbolsRepository{
-    Db:  h.Db,
-    Rdb: h.Rdb,
-    Ctx: h.Ctx,
+    Db:  h.AnsqContext.Db,
+    Rdb: h.AnsqContext.Rdb,
+    Ctx: h.AnsqContext.Ctx,
   }
   h.Repository.AccountRepository = &spotRepositories.AccountRepository{
-    Db:  h.Db,
-    Rdb: h.Rdb,
-    Ctx: h.Ctx,
+    Db:  h.AnsqContext.Db,
+    Rdb: h.AnsqContext.Rdb,
+    Ctx: h.AnsqContext.Ctx,
   }
   h.Repository.PositionRepository = &spotRepositories.PositionsRepository{}
   h.Repository.OrdersRepository = &spotRepositories.OrdersRepository{
-    Db:  h.Db,
-    Rdb: h.Rdb,
-    Ctx: h.Ctx,
+    Db:  h.AnsqContext.Db,
+    Rdb: h.AnsqContext.Rdb,
+    Ctx: h.AnsqContext.Ctx,
   }
   return h
-}
-
-type LaunchpadPlacePayload struct {
-  ID string
-}
-
-type LaunchpadFlushPayload struct {
-  ID string
 }
 
 func (h *Launchpad) Place(ctx context.Context, t *asynq.Task) error {
@@ -63,9 +50,9 @@ func (h *Launchpad) Place(ctx context.Context, t *asynq.Task) error {
   json.Unmarshal(t.Payload(), &payload)
 
   mutex := common.NewMutex(
-    h.Rdb,
-    h.Ctx,
-    fmt.Sprintf("locks:binance:spot:tradings:launchpad:place:%s", payload.ID),
+    h.AnsqContext.Rdb,
+    h.AnsqContext.Ctx,
+    fmt.Sprintf(config.LOCKS_TRADINGS_LAUNCHPAD_PLACE, payload.ID),
   )
   if !mutex.Lock(30 * time.Second) {
     return nil
@@ -82,9 +69,9 @@ func (h *Launchpad) Flush(ctx context.Context, t *asynq.Task) error {
   json.Unmarshal(t.Payload(), &payload)
 
   mutex := common.NewMutex(
-    h.Rdb,
-    h.Ctx,
-    fmt.Sprintf("locks:binance:spot:tradings:launchpad:flush:%s", payload.ID),
+    h.AnsqContext.Rdb,
+    h.AnsqContext.Ctx,
+    fmt.Sprintf(config.LOCKS_TRADINGS_LAUNCHPAD_FLUSH, payload.ID),
   )
   if !mutex.Lock(30 * time.Second) {
     return nil
@@ -93,5 +80,11 @@ func (h *Launchpad) Flush(ctx context.Context, t *asynq.Task) error {
 
   h.Repository.Flush(payload.ID)
 
+  return nil
+}
+
+func (h *Launchpad) Register() error {
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_TRADINGS_LAUNCHPAD_PLACE, h.Place)
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_TRADINGS_LAUNCHPAD_FLUSH, h.Flush)
   return nil
 }

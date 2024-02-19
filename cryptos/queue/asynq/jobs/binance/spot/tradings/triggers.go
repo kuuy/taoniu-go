@@ -1,32 +1,25 @@
 package tradings
 
 import (
-	"encoding/json"
-	"github.com/hibiken/asynq"
+  "encoding/json"
+  "github.com/hibiken/asynq"
+  config "taoniu.local/cryptos/config/binance/spot"
 )
 
 type Triggers struct{}
 
-type TriggersFlushPayload struct {
-	Symbol string
-}
-
-type TriggersPlacePayload struct {
-	Symbol string
+func (h *Triggers) Place(symbol string) (*asynq.Task, error) {
+  payload, err := json.Marshal(TriggersPlacePayload{symbol})
+  if err != nil {
+    return nil, err
+  }
+  return asynq.NewTask(config.ASYNQ_JOBS_TRADINGS_TRIGGERS_PLACE, payload), nil
 }
 
 func (h *Triggers) Flush(symbol string) (*asynq.Task, error) {
-	payload, err := json.Marshal(TriggersFlushPayload{symbol})
-	if err != nil {
-		return nil, err
-	}
-	return asynq.NewTask("binance:spot:tradings:triggers:flush", payload), nil
-}
-
-func (h *Triggers) Place(symbol string) (*asynq.Task, error) {
-	payload, err := json.Marshal(TriggersPlacePayload{symbol})
-	if err != nil {
-		return nil, err
-	}
-	return asynq.NewTask("binance:spot:tradings:triggers:place", payload), nil
+  payload, err := json.Marshal(TriggersFlushPayload{symbol})
+  if err != nil {
+    return nil, err
+  }
+  return asynq.NewTask(config.ASYNQ_JOBS_TRADINGS_TRIGGERS_FLUSH, payload), nil
 }

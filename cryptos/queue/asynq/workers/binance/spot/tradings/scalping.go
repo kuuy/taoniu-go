@@ -6,57 +6,44 @@ import (
   "fmt"
   "time"
 
-  "github.com/go-redis/redis/v8"
   "github.com/hibiken/asynq"
-  "gorm.io/gorm"
 
   "taoniu.local/cryptos/common"
+  config "taoniu.local/cryptos/config/binance/spot"
   spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
   repositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
 )
 
 type Scalping struct {
-  Db         *gorm.DB
-  Rdb        *redis.Client
-  Ctx        context.Context
-  Repository *repositories.ScalpingRepository
+  AnsqContext *common.AnsqServerContext
+  Repository  *repositories.ScalpingRepository
 }
 
-func NewScalping() *Scalping {
+func NewScalping(ansqContext *common.AnsqServerContext) *Scalping {
   h := &Scalping{
-    Db:  common.NewDB(1),
-    Rdb: common.NewRedis(1),
-    Ctx: context.Background(),
+    AnsqContext: ansqContext,
   }
   h.Repository = &repositories.ScalpingRepository{
-    Db: h.Db,
+    Db: h.AnsqContext.Db,
   }
   h.Repository.SymbolsRepository = &spotRepositories.SymbolsRepository{
-    Db:  h.Db,
-    Rdb: h.Rdb,
-    Ctx: h.Ctx,
+    Db:  h.AnsqContext.Db,
+    Rdb: h.AnsqContext.Rdb,
+    Ctx: h.AnsqContext.Ctx,
   }
   h.Repository.AccountRepository = &spotRepositories.AccountRepository{
-    Rdb: h.Rdb,
-    Ctx: h.Ctx,
+    Rdb: h.AnsqContext.Rdb,
+    Ctx: h.AnsqContext.Ctx,
   }
   h.Repository.OrdersRepository = &spotRepositories.OrdersRepository{
-    Db:  h.Db,
-    Rdb: h.Rdb,
-    Ctx: h.Ctx,
+    Db:  h.AnsqContext.Db,
+    Rdb: h.AnsqContext.Rdb,
+    Ctx: h.AnsqContext.Ctx,
   }
   h.Repository.PositionRepository = &spotRepositories.PositionsRepository{
-    Db: h.Db,
+    Db: h.AnsqContext.Db,
   }
   return h
-}
-
-type ScalpingPlacePayload struct {
-  PlanID string `json:"plan_id"`
-}
-
-type ScalpingFlushPayload struct {
-  ID string `json:"id"`
 }
 
 func (h *Scalping) Place(ctx context.Context, t *asynq.Task) error {
@@ -64,9 +51,9 @@ func (h *Scalping) Place(ctx context.Context, t *asynq.Task) error {
   json.Unmarshal(t.Payload(), &payload)
 
   mutex := common.NewMutex(
-    h.Rdb,
-    h.Ctx,
-    fmt.Sprintf("locks:binance:spot:tradings:scalping:place:%s", payload.PlanID),
+    h.AnsqContext.Rdb,
+    h.AnsqContext.Ctx,
+    fmt.Sprintf(config.LOCKS_TRADINGS_SCALPING_PLACE, payload.PlanID),
   )
   if !mutex.Lock(30 * time.Second) {
     return nil
@@ -83,9 +70,9 @@ func (h *Scalping) Flush(ctx context.Context, t *asynq.Task) error {
   json.Unmarshal(t.Payload(), &payload)
 
   mutex := common.NewMutex(
-    h.Rdb,
-    h.Ctx,
-    fmt.Sprintf("locks:binance:spot:tradings:scalping:flush:%s", payload.ID),
+    h.AnsqContext.Rdb,
+    h.AnsqContext.Ctx,
+    fmt.Sprintf(config.LOCKS_TRADINGS_SCALPING_FLUSH, payload.ID),
   )
   if !mutex.Lock(30 * time.Second) {
     return nil
@@ -94,5 +81,11 @@ func (h *Scalping) Flush(ctx context.Context, t *asynq.Task) error {
 
   h.Repository.Flush(payload.ID)
 
+  return nil
+}
+
+func (h *Scalping) Register() error {
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_TRADINGS_SCALPING_PLACE, h.Place)
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_TRADINGS_SCALPING_FLUSH, h.Flush)
   return nil
 }

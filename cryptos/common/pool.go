@@ -24,7 +24,7 @@ import (
 )
 
 var (
-  dbPool *sql.DB
+  dbPools = map[string]*sql.DB{}
 )
 
 type ApiContext struct {
@@ -87,18 +87,21 @@ func NewRedis(i int) *redis.Client {
 }
 
 func NewDBPool(i int) *sql.DB {
-  if dbPool == nil {
-    dsn := GetEnvString(fmt.Sprintf("DB_%02d_DSN", i))
-    pool, err := sql.Open("pgx", dsn)
+  key := fmt.Sprintf("DB_%02d_DSN", i)
+  pool, ok := dbPools[key]
+  if !ok || pool == nil {
+    dsn := GetEnvString(key)
+    var err error
+    pool, err = sql.Open("pgx", dsn)
     if err != nil {
       panic(err)
     }
     pool.SetMaxIdleConns(50)
     pool.SetMaxOpenConns(100)
     pool.SetConnMaxLifetime(5 * time.Minute)
-    dbPool = pool
+    dbPools[key] = pool
   }
-  return dbPool
+  return pool
 }
 
 func NewDB(i int) *gorm.DB {

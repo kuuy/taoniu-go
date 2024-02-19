@@ -527,7 +527,7 @@ func (r *ScalpingRepository) Close(scalping *spotModels.Scalping) {
   if total == 0 {
     return
   }
-  r.Db.Model(&tradings).Where("scalping_id = ? AND status = 0", scalping.ID).Count(&total)
+  r.Db.Model(&tradings).Where("scalping_id = ? AND status IN ?", scalping.ID, []int{0, 2}).Count(&total)
   if total > 0 {
     return
   }

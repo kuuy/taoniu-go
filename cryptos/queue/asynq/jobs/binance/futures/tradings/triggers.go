@@ -3,16 +3,17 @@ package tradings
 import (
   "encoding/json"
   "github.com/hibiken/asynq"
+  config "taoniu.local/cryptos/config/binance/futures"
 )
 
 type Triggers struct{}
 
-type TriggersFlushPayload struct {
-  ID string
-}
-
-type TriggersPlacePayload struct {
-  ID string
+func (h *Triggers) Place(id string) (*asynq.Task, error) {
+  payload, err := json.Marshal(TriggersPlacePayload{id})
+  if err != nil {
+    return nil, err
+  }
+  return asynq.NewTask(config.ASYNQ_JOBS_TRADINGS_TRIGGERS_PLACE, payload), nil
 }
 
 func (h *Triggers) Flush(id string) (*asynq.Task, error) {
@@ -20,13 +21,5 @@ func (h *Triggers) Flush(id string) (*asynq.Task, error) {
   if err != nil {
     return nil, err
   }
-  return asynq.NewTask("binance:futures:tradings:triggers:flush", payload), nil
-}
-
-func (h *Triggers) Place(id string) (*asynq.Task, error) {
-  payload, err := json.Marshal(TriggersPlacePayload{id})
-  if err != nil {
-    return nil, err
-  }
-  return asynq.NewTask("binance:futures:tradings:triggers:place", payload), nil
+  return asynq.NewTask(config.ASYNQ_JOBS_TRADINGS_TRIGGERS_FLUSH, payload), nil
 }

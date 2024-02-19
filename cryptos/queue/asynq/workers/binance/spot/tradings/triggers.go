@@ -6,57 +6,44 @@ import (
   "fmt"
   "time"
 
-  "github.com/go-redis/redis/v8"
   "github.com/hibiken/asynq"
-  "gorm.io/gorm"
 
   "taoniu.local/cryptos/common"
+  config "taoniu.local/cryptos/config/binance/spot"
   spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
   repositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
 )
 
 type Triggers struct {
-  Db                *gorm.DB
-  Rdb               *redis.Client
-  Ctx               context.Context
+  AnsqContext       *common.AnsqServerContext
   Repository        *repositories.TriggersRepository
   SymbolsRepository *spotRepositories.SymbolsRepository
 }
 
-func NewTriggers() *Triggers {
+func NewTriggers(ansqContext *common.AnsqServerContext) *Triggers {
   h := &Triggers{
-    Db:  common.NewDB(1),
-    Rdb: common.NewRedis(1),
-    Ctx: context.Background(),
+    AnsqContext: ansqContext,
   }
   h.Repository = &repositories.TriggersRepository{
-    Db: h.Db,
+    Db: h.AnsqContext.Db,
   }
   h.Repository.SymbolsRepository = &spotRepositories.SymbolsRepository{
-    Db:  h.Db,
-    Rdb: h.Rdb,
-    Ctx: h.Ctx,
+    Db:  h.AnsqContext.Db,
+    Rdb: h.AnsqContext.Rdb,
+    Ctx: h.AnsqContext.Ctx,
   }
   h.Repository.AccountRepository = &spotRepositories.AccountRepository{
-    Db:  h.Db,
-    Rdb: h.Rdb,
-    Ctx: h.Ctx,
+    Db:  h.AnsqContext.Db,
+    Rdb: h.AnsqContext.Rdb,
+    Ctx: h.AnsqContext.Ctx,
   }
   h.Repository.OrdersRepository = &spotRepositories.OrdersRepository{
-    Db:  h.Db,
-    Rdb: h.Rdb,
-    Ctx: h.Ctx,
+    Db:  h.AnsqContext.Db,
+    Rdb: h.AnsqContext.Rdb,
+    Ctx: h.AnsqContext.Ctx,
   }
 
   return h
-}
-
-type TriggersPlacePayload struct {
-  ID string
-}
-
-type TriggersFlushPayload struct {
-  ID string
 }
 
 func (h *Triggers) Place(ctx context.Context, t *asynq.Task) error {
@@ -64,9 +51,9 @@ func (h *Triggers) Place(ctx context.Context, t *asynq.Task) error {
   json.Unmarshal(t.Payload(), &payload)
 
   mutex := common.NewMutex(
-    h.Rdb,
-    h.Ctx,
-    fmt.Sprintf("locks:binance:spot:tradings:triggers:place:%s", payload.ID),
+    h.AnsqContext.Rdb,
+    h.AnsqContext.Ctx,
+    fmt.Sprintf(config.LOCKS_TRADINGS_TRIGGERS_PLACE, payload.ID),
   )
   if !mutex.Lock(30 * time.Second) {
     return nil
@@ -83,9 +70,9 @@ func (h *Triggers) Flush(ctx context.Context, t *asynq.Task) error {
   json.Unmarshal(t.Payload(), &payload)
 
   mutex := common.NewMutex(
-    h.Rdb,
-    h.Ctx,
-    fmt.Sprintf("locks:binance:spot:tradings:triggers:flush:%s", payload.ID),
+    h.AnsqContext.Rdb,
+    h.AnsqContext.Ctx,
+    fmt.Sprintf(config.LOCKS_TRADINGS_TRIGGERS_FLUSH, payload.ID),
   )
   if !mutex.Lock(30 * time.Second) {
     return nil
@@ -94,5 +81,11 @@ func (h *Triggers) Flush(ctx context.Context, t *asynq.Task) error {
 
   h.Repository.Flush(payload.ID)
 
+  return nil
+}
+
+func (h *Triggers) Register() error {
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_TRADINGS_TRIGGERS_PLACE, h.Place)
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_TRADINGS_TRIGGERS_FLUSH, h.Flush)
   return nil
 }
