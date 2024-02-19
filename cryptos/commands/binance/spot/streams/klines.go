@@ -114,6 +114,15 @@ func (h *KlinesHandler) handler(message map[string]interface{}) {
     quota, _ := strconv.ParseFloat(kline["q"].(string), 64)
     timestamp := int64(kline["t"].(float64))
 
+    mutex := common.NewMutex(
+      h.AnsqContext.Rdb,
+      h.AnsqContext.Ctx,
+      fmt.Sprintf(config.LOCKS_KLINES_STREAM, symbol, interval),
+    )
+    if !mutex.Lock(5 * time.Second) {
+      return
+    }
+
     task, err := h.Job.Update(
       symbol,
       interval,
