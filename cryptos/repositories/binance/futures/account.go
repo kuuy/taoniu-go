@@ -118,6 +118,8 @@ func (r *AccountRepository) Flush() error {
 
   var symbols []string
 
+  timestamp := time.Now().UnixMicro()
+
   for _, position := range account.Positions {
     if position.Isolated || position.UpdateTime == 0 {
       continue
@@ -150,8 +152,6 @@ func (r *AccountRepository) Flush() error {
     if entryQuantity < 0 {
       entryQuantity = -entryQuantity
     }
-
-    timestamp := time.Now().UnixMicro()
 
     var entity models.Position
     result := r.Db.Where(

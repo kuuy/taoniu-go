@@ -231,8 +231,8 @@ func (r *TriggersRepository) Place(id string) error {
     return err
   }
 
-  if balance["free"] < math.Max(balance["locked"], notional) {
-    return errors.New(fmt.Sprintf("[%s] free not enough", entity.QuoteAsset))
+  if balance["free"] < 50 {
+    return errors.New(fmt.Sprintf("[%s] free not enough", entity.Symbol))
   }
 
   return r.Db.Transaction(func(tx *gorm.DB) (err error) {
@@ -423,6 +423,10 @@ func (r *TriggersRepository) Take(trigger *spotModels.Trigger, price float64) er
   }
 
   if position.EntryQuantity == 0 {
+    timestamp := time.Now().Add(-15 * time.Minute).UnixMicro()
+    if position.Timestamp > timestamp {
+      return errors.New("waiting for more time")
+    }
     if position.Timestamp > trigger.Timestamp {
       r.Close(trigger)
     }

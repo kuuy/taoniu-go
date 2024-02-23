@@ -4,7 +4,6 @@ import (
   "errors"
   "fmt"
   "log"
-  "math"
   "time"
 
   "gorm.io/gorm"
@@ -148,7 +147,7 @@ func (r *ScalpingRepository) Flush(id string) error {
 
       if status == "FILLED" {
         trading.Status = 1
-      } else {
+      } else if status == "CANCELED" {
         trading.Status = 4
       }
 
@@ -206,8 +205,6 @@ func (r *ScalpingRepository) Flush(id string) error {
       } else if status == "CANCELED" {
         trading.SellOrderId = 0
         trading.Status = 1
-      } else {
-        trading.Status = 5
       }
 
       result := r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
@@ -391,8 +388,8 @@ func (r *ScalpingRepository) Place(planID string) error {
     return err
   }
 
-  if balance["free"] < math.Max(balance["locked"], notional) {
-    return errors.New(fmt.Sprintf("[%s] free not enough", entity.QuoteAsset))
+  if balance["free"] < 50 {
+    return errors.New(fmt.Sprintf("[%s] free not enough", entity.Symbol))
   }
 
   return r.Db.Transaction(func(tx *gorm.DB) (err error) {
@@ -452,6 +449,10 @@ func (r *ScalpingRepository) Take(scalping *spotModels.Scalping, price float64) 
   }
 
   if position.EntryQuantity == 0 {
+    timestamp := time.Now().Add(-15 * time.Minute).UnixMicro()
+    if position.Timestamp > timestamp {
+      return errors.New("waiting for more time")
+    }
     if position.Timestamp > scalping.Timestamp {
       r.Close(scalping)
     }
