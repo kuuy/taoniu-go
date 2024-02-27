@@ -3,10 +3,11 @@ package spot
 import (
   "encoding/json"
   "fmt"
-  "github.com/eclipse/paho.golang/paho"
   "log"
 
+  "github.com/eclipse/paho.golang/paho"
   "github.com/nats-io/nats.go"
+
   "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/spot"
 )

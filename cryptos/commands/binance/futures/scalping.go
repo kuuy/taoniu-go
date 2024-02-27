@@ -156,7 +156,7 @@ func (h *ScalpingHandler) Flush(side int) error {
     data, _ := h.Rdb.HMGet(
       h.Ctx,
       fmt.Sprintf(
-        "binance:futures:indicators:4h:%s:%s",
+        "binance:futures:indicators:1d:%s:%s",
         entity.Symbol,
         time.Now().Format("0102"),
       ),
@@ -173,9 +173,9 @@ func (h *ScalpingHandler) Flush(side int) error {
 
     var price float64
     if side == 1 {
-      price = stopPrice
-    } else {
       price = takePrice
+    } else {
+      price = stopPrice
     }
 
     log.Println("scalping update", entity.Symbol, entity.Side, price)

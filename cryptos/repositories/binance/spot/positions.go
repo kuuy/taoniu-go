@@ -2,10 +2,10 @@ package spot
 
 import (
   "errors"
-  "github.com/rs/xid"
   "math"
   "time"
 
+  "github.com/rs/xid"
   "github.com/shopspring/decimal"
   "gorm.io/gorm"
 
@@ -255,12 +255,16 @@ func (r *PositionsRepository) Flush(position *models.Position) (err error) {
   if len(orders) == 0 {
     return
   }
+
   var entryPrice float64
   var entryAmount float64
   var entryQuantity float64
   for _, order := range orders {
-    if order.Status != "FILLED" || order.ExecutedQuantity < order.Quantity {
+    if order.Status != "FILLED" {
       continue
+    }
+    if order.ExecutedQuantity != order.Quantity {
+      return
     }
     executedQuantity := decimal.NewFromFloat(order.ExecutedQuantity)
     executedAmount := decimal.NewFromFloat(order.Price).Mul(executedQuantity)
@@ -279,20 +283,18 @@ func (r *PositionsRepository) Flush(position *models.Position) (err error) {
         entryAmount, _ = decimal.NewFromFloat(entryPrice).Mul(decimal.NewFromFloat(entryQuantity)).Float64()
       }
     }
-    position.Timestamp = order.UpdateTime
   }
   if position.EntryPrice == entryPrice && position.EntryQuantity == entryQuantity && position.EntryAmount == entryAmount {
     return
   }
+
   values := map[string]interface{}{
     "entry_price":    entryPrice,
     "entry_quantity": entryQuantity,
     "entry_amount":   entryAmount,
     "version":        gorm.Expr("version + ?", 1),
   }
-  if position.EntryQuantity == 0 {
-    values["timestamp"] = position.Timestamp
-  }
+
   r.Db.Model(&position).Where("version", position.Version).Updates(values)
   return
 }

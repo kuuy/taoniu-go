@@ -66,6 +66,16 @@ func NewScalpingCommand() *cli.Command {
           return nil
         },
       },
+      {
+        Name:  "flush",
+        Usage: "",
+        Action: func(c *cli.Context) error {
+          if err := h.Flush(); err != nil {
+            return cli.Exit(err.Error(), 1)
+          }
+          return nil
+        },
+      },
     },
   }
 }
@@ -121,6 +131,35 @@ func (h *ScalpingHandler) Plans() error {
       continue
     }
     h.Apply(plan.Symbol)
+  }
+  return nil
+}
+
+func (h *ScalpingHandler) Flush() error {
+  var scalping []*models.Scalping
+  h.Db.Model(&models.Scalping{}).Where("status", 1).Find(&scalping)
+  for _, entity := range scalping {
+    data, _ := h.Rdb.HMGet(
+      h.Ctx,
+      fmt.Sprintf(
+        "binance:spot:indicators:1d:%s:%s",
+        entity.Symbol,
+        time.Now().Format("0102"),
+      ),
+      "vah",
+      "val",
+    ).Result()
+    if len(data) == 0 || data[0] == nil || data[1] == nil {
+      log.Println("indicators empty", entity.Symbol)
+      continue
+    }
+
+    takePrice, _ := strconv.ParseFloat(data[0].(string), 64)
+    stopPrice, _ := strconv.ParseFloat(data[1].(string), 64)
+
+    log.Println("scalping update", entity.Symbol, takePrice, stopPrice)
+
+    h.Db.Model(&entity).Update("price", takePrice)
   }
   return nil
 }

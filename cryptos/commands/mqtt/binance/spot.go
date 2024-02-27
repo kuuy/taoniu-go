@@ -66,6 +66,7 @@ func (h *SpotHandler) Run() (err error) {
   broker, err := url.Parse(common.GetEnvString("MQTT_BROKER_URL"))
   cfg := autopaho.ClientConfig{
     BrokerUrls: []*url.URL{broker},
+    KeepAlive:  20,
     OnConnectionUp: func(cm *autopaho.ConnectionManager, connAck *paho.Connack) {
       log.Println("mqtt connection up")
     },

@@ -3,13 +3,15 @@ package tradings
 import (
   "context"
   "fmt"
-  "github.com/go-redis/redis/v8"
-  "github.com/urfave/cli/v2"
-  "gorm.io/gorm"
   "log"
   "time"
 
+  "github.com/go-redis/redis/v8"
+  "github.com/urfave/cli/v2"
+  "gorm.io/gorm"
+
   "taoniu.local/cryptos/common"
+  config "taoniu.local/cryptos/config/binance/futures"
   futuresRepositories "taoniu.local/cryptos/repositories/binance/futures"
   repositories "taoniu.local/cryptos/repositories/binance/futures/tradings"
 )
@@ -86,10 +88,21 @@ func NewScalpingCommand() *cli.Command {
 func (h *ScalpingHandler) Flush() error {
   ids := h.Repository.ScalpingIds()
   for _, id := range ids {
+    mutex := common.NewMutex(
+      h.Rdb,
+      h.Ctx,
+      fmt.Sprintf(config.LOCKS_TRADINGS_SCALPING_FLUSH, id),
+    )
+    if !mutex.Lock(30 * time.Second) {
+      return nil
+    }
+
     err := h.Repository.Flush(id)
     if err != nil {
       log.Println("scalping flush error", err)
     }
+
+    mutex.Unlock()
   }
   return nil
 }
@@ -100,7 +113,7 @@ func (h *ScalpingHandler) Place() error {
     mutex := common.NewMutex(
       h.Rdb,
       h.Ctx,
-      fmt.Sprintf("locks:binance:futures:tradings:scalping:place:%s", id),
+      fmt.Sprintf(config.LOCKS_TRADINGS_SCALPING_PLACE, id),
     )
     if !mutex.Lock(30 * time.Second) {
       return nil
