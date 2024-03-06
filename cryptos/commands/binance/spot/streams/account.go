@@ -84,6 +84,17 @@ func (h *AccountHandler) handler(message map[string]interface{}) {
       h.Nats.Flush()
     }
   }
+
+  if event == "executionReport" {
+    orderID, _ := strconv.ParseInt(fmt.Sprintf("%.0f", message["i"]), 10, 64)
+    data, _ := json.Marshal(map[string]interface{}{
+      "symbol":   message["s"].(string),
+      "order_id": orderID,
+      "status":   message["X"].(string),
+    })
+    h.Nats.Publish(config.NATS_ORDERS_UPDATE, data)
+    h.Nats.Flush()
+  }
 }
 
 func (h *AccountHandler) start() (err error) {

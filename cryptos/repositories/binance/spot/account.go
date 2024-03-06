@@ -2,20 +2,25 @@ package spot
 
 import (
   "context"
+  "encoding/json"
   "errors"
   "fmt"
-  "github.com/adshao/go-binance/v2"
-  "github.com/go-redis/redis/v8"
-  "gorm.io/gorm"
   "os"
   "slices"
   "strconv"
+  config "taoniu.local/cryptos/config/binance/spot"
+
+  "github.com/adshao/go-binance/v2"
+  "github.com/go-redis/redis/v8"
+  "github.com/nats-io/nats.go"
+  "gorm.io/gorm"
 )
 
 type AccountRepository struct {
-  Db  *gorm.DB
-  Rdb *redis.Client
-  Ctx context.Context
+  Db   *gorm.DB
+  Rdb  *redis.Client
+  Ctx  context.Context
+  Nats *nats.Conn
 }
 
 func (r *AccountRepository) Flush() error {
@@ -33,6 +38,7 @@ func (r *AccountRepository) Flush() error {
   var currencies []string
   for _, coin := range account.Balances {
     free, _ := strconv.ParseFloat(coin.Free, 64)
+    locked, _ := strconv.ParseFloat(coin.Locked, 64)
     if free <= 0.0 {
       r.Rdb.SRem(r.Ctx, "binance:spot:currencies", coin.Asset)
       r.Rdb.Del(r.Ctx, fmt.Sprintf("binance:spot:balance:%s", coin.Asset))
@@ -43,17 +49,33 @@ func (r *AccountRepository) Flush() error {
       r.Ctx,
       fmt.Sprintf("binance:spot:balance:%s", coin.Asset),
       map[string]interface{}{
-        "free":   coin.Free,
-        "locked": coin.Locked,
+        "free":   free,
+        "locked": locked,
       },
     )
     currencies = append(currencies, coin.Asset)
   }
+
   for _, currency := range oldCurrencies {
     if !slices.Contains(currencies, currency) {
       r.Rdb.SRem(r.Ctx, "binance:spot:currencies", currency)
       r.Rdb.Del(r.Ctx, fmt.Sprintf("binance:spot:balance:%s", currency))
     }
+  }
+
+  for _, coin := range account.Balances {
+    free, _ := strconv.ParseFloat(coin.Free, 64)
+    locked, _ := strconv.ParseFloat(coin.Locked, 64)
+    if free <= 0.0 {
+      continue
+    }
+    message, _ := json.Marshal(map[string]interface{}{
+      "asset":  coin.Asset,
+      "free":   free,
+      "locked": locked,
+    })
+    r.Nats.Publish(config.NATS_ACCOUNT_UPDATE, message)
+    r.Nats.Flush()
   }
 
   return nil

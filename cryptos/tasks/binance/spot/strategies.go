@@ -9,16 +9,25 @@ import (
   config "taoniu.local/cryptos/config/binance/spot"
   models "taoniu.local/cryptos/models/binance/spot"
   jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/spot"
+  repositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
 type StrategiesTask struct {
-  AnsqContext *common.AnsqClientContext
-  Job         *jobs.Strategies
+  AnsqContext       *common.AnsqClientContext
+  Job               *jobs.Strategies
+  Repository        *repositories.StrategiesRepository
+  SymbolsRepository *repositories.SymbolsRepository
 }
 
 func NewStrategiesTask(ansqContext *common.AnsqClientContext) *StrategiesTask {
   return &StrategiesTask{
     AnsqContext: ansqContext,
+    Repository: &repositories.StrategiesRepository{
+      Db: ansqContext.Db,
+    },
+    SymbolsRepository: &repositories.SymbolsRepository{
+      Db: ansqContext.Db,
+    },
   }
 }
 
@@ -137,5 +146,13 @@ func (t *StrategiesTask) Flush(interval string) error {
   t.Kdj(interval)
   t.BBands(interval)
   t.IchimokuCloud(interval)
+  return nil
+}
+
+func (t *StrategiesTask) Clean() error {
+  symbols := t.SymbolsRepository.Symbols()
+  for _, symbol := range symbols {
+    t.Repository.Clean(symbol)
+  }
   return nil
 }

@@ -12,30 +12,30 @@ import (
   config "taoniu.local/cryptos/config/binance/spot"
 )
 
-type Tickers struct {
+type Account struct {
   MqttContext *common.MqttContext
 }
 
-func NewTickers(mqttContext *common.MqttContext) *Tickers {
-  h := &Tickers{
+func NewAccount(mqttContext *common.MqttContext) *Account {
+  h := &Account{
     MqttContext: mqttContext,
   }
   return h
 }
 
-func (h *Tickers) Subscribe() error {
-  h.MqttContext.Nats.Subscribe(config.NATS_TICKERS_UPDATE, h.Update)
+func (h *Account) Subscribe() error {
+  h.MqttContext.Nats.Subscribe(config.NATS_ACCOUNT_UPDATE, h.Update)
   return nil
 }
 
-func (h *Tickers) Update(m *nats.Msg) {
-  var payload *TickersUpdatePayload
+func (h *Account) Update(m *nats.Msg) {
+  var payload *AccountUpdatePayload
   json.Unmarshal(m.Data, &payload)
 
   props := &paho.PublishProperties{}
 
   if _, err := h.MqttContext.Conn.Publish(h.MqttContext.Ctx, &paho.Publish{
-    Topic:      fmt.Sprintf(config.MQTT_TOPICS_TICKERS, payload.Symbol),
+    Topic:      fmt.Sprintf(config.MQTT_TOPICS_ACCOUNT, payload.Asset),
     QoS:        0,
     Payload:    m.Data,
     Properties: props,

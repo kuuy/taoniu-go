@@ -60,7 +60,7 @@ func (r *ServerRepository) Time() (int64, error) {
   isoTime, _ := time.Parse("2006-01-02T15:04:05.000Z", result.Iso)
   isoTimestamp := isoTime.UnixMilli()
 
-  r.Rdb.HSet(
+  r.Rdb.HMSet(
     r.Ctx,
     "dydx:server",
     map[string]interface{}{

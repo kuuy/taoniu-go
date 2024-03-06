@@ -29,8 +29,8 @@ func NewApiCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = ApiHandler{
-        Db:  common.NewDB(1),
-        Rdb: common.NewRedis(1),
+        Db:  common.NewDB(common.GetEnvInt("DB_NODE")),
+        Rdb: common.NewRedis(common.GetEnvInt("REDIS_NODE")),
         Ctx: context.Background(),
       }
       return nil

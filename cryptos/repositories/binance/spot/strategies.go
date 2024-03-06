@@ -450,3 +450,17 @@ func (r *StrategiesRepository) Filters(symbol string) (tickSize float64, stepSiz
   tickSize, stepSize, _, err = r.SymbolsRepository.Filters(entity.Filters)
   return
 }
+
+func (r *StrategiesRepository) Clean(symbol string) (err error) {
+  var result *gorm.DB
+  var strategy = &models.Strategy{}
+
+  for _, interval := range []string{"1m", "15m", "4h", "1d"} {
+    result = r.Db.Where("symbol=? AND interval = ?", symbol, interval).Order("timestamp DESC").Offset(10).First(&strategy)
+    if result.Error == nil {
+      r.Db.Where("symbol=? AND interval = ? AND timestamp < ?", symbol, interval, strategy.Timestamp).Delete(&strategy)
+    }
+  }
+
+  return
+}

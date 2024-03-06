@@ -24,6 +24,10 @@ func NewPositions(ansqContext *common.AnsqServerContext) *Positions {
   h.Repository = &repositories.PositionsRepository{
     Db: ansqContext.Db,
   }
+  h.Repository.OrdersRepository = &repositories.OrdersRepository{
+    Db:  ansqContext.Db,
+    Ctx: ansqContext.Ctx,
+  }
   return h
 }
 

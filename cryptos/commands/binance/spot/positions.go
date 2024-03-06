@@ -24,9 +24,9 @@ type PositionsHandler struct {
   Db                 *gorm.DB
   Rdb                *redis.Client
   Ctx                context.Context
+  Repository         *repositories.PositionsRepository
   SymbolsRepository  *repositories.SymbolsRepository
   TradingsRepository *repositories.TradingsRepository
-  Repository         *repositories.PositionsRepository
 }
 
 func NewPositionsCommand() *cli.Command {
@@ -54,6 +54,10 @@ func NewPositionsCommand() *cli.Command {
       }
       h.Repository = &repositories.PositionsRepository{
         Db: h.Db,
+      }
+      h.Repository.OrdersRepository = &repositories.OrdersRepository{
+        Db:  h.Db,
+        Ctx: h.Ctx,
       }
       return nil
     },
@@ -94,6 +98,16 @@ func NewPositionsCommand() *cli.Command {
         Action: func(c *cli.Context) error {
           symbol := c.Args().Get(0)
           if err := h.Flush(symbol); err != nil {
+            return cli.Exit(err.Error(), 1)
+          }
+          return nil
+        },
+      },
+      {
+        Name:  "check",
+        Usage: "",
+        Action: func(c *cli.Context) error {
+          if err := h.Check(); err != nil {
             return cli.Exit(err.Error(), 1)
           }
           return nil
@@ -234,4 +248,19 @@ func (h *PositionsHandler) Flush(symbol string) error {
     continue
   }
   return nil
+}
+
+func (h *PositionsHandler) Check() (err error) {
+  log.Println("binance spot positions check...")
+  symbols := h.TradingsRepository.Scan()
+  for _, symbol := range symbols {
+    position, _ := h.Repository.Get(symbol)
+    entity, _ := h.SymbolsRepository.Get(symbol)
+    value, _ := h.Rdb.HGet(h.Ctx, fmt.Sprintf("binance:spot:balance:%s", entity.BaseAsset), "free").Result()
+    free, _ := strconv.ParseFloat(value, 64)
+    if free < position.EntryQuantity {
+      log.Println("balance free not enough", symbol, free, position.EntryQuantity)
+    }
+  }
+  return
 }

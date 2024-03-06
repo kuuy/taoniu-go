@@ -16,6 +16,8 @@ func NewSpot(mqttContext *common.MqttContext) *Spot {
 }
 
 func (h *Spot) Subscribe() error {
+  spot.NewAccount(h.MqttContext).Subscribe()
+  spot.NewOrders(h.MqttContext).Subscribe()
   spot.NewTickers(h.MqttContext).Subscribe()
   return nil
 }

@@ -121,5 +121,7 @@ func (t *FuturesTask) Analysis() *tasks.AnalysisTask {
 
 func (t *FuturesTask) Clean() {
   t.Klines().Clean()
-  t.Patterns().Candlesticks().Clean()
+  t.Strategies().Clean()
+  t.Plans().Clean()
+  //t.Patterns().Candlesticks().Clean()
 }

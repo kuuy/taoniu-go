@@ -6,7 +6,6 @@ import (
   "math"
   "net/http"
   "strconv"
-
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
   repositories "taoniu.local/cryptos/repositories/binance/futures"

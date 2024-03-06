@@ -6,11 +6,13 @@ import (
   "sync"
   "time"
 
+  "gorm.io/gorm"
+
   "github.com/go-redis/redis/v8"
   "github.com/hibiken/asynq"
+  "github.com/nats-io/nats.go"
   "github.com/robfig/cron/v3"
   "github.com/urfave/cli/v2"
-  "gorm.io/gorm"
 
   "taoniu.local/cryptos/common"
   "taoniu.local/cryptos/tasks"
@@ -19,8 +21,9 @@ import (
 type SpotHandler struct {
   Db    *gorm.DB
   Rdb   *redis.Client
-  Asynq *asynq.Client
   Ctx   context.Context
+  Asynq *asynq.Client
+  Nats  *nats.Conn
 }
 
 func NewSpotCommand() *cli.Command {
@@ -32,8 +35,9 @@ func NewSpotCommand() *cli.Command {
       h = SpotHandler{
         Db:    common.NewDB(1),
         Rdb:   common.NewRedis(1),
-        Asynq: common.NewAsynqClient("BINANCE_SPOT"),
         Ctx:   context.Background(),
+        Asynq: common.NewAsynqClient("BINANCE_SPOT"),
+        Nats:  common.NewNats(),
       }
       return nil
     },
@@ -64,6 +68,7 @@ func (h *SpotHandler) run() error {
     Rdb:  h.Rdb,
     Ctx:  h.Ctx,
     Conn: h.Asynq,
+    Nats: h.Nats,
   }
 
   binance := tasks.NewBinanceTask(ansqContext)

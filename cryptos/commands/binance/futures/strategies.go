@@ -14,10 +14,11 @@ import (
 )
 
 type StrategiesHandler struct {
-  Db         *gorm.DB
-  Rdb        *redis.Client
-  Ctx        context.Context
-  Repository *repositories.StrategiesRepository
+  Db                *gorm.DB
+  Rdb               *redis.Client
+  Ctx               context.Context
+  Repository        *repositories.StrategiesRepository
+  SymbolsRepository *repositories.SymbolsRepository
 }
 
 func NewStrategiesCommand() *cli.Command {
@@ -37,6 +38,9 @@ func NewStrategiesCommand() *cli.Command {
         Ctx: h.Ctx,
       }
       h.Repository.SymbolsRepository = &repositories.SymbolsRepository{
+        Db: h.Db,
+      }
+      h.SymbolsRepository = &repositories.SymbolsRepository{
         Db: h.Db,
       }
       return nil
@@ -138,6 +142,16 @@ func NewStrategiesCommand() *cli.Command {
           return nil
         },
       },
+      {
+        Name:  "clean",
+        Usage: "",
+        Action: func(c *cli.Context) error {
+          if err := h.Clean(); err != nil {
+            return cli.Exit(err.Error(), 1)
+          }
+          return nil
+        },
+      },
     },
   }
 }
@@ -222,6 +236,15 @@ func (h *StrategiesHandler) IchimokuCloud(symbol string, interval string) error 
   }
   for _, symbol := range symbols {
     h.Repository.IchimokuCloud(symbol, interval)
+  }
+  return nil
+}
+
+func (h *StrategiesHandler) Clean() error {
+  log.Println("binance futures strategies clean...")
+  symbols := h.SymbolsRepository.Symbols()
+  for _, symbol := range symbols {
+    h.Repository.Clean(symbol)
   }
   return nil
 }

@@ -56,7 +56,7 @@ func (r *ServerRepository) Time() (int64, error) {
   var result ServerTime
   json.NewDecoder(resp.Body).Decode(&result)
 
-  r.Rdb.HSet(
+  r.Rdb.HMSet(
     r.Ctx,
     "binance:server",
     map[string]interface{}{

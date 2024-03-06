@@ -1,4 +1,4 @@
-package spot
+package futures
 
 import (
   "encoding/json"
@@ -9,7 +9,7 @@ import (
   "github.com/nats-io/nats.go"
 
   "taoniu.local/cryptos/common"
-  config "taoniu.local/cryptos/config/binance/spot"
+  config "taoniu.local/cryptos/config/binance/futures"
 )
 
 type Tickers struct {

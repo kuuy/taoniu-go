@@ -11,6 +11,7 @@ func NewBinanceCommand() *cli.Command {
     Usage: "",
     Subcommands: []*cli.Command{
       binance.NewSpotCommand(),
+      binance.NewFuturesCommand(),
     },
   }
 }

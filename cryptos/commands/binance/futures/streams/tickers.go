@@ -5,7 +5,6 @@ import (
   "encoding/json"
   "errors"
   "fmt"
-  "github.com/shopspring/decimal"
   "log"
   "os"
   "strconv"
@@ -16,6 +15,7 @@ import (
   "nhooyr.io/websocket"
 
   "github.com/nats-io/nats.go"
+  "github.com/shopspring/decimal"
   "github.com/urfave/cli/v2"
 
   "taoniu.local/cryptos/common"

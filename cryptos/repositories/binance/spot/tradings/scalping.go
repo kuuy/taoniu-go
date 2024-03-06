@@ -89,7 +89,7 @@ func (r *ScalpingRepository) Listings(conditions map[string]interface{}, current
 
 func (r *ScalpingRepository) Flush(id string) error {
   var scalping *spotModels.Scalping
-  result := r.Db.First(&scalping, "id=?", id)
+  var result = r.Db.First(&scalping, "id=?", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     return errors.New("empty scalping to flush")
   }
@@ -116,7 +116,7 @@ func (r *ScalpingRepository) Flush(id string) error {
         orderID := r.OrdersRepository.Lost(trading.Symbol, side, trading.BuyQuantity, timestamp-30)
         if orderID > 0 {
           trading.BuyOrderId = orderID
-          result := r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+          result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
             "buy_order_id": trading.BuyOrderId,
             "version":      gorm.Expr("version + ?", 1),
           })
@@ -128,7 +128,16 @@ func (r *ScalpingRepository) Flush(id string) error {
           }
         }
         if timestamp < time.Now().Unix()-900 {
-          r.Db.Model(&trading).Update("status", 6)
+          result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+            "status":  6,
+            "version": gorm.Expr("version + ?", 1),
+          })
+          if result.Error != nil {
+            return result.Error
+          }
+          if result.RowsAffected == 0 {
+            return errors.New("order update failed")
+          }
         }
       } else {
         if timestamp < time.Now().Unix()-900 {
@@ -151,7 +160,7 @@ func (r *ScalpingRepository) Flush(id string) error {
         trading.Status = 4
       }
 
-      result := r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+      result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
         "buy_order_id": trading.BuyOrderId,
         "status":       trading.Status,
         "version":      gorm.Expr("version + ?", 1),
@@ -171,7 +180,7 @@ func (r *ScalpingRepository) Flush(id string) error {
         orderID := r.OrdersRepository.Lost(trading.Symbol, side, trading.SellQuantity, timestamp-30)
         if orderID > 0 {
           trading.SellOrderId = orderID
-          result := r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+          result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
             "sell_order_id": trading.SellOrderId,
             "version":       gorm.Expr("version + ?", 1),
           })
@@ -183,7 +192,16 @@ func (r *ScalpingRepository) Flush(id string) error {
           }
         }
         if timestamp < time.Now().Unix()-900 {
-          r.Db.Model(&trading).Update("status", 1)
+          result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+            "status":  1,
+            "version": gorm.Expr("version + ?", 1),
+          })
+          if result.Error != nil {
+            return result.Error
+          }
+          if result.RowsAffected == 0 {
+            return errors.New("order update failed")
+          }
         }
       } else {
         if timestamp < time.Now().Unix()-900 {
@@ -207,7 +225,7 @@ func (r *ScalpingRepository) Flush(id string) error {
         trading.Status = 1
       }
 
-      result := r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+      result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
         "sell_order_id": trading.SellOrderId,
         "status":        trading.Status,
         "version":       gorm.Expr("version + ?", 1),
@@ -431,6 +449,7 @@ func (r *ScalpingRepository) Place(planID string) error {
       BuyQuantity:  buyQuantity,
       SellPrice:    sellPrice,
       SellQuantity: buyQuantity,
+      Version:      1,
     }
     return tx.Create(&entity).Error
   })

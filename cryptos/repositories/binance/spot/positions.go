@@ -15,6 +15,7 @@ import (
 type PositionsRepository struct {
   Db                *gorm.DB
   SymbolsRepository *SymbolsRepository
+  OrdersRepository  *OrdersRepository
 }
 
 func (r *PositionsRepository) Get(symbol string) (position *models.Position, err error) {
@@ -241,7 +242,9 @@ func (r *PositionsRepository) Flush(position *models.Position) (err error) {
   var orders []*models.Order
   r.Db.Model(models.Order{}).Select([]string{
     "symbol",
+    "order_id",
     "price",
+    "quantity",
     "executed_quantity",
     "side",
     "update_time",
@@ -264,6 +267,7 @@ func (r *PositionsRepository) Flush(position *models.Position) (err error) {
       continue
     }
     if order.ExecutedQuantity != order.Quantity {
+      r.OrdersRepository.Flush(order.Symbol, order.OrderID)
       return
     }
     executedQuantity := decimal.NewFromFloat(order.ExecutedQuantity)
@@ -292,6 +296,7 @@ func (r *PositionsRepository) Flush(position *models.Position) (err error) {
     "entry_price":    entryPrice,
     "entry_quantity": entryQuantity,
     "entry_amount":   entryAmount,
+    "timestamp":      time.Now().UnixMicro(),
     "version":        gorm.Expr("version + ?", 1),
   }
 

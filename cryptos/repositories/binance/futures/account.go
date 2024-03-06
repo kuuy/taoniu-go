@@ -14,9 +14,11 @@ import (
   "net/url"
   "os"
   "strconv"
+  config "taoniu.local/cryptos/config/binance/futures"
   "time"
 
   "github.com/go-redis/redis/v8"
+  "github.com/nats-io/nats.go"
   "github.com/rs/xid"
   "gorm.io/gorm"
 
@@ -24,9 +26,10 @@ import (
 )
 
 type AccountRepository struct {
-  Db  *gorm.DB
-  Rdb *redis.Client
-  Ctx context.Context
+  Db   *gorm.DB
+  Rdb  *redis.Client
+  Ctx  context.Context
+  Nats *nats.Conn
 }
 
 type AccountInfo struct {
@@ -195,9 +198,33 @@ func (r *AccountRepository) Flush() error {
   if len(symbols) > 0 {
     r.Db.Model(&models.Position{}).Where("entry_quantity > 0 AND symbol NOT IN ?", symbols).Updates(map[string]interface{}{
       "entry_quantity": 0,
-      "timestamp":      time.Now().UnixMilli(),
+      "timestamp":      timestamp,
       "version":        gorm.Expr("version + ?", 1),
     })
+  }
+
+  for _, coin := range account.Assets {
+    balance, _ := strconv.ParseFloat(coin.Balance, 64)
+    free, _ := strconv.ParseFloat(coin.Free, 64)
+    unrealizedProfit, _ := strconv.ParseFloat(coin.UnrealizedProfit, 64)
+    margin, _ := strconv.ParseFloat(coin.Margin, 64)
+    initialMargin, _ := strconv.ParseFloat(coin.InitialMargin, 64)
+    maintMargin, _ := strconv.ParseFloat(coin.MaintMargin, 64)
+
+    if balance <= 0.0 {
+      continue
+    }
+    message, _ := json.Marshal(map[string]interface{}{
+      "symbol":            coin.Asset,
+      "balance":           balance,
+      "free":              free,
+      "unrealized_profit": unrealizedProfit,
+      "margin":            margin,
+      "initial_margin":    initialMargin,
+      "maint_margin":      maintMargin,
+    })
+    r.Nats.Publish(config.NATS_ACCOUNT_UPDATE, message)
+    r.Nats.Flush()
   }
 
   return nil

@@ -298,6 +298,7 @@ func (r *TriggersRepository) Place(id string) error {
       BuyQuantity:  buyQuantity,
       SellPrice:    sellPrice,
       SellQuantity: buyQuantity,
+      Version:      1,
     }
     return tx.Create(&trading).Error
   })

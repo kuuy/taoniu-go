@@ -302,3 +302,17 @@ func (r *PlansRepository) Filters(symbol string) (tickSize float64, stepSize flo
   tickSize, stepSize, _, err = r.SymbolsRepository.Filters(entity.Filters)
   return
 }
+
+func (r *PlansRepository) Clean(symbol string) (err error) {
+  var result *gorm.DB
+  var plan = &models.Plan{}
+
+  for _, interval := range []string{"1m", "15m", "4h", "1d"} {
+    result = r.Db.Where("symbol=? AND interval = ?", symbol, interval).Order("timestamp DESC").Offset(10).First(&plan)
+    if result.Error == nil {
+      r.Db.Where("symbol=? AND interval = ? AND timestamp < ?", symbol, interval, plan.Timestamp).Delete(&plan)
+    }
+  }
+
+  return
+}

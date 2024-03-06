@@ -136,7 +136,16 @@ func (r *ScalpingRepository) Flush(id string) error {
           }
         }
         if timestamp < time.Now().Unix()-900 {
-          r.Db.Model(&trading).Update("status", 6)
+          result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+            "status":  6,
+            "version": gorm.Expr("version + ?", 1),
+          })
+          if result.Error != nil {
+            return result.Error
+          }
+          if result.RowsAffected == 0 {
+            return errors.New("order update failed")
+          }
         }
       } else {
         if timestamp < time.Now().Unix()-900 {
@@ -154,35 +163,17 @@ func (r *ScalpingRepository) Flush(id string) error {
       }
 
       if status == "FILLED" {
-        return r.Db.Transaction(func(tx *gorm.DB) (err error) {
-          position, err := r.PositionRepository.Get(scalping.Symbol, scalping.Side)
-          if err == nil {
-            sellAmount, _ := decimal.NewFromFloat(trading.SellPrice).Mul(decimal.NewFromFloat(trading.SellQuantity)).Float64()
-            result = tx.Model(&position).Where("version", position.Version).Updates(map[string]interface{}{
-              "close_quantity": gorm.Expr("close_quantity + ?", trading.SellQuantity),
-              "close_amount":   gorm.Expr("close_amount + ?", sellAmount),
-              "version":        gorm.Expr("version + ?", 1),
-            })
-            if result.Error != nil {
-              return result.Error
-            }
-            if result.RowsAffected == 0 {
-              return errors.New("position update failed")
-            }
-          }
-          result = tx.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
-            "buy_order_id": trading.BuyOrderId,
-            "status":       1,
-            "version":      gorm.Expr("version + ?", 1),
-          })
-          if result.Error != nil {
-            return result.Error
-          }
-          if result.RowsAffected == 0 {
-            return errors.New("trading update failed")
-          }
-          return nil
+        result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+          "buy_order_id": trading.BuyOrderId,
+          "status":       1,
+          "version":      gorm.Expr("version + ?", 1),
         })
+        if result.Error != nil {
+          return result.Error
+        }
+        if result.RowsAffected == 0 {
+          return errors.New("trading update failed")
+        }
       } else if status == "CANCELED" {
         result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
           "buy_order_id": trading.BuyOrderId,
@@ -217,7 +208,16 @@ func (r *ScalpingRepository) Flush(id string) error {
           }
         }
         if timestamp < time.Now().Unix()-900 {
-          r.Db.Model(&trading).Update("status", 1)
+          result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+            "status":  1,
+            "version": gorm.Expr("version + ?", 1),
+          })
+          if result.Error != nil {
+            return result.Error
+          }
+          if result.RowsAffected == 0 {
+            return errors.New("order update failed")
+          }
         }
       } else {
         if timestamp < time.Now().Unix()-900 {
@@ -235,35 +235,17 @@ func (r *ScalpingRepository) Flush(id string) error {
       }
 
       if status == "FILLED" {
-        return r.Db.Transaction(func(tx *gorm.DB) (err error) {
-          position, err := r.PositionRepository.Get(scalping.Symbol, scalping.Side)
-          if err == nil {
-            sellAmount, _ := decimal.NewFromFloat(trading.SellPrice).Mul(decimal.NewFromFloat(trading.SellQuantity)).Float64()
-            result = tx.Model(&position).Where("version", position.Version).Updates(map[string]interface{}{
-              "close_quantity": gorm.Expr("close_quantity - ?", trading.SellQuantity),
-              "close_amount":   gorm.Expr("close_amount - ?", sellAmount),
-              "version":        gorm.Expr("version + ?", 1),
-            })
-            if result.Error != nil {
-              return result.Error
-            }
-            if result.RowsAffected == 0 {
-              return errors.New("position update failed")
-            }
-          }
-          result = tx.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
-            "sell_order_id": trading.SellOrderId,
-            "status":        3,
-            "version":       gorm.Expr("version + ?", 1),
-          })
-          if result.Error != nil {
-            return result.Error
-          }
-          if result.RowsAffected == 0 {
-            return errors.New("trading update failed")
-          }
-          return nil
+        result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+          "sell_order_id": trading.SellOrderId,
+          "status":        3,
+          "version":       gorm.Expr("version + ?", 1),
         })
+        if result.Error != nil {
+          return result.Error
+        }
+        if result.RowsAffected == 0 {
+          return errors.New("trading update failed")
+        }
       } else if status == "CANCELED" {
         result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
           "sell_order_id": 0,
@@ -285,7 +267,7 @@ func (r *ScalpingRepository) Flush(id string) error {
 
 func (r *ScalpingRepository) Place(planID string) error {
   var plan *futuresModels.Plan
-  result := r.Db.First(&plan, "id=?", planID)
+  var result = r.Db.First(&plan, "id=?", planID)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     r.Db.Model(&futuresModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 10)
     return errors.New("plan empty")
@@ -470,7 +452,7 @@ func (r *ScalpingRepository) Place(planID string) error {
 
   return r.Db.Transaction(func(tx *gorm.DB) (err error) {
     if position.ID != "" {
-      result := tx.Model(&position).Where("version", position.Version).Updates(map[string]interface{}{
+      result = tx.Model(&position).Where("version", position.Version).Updates(map[string]interface{}{
         "entry_quantity": gorm.Expr("entry_quantity + ?", buyQuantity),
         "version":        gorm.Expr("version + ?", 1),
       })
@@ -506,6 +488,7 @@ func (r *ScalpingRepository) Place(planID string) error {
       BuyQuantity:  buyQuantity,
       SellPrice:    sellPrice,
       SellQuantity: buyQuantity,
+      Version:      1,
     }
     return tx.Create(&entity).Error
   })

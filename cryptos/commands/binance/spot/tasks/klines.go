@@ -100,7 +100,7 @@ func (h *KlinesHandler) Flush() error {
 }
 
 func (h *KlinesHandler) Fix() error {
-  log.Println("binance spot fix...")
+  log.Println("binance spot klines fix...")
   symbols := h.TradingsRepository.Scan()
   for _, symbol := range symbols {
     mutex := common.NewMutex(

@@ -40,11 +40,12 @@ func (r *PositionsRepository) Gets(conditions map[string]interface{}) []*models.
     "entry_price",
     "entry_quantity",
     "timestamp",
+    "status",
   })
   if _, ok := conditions["side"]; ok {
     query.Where("side", conditions["side"].(int))
   }
-  query.Where("status=1 AND entry_quantity>0").Find(&positions)
+  query.Where("status=1").Find(&positions)
   return positions
 }
 

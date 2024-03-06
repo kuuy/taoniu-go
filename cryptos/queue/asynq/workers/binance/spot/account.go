@@ -2,7 +2,7 @@ package spot
 
 import (
   "context"
-  "fmt"
+  config "taoniu.local/cryptos/config/binance/spot"
   "time"
 
   "github.com/hibiken/asynq"
@@ -21,9 +21,10 @@ func NewAccount(ansqContext *common.AnsqServerContext) *Account {
     AnsqContext: ansqContext,
   }
   h.Repository = &repositories.AccountRepository{
-    Db:  h.AnsqContext.Db,
-    Rdb: h.AnsqContext.Rdb,
-    Ctx: h.AnsqContext.Ctx,
+    Db:   h.AnsqContext.Db,
+    Rdb:  h.AnsqContext.Rdb,
+    Ctx:  h.AnsqContext.Ctx,
+    Nats: h.AnsqContext.Nats,
   }
   return h
 }
@@ -32,7 +33,7 @@ func (h *Account) Flush(ctx context.Context, t *asynq.Task) error {
   mutex := common.NewMutex(
     h.AnsqContext.Rdb,
     h.AnsqContext.Ctx,
-    fmt.Sprintf("locks:binance:spot:account:flush"),
+    config.LOCKS_ACCOUNT_FLUSH,
   )
   if !mutex.Lock(30 * time.Second) {
     return nil
@@ -44,6 +45,6 @@ func (h *Account) Flush(ctx context.Context, t *asynq.Task) error {
 }
 
 func (h *Account) Register() error {
-  h.AnsqContext.Mux.HandleFunc("binance:spot:account:flush", h.Flush)
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_ACCOUNT_FLUSH, h.Flush)
   return nil
 }
