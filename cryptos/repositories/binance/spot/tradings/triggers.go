@@ -106,7 +106,7 @@ func (r *TriggersRepository) Place(id string) error {
   }
 
   if position.EntryQuantity == 0 {
-    r.Close(trigger)
+    return errors.New(fmt.Sprintf("[%s] empty position", trigger.Symbol))
   }
 
   entity, err := r.SymbolsRepository.Get(trigger.Symbol)
@@ -121,32 +121,6 @@ func (r *TriggersRepository) Place(id string) error {
 
   entryPrice := position.EntryPrice
   entryQuantity := position.EntryQuantity
-  if position.Timestamp > trigger.Timestamp {
-    trigger.Timestamp = position.Timestamp
-    trigger.TakePrice = r.PositionRepository.TakePrice(entryPrice, tickSize)
-    stopPrice, err := r.PositionRepository.StopPrice(
-      trigger.Capital,
-      trigger.Price,
-      entryPrice,
-      entryQuantity,
-      tickSize,
-      stepSize,
-    )
-    if err == nil {
-      trigger.StopPrice = stopPrice
-    }
-
-    err = r.Db.Model(&trigger).Where("version", trigger.Version).Updates(map[string]interface{}{
-      "take_price": trigger.TakePrice,
-      "stop_price": trigger.StopPrice,
-      "timestamp":  trigger.Timestamp,
-      "version":    gorm.Expr("version + ?", 1),
-    }).Error
-    if err != nil {
-      return err
-    }
-  }
-
   entryAmount, _ := decimal.NewFromFloat(entryPrice).Mul(decimal.NewFromFloat(entryQuantity)).Float64()
 
   price, err := r.SymbolsRepository.Price(trigger.Symbol)
@@ -157,18 +131,6 @@ func (r *TriggersRepository) Place(id string) error {
   if entryPrice > 0 {
     if price > entryPrice {
       return errors.New(fmt.Sprintf("[%s] price big than entry price", trigger.Symbol))
-    }
-  }
-
-  if trigger.Price < price {
-    var scalping *spotModels.Scalping
-    result = r.Db.Where("symbol=?", trigger.Symbol).Take(&scalping)
-    if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-      var total int64
-      r.Db.Model(&models.Scalping{}).Where("scalping_id=? AND status IN ?", scalping.ID, []int{1, 2}).Count(&total)
-      if total < 1 {
-        return errors.New(fmt.Sprintf("[%s] waiting for the scalping", trigger.Symbol))
-      }
     }
   }
 
@@ -200,12 +162,8 @@ func (r *TriggersRepository) Place(id string) error {
   if price < buyPrice {
     buyPrice = price
   }
+
   buyPrice, _ = decimal.NewFromFloat(buyPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
-
-  if price > buyPrice {
-    return errors.New(fmt.Sprintf("[%s] price must reach %v", trigger.Symbol, buyPrice))
-  }
-
   buyQuantity, _ = decimal.NewFromFloat(buyAmount).Div(decimal.NewFromFloat(buyPrice)).Float64()
   buyQuantity, _ = decimal.NewFromFloat(buyQuantity).Div(decimal.NewFromFloat(stepSize)).Ceil().Mul(decimal.NewFromFloat(stepSize)).Float64()
   entryQuantity, _ = decimal.NewFromFloat(entryQuantity).Add(decimal.NewFromFloat(buyQuantity)).Float64()
@@ -222,6 +180,10 @@ func (r *TriggersRepository) Place(id string) error {
   sellPrice := r.PositionRepository.SellPrice(entryPrice, entryAmount)
   sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
 
+  if price > buyPrice {
+    return errors.New(fmt.Sprintf("[%s] price must reach %v", trigger.Symbol, buyPrice))
+  }
+
   if !r.CanBuy(trigger, buyPrice) {
     return errors.New(fmt.Sprintf("[%s] can not buy now", trigger.Symbol))
   }
@@ -231,13 +193,13 @@ func (r *TriggersRepository) Place(id string) error {
     return err
   }
 
-  if balance["free"] < 50 {
+  if balance["free"] < buyAmount+50 {
     return errors.New(fmt.Sprintf("[%s] free not enough", entity.Symbol))
   }
 
   return r.Db.Transaction(func(tx *gorm.DB) (err error) {
     if position.ID != "" {
-      result := tx.Model(&position).Where("version", position.Version).Updates(map[string]interface{}{
+      result = tx.Model(&position).Where("version", position.Version).Updates(map[string]interface{}{
         "entry_quantity": gorm.Expr("entry_quantity + ?", buyQuantity),
         "version":        gorm.Expr("version + ?", 1),
       })
@@ -434,6 +396,7 @@ func (r *TriggersRepository) Take(trigger *spotModels.Trigger, price float64) er
     return errors.New(fmt.Sprintf("[%s] empty position", trigger.Symbol))
   }
 
+  entryPrice := position.EntryPrice
   if position.Timestamp > trigger.Timestamp {
     trigger.Timestamp = position.Timestamp
   }
@@ -447,8 +410,6 @@ func (r *TriggersRepository) Take(trigger *spotModels.Trigger, price float64) er
   if err != nil {
     return nil
   }
-
-  entryPrice := position.EntryPrice
 
   var sellPrice float64
   var trading *models.Trigger
@@ -522,7 +483,7 @@ func (r *TriggersRepository) CanBuy(
     if trading.Status == 0 {
       return false
     }
-    if price >= trading.BuyPrice {
+    if price >= trading.BuyPrice*0.9615 {
       return false
     }
   }

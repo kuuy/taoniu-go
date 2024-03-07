@@ -320,19 +320,6 @@ func (r *ScalpingRepository) Place(planID string) error {
     if position.EntryQuantity > 0 {
       entryPrice = position.EntryPrice
     }
-    if position.Timestamp > scalping.Timestamp {
-      scalping.Timestamp = position.Timestamp
-      if position.EntryQuantity == 0 {
-        r.Close(scalping)
-      }
-      err := r.Db.Model(&scalping).Where("version", scalping.Version).Updates(map[string]interface{}{
-        "timestamp": scalping.Timestamp,
-        "version":   gorm.Expr("version + ?", 1),
-      }).Error
-      if err != nil {
-        return err
-      }
-    }
   }
 
   if entryPrice > 0 {
@@ -412,7 +399,7 @@ func (r *ScalpingRepository) Place(planID string) error {
 
   return r.Db.Transaction(func(tx *gorm.DB) (err error) {
     if position.ID != "" {
-      result := tx.Model(&position).Where("version", position.Version).Updates(map[string]interface{}{
+      result = tx.Model(&position).Where("version", position.Version).Updates(map[string]interface{}{
         "entry_quantity": gorm.Expr("entry_quantity + ?", buyQuantity),
         "version":        gorm.Expr("version + ?", 1),
       })
@@ -428,7 +415,6 @@ func (r *ScalpingRepository) Place(planID string) error {
     if err != nil {
       _, ok := err.(common.APIError)
       if ok {
-        log.Println("order palce error", err.Error())
         return err
       }
       tx.Model(&scalping).Where("version", scalping.Version).Updates(map[string]interface{}{
@@ -439,7 +425,7 @@ func (r *ScalpingRepository) Place(planID string) error {
 
     tx.Model(&spotModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 1)
 
-    entity := &models.Scalping{
+    trading := &models.Scalping{
       ID:           xid.New().String(),
       Symbol:       plan.Symbol,
       ScalpingID:   scalping.ID,
@@ -451,13 +437,12 @@ func (r *ScalpingRepository) Place(planID string) error {
       SellQuantity: buyQuantity,
       Version:      1,
     }
-    return tx.Create(&entity).Error
+    return tx.Create(&trading).Error
   })
 }
 
 func (r *ScalpingRepository) Take(scalping *spotModels.Scalping, price float64) error {
   var side = "SELL"
-
   var entryPrice float64
   var sellPrice float64
   var trading *models.Scalping

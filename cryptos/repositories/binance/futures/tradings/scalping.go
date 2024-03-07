@@ -353,27 +353,14 @@ func (r *ScalpingRepository) Place(planID string) error {
     if position.EntryQuantity > 0 {
       entryPrice = position.EntryPrice
     }
-    if position.Timestamp > scalping.Timestamp {
-      scalping.Timestamp = position.Timestamp
-      if position.EntryQuantity == 0 {
-        r.Close(scalping)
-      }
-      err := r.Db.Model(&scalping).Where("version", scalping.Version).Updates(map[string]interface{}{
-        "timestamp": scalping.Timestamp,
-        "version":   gorm.Expr("version + ?", 1),
-      }).Error
-      if err != nil {
-        return err
-      }
-    }
   }
 
   if entryPrice > 0 {
     if scalping.Side == 1 && price > entryPrice {
-      return errors.New(fmt.Sprintf("[%s] %s price big than entry price", scalping.Symbol, positionSide))
+      return errors.New(fmt.Sprintf("[%s] long price big than entry price", scalping.Symbol))
     }
     if scalping.Side == 2 && price < entryPrice {
-      return errors.New(fmt.Sprintf("[%s] %s price small than entry price", scalping.Symbol, positionSide))
+      return errors.New(fmt.Sprintf("[%s] short price small than entry price", scalping.Symbol))
     }
   }
 
@@ -478,7 +465,7 @@ func (r *ScalpingRepository) Place(planID string) error {
 
     tx.Model(&futuresModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 1)
 
-    entity := &models.Scalping{
+    trading := &models.Scalping{
       ID:           xid.New().String(),
       Symbol:       plan.Symbol,
       ScalpingID:   scalping.ID,
@@ -490,7 +477,7 @@ func (r *ScalpingRepository) Place(planID string) error {
       SellQuantity: buyQuantity,
       Version:      1,
     }
-    return tx.Create(&entity).Error
+    return tx.Create(&trading).Error
   })
 }
 

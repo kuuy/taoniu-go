@@ -114,7 +114,7 @@ func (r *TriggersRepository) Place(id string) error {
   }
 
   if position.EntryQuantity == 0 {
-    r.Close(trigger)
+    return errors.New(fmt.Sprintf("[%s] %s empty position", trigger.Symbol, positionSide))
   }
 
   entity, err := r.SymbolsRepository.Get(trigger.Symbol)
@@ -129,34 +129,6 @@ func (r *TriggersRepository) Place(id string) error {
 
   entryPrice := position.EntryPrice
   entryQuantity := position.EntryQuantity
-  if position.Timestamp > trigger.Timestamp {
-    trigger.Timestamp = position.Timestamp
-    trigger.TakePrice = r.PositionRepository.TakePrice(entryPrice, trigger.Side, tickSize)
-    stopPrice, err := r.PositionRepository.StopPrice(
-      trigger.Capital,
-      trigger.Side,
-      trigger.Price,
-      position.Leverage,
-      entryPrice,
-      entryQuantity,
-      tickSize,
-      stepSize,
-    )
-    if err == nil {
-      trigger.StopPrice = stopPrice
-    }
-
-    err = r.Db.Model(&trigger).Where("version", trigger.Version).Updates(map[string]interface{}{
-      "take_price": trigger.TakePrice,
-      "stop_price": trigger.StopPrice,
-      "timestamp":  trigger.Timestamp,
-      "version":    gorm.Expr("version + ?", 1),
-    }).Error
-    if err != nil {
-      return err
-    }
-  }
-
   entryAmount, _ := decimal.NewFromFloat(entryPrice).Mul(decimal.NewFromFloat(entryQuantity)).Float64()
 
   price, err := r.SymbolsRepository.Price(trigger.Symbol)
@@ -209,6 +181,25 @@ func (r *TriggersRepository) Place(id string) error {
   }
 
   buyPrice, _ := decimal.NewFromFloat(buyAmount).Div(decimal.NewFromFloat(buyQuantity)).Float64()
+  buyQuantity, _ = decimal.NewFromFloat(buyAmount).Div(decimal.NewFromFloat(buyPrice)).Float64()
+  buyQuantity, _ = decimal.NewFromFloat(buyQuantity).Div(decimal.NewFromFloat(stepSize)).Ceil().Mul(decimal.NewFromFloat(stepSize)).Float64()
+  entryQuantity, _ = decimal.NewFromFloat(entryQuantity).Add(decimal.NewFromFloat(buyQuantity)).Float64()
+
+  buyAmount, _ = decimal.NewFromFloat(buyPrice).Mul(decimal.NewFromFloat(buyQuantity)).Float64()
+  entryAmount, _ = decimal.NewFromFloat(entryAmount).Add(decimal.NewFromFloat(buyAmount)).Float64()
+
+  if entryPrice == 0 {
+    entryPrice = buyPrice
+  } else {
+    entryPrice, _ = decimal.NewFromFloat(entryAmount).Div(decimal.NewFromFloat(entryQuantity)).Float64()
+  }
+
+  sellPrice := r.PositionRepository.SellPrice(trigger.Side, entryPrice, entryAmount)
+  if trigger.Side == 1 {
+    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
+  } else {
+    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+  }
 
   if trigger.Side == 1 {
     if price < buyPrice {
@@ -230,26 +221,6 @@ func (r *TriggersRepository) Place(id string) error {
     return errors.New(fmt.Sprintf("[%s] %s price must reach %v", trigger.Symbol, positionSide, buyPrice))
   }
 
-  buyQuantity, _ = decimal.NewFromFloat(buyAmount).Div(decimal.NewFromFloat(buyPrice)).Float64()
-  buyQuantity, _ = decimal.NewFromFloat(buyQuantity).Div(decimal.NewFromFloat(stepSize)).Ceil().Mul(decimal.NewFromFloat(stepSize)).Float64()
-  entryQuantity, _ = decimal.NewFromFloat(entryQuantity).Add(decimal.NewFromFloat(buyQuantity)).Float64()
-
-  buyAmount, _ = decimal.NewFromFloat(buyPrice).Mul(decimal.NewFromFloat(buyQuantity)).Float64()
-  entryAmount, _ = decimal.NewFromFloat(entryAmount).Add(decimal.NewFromFloat(buyAmount)).Float64()
-
-  if entryPrice == 0 {
-    entryPrice = buyPrice
-  } else {
-    entryPrice, _ = decimal.NewFromFloat(entryAmount).Div(decimal.NewFromFloat(entryQuantity)).Float64()
-  }
-
-  sellPrice := r.PositionRepository.SellPrice(trigger.Side, entryPrice, entryAmount)
-  if trigger.Side == 1 {
-    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
-  } else {
-    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
-  }
-
   if !r.CanBuy(trigger, buyPrice) {
     return errors.New(fmt.Sprintf("[%s] can not buy now", trigger.Symbol))
   }
@@ -259,13 +230,13 @@ func (r *TriggersRepository) Place(id string) error {
     return err
   }
 
-  if balance["free"] < 50 {
+  if balance["free"] < buyAmount+50 {
     return errors.New(fmt.Sprintf("[%s] free not enough", entity.Symbol))
   }
 
   return r.Db.Transaction(func(tx *gorm.DB) (err error) {
     if position.ID != "" {
-      result := tx.Model(&position).Where("version", position.Version).Updates(map[string]interface{}{
+      result = tx.Model(&position).Where("version", position.Version).Updates(map[string]interface{}{
         "entry_quantity": gorm.Expr("entry_quantity + ?", buyQuantity),
         "version":        gorm.Expr("version + ?", 1),
       })
@@ -584,7 +555,7 @@ func (r *TriggersRepository) CanBuy(
       if trading.Status == 0 {
         return false
       }
-      if price >= trading.BuyPrice {
+      if price >= trading.BuyPrice*0.9615 {
         return false
       }
     }
@@ -595,7 +566,7 @@ func (r *TriggersRepository) CanBuy(
       if trading.Status == 0 {
         return false
       }
-      if price <= trading.BuyPrice {
+      if price <= trading.BuyPrice*1.0385 {
         return false
       }
     }
