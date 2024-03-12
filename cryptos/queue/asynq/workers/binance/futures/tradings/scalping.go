@@ -64,11 +64,10 @@ func (h *Scalping) Place(ctx context.Context, t *asynq.Task) error {
   if !mutex.Lock(30 * time.Second) {
     return nil
   }
-  defer mutex.Unlock()
 
   err := h.Repository.Place(payload.PlanID)
-  if err == nil {
-    h.AccountRepository.Flush()
+  if err != nil {
+    mutex.Unlock()
   }
 
   return nil
