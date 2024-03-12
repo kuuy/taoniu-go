@@ -444,7 +444,7 @@ func (r *ScalpingRepository) Take(scalping *spotModels.Scalping, price float64) 
     if position.Timestamp > timestamp {
       return errors.New("waiting for more time")
     }
-    if position.Timestamp > scalping.Timestamp {
+    if position.Timestamp > scalping.Timestamp+9e8 {
       r.Close(scalping)
     }
     return errors.New(fmt.Sprintf("[%s] empty position", scalping.Symbol))

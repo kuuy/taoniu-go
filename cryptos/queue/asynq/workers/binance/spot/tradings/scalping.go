@@ -15,8 +15,9 @@ import (
 )
 
 type Scalping struct {
-  AnsqContext *common.AnsqServerContext
-  Repository  *repositories.ScalpingRepository
+  AnsqContext       *common.AnsqServerContext
+  Repository        *repositories.ScalpingRepository
+  AccountRepository *spotRepositories.AccountRepository
 }
 
 func NewScalping(ansqContext *common.AnsqServerContext) *Scalping {
@@ -43,6 +44,12 @@ func NewScalping(ansqContext *common.AnsqServerContext) *Scalping {
   h.Repository.PositionRepository = &spotRepositories.PositionsRepository{
     Db: h.AnsqContext.Db,
   }
+  h.AccountRepository = &spotRepositories.AccountRepository{
+    Db:   h.AnsqContext.Db,
+    Rdb:  h.AnsqContext.Rdb,
+    Ctx:  h.AnsqContext.Ctx,
+    Nats: h.AnsqContext.Nats,
+  }
   return h
 }
 
@@ -60,7 +67,10 @@ func (h *Scalping) Place(ctx context.Context, t *asynq.Task) error {
   }
   defer mutex.Unlock()
 
-  h.Repository.Place(payload.PlanID)
+  err := h.Repository.Place(payload.PlanID)
+  if err == nil {
+    h.AccountRepository.Flush()
+  }
 
   return nil
 }
