@@ -397,48 +397,35 @@ func (r *ScalpingRepository) Place(planID string) error {
     return errors.New(fmt.Sprintf("[%s] free not enough", entity.Symbol))
   }
 
-  return r.Db.Transaction(func(tx *gorm.DB) (err error) {
-    if position.ID != "" {
-      result = tx.Model(&position).Where("version", position.Version).Updates(map[string]interface{}{
-        "entry_quantity": gorm.Expr("entry_quantity + ?", buyQuantity),
-        "version":        gorm.Expr("version + ?", 1),
-      })
-      if result.Error != nil {
-        return result.Error
-      }
-      if result.RowsAffected == 0 {
-        return errors.New("position update failed")
-      }
+  orderID, err := r.OrdersRepository.Create(plan.Symbol, side, buyPrice, buyQuantity)
+  if err != nil {
+    _, ok := err.(common.APIError)
+    if ok {
+      return err
     }
+    r.Db.Model(&scalping).Where("version", scalping.Version).Updates(map[string]interface{}{
+      "remark":  err.Error(),
+      "version": gorm.Expr("version + ?", 1),
+    })
+  }
 
-    orderID, err := r.OrdersRepository.Create(plan.Symbol, side, buyPrice, buyQuantity)
-    if err != nil {
-      _, ok := err.(common.APIError)
-      if ok {
-        return err
-      }
-      tx.Model(&scalping).Where("version", scalping.Version).Updates(map[string]interface{}{
-        "remark":  err.Error(),
-        "version": gorm.Expr("version + ?", 1),
-      })
-    }
+  r.Db.Model(&spotModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 1)
 
-    tx.Model(&spotModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 1)
+  trading := &models.Scalping{
+    ID:           xid.New().String(),
+    Symbol:       plan.Symbol,
+    ScalpingID:   scalping.ID,
+    PlanID:       plan.ID,
+    BuyOrderId:   orderID,
+    BuyPrice:     buyPrice,
+    BuyQuantity:  buyQuantity,
+    SellPrice:    sellPrice,
+    SellQuantity: buyQuantity,
+    Version:      1,
+  }
+  r.Db.Create(&trading)
 
-    trading := &models.Scalping{
-      ID:           xid.New().String(),
-      Symbol:       plan.Symbol,
-      ScalpingID:   scalping.ID,
-      PlanID:       plan.ID,
-      BuyOrderId:   orderID,
-      BuyPrice:     buyPrice,
-      BuyQuantity:  buyQuantity,
-      SellPrice:    sellPrice,
-      SellQuantity: buyQuantity,
-      Version:      1,
-    }
-    return tx.Create(&trading).Error
-  })
+  return nil
 }
 
 func (r *ScalpingRepository) Take(scalping *spotModels.Scalping, price float64) error {

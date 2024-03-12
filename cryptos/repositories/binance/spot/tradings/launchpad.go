@@ -3,15 +3,17 @@ package tradings
 import (
   "errors"
   "fmt"
+  "log"
+  "math"
+  "time"
+
   "github.com/adshao/go-binance/v2/common"
   "github.com/rs/xid"
   "github.com/shopspring/decimal"
   "gorm.io/gorm"
-  "log"
-  "math"
+
   spotModels "taoniu.local/cryptos/models/binance/spot"
   models "taoniu.local/cryptos/models/binance/spot/tradings"
-  "time"
 )
 
 type LaunchpadRepository struct {
@@ -120,12 +122,9 @@ func (r *LaunchpadRepository) Place(id string) error {
     err := r.Db.Transaction(func(tx *gorm.DB) (err error) {
       orderID, err := r.OrdersRepository.Create(launchpad.Symbol, "BUY", buys[i].BuyPrice, buys[i].BuyQuantity)
       if err != nil {
-        apiError, ok := err.(common.APIError)
+        _, ok := err.(common.APIError)
         if ok {
-          err := r.ApiError(apiError, launchpad)
-          if err != nil {
-            return err
-          }
+          return err
         }
         tx.Model(&launchpad).Where("version", launchpad.Version).Updates(map[string]interface{}{
           "remark":  err.Error(),
@@ -267,7 +266,7 @@ func (r *LaunchpadRepository) Sells(
 
 func (r *LaunchpadRepository) Flush(id string) error {
   var launchpad *spotModels.Launchpad
-  result := r.Db.First(&launchpad, "id=?", id)
+  var result = r.Db.First(&launchpad, "id=?", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     return errors.New("launchpad empty")
   }
@@ -291,7 +290,7 @@ func (r *LaunchpadRepository) Flush(id string) error {
         orderID := r.OrdersRepository.Lost(trading.Symbol, "BUY", trading.BuyQuantity, timestamp-30)
         if orderID > 0 {
           trading.BuyOrderId = orderID
-          result := r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+          result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
             "buy_order_id": trading.BuyOrderId,
             "version":      gorm.Expr("version + ?", 1),
           })
@@ -316,7 +315,7 @@ func (r *LaunchpadRepository) Flush(id string) error {
         trading.Status = 4
       }
 
-      result := r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+      result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
         "buy_order_id": trading.BuyOrderId,
         "status":       trading.Status,
         "version":      gorm.Expr("version + ?", 1),
@@ -335,7 +334,7 @@ func (r *LaunchpadRepository) Flush(id string) error {
         orderID := r.OrdersRepository.Lost(trading.Symbol, "SELL", trading.SellQuantity, timestamp-30)
         if orderID > 0 {
           trading.SellOrderId = orderID
-          result := r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+          result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
             "sell_order_id": trading.SellOrderId,
             "version":       gorm.Expr("version + ?", 1),
           })
@@ -363,7 +362,7 @@ func (r *LaunchpadRepository) Flush(id string) error {
         trading.Status = 5
       }
 
-      result := r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+      result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
         "sell_order_id": trading.SellOrderId,
         "status":        trading.Status,
         "version":       gorm.Expr("version + ?", 1),
@@ -412,12 +411,9 @@ func (r *LaunchpadRepository) Take(launchpad *spotModels.Launchpad, price float6
 
   orderID, err := r.OrdersRepository.Create(trading.Symbol, "SELL", sellPrice, trading.SellQuantity)
   if err != nil {
-    apiError, ok := err.(common.APIError)
+    _, ok := err.(common.APIError)
     if ok {
-      err := r.ApiError(apiError, launchpad)
-      if err != nil {
-        return err
-      }
+      return err
     }
     r.Db.Model(&launchpad).Where("version", launchpad.Version).Updates(map[string]interface{}{
       "remark":  err.Error(),
@@ -465,15 +461,4 @@ func (r *LaunchpadRepository) CanBuy(
   }
 
   return true
-}
-
-func (r *LaunchpadRepository) ApiError(apiError common.APIError, launchpad *spotModels.Launchpad) error {
-  if apiError.Code == -1013 || apiError.Code == -1111 || apiError.Code == -1121 || apiError.Code == -2010 || apiError.Code == -4016 {
-    r.Db.Model(&spotModels.Launchpad{ID: launchpad.ID}).Where("version", launchpad.Version).Updates(map[string]interface{}{
-      "remark":  apiError.Error(),
-      "version": gorm.Expr("version + ?", 1),
-    })
-    return apiError
-  }
-  return nil
 }

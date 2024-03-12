@@ -250,9 +250,8 @@ func (r *PositionsRepository) Flush(position *models.Position) (err error) {
     "update_time",
     "status",
   }).Where(
-    "symbol=? AND update_time>? AND status IN ?",
+    "symbol=? AND status IN ?",
     position.Symbol,
-    position.Timestamp,
     []string{"NEW", "PARTIALLY_FILLED", "FILLED"},
   ).Order("update_time asc").Find(&orders)
   if len(orders) == 0 {
