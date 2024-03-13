@@ -517,11 +517,11 @@ func (r *ScalpingRepository) Take(scalping *spotModels.Scalping, price float64) 
 func (r *ScalpingRepository) Close(scalping *spotModels.Scalping) {
   var total int64
   var tradings []*models.Scalping
-  r.Db.Model(&tradings).Where("scalping_id = ? AND status IN ?", scalping.ID, []int{0, 1, 2}).Count(&total)
+  r.Db.Model(&tradings).Where("scalping_id = ? AND status IN ?", scalping.ID, []int{0, 1}).Count(&total)
   if total == 0 {
     return
   }
-  r.Db.Model(&tradings).Where("scalping_id=? AND status IN ?", scalping.ID, []int{0, 1, 2}).Update("status", 5)
+  r.Db.Model(&tradings).Where("scalping_id=? AND status IN ?", scalping.ID, []int{0, 1}).Update("status", 5)
 }
 
 func (r *ScalpingRepository) Pending() map[string]float64 {
