@@ -134,17 +134,18 @@ func (r *ScalpingRepository) Flush(id string) error {
           if result.RowsAffected == 0 {
             return errors.New("order update failed")
           }
-        }
-        if timestamp < time.Now().Unix()-900 {
-          result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
-            "status":  6,
-            "version": gorm.Expr("version + ?", 1),
-          })
-          if result.Error != nil {
-            return result.Error
-          }
-          if result.RowsAffected == 0 {
-            return errors.New("order update failed")
+        } else {
+          if timestamp < time.Now().Unix()-900 {
+            result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+              "status":  6,
+              "version": gorm.Expr("version + ?", 1),
+            })
+            if result.Error != nil {
+              return result.Error
+            }
+            if result.RowsAffected == 0 {
+              return errors.New("order update failed")
+            }
           }
         }
       } else {
