@@ -115,6 +115,7 @@ func (r *ScalpingRepository) Flush(id string) error {
       if trading.BuyOrderId == 0 {
         orderID := r.OrdersRepository.Lost(trading.Symbol, side, trading.BuyQuantity, timestamp-30)
         if orderID > 0 {
+          status = r.OrdersRepository.Status(trading.Symbol, orderID)
           trading.BuyOrderId = orderID
           result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
             "buy_order_id": trading.BuyOrderId,

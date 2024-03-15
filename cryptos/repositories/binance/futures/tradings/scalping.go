@@ -123,6 +123,7 @@ func (r *ScalpingRepository) Flush(id string) error {
       if trading.BuyOrderId == 0 {
         orderID := r.OrdersRepository.Lost(trading.Symbol, positionSide, side, trading.BuyQuantity, timestamp-30)
         if orderID > 0 {
+          status = r.OrdersRepository.Status(trading.Symbol, orderID)
           trading.BuyOrderId = orderID
           result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
             "buy_order_id": trading.BuyOrderId,
@@ -196,6 +197,7 @@ func (r *ScalpingRepository) Flush(id string) error {
       if trading.SellOrderId == 0 {
         orderID := r.OrdersRepository.Lost(trading.Symbol, positionSide, side, trading.SellQuantity, timestamp-30)
         if orderID > 0 {
+          status = r.OrdersRepository.Status(trading.Symbol, orderID)
           trading.SellOrderId = orderID
           result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
             "sell_order_id": trading.SellOrderId,
@@ -207,17 +209,18 @@ func (r *ScalpingRepository) Flush(id string) error {
           if result.RowsAffected == 0 {
             return errors.New("order update failed")
           }
-        }
-        if timestamp < time.Now().Unix()-900 {
-          result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
-            "status":  1,
-            "version": gorm.Expr("version + ?", 1),
-          })
-          if result.Error != nil {
-            return result.Error
-          }
-          if result.RowsAffected == 0 {
-            return errors.New("order update failed")
+        } else {
+          if timestamp < time.Now().Unix()-900 {
+            result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+              "status":  1,
+              "version": gorm.Expr("version + ?", 1),
+            })
+            if result.Error != nil {
+              return result.Error
+            }
+            if result.RowsAffected == 0 {
+              return errors.New("order update failed")
+            }
           }
         }
       } else {
