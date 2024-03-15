@@ -606,7 +606,7 @@ func (r *ScalpingRepository) Close(scalping *futuresModels.Scalping) {
   if total == 0 {
     return
   }
-  r.Db.Model(&tradings).Where("scalping_id=? AND status IN ?", scalping.ID, []int{0, 1}).Update("status", 5)
+  r.Db.Model(&tradings).Where("scalping_id=? AND status IN ?", scalping.ID, []int{1}).Update("status", 5)
 }
 
 func (r *ScalpingRepository) Pending() map[string]float64 {
