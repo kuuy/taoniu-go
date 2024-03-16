@@ -523,7 +523,16 @@ func (r *ScalpingRepository) Close(scalping *spotModels.Scalping) {
   if total == 0 {
     return
   }
-  r.Db.Model(&tradings).Where("scalping_id=? AND status IN ?", scalping.ID, []int{1}).Update("status", 5)
+  r.Db.Where("scalping_id=? AND status=?", scalping.ID, 1).Find(&tradings)
+  for _, trading := range tradings {
+    timestamp := trading.UpdatedAt.Unix()
+    if timestamp < time.Now().Unix()-900 {
+      r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+        "status":  5,
+        "version": gorm.Expr("version + ?", 1),
+      })
+    }
+  }
 }
 
 func (r *ScalpingRepository) Pending() map[string]float64 {
