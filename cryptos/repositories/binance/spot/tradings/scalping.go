@@ -114,7 +114,7 @@ func (r *ScalpingRepository) Flush(id string) error {
     if trading.Status == 0 {
       status := r.OrdersRepository.Status(trading.Symbol, trading.BuyOrderId)
       if trading.BuyOrderId == 0 {
-        orderID := r.OrdersRepository.Lost(trading.Symbol, side, trading.BuyQuantity, trading.UpdatedAt.Add(-30*time.Second).Unix())
+        orderID := r.OrdersRepository.Lost(trading.Symbol, side, trading.BuyQuantity, trading.UpdatedAt.Add(-120*time.Second).Unix())
         if orderID > 0 {
           status = r.OrdersRepository.Status(trading.Symbol, orderID)
           trading.BuyOrderId = orderID
@@ -178,7 +178,7 @@ func (r *ScalpingRepository) Flush(id string) error {
     if trading.Status == 2 {
       status := r.OrdersRepository.Status(trading.Symbol, trading.SellOrderId)
       if trading.SellOrderId == 0 {
-        orderID := r.OrdersRepository.Lost(trading.Symbol, side, trading.SellQuantity, trading.UpdatedAt.Add(-30*time.Second).Unix())
+        orderID := r.OrdersRepository.Lost(trading.Symbol, side, trading.SellQuantity, trading.UpdatedAt.Add(-120*time.Second).Unix())
         if orderID > 0 {
           trading.SellOrderId = orderID
           result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
