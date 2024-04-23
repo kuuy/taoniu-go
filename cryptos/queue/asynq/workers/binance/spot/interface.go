@@ -34,3 +34,7 @@ type KlinesUpdatePayload struct {
   Quota     float64 `json:"quota"`
   Timestamp int64   `json:"timestamp"`
 }
+
+type KlinesCleanPayload struct {
+  Symbol string
+}

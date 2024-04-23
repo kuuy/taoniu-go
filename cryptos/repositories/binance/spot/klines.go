@@ -306,7 +306,7 @@ func (r *KlinesRepository) Clean(symbol string) error {
   timestamp = r.Timestamp("15m") - r.Timestep("15m")*672
   r.Db.Where("symbol=? AND interval = ? AND timestamp < ?", symbol, "15m", timestamp).Delete(&models.Kline{})
 
-  timestamp = r.Timestamp("4h") - r.Timestep("15m")*126
+  timestamp = r.Timestamp("4h") - r.Timestep("4h")*126
   r.Db.Where("symbol=? AND interval = ? AND timestamp < ?", symbol, "4h", timestamp).Delete(&models.Kline{})
 
   timestamp = r.Timestamp("1d") - r.Timestep("1d")*100

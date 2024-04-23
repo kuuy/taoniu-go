@@ -68,22 +68,20 @@ func (h *AccountHandler) handler(message map[string]interface{}) {
   event := message["e"].(string)
 
   if event == "ACCOUNT_UPDATE" {
-    info := message["a"].(map[string]interface{})
-    for _, item := range info["B"].([]interface{}) {
-      account := item.(map[string]interface{})
-      if account["a"].(string) != "USDT" {
-        continue
-      }
-      balance, _ := strconv.ParseFloat(fmt.Sprintf("%v", account["wb"]), 64)
-      availableBalance, _ := strconv.ParseFloat(fmt.Sprintf("%v", account["cw"]), 64)
-      data, _ := json.Marshal(map[string]interface{}{
-        "asset":             account["a"].(string),
-        "balance":           balance,
-        "available_balance": availableBalance,
-      })
-      h.Nats.Publish(config.NATS_ACCOUNT_UPDATE, data)
-      h.Nats.Flush()
-    }
+    //info := message["a"].(map[string]interface{})
+    //for _, item := range info["B"].([]interface{}) {
+    //  account := item.(map[string]interface{})
+    //  if account["a"].(string) != "USDT" {
+    //    continue
+    //  }
+    //  balance, _ := strconv.ParseFloat(fmt.Sprintf("%v", account["wb"]), 64)
+    //  data, _ := json.Marshal(map[string]interface{}{
+    //    "asset":   account["a"].(string),
+    //    "balance": balance,
+    //  })
+    //  h.Nats.Publish(config.NATS_ACCOUNT_UPDATE, data)
+    //  h.Nats.Flush()
+    //}
   }
 
   if event == "ORDER_TRADE_UPDATE" {

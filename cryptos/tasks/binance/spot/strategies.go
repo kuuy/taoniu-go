@@ -7,16 +7,16 @@ import (
 
   "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/spot"
-  models "taoniu.local/cryptos/models/binance/spot"
   jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/spot"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
+  tradingsRepositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
 )
 
 type StrategiesTask struct {
-  AnsqContext       *common.AnsqClientContext
-  Job               *jobs.Strategies
-  Repository        *repositories.StrategiesRepository
-  SymbolsRepository *repositories.SymbolsRepository
+  AnsqContext        *common.AnsqClientContext
+  Job                *jobs.Strategies
+  Repository         *repositories.StrategiesRepository
+  TradingsRepository *repositories.TradingsRepository
 }
 
 func NewStrategiesTask(ansqContext *common.AnsqClientContext) *StrategiesTask {
@@ -25,16 +25,20 @@ func NewStrategiesTask(ansqContext *common.AnsqClientContext) *StrategiesTask {
     Repository: &repositories.StrategiesRepository{
       Db: ansqContext.Db,
     },
-    SymbolsRepository: &repositories.SymbolsRepository{
+    TradingsRepository: &repositories.TradingsRepository{
       Db: ansqContext.Db,
+      ScalpingRepository: &tradingsRepositories.ScalpingRepository{
+        Db: ansqContext.Db,
+      },
+      TriggersRepository: &tradingsRepositories.TriggersRepository{
+        Db: ansqContext.Db,
+      },
     },
   }
 }
 
 func (t *StrategiesTask) Atr(interval string) error {
-  var symbols []string
-  t.AnsqContext.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
-  for _, symbol := range symbols {
+  for _, symbol := range t.TradingsRepository.Scan() {
     task, err := t.Job.Atr(symbol, interval)
     if err != nil {
       return err
@@ -50,9 +54,7 @@ func (t *StrategiesTask) Atr(interval string) error {
 }
 
 func (t *StrategiesTask) Zlema(interval string) error {
-  var symbols []string
-  t.AnsqContext.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
-  for _, symbol := range symbols {
+  for _, symbol := range t.TradingsRepository.Scan() {
     task, err := t.Job.Zlema(symbol, interval)
     if err != nil {
       return err
@@ -68,9 +70,7 @@ func (t *StrategiesTask) Zlema(interval string) error {
 }
 
 func (t *StrategiesTask) HaZlema(interval string) error {
-  var symbols []string
-  t.AnsqContext.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
-  for _, symbol := range symbols {
+  for _, symbol := range t.TradingsRepository.Scan() {
     task, err := t.Job.HaZlema(symbol, interval)
     if err != nil {
       return err
@@ -86,9 +86,7 @@ func (t *StrategiesTask) HaZlema(interval string) error {
 }
 
 func (t *StrategiesTask) Kdj(interval string) error {
-  var symbols []string
-  t.AnsqContext.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
-  for _, symbol := range symbols {
+  for _, symbol := range t.TradingsRepository.Scan() {
     task, err := t.Job.Kdj(symbol, interval)
     if err != nil {
       return err
@@ -104,9 +102,7 @@ func (t *StrategiesTask) Kdj(interval string) error {
 }
 
 func (t *StrategiesTask) BBands(interval string) error {
-  var symbols []string
-  t.AnsqContext.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
-  for _, symbol := range symbols {
+  for _, symbol := range t.TradingsRepository.Scan() {
     task, err := t.Job.BBands(symbol, interval)
     if err != nil {
       return err
@@ -122,9 +118,7 @@ func (t *StrategiesTask) BBands(interval string) error {
 }
 
 func (t *StrategiesTask) IchimokuCloud(interval string) error {
-  var symbols []string
-  t.AnsqContext.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
-  for _, symbol := range symbols {
+  for _, symbol := range t.TradingsRepository.Scan() {
     task, err := t.Job.IchimokuCloud(symbol, interval)
     if err != nil {
       return err
@@ -150,8 +144,7 @@ func (t *StrategiesTask) Flush(interval string) error {
 }
 
 func (t *StrategiesTask) Clean() error {
-  symbols := t.SymbolsRepository.Symbols()
-  for _, symbol := range symbols {
+  for _, symbol := range t.TradingsRepository.Scan() {
     t.Repository.Clean(symbol)
   }
   return nil

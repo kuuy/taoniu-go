@@ -6,25 +6,24 @@ import (
   "gorm.io/gorm"
 
   pb "taoniu.local/cryptos/grpc/binance/spot/analysis/tradings/fishers/chart"
-  repositories "taoniu.local/cryptos/repositories/binance/spot/analysis/tradings/fishers"
 )
 
 type Chart struct {
   pb.UnimplementedChartServer
-  Repository *repositories.ChartRepository
+  //Repository *repositories.ChartRepository
 }
 
 func NewChart(db *gorm.DB) *Chart {
   return &Chart{
-    Repository: &repositories.ChartRepository{
-      Db: db,
-    },
+    //Repository: &repositories.ChartRepository{
+    //  Db: db,
+    //},
   }
 }
 
 func (srv *Chart) Series(ctx context.Context, request *pb.SeriesRequest) (*pb.SeriesReply, error) {
   reply := &pb.SeriesReply{}
-  reply.Series = srv.Repository.Series(int(request.Limit))
+  //reply.Series = srv.Repository.Series(int(request.Limit))
   return reply, nil
 }
 

@@ -1,7 +1,6 @@
 package futures
 
 import (
-  "slices"
   "time"
 
   "github.com/hibiken/asynq"
@@ -45,8 +44,7 @@ func NewOrdersTask(ansqContext *common.AnsqClientContext) *OrdersTask {
 }
 
 func (t *OrdersTask) Open() error {
-  symbols := t.Scan()
-  for _, symbol := range symbols {
+  for _, symbol := range t.TradingsRepository.Scan() {
     task, err := t.Job.Open(symbol)
     if err != nil {
       return err
@@ -79,8 +77,7 @@ func (t *OrdersTask) Flush() error {
 }
 
 func (t *OrdersTask) Sync(startTime int64, limit int) error {
-  symbols := t.Scan()
-  for _, symbol := range symbols {
+  for _, symbol := range t.TradingsRepository.Scan() {
     task, err := t.Job.Sync(symbol, startTime, limit)
     if err != nil {
       return err
@@ -93,14 +90,4 @@ func (t *OrdersTask) Sync(startTime int64, limit int) error {
     )
   }
   return nil
-}
-
-func (t *OrdersTask) Scan() []string {
-  var symbols []string
-  for _, symbol := range t.TradingsRepository.Scan() {
-    if !slices.Contains(symbols, symbol) {
-      symbols = append(symbols, symbol)
-    }
-  }
-  return symbols
 }

@@ -9,13 +9,14 @@ import (
   config "taoniu.local/cryptos/config/binance/futures"
   jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/futures"
   repositories "taoniu.local/cryptos/repositories/binance/futures"
+  tradingsRepositories "taoniu.local/cryptos/repositories/binance/futures/tradings"
 )
 
 type PlansTask struct {
-  AnsqContext       *common.AnsqClientContext
-  Job               *jobs.Plans
-  Repository        *repositories.StrategiesRepository
-  SymbolsRepository *repositories.SymbolsRepository
+  AnsqContext        *common.AnsqClientContext
+  Job                *jobs.Plans
+  Repository         *repositories.StrategiesRepository
+  TradingsRepository *repositories.TradingsRepository
 }
 
 func NewPlansTask(ansqContext *common.AnsqClientContext) *PlansTask {
@@ -24,8 +25,14 @@ func NewPlansTask(ansqContext *common.AnsqClientContext) *PlansTask {
     Repository: &repositories.StrategiesRepository{
       Db: ansqContext.Db,
     },
-    SymbolsRepository: &repositories.SymbolsRepository{
+    TradingsRepository: &repositories.TradingsRepository{
       Db: ansqContext.Db,
+      ScalpingRepository: &tradingsRepositories.ScalpingRepository{
+        Db: ansqContext.Db,
+      },
+      TriggersRepository: &tradingsRepositories.TriggersRepository{
+        Db: ansqContext.Db,
+      },
     },
   }
 }
@@ -45,8 +52,7 @@ func (t *PlansTask) Flush(interval string) error {
 }
 
 func (t *PlansTask) Clean() error {
-  symbols := t.SymbolsRepository.Symbols()
-  for _, symbol := range symbols {
+  for _, symbol := range t.TradingsRepository.Scan() {
     t.Repository.Clean(symbol)
   }
   return nil

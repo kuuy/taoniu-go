@@ -12,37 +12,9 @@ import (
 )
 
 type PositionsHandler struct {
-  ApiContext        *common.ApiContext
-  Response          *api.ResponseHandler
-  Repository        *repositories.PositionsRepository
-  SymbolsRepository *repositories.SymbolsRepository
-}
-
-type PositionsInfo struct {
-  ID            string  `json:"id"`
-  Symbol        string  `json:"symbol"`
-  Side          int     `json:"side"`
-  Leverage      int     `json:"leverage"`
-  Capital       float64 `json:"capital"`
-  Notional      float64 `json:"notional"`
-  EntryPrice    float64 `json:"entry_price"`
-  EntryQuantity float64 `json:"entry_quantity"`
-  EntryAmount   float64 `json:"entry_amount"`
-  Timestamp     int64   `json:"timestamp"`
-}
-
-type TradingInfo struct {
-  BuyPrice      float64 `json:"buy_price"`
-  SellPrice     float64 `json:"sell_price"`
-  Quantity      float64 `json:"quantity"`
-  EntryPrice    float64 `json:"entry_price"`
-  EntryQuantity float64 `json:"entry_quantity"`
-}
-
-type CalcResponse struct {
-  TakePrice float64        `json:"take_price"`
-  StopPrice float64        `json:"stop_price"`
-  Tradings  []*TradingInfo `json:"tradings"`
+  ApiContext *common.ApiContext
+  Response   *api.ResponseHandler
+  Repository *repositories.PositionsRepository
 }
 
 func NewPositionsRouter(apiContext *common.ApiContext) http.Handler {
@@ -81,9 +53,9 @@ func (h *PositionsHandler) Gets(
   }
 
   positions := h.Repository.Gets(conditions)
-  data := make([]*PositionsInfo, len(positions))
+  data := make([]*PositionInfo, len(positions))
   for i, position := range positions {
-    data[i] = &PositionsInfo{
+    data[i] = &PositionInfo{
       ID:            position.ID,
       Symbol:        position.Symbol,
       Side:          position.Side,
@@ -171,7 +143,7 @@ func (h *PositionsHandler) Calc(
     places++
   }
 
-  result := &CalcResponse{}
+  result := &CalcPositionResponse{}
 
   for {
     var err error

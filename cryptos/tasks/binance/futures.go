@@ -118,10 +118,3 @@ func (t *FuturesTask) Analysis() *tasks.AnalysisTask {
   }
   return t.AnalysisTask
 }
-
-func (t *FuturesTask) Clean() {
-  t.Klines().Clean()
-  t.Strategies().Clean()
-  t.Plans().Clean()
-  //t.Patterns().Candlesticks().Clean()
-}

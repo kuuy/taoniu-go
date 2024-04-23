@@ -1,6 +1,7 @@
-package fishers
+package tradings
 
 import (
+  "fmt"
   "net/http"
   "strconv"
   "time"
@@ -9,30 +10,31 @@ import (
 
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
-  repositories "taoniu.local/cryptos/repositories/binance/spot/analysis/tradings/fishers"
+  repositories "taoniu.local/cryptos/repositories/binance/spot/analysis/tradings"
 )
 
-type GridInfo struct {
-  ID          string      `json:"id"`
-  Day         string      `json:"day"`
-  BuysCount   int         `json:"buys_count"`
-  SellsCount  int         `json:"sells_count"`
-  BuysAmount  float64     `json:"buys_amount"`
-  SellsAmount float64     `json:"sells_amount"`
-  Data        interface{} `json:"data"`
+type ScalpingInfo struct {
+  ID             string `json:"id"`
+  Day            string `json:"day"`
+  BuysCount      int    `json:"buys_count"`
+  SellsCount     int    `json:"sells_count"`
+  BuysAmount     string `json:"buys_amount"`
+  SellsAmount    string `json:"sells_amount"`
+  Profit         string `json:"profit"`
+  AdditiveProfit string `json:"additive_profit"`
 }
 
-type GridsHandler struct {
+type ScalpingHandler struct {
   ApiContext *common.ApiContext
   Response   *api.ResponseHandler
-  Repository *repositories.GridsRepository
+  Repository *repositories.ScalpingRepository
 }
 
-func NewGridsRouter(apiContext *common.ApiContext) http.Handler {
-  h := GridsHandler{
+func NewScalpingRouter(apiContext *common.ApiContext) http.Handler {
+  h := ScalpingHandler{
     ApiContext: apiContext,
   }
-  h.Repository = &repositories.GridsRepository{
+  h.Repository = &repositories.ScalpingRepository{
     Db:  h.ApiContext.Db,
     Rdb: h.ApiContext.Rdb,
     Ctx: h.ApiContext.Ctx,
@@ -45,7 +47,7 @@ func NewGridsRouter(apiContext *common.ApiContext) http.Handler {
   return r
 }
 
-func (h *GridsHandler) Listings(
+func (h *ScalpingHandler) Listings(
   w http.ResponseWriter,
   r *http.Request,
 ) {
@@ -59,8 +61,9 @@ func (h *GridsHandler) Listings(
   var current int
   if !r.URL.Query().Has("current") {
     current = 1
+  } else {
+    current, _ = strconv.Atoi(r.URL.Query().Get("current"))
   }
-  current, _ = strconv.Atoi(r.URL.Query().Get("current"))
   if current < 1 {
     h.Response.Error(http.StatusForbidden, 1004, "current not valid")
     return
@@ -77,25 +80,28 @@ func (h *GridsHandler) Listings(
     return
   }
 
-  total := h.Repository.Count()
-  grids := h.Repository.Listings(current, pageSize)
-  data := make([]*GridInfo, len(grids))
-  for i, grid := range grids {
-    data[i] = &GridInfo{
-      ID:          grid.ID,
-      Day:         time.Time(grid.Day).Format("2006-01-02"),
-      BuysCount:   grid.BuysCount,
-      SellsCount:  grid.SellsCount,
-      BuysAmount:  grid.BuysAmount,
-      SellsAmount: grid.SellsAmount,
-      Data:        grid.Data,
+  conditions := map[string]interface{}{}
+
+  total := h.Repository.Count(conditions)
+  tradings := h.Repository.Listings(conditions, current, pageSize)
+  data := make([]*ScalpingInfo, len(tradings))
+  for i, trading := range tradings {
+    data[i] = &ScalpingInfo{
+      ID:             trading.ID,
+      Day:            time.Time(trading.Day).Format("2006-01-02"),
+      BuysCount:      trading.BuysCount,
+      SellsCount:     trading.SellsCount,
+      BuysAmount:     fmt.Sprintf("%.2f", trading.BuysAmount),
+      SellsAmount:    fmt.Sprintf("%.2f", trading.SellsAmount),
+      Profit:         fmt.Sprintf("%.2f", trading.Profit),
+      AdditiveProfit: fmt.Sprintf("%.2f", trading.AdditiveProfit),
     }
   }
 
   h.Response.Pagenate(data, total, current, pageSize)
 }
 
-func (h *GridsHandler) Series(
+func (h *ScalpingHandler) Series(
   w http.ResponseWriter,
   r *http.Request,
 ) {

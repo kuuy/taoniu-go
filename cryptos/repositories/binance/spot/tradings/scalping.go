@@ -108,12 +108,13 @@ func (r *ScalpingRepository) Flush(id string) error {
   var tradings []*models.Scalping
   r.Db.Where("scalping_id=? AND status IN ?", scalping.ID, []int{0, 2}).Find(&tradings)
 
+  timestamp := time.Now().Add(-15 * time.Minute).Unix()
+
   for _, trading := range tradings {
     if trading.Status == 0 {
       status := r.OrdersRepository.Status(trading.Symbol, trading.BuyOrderId)
-      timestamp := trading.CreatedAt.Unix()
       if trading.BuyOrderId == 0 {
-        orderID := r.OrdersRepository.Lost(trading.Symbol, side, trading.BuyQuantity, timestamp-30)
+        orderID := r.OrdersRepository.Lost(trading.Symbol, side, trading.BuyQuantity, trading.UpdatedAt.Add(-30*time.Second).Unix())
         if orderID > 0 {
           status = r.OrdersRepository.Status(trading.Symbol, orderID)
           trading.BuyOrderId = orderID
@@ -128,7 +129,7 @@ func (r *ScalpingRepository) Flush(id string) error {
             return errors.New("order update failed")
           }
         }
-        if timestamp < time.Now().Unix()-900 {
+        if trading.UpdatedAt.Unix() < timestamp {
           result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
             "status":  6,
             "version": gorm.Expr("version + ?", 1),
@@ -141,7 +142,7 @@ func (r *ScalpingRepository) Flush(id string) error {
           }
         }
       } else {
-        if timestamp < time.Now().Unix()-900 {
+        if trading.BuyOrderId > 0 && trading.UpdatedAt.Unix() < timestamp {
           if status == "NEW" {
             r.OrdersRepository.Cancel(trading.Symbol, trading.BuyOrderId)
           }
@@ -176,9 +177,8 @@ func (r *ScalpingRepository) Flush(id string) error {
 
     if trading.Status == 2 {
       status := r.OrdersRepository.Status(trading.Symbol, trading.SellOrderId)
-      timestamp := trading.UpdatedAt.Unix()
       if trading.SellOrderId == 0 {
-        orderID := r.OrdersRepository.Lost(trading.Symbol, side, trading.SellQuantity, timestamp-30)
+        orderID := r.OrdersRepository.Lost(trading.Symbol, side, trading.SellQuantity, trading.UpdatedAt.Add(-30*time.Second).Unix())
         if orderID > 0 {
           trading.SellOrderId = orderID
           result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
@@ -192,7 +192,7 @@ func (r *ScalpingRepository) Flush(id string) error {
             return errors.New("order update failed")
           }
         } else {
-          if timestamp < time.Now().Unix()-900 {
+          if trading.UpdatedAt.Unix() < timestamp {
             result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
               "status":  1,
               "version": gorm.Expr("version + ?", 1),
@@ -206,7 +206,7 @@ func (r *ScalpingRepository) Flush(id string) error {
           }
         }
       } else {
-        if timestamp < time.Now().Unix()-900 {
+        if trading.UpdatedAt.Unix() < timestamp {
           if status == "NEW" {
             r.OrdersRepository.Cancel(trading.Symbol, trading.SellOrderId)
           }
@@ -472,20 +472,20 @@ func (r *ScalpingRepository) Take(scalping *spotModels.Scalping, price float64) 
     return errors.New("empty scalping to take")
   }
   if price < trading.SellPrice {
-    if price < entryPrice*1.0385 {
+    if price < entryPrice*1.0105 {
       return errors.New("compare with sell price too low")
     }
     timestamp := time.Now().Add(-15 * time.Minute).UnixMicro()
     if trading.UpdatedAt.UnixMicro() > timestamp {
       return errors.New("waiting for more time")
     }
-    sellPrice = entryPrice * 1.0385
+    sellPrice = entryPrice * 1.0105
   } else {
     if entryPrice > trading.SellPrice {
-      if price < entryPrice*1.0385 {
+      if price < entryPrice*1.0105 {
         return errors.New("compare with entry price too low")
       }
-      sellPrice = entryPrice * 1.0385
+      sellPrice = entryPrice * 1.0105
     } else {
       sellPrice = trading.SellPrice
     }
@@ -524,9 +524,9 @@ func (r *ScalpingRepository) Close(scalping *spotModels.Scalping) {
     return
   }
   r.Db.Where("scalping_id=? AND status=?", scalping.ID, 1).Find(&tradings)
+  timestamp := time.Now().Add(-30 * time.Minute).UnixMicro()
   for _, trading := range tradings {
-    timestamp := trading.UpdatedAt.Unix()
-    if timestamp < time.Now().Unix()-900 {
+    if trading.UpdatedAt.UnixMicro() < timestamp {
       r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
         "status":  5,
         "version": gorm.Expr("version + ?", 1),

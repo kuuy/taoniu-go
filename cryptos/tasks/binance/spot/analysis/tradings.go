@@ -1,20 +1,29 @@
 package analysis
 
 import (
-	"gorm.io/gorm"
-	tasks "taoniu.local/cryptos/tasks/binance/spot/analysis/tradings"
+  "taoniu.local/cryptos/common"
+  tasks "taoniu.local/cryptos/tasks/binance/spot/analysis/tradings"
 )
 
 type TradingsTask struct {
-	Db *gorm.DB
+  AnsqContext  *common.AnsqClientContext
+  ScalpingTask *tasks.ScalpingTask
 }
 
-func (t *TradingsTask) Fishers() *tasks.FishersTask {
-	return &tasks.FishersTask{
-		Db: t.Db,
-	}
+func NewTradingsTask(ansqContext *common.AnsqClientContext) *TradingsTask {
+  return &TradingsTask{
+    AnsqContext: ansqContext,
+  }
 }
 
-func (t *TradingsTask) Flush() {
-	t.Fishers().Grids().Flush()
+func (t *TradingsTask) Scalping() *tasks.ScalpingTask {
+  if t.ScalpingTask == nil {
+    t.ScalpingTask = tasks.NewScalpingTask(t.AnsqContext)
+  }
+  return t.ScalpingTask
+}
+
+func (t *TradingsTask) Flush() error {
+  t.Scalping().Flush()
+  return nil
 }

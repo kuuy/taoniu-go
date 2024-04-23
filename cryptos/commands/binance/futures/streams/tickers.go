@@ -117,12 +117,12 @@ func (h *TickersHandler) Start(current int) (err error) {
 
   symbols := h.Scan()
 
-  offset := (current - 1) * 20
+  offset := (current - 1) * 33
   if offset >= len(symbols) {
     err = errors.New("symbols out of range")
     return
   }
-  endPos := offset + 20
+  endPos := offset + 33
   if endPos > len(symbols) {
     endPos = len(symbols)
   }

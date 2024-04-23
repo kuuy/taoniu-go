@@ -119,7 +119,7 @@ func (h *KlinesHandler) handler(message map[string]interface{}) {
       h.AnsqContext.Ctx,
       fmt.Sprintf(config.LOCKS_KLINES_STREAM, symbol, interval),
     )
-    if !mutex.Lock(5 * time.Second) {
+    if !mutex.Lock(10 * time.Second) {
       return
     }
 
@@ -156,12 +156,12 @@ func (h *KlinesHandler) Start(current int, interval string) (err error) {
 
   symbols := h.Scan()
 
-  offset := (current - 1) * 50
+  offset := (current - 1) * 33
   if offset >= len(symbols) {
     err = errors.New("symbols out of range")
     return
   }
-  endPos := offset + 50
+  endPos := offset + 33
   if endPos > len(symbols) {
     endPos = len(symbols)
   }

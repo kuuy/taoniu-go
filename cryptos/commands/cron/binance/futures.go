@@ -88,17 +88,19 @@ func (h *FuturesHandler) run() error {
     binance.Futures().Analysis().Flush()
   })
   c.AddFunc("@every 15m", func() {
+    binance.Futures().Klines().Clean()
+    binance.Futures().Strategies().Clean()
+    binance.Futures().Plans().Clean()
   })
   c.AddFunc("@hourly", func() {
     binance.Futures().Cron().Hourly()
   })
-  c.AddFunc("0 20 * * * *", func() {
+  c.AddFunc("0 8,20 * * * *", func() {
   })
   c.AddFunc("0 */336 * * * 1", func() {
   })
   c.AddFunc("30 23 * * * *", func() {
     binance.Server().Time()
-    binance.Futures().Clean()
   })
   c.Start()
 

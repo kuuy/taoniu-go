@@ -101,7 +101,7 @@ func (r *AccountRepository) Flush() error {
     initialMargin, _ := strconv.ParseFloat(coin.InitialMargin, 64)
     maintMargin, _ := strconv.ParseFloat(coin.MaintMargin, 64)
 
-    if balance <= 0.0 {
+    if coin.Asset == "" || balance <= 0.0 {
       continue
     }
 

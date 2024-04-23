@@ -19,3 +19,8 @@ type PlansUpdatePayload struct {
   ID     string  `json:"id"`
   Amount float64 `json:"amount"`
 }
+
+type AccountUpdatePayload struct {
+  Asset   string  `json:"asset"`
+  Balance float64 `json:"balance"`
+}

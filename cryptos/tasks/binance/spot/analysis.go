@@ -8,7 +8,6 @@ import (
 type AnalysisTask struct {
   AnsqContext  *common.AnsqClientContext
   TradingsTask *tasks.TradingsTask
-  MarginTask   *tasks.MarginTask
 }
 
 func NewAnalysisTask(ansqContext *common.AnsqClientContext) *AnalysisTask {
@@ -19,23 +18,11 @@ func NewAnalysisTask(ansqContext *common.AnsqClientContext) *AnalysisTask {
 
 func (t *AnalysisTask) Tradings() *tasks.TradingsTask {
   if t.TradingsTask == nil {
-    t.TradingsTask = &tasks.TradingsTask{
-      Db: t.AnsqContext.Db,
-    }
+    t.TradingsTask = tasks.NewTradingsTask(t.AnsqContext)
   }
   return t.TradingsTask
 }
 
-func (t *AnalysisTask) Margin() *tasks.MarginTask {
-  if t.MarginTask == nil {
-    t.MarginTask = &tasks.MarginTask{
-      Db: t.AnsqContext.Db,
-    }
-  }
-  return t.MarginTask
-}
-
 func (t *AnalysisTask) Flush() {
   t.Tradings().Flush()
-  t.Margin().Flush()
 }

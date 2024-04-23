@@ -65,10 +65,9 @@ func (h *Klines) Update(ctx context.Context, t *asynq.Task) error {
     h.AnsqContext.Ctx,
     fmt.Sprintf(config.LOCKS_KLINES_UPDATE, payload.Symbol, payload.Interval),
   )
-  if !mutex.Lock(5 * time.Second) {
+  if !mutex.Lock(10 * time.Second) {
     return nil
   }
-  defer mutex.Unlock()
 
   kline, err := h.Repository.Get(payload.Symbol, payload.Interval, payload.Timestamp)
   if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -104,8 +103,28 @@ func (h *Klines) Update(ctx context.Context, t *asynq.Task) error {
   return nil
 }
 
+func (h *Klines) Clean(ctx context.Context, t *asynq.Task) error {
+  var payload KlinesCleanPayload
+  json.Unmarshal(t.Payload(), &payload)
+
+  mutex := common.NewMutex(
+    h.AnsqContext.Rdb,
+    h.AnsqContext.Ctx,
+    fmt.Sprintf(config.LOCKS_KLINES_CLEAN, payload.Symbol),
+  )
+  if !mutex.Lock(30 * time.Second) {
+    return nil
+  }
+  defer mutex.Unlock()
+
+  h.Repository.Clean(payload.Symbol)
+
+  return nil
+}
+
 func (h *Klines) Register() error {
   h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_KLINES_FLUSH, h.Flush)
   h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_KLINES_UPDATE, h.Update)
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_KLINES_CLEAN, h.Clean)
   return nil
 }

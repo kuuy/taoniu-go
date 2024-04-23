@@ -9,6 +9,6 @@ import (
 
 func NewTradingsRouter(apiContext *common.ApiContext) http.Handler {
   r := chi.NewRouter()
-  r.Mount("/fishers", tradings.NewFishersRouter(apiContext))
+  r.Mount("/scalping", tradings.NewScalpingRouter(apiContext))
   return r
 }

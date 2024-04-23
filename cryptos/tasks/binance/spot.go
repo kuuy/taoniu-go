@@ -128,9 +128,3 @@ func (t *SpotTask) Margin() *tasks.MarginTask {
   }
   return t.MarginTask
 }
-
-func (t *SpotTask) Clean() {
-  t.Klines().Clean()
-  t.Strategies().Clean()
-  t.Plans().Clean()
-}

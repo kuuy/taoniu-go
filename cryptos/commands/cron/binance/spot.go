@@ -99,12 +99,18 @@ func (h *SpotHandler) run() error {
     binance.Spot().Orders().Sync(time.Now().Add(-15*time.Minute).UnixMicro(), 20)
   })
   c.AddFunc("@every 5m", func() {
+    binance.Spot().Analysis().Flush()
   })
   c.AddFunc("@every 15m", func() {
+    binance.Spot().Klines().Clean()
+    binance.Spot().Strategies().Clean()
+    binance.Spot().Plans().Clean()
   })
   c.AddFunc("@hourly", func() {
     binance.Spot().Cron().Hourly()
     //binance.Savings().Products().Flush()
+  })
+  c.AddFunc("0 8,20 * * * *", func() {
   })
   c.AddFunc("15 1,11,19 * * *", func() {
     //binance.Spot().Margin().Isolated().Account().Collect()
@@ -114,7 +120,6 @@ func (h *SpotHandler) run() error {
   })
   c.AddFunc("30 23 * * *", func() {
     binance.Server().Time()
-    binance.Spot().Clean()
   })
   c.Start()
 

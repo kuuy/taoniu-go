@@ -10,7 +10,7 @@ func NewTradingsCommand() *cli.Command {
     Name:  "tradings",
     Usage: "",
     Subcommands: []*cli.Command{
-      tradings.NewFishersCommand(),
+      tradings.NewScalpingCommand(),
     },
   }
 }

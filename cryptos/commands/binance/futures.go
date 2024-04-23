@@ -27,6 +27,7 @@ func NewFutoresCommand() *cli.Command {
       futures.NewStreamCommand(),
       futures.NewTasksCommand(),
       futures.NewAnalysisCommand(),
+      futures.NewGameblingCommand(),
     },
   }
 }

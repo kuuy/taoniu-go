@@ -7,25 +7,34 @@ import (
 
   "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/spot"
-  models "taoniu.local/cryptos/models/binance/spot"
   jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/spot"
+  repositories "taoniu.local/cryptos/repositories/binance/spot"
+  tradingsRepositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
 )
 
 type IndicatorsTask struct {
-  AnsqContext *common.AnsqClientContext
-  Job         *jobs.Indicators
+  AnsqContext        *common.AnsqClientContext
+  Job                *jobs.Indicators
+  TradingsRepository *repositories.TradingsRepository
 }
 
 func NewIndicatorsTask(ansqContext *common.AnsqClientContext) *IndicatorsTask {
   return &IndicatorsTask{
     AnsqContext: ansqContext,
+    TradingsRepository: &repositories.TradingsRepository{
+      Db: ansqContext.Db,
+      ScalpingRepository: &tradingsRepositories.ScalpingRepository{
+        Db: ansqContext.Db,
+      },
+      TriggersRepository: &tradingsRepositories.TriggersRepository{
+        Db: ansqContext.Db,
+      },
+    },
   }
 }
 
 func (t *IndicatorsTask) Pivot(interval string) error {
-  var symbols []string
-  t.AnsqContext.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
-  for _, symbol := range symbols {
+  for _, symbol := range t.TradingsRepository.Scan() {
     task, err := t.Job.Pivot(symbol, interval)
     if err != nil {
       return err
@@ -41,9 +50,7 @@ func (t *IndicatorsTask) Pivot(interval string) error {
 }
 
 func (t *IndicatorsTask) Atr(interval string, period int, limit int) error {
-  var symbols []string
-  t.AnsqContext.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
-  for _, symbol := range symbols {
+  for _, symbol := range t.TradingsRepository.Scan() {
     task, err := t.Job.Atr(symbol, interval, period, limit)
     if err != nil {
       return err
@@ -59,9 +66,7 @@ func (t *IndicatorsTask) Atr(interval string, period int, limit int) error {
 }
 
 func (t *IndicatorsTask) Zlema(interval string, period int, limit int) error {
-  var symbols []string
-  t.AnsqContext.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
-  for _, symbol := range symbols {
+  for _, symbol := range t.TradingsRepository.Scan() {
     task, err := t.Job.Zlema(symbol, interval, period, limit)
     if err != nil {
       return err
@@ -77,9 +82,7 @@ func (t *IndicatorsTask) Zlema(interval string, period int, limit int) error {
 }
 
 func (t *IndicatorsTask) HaZlema(interval string, period int, limit int) error {
-  var symbols []string
-  t.AnsqContext.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
-  for _, symbol := range symbols {
+  for _, symbol := range t.TradingsRepository.Scan() {
     task, err := t.Job.HaZlema(symbol, interval, period, limit)
     if err != nil {
       return err
@@ -95,9 +98,7 @@ func (t *IndicatorsTask) HaZlema(interval string, period int, limit int) error {
 }
 
 func (t *IndicatorsTask) Kdj(interval string, longPeriod int, shortPeriod int, limit int) error {
-  var symbols []string
-  t.AnsqContext.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
-  for _, symbol := range symbols {
+  for _, symbol := range t.TradingsRepository.Scan() {
     task, err := t.Job.Kdj(symbol, interval, longPeriod, shortPeriod, limit)
     if err != nil {
       return err
@@ -113,9 +114,7 @@ func (t *IndicatorsTask) Kdj(interval string, longPeriod int, shortPeriod int, l
 }
 
 func (t *IndicatorsTask) BBands(interval string, period int, limit int) error {
-  var symbols []string
-  t.AnsqContext.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
-  for _, symbol := range symbols {
+  for _, symbol := range t.TradingsRepository.Scan() {
     task, err := t.Job.BBands(symbol, interval, period, limit)
     if err != nil {
       return err
@@ -131,9 +130,7 @@ func (t *IndicatorsTask) BBands(interval string, period int, limit int) error {
 }
 
 func (t *IndicatorsTask) IchimokuCloud(interval string) error {
-  var symbols []string
-  t.AnsqContext.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
-  for _, symbol := range symbols {
+  for _, symbol := range t.TradingsRepository.Scan() {
     task, err := t.Job.IchimokuCloud(symbol, interval)
     if err != nil {
       return err
@@ -160,9 +157,7 @@ func (t *IndicatorsTask) VolumeProfile(interval string) error {
     limit = 100
   }
 
-  var symbols []string
-  t.AnsqContext.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
-  for _, symbol := range symbols {
+  for _, symbol := range t.TradingsRepository.Scan() {
     task, err := t.Job.VolumeProfile(symbol, interval, limit)
     if err != nil {
       return err
@@ -174,6 +169,7 @@ func (t *IndicatorsTask) VolumeProfile(interval string) error {
       asynq.Timeout(5*time.Minute),
     )
   }
+
   return nil
 }
 
@@ -189,9 +185,7 @@ func (t *IndicatorsTask) AndeanOscillator(interval string, period int, length in
     limit = 100
   }
 
-  var symbols []string
-  t.AnsqContext.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
-  for _, symbol := range symbols {
+  for _, symbol := range t.TradingsRepository.Scan() {
     task, err := t.Job.AndeanOscillator(symbol, interval, period, length, limit)
     if err != nil {
       return err
@@ -203,6 +197,7 @@ func (t *IndicatorsTask) AndeanOscillator(interval string, period int, length in
       asynq.Timeout(5*time.Minute),
     )
   }
+
   return nil
 }
 
