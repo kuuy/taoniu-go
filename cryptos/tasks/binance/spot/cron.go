@@ -41,8 +41,8 @@ func (t *CronTask) Margin() *MarginTask {
 func (t *CronTask) Hourly() error {
   t.Symbols().Flush()
   t.Symbols().Count()
-  t.Grids().Flush()
-  t.Margin().Sync()
+  //t.Grids().Flush()
+  //t.Margin().Sync()
 
   return nil
 }

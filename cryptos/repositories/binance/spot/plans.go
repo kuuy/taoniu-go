@@ -189,6 +189,7 @@ func (r *PlansRepository) Signals(interval string) (map[string]interface{}, map[
 
   return buys, sells
 }
+
 func (r *PlansRepository) Create(symbol string, interval string) (plan models.Plan, err error) {
   var strategy models.Strategy
   result := r.Db.Select([]string{"price", "signal", "timestamp"}).Where(
@@ -313,6 +314,8 @@ func (r *PlansRepository) Clean(symbol string) (err error) {
       r.Db.Where("symbol=? AND interval = ? AND timestamp < ?", symbol, interval, plan.Timestamp).Delete(&plan)
     }
   }
+
+  r.Db.Where("status IN ?", []int{4, 5, 10}).Delete(&models.ScalpingPlan{})
 
   return
 }

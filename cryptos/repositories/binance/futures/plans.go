@@ -314,5 +314,7 @@ func (r *PlansRepository) Clean(symbol string) (err error) {
     }
   }
 
+  r.Db.Where("status IN ?", []int{4, 5, 10}).Delete(&models.ScalpingPlan{})
+
   return
 }

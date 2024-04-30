@@ -15,14 +15,14 @@ import (
 type PlansTask struct {
   AnsqContext        *common.AnsqClientContext
   Job                *jobs.Plans
-  Repository         *repositories.StrategiesRepository
+  Repository         *repositories.PlansRepository
   TradingsRepository *repositories.TradingsRepository
 }
 
 func NewPlansTask(ansqContext *common.AnsqClientContext) *PlansTask {
   return &PlansTask{
     AnsqContext: ansqContext,
-    Repository: &repositories.StrategiesRepository{
+    Repository: &repositories.PlansRepository{
       Db: ansqContext.Db,
     },
     TradingsRepository: &repositories.TradingsRepository{
