@@ -17,6 +17,8 @@ func NewSpotRouter(apiContext *common.ApiContext) http.Handler {
   r.Mount("/plans", spot.NewPlansRouter(apiContext))
   r.Mount("/orders", spot.NewOrdersRouter(apiContext))
   r.Mount("/positions", spot.NewPositionsRouter(apiContext))
+  r.Mount("/scalping", spot.NewScalpingRouter(apiContext))
+  r.Mount("/triggers", spot.NewTriggersRouter(apiContext))
   r.Mount("/margin", spot.NewMarginRouter(apiContext))
   r.Mount("/analysis", spot.NewAnalysisRouter(apiContext))
   r.Mount("/tradings", spot.NewTradingsRouter(apiContext))

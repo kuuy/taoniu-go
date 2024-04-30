@@ -20,9 +20,13 @@ type OrdersHandler struct {
 type OrderInfo struct {
   ID              string  `json:"id"`
   Symbol          string  `json:"symbol"`
+  OrderID         int64   `json:"order_id"`
+  Type            string  `json:"type"`
   Side            string  `json:"side"`
   Price           float64 `json:"price"`
   Quantity        float64 `json:"quantity"`
+  OpenTime        int64   `json:"open_time"`
+  UpdateTime      int64   `json:"update_time"`
   Status          string  `json:"status"`
   Timestamp       int64   `json:"timestamp"`
   TimestampFormat string  `json:"timestamp_fmt"`
@@ -89,9 +93,13 @@ func (h *OrdersHandler) Listings(
     data[i] = &OrderInfo{
       ID:              order.ID,
       Symbol:          order.Symbol,
+      OrderID:         order.OrderID,
+      Type:            order.Type,
       Side:            order.Side,
       Price:           order.Price,
       Quantity:        order.Quantity,
+      OpenTime:        order.OpenTime,
+      UpdateTime:      order.UpdateTime,
       Status:          order.Status,
       Timestamp:       order.CreatedAt.UnixMicro(),
       TimestampFormat: common.FormatDatetime(order.CreatedAt),

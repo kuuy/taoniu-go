@@ -13,18 +13,18 @@ import (
   repositories "taoniu.local/cryptos/repositories/binance/futures"
 )
 
-type GameblingHandler struct {
+type GamblingHandler struct {
   ApiContext          *common.ApiContext
   Response            *api.ResponseHandler
-  Repository          *repositories.GameblingRepository
+  Repository          *repositories.GamblingRepository
   PositionsRepository *repositories.PositionsRepository
 }
 
-func NewGameblingRouter(apiContext *common.ApiContext) http.Handler {
-  h := GameblingHandler{
+func NewGamblingRouter(apiContext *common.ApiContext) http.Handler {
+  h := GamblingHandler{
     ApiContext: apiContext,
   }
-  h.Repository = &repositories.GameblingRepository{
+  h.Repository = &repositories.GamblingRepository{
     Db: h.ApiContext.Db,
   }
   h.Repository.SymbolsRepository = &repositories.SymbolsRepository{
@@ -37,7 +37,7 @@ func NewGameblingRouter(apiContext *common.ApiContext) http.Handler {
   return r
 }
 
-func (h *GameblingHandler) Calc(
+func (h *GamblingHandler) Calc(
   w http.ResponseWriter,
   r *http.Request,
 ) {

@@ -67,7 +67,9 @@ func (r *OrdersRepository) Count(conditions map[string]interface{}) int64 {
   if _, ok := conditions["symbols"]; ok {
     query.Where("symbol IN ?", conditions["symbols"].([]string))
   }
-  query.Where("status IN ?", []string{"NEW"})
+  if _, ok := conditions["status"]; ok {
+    query.Where("status IN ?", conditions["status"].([]string))
+  }
   query.Count(&total)
   return total
 }
@@ -79,9 +81,13 @@ func (r *OrdersRepository) Listings(conditions map[string]interface{}, current i
   query := r.Db.Select([]string{
     "id",
     "symbol",
+    "order_id",
+    "type",
     "side",
     "price",
     "quantity",
+    "open_time",
+    "update_time",
     "status",
     "created_at",
     "updated_at",
@@ -89,7 +95,9 @@ func (r *OrdersRepository) Listings(conditions map[string]interface{}, current i
   if _, ok := conditions["symbols"]; ok {
     query.Where("symbol IN ?", conditions["symbols"].([]string))
   }
-  query.Where("status IN ?", []string{"NEW"})
+  if _, ok := conditions["status"]; ok {
+    query.Where("status IN ?", conditions["status"].([]string))
+  }
   query.Order("created_at desc")
   query.Offset(offset).Limit(pageSize).Find(&orders)
   return orders

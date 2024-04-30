@@ -7,12 +7,12 @@ import (
   "gorm.io/gorm"
 )
 
-type GameblingRepository struct {
+type GamblingRepository struct {
   Db                *gorm.DB
   SymbolsRepository *SymbolsRepository
 }
 
-func (r *GameblingRepository) Factors(entryAmount float64, side int) (factors [][]float64) {
+func (r *GamblingRepository) Factors(entryAmount float64, side int) (factors [][]float64) {
   if entryAmount < 2000 {
     if side == 1 {
       factors = append(factors, []float64{1.0105, 0.25})
@@ -31,7 +31,7 @@ func (r *GameblingRepository) Factors(entryAmount float64, side int) (factors []
   return
 }
 
-func (r *GameblingRepository) BuyQuantity(
+func (r *GamblingRepository) BuyQuantity(
   side int,
   buyAmount float64,
   entryPrice float64,
@@ -57,7 +57,7 @@ func (r *GameblingRepository) BuyQuantity(
   return
 }
 
-func (r *GameblingRepository) SellPrice(
+func (r *GamblingRepository) SellPrice(
   side int,
   entryPrice float64,
   entryAmount float64,
@@ -77,7 +77,7 @@ func (r *GameblingRepository) SellPrice(
   return
 }
 
-func (r *GameblingRepository) TakePrice(
+func (r *GamblingRepository) TakePrice(
   entryPrice float64,
   side int,
   tickSize float64,
@@ -93,7 +93,7 @@ func (r *GameblingRepository) TakePrice(
   return takePrice
 }
 
-func (r *GameblingRepository) StopPrice(
+func (r *GamblingRepository) StopPrice(
   entryPrice float64,
   side int,
   tickSize float64,
@@ -109,13 +109,13 @@ func (r *GameblingRepository) StopPrice(
   return stopPrice
 }
 
-func (r *GameblingRepository) Calc(
+func (r *GamblingRepository) Calc(
   entryPrice float64,
   entryQuantity float64,
   side int,
   tickSize float64,
   stepSize float64,
-) (plans []*GameblingPlan) {
+) (plans []*GamblingPlan) {
   var takePrice float64
   var takeQuantity float64
   var takeAmount float64
@@ -135,7 +135,7 @@ func (r *GameblingRepository) Calc(
     }
     entryQuantity, _ = decimal.NewFromFloat(entryQuantity).Sub(decimal.NewFromFloat(takeQuantity)).Float64()
     takeAmount, _ = decimal.NewFromFloat(takePrice).Mul(decimal.NewFromFloat(takeQuantity)).Float64()
-    plans = append(plans, &GameblingPlan{
+    plans = append(plans, &GamblingPlan{
       TakePrice:    takePrice,
       TakeQuantity: takeQuantity,
       TakeAmount:   takeAmount,
@@ -144,7 +144,7 @@ func (r *GameblingRepository) Calc(
   return
 }
 
-func (r *GameblingRepository) Filters(symbol string) (tickSize float64, stepSize float64, err error) {
+func (r *GamblingRepository) Filters(symbol string) (tickSize float64, stepSize float64, err error) {
   entity, err := r.SymbolsRepository.Get(symbol)
   if err != nil {
     return

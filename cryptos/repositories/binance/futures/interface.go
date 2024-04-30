@@ -9,7 +9,7 @@ type RankingResult struct {
   Data  []string
 }
 
-type GameblingPlan struct {
+type GamblingPlan struct {
   TakePrice    float64
   TakeQuantity float64
   TakeAmount   float64

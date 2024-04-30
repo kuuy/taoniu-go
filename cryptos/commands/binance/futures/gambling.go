@@ -13,22 +13,22 @@ import (
   repositories "taoniu.local/cryptos/repositories/binance/futures"
 )
 
-type GameblingHandler struct {
+type GamblingHandler struct {
   Db                *gorm.DB
-  Repository        *repositories.GameblingRepository
+  Repository        *repositories.GamblingRepository
   SymbolsRepository *repositories.SymbolsRepository
 }
 
-func NewGameblingCommand() *cli.Command {
-  var h GameblingHandler
+func NewGamblingCommand() *cli.Command {
+  var h GamblingHandler
   return &cli.Command{
-    Name:  "gamebling",
+    Name:  "gambling",
     Usage: "",
     Before: func(c *cli.Context) error {
-      h = GameblingHandler{
+      h = GamblingHandler{
         Db: common.NewDB(2),
       }
-      h.Repository = &repositories.GameblingRepository{
+      h.Repository = &repositories.GamblingRepository{
         Db: h.Db,
       }
       h.SymbolsRepository = &repositories.SymbolsRepository{
@@ -59,7 +59,7 @@ func NewGameblingCommand() *cli.Command {
   }
 }
 
-func (h *GameblingHandler) Calc(
+func (h *GamblingHandler) Calc(
   symbol string,
   side int,
   entryPrice float64,
