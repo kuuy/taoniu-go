@@ -33,7 +33,7 @@ type GamblingPlanInfo struct {
   Profit   string  `json:"profit"`
 }
 
-type CalcGameblingResponse struct {
+type CalcGamblingResponse struct {
   TakePrice   float64             `json:"take_price"`
   StopPrice   float64             `json:"stop_price"`
   PlansProfit string              `json:"plans_profit"`

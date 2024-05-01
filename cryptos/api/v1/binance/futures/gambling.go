@@ -85,7 +85,7 @@ func (h *GamblingHandler) Calc(
   takePrice := h.Repository.TakePrice(entryPrice, side, tickSize)
   stopPrice := h.Repository.StopPrice(entryPrice, side, tickSize)
 
-  result := &CalcGameblingResponse{}
+  result := &CalcGamblingResponse{}
 
   planPrice := entryPrice
   planQuantity := entryQuantity

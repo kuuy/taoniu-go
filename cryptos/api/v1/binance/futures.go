@@ -20,7 +20,7 @@ func NewFuturesRouter(apiContext *common.ApiContext) http.Handler {
   r.Mount("/scalping", futures.NewScalpingRouter(apiContext))
   r.Mount("/triggers", futures.NewTriggersRouter(apiContext))
   r.Mount("/analysis", futures.NewAnalysisRouter(apiContext))
-  r.Mount("/tradings", futures.NewTradingsouter(apiContext))
+  r.Mount("/tradings", futures.NewTradingsRouter(apiContext))
   r.Mount("/tradingview", futures.NewTradingViewRouter(apiContext))
   return r
 }
