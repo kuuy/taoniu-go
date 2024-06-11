@@ -14,7 +14,6 @@ import (
   "net/url"
   "os"
   "strconv"
-  config "taoniu.local/cryptos/config/binance/futures"
   "time"
 
   "github.com/go-redis/redis/v8"
@@ -22,6 +21,7 @@ import (
   "github.com/rs/xid"
   "gorm.io/gorm"
 
+  config "taoniu.local/cryptos/config/binance/futures"
   models "taoniu.local/cryptos/models/binance/futures"
 )
 

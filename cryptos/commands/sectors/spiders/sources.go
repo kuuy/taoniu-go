@@ -1,10 +1,10 @@
 package spiders
 
 import (
-  "gorm.io/gorm"
   "log"
 
   "github.com/urfave/cli/v2"
+  "gorm.io/gorm"
 
   "taoniu.local/cryptos/common"
   repositories "taoniu.local/cryptos/repositories/sectors/spiders"

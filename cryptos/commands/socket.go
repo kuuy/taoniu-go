@@ -3,14 +3,15 @@ package commands
 import (
   "context"
   "fmt"
-  "github.com/nats-io/nats.go"
-  "github.com/urfave/cli/v2"
-  socketio "github.com/vchitai/go-socket.io/v4"
   "log"
   "net/http"
   "os"
   "sync"
 
+  "github.com/nats-io/nats.go"
+  "github.com/urfave/cli/v2"
+
+  socketio "github.com/vchitai/go-socket.io/v4"
   "taoniu.local/cryptos/common"
   "taoniu.local/cryptos/socket"
 )

@@ -1,9 +1,11 @@
 package commands
 
 import (
+  "log"
+
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
-  "log"
+
   "taoniu.local/cryptos/common"
   "taoniu.local/cryptos/models"
 )
@@ -19,7 +21,7 @@ func NewDbCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = DbHandler{
-        Db: common.NewDB(1),
+        Db: common.NewDB(common.GetEnvInt("DB_NODE")),
       }
       return nil
     },

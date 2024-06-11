@@ -4,17 +4,17 @@ import (
   "encoding/binary"
   "errors"
   "fmt"
-  "github.com/tidwall/gjson"
   "io/ioutil"
   "net"
   "net/http"
   "regexp"
-  "taoniu.local/cryptos/common"
   "time"
 
+  "github.com/PuerkitoBio/goquery"
+  "github.com/tidwall/gjson"
   "gorm.io/gorm"
 
-  "github.com/PuerkitoBio/goquery"
+  "taoniu.local/cryptos/common"
 )
 
 type CrawlsRepository struct {

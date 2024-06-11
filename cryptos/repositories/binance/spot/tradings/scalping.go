@@ -1,23 +1,28 @@
 package tradings
 
 import (
+  "context"
   "errors"
   "fmt"
   "log"
   "time"
 
-  "gorm.io/gorm"
-
-  "github.com/adshao/go-binance/v2/common"
+  apiCommon "github.com/adshao/go-binance/v2/common"
+  "github.com/go-redis/redis/v8"
   "github.com/rs/xid"
   "github.com/shopspring/decimal"
+  "gorm.io/gorm"
 
+  "taoniu.local/cryptos/common"
+  config "taoniu.local/cryptos/config/binance/spot"
   spotModels "taoniu.local/cryptos/models/binance/spot"
   models "taoniu.local/cryptos/models/binance/spot/tradings"
 )
 
 type ScalpingRepository struct {
   Db                 *gorm.DB
+  Rdb                *redis.Client
+  Ctx                context.Context
   SymbolsRepository  SymbolsRepository
   AccountRepository  AccountRepository
   OrdersRepository   OrdersRepository
@@ -87,9 +92,213 @@ func (r *ScalpingRepository) Listings(conditions map[string]interface{}, current
   return tradings
 }
 
+func (r *ScalpingRepository) Place(planId string) error {
+  var scalpingPlan *spotModels.ScalpingPlan
+  result := r.Db.Take(&scalpingPlan, "plan_id", planId)
+  if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+    return errors.New("scalping plan empty")
+  }
+
+  var plan *spotModels.Plan
+  result = r.Db.Take(&plan, "id", planId)
+  if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+    r.Db.Delete(&scalpingPlan, "plan_id", planId)
+    return errors.New("plan empty")
+  }
+
+  if plan.Side != 1 {
+    r.Db.Delete(&scalpingPlan, "plan_id", planId)
+    return errors.New("only for long side plan")
+  }
+
+  timestamp := time.Now().Unix()
+
+  if plan.Interval == "1m" && plan.CreatedAt.Unix() < timestamp-900 {
+    r.Db.Delete(&scalpingPlan, "plan_id", planId)
+    return errors.New("plan has been expired")
+  }
+  if plan.Interval == "15m" && plan.CreatedAt.Unix() < timestamp-2700 {
+    r.Db.Delete(&scalpingPlan, "plan_id", planId)
+    return errors.New("plan has been expired")
+  }
+  if plan.Interval == "4h" && plan.CreatedAt.Unix() < timestamp-5400 {
+    r.Db.Delete(&scalpingPlan, "plan_id", planId)
+    return errors.New("plan has been expired")
+  }
+  if plan.Interval == "1d" && plan.CreatedAt.Unix() < timestamp-21600 {
+    r.Db.Delete(&scalpingPlan, "plan_id", planId)
+    return errors.New("plan has been expired")
+  }
+
+  var scalping *spotModels.Scalping
+  result = r.Db.Model(&scalping).Where("symbol = ? AND status = 1", plan.Symbol).Take(&scalping)
+  if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+    r.Db.Delete(&scalpingPlan, "plan_id", planId)
+    return errors.New("scalping empty")
+  }
+
+  if plan.Side == 1 && plan.Price > scalping.Price {
+    r.Db.Delete(&scalpingPlan, "plan_id", planId)
+    return errors.New("plan price too high")
+  }
+
+  if plan.Side == 2 && plan.Price < scalping.Price {
+    r.Db.Delete(&scalpingPlan, "plan_id", planId)
+    return errors.New("plan price too low")
+  }
+
+  entity, err := r.SymbolsRepository.Get(plan.Symbol)
+  if err != nil {
+    return err
+  }
+
+  tickSize, stepSize, notional, err := r.SymbolsRepository.Filters(entity.Filters)
+  if err != nil {
+    return nil
+  }
+
+  var side = "BUY"
+
+  price, err := r.SymbolsRepository.Price(plan.Symbol)
+  if err != nil {
+    return err
+  }
+
+  buyPrice := plan.Price
+  if price < buyPrice {
+    buyPrice = price
+  }
+  buyPrice, _ = decimal.NewFromFloat(buyPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+
+  var entryPrice float64
+
+  position, err := r.PositionRepository.Get(plan.Symbol)
+  if err == nil {
+    if position.EntryQuantity > 0 {
+      entryPrice = position.EntryPrice
+    }
+  }
+
+  if entryPrice > 0 {
+    if price > entryPrice {
+      r.Db.Delete(&scalpingPlan, "plan_id", planId)
+      return errors.New(fmt.Sprintf("[%s] price big than entry price", scalping.Symbol))
+    }
+  }
+
+  var sellPrice float64
+  if plan.Side == 1 {
+    if plan.Amount > 15 {
+      if plan.Interval == "1m" {
+        sellPrice = buyPrice * 1.0105
+      } else if plan.Interval == "15m" {
+        sellPrice = buyPrice * 1.0125
+      } else if plan.Interval == "4h" {
+        sellPrice = buyPrice * 1.0185
+      } else if plan.Interval == "1d" {
+        sellPrice = buyPrice * 1.0385
+      }
+    } else {
+      if plan.Interval == "1m" {
+        sellPrice = buyPrice * 1.0085
+      } else if plan.Interval == "15m" {
+        sellPrice = buyPrice * 1.0105
+      } else if plan.Interval == "4h" {
+        sellPrice = buyPrice * 1.012
+      } else if plan.Interval == "1d" {
+        sellPrice = buyPrice * 1.0135
+      }
+    }
+    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
+  } else {
+    if plan.Amount > 15 {
+      if plan.Interval == "1m" {
+        sellPrice = buyPrice * 0.9895
+      } else if plan.Interval == "15m" {
+        sellPrice = buyPrice * 0.9875
+      } else if plan.Interval == "4h" {
+        sellPrice = buyPrice * 0.9815
+      } else if plan.Interval == "1d" {
+        sellPrice = buyPrice * 0.9615
+      }
+    } else {
+      if plan.Interval == "1m" {
+        sellPrice = buyPrice * 0.9915
+      } else if plan.Interval == "15m" {
+        sellPrice = buyPrice * 0.9895
+      } else if plan.Interval == "4h" {
+        sellPrice = buyPrice * 0.988
+      } else if plan.Interval == "1d" {
+        sellPrice = buyPrice * 0.9865
+      }
+    }
+    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+  }
+
+  buyQuantity, _ := decimal.NewFromFloat(notional).Div(decimal.NewFromFloat(buyPrice)).Float64()
+  buyQuantity, _ = decimal.NewFromFloat(buyQuantity).Div(decimal.NewFromFloat(stepSize)).Ceil().Mul(decimal.NewFromFloat(stepSize)).Float64()
+
+  if price > buyPrice {
+    return errors.New(fmt.Sprintf("[%s] price must reach %v", scalping.Symbol, buyPrice))
+  }
+
+  if !r.CanBuy(scalping, buyPrice) {
+    return errors.New(fmt.Sprintf("[%s] can not buy now", scalping.Symbol))
+  }
+
+  balance, err := r.AccountRepository.Balance(entity.QuoteAsset)
+  if err != nil {
+    return err
+  }
+
+  if balance["free"] < config.SCALPING_MIN_BINANCE {
+    return errors.New(fmt.Sprintf("[%s] free not enough", entity.Symbol))
+  }
+
+  mutex := common.NewMutex(
+    r.Rdb,
+    r.Ctx,
+    fmt.Sprintf(config.LOCKS_TRADINGS_PLACE, plan.Symbol),
+  )
+  if !mutex.Lock(5 * time.Second) {
+    return nil
+  }
+  defer mutex.Unlock()
+
+  orderID, err := r.OrdersRepository.Create(plan.Symbol, side, buyPrice, buyQuantity)
+  if err != nil {
+    _, ok := err.(apiCommon.APIError)
+    if ok {
+      return err
+    }
+    r.Db.Model(&scalping).Where("version", scalping.Version).Updates(map[string]interface{}{
+      "remark":  err.Error(),
+      "version": gorm.Expr("version + ?", 1),
+    })
+  }
+
+  r.Db.Model(&scalpingPlan).Where("plan_id", planId).Update("status", 1)
+
+  trading := &models.Scalping{
+    ID:           xid.New().String(),
+    Symbol:       plan.Symbol,
+    ScalpingID:   scalping.ID,
+    PlanID:       plan.ID,
+    BuyOrderId:   orderID,
+    BuyPrice:     buyPrice,
+    BuyQuantity:  buyQuantity,
+    SellPrice:    sellPrice,
+    SellQuantity: buyQuantity,
+    Version:      1,
+  }
+  r.Db.Create(&trading)
+
+  return nil
+}
+
 func (r *ScalpingRepository) Flush(id string) error {
   var scalping *spotModels.Scalping
-  var result = r.Db.First(&scalping, "id=?", id)
+  var result = r.Db.Take(&scalping, "id", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     return errors.New("empty scalping to flush")
   }
@@ -244,192 +453,6 @@ func (r *ScalpingRepository) Flush(id string) error {
   return nil
 }
 
-func (r *ScalpingRepository) Place(planID string) error {
-  var plan *spotModels.Plan
-  result := r.Db.First(&plan, "id=?", planID)
-  if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    r.Db.Model(&spotModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 10)
-    return errors.New("plan empty")
-  }
-
-  if plan.Side != 1 {
-    r.Db.Model(&spotModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 4)
-    return errors.New("only for long side plan")
-  }
-
-  timestamp := time.Now().Unix()
-  if plan.Interval == "1m" && plan.CreatedAt.Unix() < timestamp-900 {
-    r.Db.Model(&spotModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 4)
-    return errors.New("plan has been expired")
-  }
-  if plan.Interval == "15m" && plan.CreatedAt.Unix() < timestamp-2700 {
-    r.Db.Model(&spotModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 4)
-    return errors.New("plan has been expired")
-  }
-  if plan.Interval == "4h" && plan.CreatedAt.Unix() < timestamp-5400 {
-    r.Db.Model(&spotModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 4)
-    return errors.New("plan has been expired")
-  }
-  if plan.Interval == "1d" && plan.CreatedAt.Unix() < timestamp-21600 {
-    r.Db.Model(&spotModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 4)
-    return errors.New("plan has been expired")
-  }
-
-  var scalping *spotModels.Scalping
-  result = r.Db.Model(&scalping).Where("symbol = ? AND status = 1", plan.Symbol).Take(&scalping)
-  if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    r.Db.Model(&spotModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 5)
-    return errors.New("scalping empty")
-  }
-
-  if plan.Side == 1 && plan.Price > scalping.Price {
-    r.Db.Model(&spotModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 5)
-    return errors.New("plan price too high")
-  }
-
-  if plan.Side == 2 && plan.Price < scalping.Price {
-    r.Db.Model(&spotModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 5)
-    return errors.New("plan price too low")
-  }
-
-  entity, err := r.SymbolsRepository.Get(plan.Symbol)
-  if err != nil {
-    return err
-  }
-
-  tickSize, stepSize, notional, err := r.SymbolsRepository.Filters(entity.Filters)
-  if err != nil {
-    return nil
-  }
-
-  var side = "BUY"
-
-  price, err := r.SymbolsRepository.Price(plan.Symbol)
-  if err != nil {
-    return err
-  }
-
-  buyPrice := plan.Price
-  if price < buyPrice {
-    buyPrice = price
-  }
-  buyPrice, _ = decimal.NewFromFloat(buyPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
-
-  var entryPrice float64
-
-  position, err := r.PositionRepository.Get(plan.Symbol)
-  if err == nil {
-    if position.EntryQuantity > 0 {
-      entryPrice = position.EntryPrice
-    }
-  }
-
-  if entryPrice > 0 {
-    if price > entryPrice {
-      return errors.New(fmt.Sprintf("[%s] price big than entry price", scalping.Symbol))
-    }
-  }
-
-  var sellPrice float64
-  if plan.Side == 1 {
-    if plan.Amount > 15 {
-      if plan.Interval == "1m" {
-        sellPrice = buyPrice * 1.0105
-      } else if plan.Interval == "15m" {
-        sellPrice = buyPrice * 1.0125
-      } else if plan.Interval == "4h" {
-        sellPrice = buyPrice * 1.0185
-      } else if plan.Interval == "1d" {
-        sellPrice = buyPrice * 1.0385
-      }
-    } else {
-      if plan.Interval == "1m" {
-        sellPrice = buyPrice * 1.0085
-      } else if plan.Interval == "15m" {
-        sellPrice = buyPrice * 1.0105
-      } else if plan.Interval == "4h" {
-        sellPrice = buyPrice * 1.012
-      } else if plan.Interval == "1d" {
-        sellPrice = buyPrice * 1.0135
-      }
-    }
-    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
-  } else {
-    if plan.Amount > 15 {
-      if plan.Interval == "1m" {
-        sellPrice = buyPrice * 0.9895
-      } else if plan.Interval == "15m" {
-        sellPrice = buyPrice * 0.9875
-      } else if plan.Interval == "4h" {
-        sellPrice = buyPrice * 0.9815
-      } else if plan.Interval == "1d" {
-        sellPrice = buyPrice * 0.9615
-      }
-    } else {
-      if plan.Interval == "1m" {
-        sellPrice = buyPrice * 0.9915
-      } else if plan.Interval == "15m" {
-        sellPrice = buyPrice * 0.9895
-      } else if plan.Interval == "4h" {
-        sellPrice = buyPrice * 0.988
-      } else if plan.Interval == "1d" {
-        sellPrice = buyPrice * 0.9865
-      }
-    }
-    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
-  }
-
-  buyQuantity, _ := decimal.NewFromFloat(notional).Div(decimal.NewFromFloat(buyPrice)).Float64()
-  buyQuantity, _ = decimal.NewFromFloat(buyQuantity).Div(decimal.NewFromFloat(stepSize)).Ceil().Mul(decimal.NewFromFloat(stepSize)).Float64()
-
-  if price > buyPrice {
-    return errors.New(fmt.Sprintf("[%s] price must reach %v", scalping.Symbol, buyPrice))
-  }
-
-  if !r.CanBuy(scalping, buyPrice) {
-    return errors.New(fmt.Sprintf("[%s] can not buy now", scalping.Symbol))
-  }
-
-  balance, err := r.AccountRepository.Balance(entity.QuoteAsset)
-  if err != nil {
-    return err
-  }
-
-  if balance["free"] < 50 {
-    return errors.New(fmt.Sprintf("[%s] free not enough", entity.Symbol))
-  }
-
-  orderID, err := r.OrdersRepository.Create(plan.Symbol, side, buyPrice, buyQuantity)
-  if err != nil {
-    _, ok := err.(common.APIError)
-    if ok {
-      return err
-    }
-    r.Db.Model(&scalping).Where("version", scalping.Version).Updates(map[string]interface{}{
-      "remark":  err.Error(),
-      "version": gorm.Expr("version + ?", 1),
-    })
-  }
-
-  r.Db.Model(&spotModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 1)
-
-  trading := &models.Scalping{
-    ID:           xid.New().String(),
-    Symbol:       plan.Symbol,
-    ScalpingID:   scalping.ID,
-    PlanID:       plan.ID,
-    BuyOrderId:   orderID,
-    BuyPrice:     buyPrice,
-    BuyQuantity:  buyQuantity,
-    SellPrice:    sellPrice,
-    SellQuantity: buyQuantity,
-    Version:      1,
-  }
-  r.Db.Create(&trading)
-
-  return nil
-}
-
 func (r *ScalpingRepository) Take(scalping *spotModels.Scalping, price float64) error {
   var side = "SELL"
   var entryPrice float64
@@ -497,7 +520,7 @@ func (r *ScalpingRepository) Take(scalping *spotModels.Scalping, price float64) 
 
   orderID, err := r.OrdersRepository.Create(trading.Symbol, side, sellPrice, trading.SellQuantity)
   if err != nil {
-    _, ok := err.(common.APIError)
+    _, ok := err.(apiCommon.APIError)
     if ok {
       return err
     }

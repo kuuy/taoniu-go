@@ -48,7 +48,7 @@ func (r *DepthRepository) Request(symbol string, limit int) (map[string]interfac
     Timeout:   time.Duration(3) * time.Second,
   }
 
-  url := fmt.Sprintf("%s/fapi/v1/depth", os.Getenv("BINANCE_SPOT_API_ENDPOINT"))
+  url := fmt.Sprintf("%s/api/v3/depth", os.Getenv("BINANCE_SPOT_API_ENDPOINT"))
   req, _ := http.NewRequest("GET", url, nil)
   q := req.URL.Query()
   q.Add("symbol", symbol)

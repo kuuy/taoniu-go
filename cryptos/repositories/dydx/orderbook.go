@@ -8,10 +8,12 @@ import (
   "net"
   "net/http"
   "os"
-  "taoniu.local/cryptos/common"
   "time"
 
   "github.com/go-redis/redis/v8"
+  "github.com/shopspring/decimal"
+
+  "taoniu.local/cryptos/common"
 )
 
 type OrderbookRepository struct {
@@ -51,6 +53,8 @@ func (r *OrderbookRepository) Flush(symbol string) error {
   data["slippage@-1%"] = 0
   data["slippage@2%"] = 0
   data["slippage@-2%"] = 0
+  data["slippage_percent@1%"] = 0
+  data["slippage_percent@2%"] = 0
 
   var stop1, stop2 float64
   for i, ask := range response.Asks {
@@ -81,15 +85,20 @@ func (r *OrderbookRepository) Flush(symbol string) error {
     data["slippage@-2%"] += bid.Volume
   }
 
+  data["slippage_percent@1%"], _ = decimal.NewFromFloat(data["slippage@1%"]).Div(decimal.NewFromFloat(data["slippage@1%"]).Add(decimal.NewFromFloat(data["slippage@-1%"]))).Round(4).Float64()
+  data["slippage_percent@2%"], _ = decimal.NewFromFloat(data["slippage@2%"]).Div(decimal.NewFromFloat(data["slippage@2%"]).Add(decimal.NewFromFloat(data["slippage@-2%"]))).Round(4).Float64()
+
   r.Rdb.HMSet(
     r.Ctx,
     fmt.Sprintf("dydx:realtime:%s", symbol),
     map[string]interface{}{
-      "price":        response.Bids[0].Price,
-      "slippage@1%":  data["slippage@1%"],
-      "slippage@2%":  data["slippage@2%"],
-      "slippage@-1%": data["slippage@-1%"],
-      "slippage@-2%": data["slippage@-2%"],
+      "price":               response.Bids[0].Price,
+      "slippage@1%":         data["slippage@1%"],
+      "slippage@2%":         data["slippage@2%"],
+      "slippage@-1%":        data["slippage@-1%"],
+      "slippage@-2%":        data["slippage@-2%"],
+      "slippage_percent@1%": data["slippage_percent@1%"],
+      "slippage_percent@2%": data["slippage_percent@2%"],
     },
   )
 

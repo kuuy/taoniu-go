@@ -5,19 +5,18 @@ import (
   "encoding/json"
   "errors"
   "fmt"
-  "github.com/shopspring/decimal"
   "math"
   "os"
   "strconv"
   "strings"
   "time"
 
-  "gorm.io/gorm"
-
   "github.com/adshao/go-binance/v2"
   "github.com/go-redis/redis/v8"
   "github.com/rs/xid"
+  "github.com/shopspring/decimal"
   "gorm.io/datatypes"
+  "gorm.io/gorm"
 
   models "taoniu.local/cryptos/models/binance/futures"
 )
@@ -177,6 +176,8 @@ func (r *SymbolsRepository) Slippage(symbol string) error {
   data["slippage@-1%"] = 0
   data["slippage@2%"] = 0
   data["slippage@-2%"] = 0
+  data["slippage_percent@1%"] = 0
+  data["slippage_percent@2%"] = 0
   var stop1, stop2 float64
   for i, item := range asks {
     price, _ := strconv.ParseFloat(item.([]interface{})[0].(string), 64)
@@ -193,6 +194,7 @@ func (r *SymbolsRepository) Slippage(symbol string) error {
     }
     data["slippage@2%"] += volume
   }
+
   for i, item := range bids {
     price, _ := strconv.ParseFloat(item.([]interface{})[0].(string), 64)
     volume, _ := strconv.ParseFloat(item.([]interface{})[1].(string), 64)
@@ -208,16 +210,23 @@ func (r *SymbolsRepository) Slippage(symbol string) error {
     }
     data["slippage@-2%"] += volume
   }
+
+  data["slippage_percent@1%"], _ = decimal.NewFromFloat(data["slippage@1%"]).Div(decimal.NewFromFloat(data["slippage@1%"]).Add(decimal.NewFromFloat(data["slippage@-1%"]))).Round(4).Float64()
+  data["slippage_percent@2%"], _ = decimal.NewFromFloat(data["slippage@2%"]).Div(decimal.NewFromFloat(data["slippage@2%"]).Add(decimal.NewFromFloat(data["slippage@-2%"]))).Round(4).Float64()
+
   r.Rdb.HMSet(
     r.Ctx,
     fmt.Sprintf("binance:futures:realtime:%s", symbol),
     map[string]interface{}{
-      "slippage@1%":  data["slippage@1%"],
-      "slippage@-1%": data["slippage@-1%"],
-      "slippage@2%":  data["slippage@2%"],
-      "slippage@-2%": data["slippage@-2%"],
+      "slippage@1%":         data["slippage@1%"],
+      "slippage@-1%":        data["slippage@-1%"],
+      "slippage@2%":         data["slippage@2%"],
+      "slippage@-2%":        data["slippage@-2%"],
+      "slippage_percent@1%": data["slippage_percent@1%"],
+      "slippage_percent@2%": data["slippage_percent@2%"],
     },
   )
+
   return nil
 }
 

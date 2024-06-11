@@ -1,19 +1,19 @@
 package models
 
 import (
-	"gorm.io/gorm"
-	"taoniu.local/cryptos/models/tradingview"
+  "gorm.io/gorm"
+  "taoniu.local/cryptos/models/tradingview"
 )
 
 type TradingView struct{}
 
 func NewTradingView() *TradingView {
-	return &TradingView{}
+  return &TradingView{}
 }
 
 func (m *TradingView) AutoMigrate(db *gorm.DB) error {
-	db.AutoMigrate(
-		&tradingview.Analysis{},
-	)
-	return nil
+  db.AutoMigrate(
+    &tradingview.Analysis{},
+  )
+  return nil
 }

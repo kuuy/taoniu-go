@@ -8,10 +8,10 @@ import (
 type Tradings struct{}
 
 func NewTradings() *Tradings {
-	return &Tradings{}
+  return &Tradings{}
 }
 
 func (m *Tradings) AutoMigrate(db *gorm.DB) error {
-	tradings.NewFishers().AutoMigrate(db)
-	return nil
+  tradings.NewFishers().AutoMigrate(db)
+  return nil
 }

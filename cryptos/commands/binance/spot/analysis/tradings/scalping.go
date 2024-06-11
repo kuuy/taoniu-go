@@ -1,9 +1,10 @@
 package tradings
 
 import (
+  "log"
+
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
-  "log"
 
   "taoniu.local/cryptos/common"
   repositories "taoniu.local/cryptos/repositories/binance/spot/analysis/tradings"

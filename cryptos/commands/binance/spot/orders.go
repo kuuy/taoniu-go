@@ -63,7 +63,12 @@ func NewOrdersCommand() *cli.Command {
         Name:  "open",
         Usage: "",
         Action: func(c *cli.Context) error {
-          if err := h.Open(); err != nil {
+          symbol := c.Args().Get(0)
+          if symbol == "" {
+            log.Fatal("symbol is empty")
+            return nil
+          }
+          if err := h.Open(symbol); err != nil {
             return cli.Exit(err.Error(), 1)
           }
           return nil
@@ -128,14 +133,9 @@ func (h *OrdersHandler) Cancel() error {
   return nil
 }
 
-func (h *OrdersHandler) Open() error {
-  log.Println("spot open orders...")
-  symbols, _ := h.Rdb.SMembers(h.Ctx, "binance:spot:websocket:symbols").Result()
-  for _, symbol := range symbols {
-    log.Println("symbol:", symbol)
-    h.Repository.Open(symbol)
-  }
-  return nil
+func (h *OrdersHandler) Open(symbol string) error {
+  log.Println("spot orders open...")
+  return h.Repository.Open(symbol)
 }
 
 func (h *OrdersHandler) Flush() error {

@@ -39,7 +39,7 @@ func NewCrawlsCommand() *cli.Command {
         Name:  "request",
         Usage: "",
         Action: func(c *cli.Context) error {
-          if err := h.request(); err != nil {
+          if err := h.Request(); err != nil {
             return cli.Exit(err.Error(), 1)
           }
           return nil
@@ -49,7 +49,7 @@ func NewCrawlsCommand() *cli.Command {
   }
 }
 
-func (h *CrawlsHandler) request() error {
+func (h *CrawlsHandler) Request() error {
   log.Println("crawl request processing...")
   for _, currency := range h.SymbolsRepository.Currencies() {
     err := h.Repository.Request(currency)

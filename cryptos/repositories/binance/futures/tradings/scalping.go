@@ -1,23 +1,28 @@
 package tradings
 
 import (
+  "context"
   "errors"
   "fmt"
   "log"
   "time"
 
-  "gorm.io/gorm"
-
-  "github.com/adshao/go-binance/v2/common"
+  apiCommon "github.com/adshao/go-binance/v2/common"
+  "github.com/go-redis/redis/v8"
   "github.com/rs/xid"
   "github.com/shopspring/decimal"
+  "gorm.io/gorm"
 
+  "taoniu.local/cryptos/common"
+  config "taoniu.local/cryptos/config/binance/futures"
   futuresModels "taoniu.local/cryptos/models/binance/futures"
   models "taoniu.local/cryptos/models/binance/futures/tradings"
 )
 
 type ScalpingRepository struct {
   Db                 *gorm.DB
+  Rdb                *redis.Client
+  Ctx                context.Context
   SymbolsRepository  SymbolsRepository
   AccountRepository  AccountRepository
   OrdersRepository   OrdersRepository
@@ -269,46 +274,52 @@ func (r *ScalpingRepository) Flush(id string) error {
   return nil
 }
 
-func (r *ScalpingRepository) Place(planID string) error {
-  var plan *futuresModels.Plan
-  var result = r.Db.First(&plan, "id=?", planID)
+func (r *ScalpingRepository) Place(planId string) error {
+  var scalpingPlan *futuresModels.ScalpingPlan
+  result := r.Db.Take(&scalpingPlan, "plan_id", planId)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    r.Db.Model(&futuresModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 10)
+    return errors.New("scalping plan empty")
+  }
+
+  var plan *futuresModels.Plan
+  result = r.Db.Take(&plan, "id", planId)
+  if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+    r.Db.Delete(&scalpingPlan, "plan_id", planId)
     return errors.New("plan empty")
   }
 
   timestamp := time.Now().Unix()
   if plan.Interval == "1m" && plan.CreatedAt.Unix() < timestamp-900 {
-    r.Db.Model(&futuresModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 4)
+    r.Db.Delete(&scalpingPlan, "plan_id", planId)
     return errors.New("plan has been expired")
   }
   if plan.Interval == "15m" && plan.CreatedAt.Unix() < timestamp-2700 {
-    r.Db.Model(&futuresModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 4)
+    r.Db.Delete(&scalpingPlan, "plan_id", planId)
     return errors.New("plan has been expired")
   }
   if plan.Interval == "4h" && plan.CreatedAt.Unix() < timestamp-5400 {
-    r.Db.Model(&futuresModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 4)
+    r.Db.Delete(&scalpingPlan, "plan_id", planId)
     return errors.New("plan has been expired")
   }
   if plan.Interval == "1d" && plan.CreatedAt.Unix() < timestamp-21600 {
-    r.Db.Model(&futuresModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 4)
+    r.Db.Delete(&scalpingPlan, "plan_id", planId)
     return errors.New("plan has been expired")
   }
 
   var scalping *futuresModels.Scalping
-  result = r.Db.Model(&scalping).Where("symbol = ? AND side = ? AND status = 1", plan.Symbol, plan.Side).Take(&scalping)
+  result = r.Db.Model(&scalping).Where("symbol=? AND side=? AND status=1", plan.Symbol, plan.Side).Take(&scalping)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    r.Db.Model(&futuresModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 5)
+    r.Db.Delete(&scalpingPlan, "plan_id", planId)
     return errors.New("scalping empty")
   }
 
   if plan.Side == 1 && plan.Price > scalping.Price {
-    r.Db.Model(&futuresModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 5)
+    r.Db.Delete(&scalpingPlan, "plan_id", planId)
     return errors.New("plan price too high")
   }
 
   if plan.Side == 2 && plan.Price < scalping.Price {
-    r.Db.Model(&futuresModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 5)
+    r.Db.Delete(&scalpingPlan, "plan_id", planId)
     return errors.New("plan price too low")
   }
 
@@ -361,9 +372,11 @@ func (r *ScalpingRepository) Place(planID string) error {
 
   if entryPrice > 0 {
     if scalping.Side == 1 && price > entryPrice {
+      r.Db.Delete(&scalpingPlan, "plan_id", planId)
       return errors.New(fmt.Sprintf("[%s] long price big than entry price", scalping.Symbol))
     }
     if scalping.Side == 2 && price < entryPrice {
+      r.Db.Delete(&scalpingPlan, "plan_id", planId)
       return errors.New(fmt.Sprintf("[%s] short price small than entry price", scalping.Symbol))
     }
   }
@@ -437,13 +450,23 @@ func (r *ScalpingRepository) Place(planID string) error {
     return err
   }
 
-  if balance["free"] < 50 {
+  if balance["free"] < config.SCALPING_MIN_BINANCE {
     return errors.New(fmt.Sprintf("[%s] free not enough", entity.Symbol))
   }
 
+  mutex := common.NewMutex(
+    r.Rdb,
+    r.Ctx,
+    fmt.Sprintf(config.LOCKS_TRADINGS_PLACE, plan.Symbol),
+  )
+  if !mutex.Lock(5 * time.Second) {
+    return nil
+  }
+  defer mutex.Unlock()
+
   orderID, err := r.OrdersRepository.Create(plan.Symbol, positionSide, side, buyPrice, buyQuantity)
   if err != nil {
-    _, ok := err.(common.APIError)
+    _, ok := err.(apiCommon.APIError)
     if ok {
       return err
     }
@@ -453,7 +476,7 @@ func (r *ScalpingRepository) Place(planID string) error {
     })
   }
 
-  r.Db.Model(&futuresModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 1)
+  r.Db.Model(&scalpingPlan).Where("plan_id", planId).Update("status", 1)
 
   trading := &models.Scalping{
     ID:           xid.New().String(),
@@ -580,7 +603,7 @@ func (r *ScalpingRepository) Take(scalping *futuresModels.Scalping, price float6
 
   orderID, err := r.OrdersRepository.Create(trading.Symbol, positionSide, side, sellPrice, trading.SellQuantity)
   if err != nil {
-    _, ok := err.(common.APIError)
+    _, ok := err.(apiCommon.APIError)
     if ok {
       return err
     }

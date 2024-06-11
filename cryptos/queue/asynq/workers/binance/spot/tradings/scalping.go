@@ -25,7 +25,9 @@ func NewScalping(ansqContext *common.AnsqServerContext) *Scalping {
     AnsqContext: ansqContext,
   }
   h.Repository = &repositories.ScalpingRepository{
-    Db: h.AnsqContext.Db,
+    Db:  h.AnsqContext.Db,
+    Rdb: h.AnsqContext.Rdb,
+    Ctx: h.AnsqContext.Ctx,
   }
   h.Repository.SymbolsRepository = &spotRepositories.SymbolsRepository{
     Db:  h.AnsqContext.Db,

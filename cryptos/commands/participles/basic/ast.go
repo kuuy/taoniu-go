@@ -1,141 +1,141 @@
 package basic
 
 import (
-	"github.com/alecthomas/participle/v2/lexer"
-	"strings"
+  "github.com/alecthomas/participle/v2/lexer"
+  "strings"
 )
 
 type Program struct {
-	Pos lexer.Position
+  Pos lexer.Position
 
-	Commands []*Command `@@*`
+  Commands []*Command `@@*`
 
-	Table map[int]*Command
+  Table map[int]*Command
 }
 
 type Command struct {
-	Pos lexer.Position
+  Pos lexer.Position
 
-	Index int
+  Index int
 
-	Line int `@Number`
+  Line int `@Number`
 
-	Remark *Remark `(   @@`
-	Input  *Input  `  | @@`
-	Let    *Let    `  | @@`
-	Goto   *Goto   `  | @@`
-	If     *If     `  | @@`
-	Print  *Print  `  | @@`
-	Call   *Call   `  | @@ ) EOL`
+  Remark *Remark `(   @@`
+  Input  *Input  `  | @@`
+  Let    *Let    `  | @@`
+  Goto   *Goto   `  | @@`
+  If     *If     `  | @@`
+  Print  *Print  `  | @@`
+  Call   *Call   `  | @@ ) EOL`
 }
 
 type Remark struct {
-	Pos lexer.Position
+  Pos lexer.Position
 
-	Comment string `@Comment`
+  Comment string `@Comment`
 }
 
 type Call struct {
-	Pos lexer.Position
+  Pos lexer.Position
 
-	Name string        `@Ident`
-	Args []*Expression `"(" ( @@ ( "," @@ )* )? ")"`
+  Name string        `@Ident`
+  Args []*Expression `"(" ( @@ ( "," @@ )* )? ")"`
 }
 
 type Print struct {
-	Pos lexer.Position
+  Pos lexer.Position
 
-	Expression *Expression `"PRINT" @@`
+  Expression *Expression `"PRINT" @@`
 }
 
 type Input struct {
-	Pos lexer.Position
+  Pos lexer.Position
 
-	Variable string `"INPUT" @Ident`
+  Variable string `"INPUT" @Ident`
 }
 
 type Let struct {
-	Pos lexer.Position
+  Pos lexer.Position
 
-	Variable string      `"LET" @Ident`
-	Value    *Expression `"=" @@`
+  Variable string      `"LET" @Ident`
+  Value    *Expression `"=" @@`
 }
 
 type Goto struct {
-	Pos lexer.Position
+  Pos lexer.Position
 
-	Line int `"GOTO" @Number`
+  Line int `"GOTO" @Number`
 }
 
 type If struct {
-	Pos lexer.Position
+  Pos lexer.Position
 
-	Condition *Expression `"IF" @@`
-	Line      int         `"THEN" @Number`
+  Condition *Expression `"IF" @@`
+  Line      int         `"THEN" @Number`
 }
 
 type Operator string
 
 func (o *Operator) Capture(s []string) error {
-	*o = Operator(strings.Join(s, ""))
-	return nil
+  *o = Operator(strings.Join(s, ""))
+  return nil
 }
 
 type Value struct {
-	Pos lexer.Position
+  Pos lexer.Position
 
-	Number        *float64    `  @Number`
-	Variable      *string     `| @Ident`
-	String        *string     `| @String`
-	Call          *Call       `| @@`
-	Subexpression *Expression `| "(" @@ ")"`
+  Number        *float64    `  @Number`
+  Variable      *string     `| @Ident`
+  String        *string     `| @String`
+  Call          *Call       `| @@`
+  Subexpression *Expression `| "(" @@ ")"`
 }
 
 type Factor struct {
-	Pos lexer.Position
+  Pos lexer.Position
 
-	Base     *Value `@@`
-	Exponent *Value `( "^" @@ )?`
+  Base     *Value `@@`
+  Exponent *Value `( "^" @@ )?`
 }
 
 type OpFactor struct {
-	Pos lexer.Position
+  Pos lexer.Position
 
-	Operator Operator `@("*" | "/")`
-	Factor   *Factor  `@@`
+  Operator Operator `@("*" | "/")`
+  Factor   *Factor  `@@`
 }
 
 type Term struct {
-	Pos lexer.Position
+  Pos lexer.Position
 
-	Left  *Factor     `@@`
-	Right []*OpFactor `@@*`
+  Left  *Factor     `@@`
+  Right []*OpFactor `@@*`
 }
 
 type OpTerm struct {
-	Pos lexer.Position
+  Pos lexer.Position
 
-	Operator Operator `@("+" | "-")`
-	Term     *Term    `@@`
+  Operator Operator `@("+" | "-")`
+  Term     *Term    `@@`
 }
 
 type Cmp struct {
-	Pos lexer.Position
+  Pos lexer.Position
 
-	Left  *Term     `@@`
-	Right []*OpTerm `@@*`
+  Left  *Term     `@@`
+  Right []*OpTerm `@@*`
 }
 
 type OpCmp struct {
-	Pos lexer.Position
+  Pos lexer.Position
 
-	Operator Operator `@("=" | "<" "=" | ">" "=" | "<" | ">" | "!" "=")`
-	Cmp      *Cmp     `@@`
+  Operator Operator `@("=" | "<" "=" | ">" "=" | "<" | ">" | "!" "=")`
+  Cmp      *Cmp     `@@`
 }
 
 type Expression struct {
-	Pos lexer.Position
+  Pos lexer.Position
 
-	Left  *Cmp     `@@`
-	Right []*OpCmp `@@*`
+  Left  *Cmp     `@@`
+  Right []*OpCmp `@@*`
 }

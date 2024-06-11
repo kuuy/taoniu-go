@@ -2,10 +2,11 @@ package tradings
 
 import (
   "context"
+  "log"
+
   "github.com/go-redis/redis/v8"
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
-  "log"
 
   "taoniu.local/cryptos/common"
   spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
@@ -32,7 +33,9 @@ func NewScalpingCommand() *cli.Command {
         Ctx: context.Background(),
       }
       h.Repository = &repositories.ScalpingRepository{
-        Db: h.Db,
+        Db:  h.Db,
+        Rdb: h.Rdb,
+        Ctx: h.Ctx,
       }
       h.Repository.SymbolsRepository = &spotRepositories.SymbolsRepository{
         Db:  h.Db,

@@ -3,8 +3,10 @@ package isolated
 import (
   "context"
   "fmt"
+
   "github.com/go-redis/redis/v8"
   "gorm.io/gorm"
+
   models "taoniu.local/cryptos/models/binance/spot"
 )
 

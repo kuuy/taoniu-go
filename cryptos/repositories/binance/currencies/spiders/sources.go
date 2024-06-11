@@ -3,26 +3,26 @@ package spiders
 import (
   "errors"
   "gorm.io/gorm"
-  spidersModels "taoniu.local/cryptos/models/spiders"
-  spiderRepositories "taoniu.local/cryptos/repositories/spiders"
+  models "taoniu.local/cryptos/models/spiders"
+  repositories "taoniu.local/cryptos/repositories/spiders"
 )
 
 type SourcesRepository struct {
   Db                      *gorm.DB
-  SpiderSourcesRepository *spiderRepositories.SourcesRepository
+  SpiderSourcesRepository *repositories.SourcesRepository
 }
 
-func (r *SourcesRepository) Sources() *spiderRepositories.SourcesRepository {
+func (r *SourcesRepository) Sources() *repositories.SourcesRepository {
   if r.SpiderSourcesRepository == nil {
-    r.SpiderSourcesRepository = &spiderRepositories.SourcesRepository{
+    r.SpiderSourcesRepository = &repositories.SourcesRepository{
       Db: r.Db,
     }
   }
   return r.SpiderSourcesRepository
 }
 
-func (r *SourcesRepository) Find(id string) (*spidersModels.Source, error) {
-  var entity *spidersModels.Source
+func (r *SourcesRepository) Find(id string) (*models.Source, error) {
+  var entity *models.Source
   result := r.Db.First(&entity, "id=?", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     return nil, result.Error
@@ -30,8 +30,8 @@ func (r *SourcesRepository) Find(id string) (*spidersModels.Source, error) {
   return entity, nil
 }
 
-func (r *SourcesRepository) Get() (*spidersModels.Source, error) {
-  var entity *spidersModels.Source
+func (r *SourcesRepository) Get() (*models.Source, error) {
+  var entity *models.Source
   result := r.Db.Where("slug", "binance-currencies-detail").Take(&entity)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     return nil, result.Error
@@ -44,20 +44,20 @@ func (r *SourcesRepository) Add() error {
   name := "Binance Currencies Detail"
   slug := "binance-currencies-detail"
   url := "https://www.binance.com/bapi/composite/v1/public/marketing/tardingPair/detail?symbol={}"
-  source := &spiderRepositories.CrawlSource{
+  source := &repositories.CrawlSource{
     Url: url,
     Headers: map[string]string{
       "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36",
     },
     UseProxy: false,
     Timeout:  10,
-    HtmlRules: &spiderRepositories.HtmlExtractRules{
-      Json: []*spiderRepositories.JsonExtract{
+    HtmlRules: &repositories.HtmlExtractRules{
+      Json: []*repositories.JsonExtract{
         {
-          Rules: &spiderRepositories.JsonExtractRules{
+          Rules: &repositories.JsonExtractRules{
             Container: "data.0",
             List:      "details",
-            Fields: []*spiderRepositories.JsonExtractField{
+            Fields: []*repositories.JsonExtractField{
               {
                 Name: "about",
                 Path: "description",

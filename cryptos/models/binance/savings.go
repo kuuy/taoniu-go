@@ -8,13 +8,13 @@ import (
 type Savings struct{}
 
 func NewSavings() *Savings {
-	return &Savings{}
+  return &Savings{}
 }
 
 func (m *Savings) AutoMigrate(db *gorm.DB) error {
-	db.AutoMigrate(
-		&savings.FlexibleProduct{},
-	)
+  db.AutoMigrate(
+    &savings.FlexibleProduct{},
+  )
 
-	return nil
+  return nil
 }

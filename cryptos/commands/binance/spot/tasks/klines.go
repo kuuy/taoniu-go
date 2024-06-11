@@ -86,7 +86,7 @@ func (h *KlinesHandler) Flush() error {
     mutex := common.NewMutex(
       h.Rdb,
       h.Ctx,
-      fmt.Sprintf("locks:binance:spot:klines:fix:%s", symbol),
+      fmt.Sprintf("locks:binance:spot:klines:flush:%s", symbol),
     )
     if !mutex.Lock(5 * time.Second) {
       continue

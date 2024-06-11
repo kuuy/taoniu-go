@@ -1,6 +1,8 @@
 package futures
 
 const (
+  SCALPING_MIN_BINANCE               = 50
+  TRIGGERS_MIN_BINANCE               = 200
   ASYNQ_QUEUE_TICKERS                = "binance.futures.tickers"
   ASYNQ_QUEUE_KLINES                 = "binance.futures.klines"
   ASYNQ_QUEUE_DEPTH                  = "binance.futures.depth"
@@ -34,9 +36,14 @@ const (
   MQTT_TOPICS_TICKERS                = "binance/futures/tickers/%s"
   LOCKS_ACCOUNT_FLUSH                = "locks:binance:futures:account:flush"
   LOCKS_KLINES_FLUSH                 = "locks:binance:futures:klines:flush:%s:%s"
+  LOCKS_KLINES_FIX                   = "locks:binance:futures:klines:fix:%s:%s"
   LOCKS_KLINES_UPDATE                = "locks:binance:futures:klines:update:%s:%s"
   LOCKS_KLINES_CLEAN                 = "locks:binance:futures:klines:clean:%s"
   LOCKS_KLINES_STREAM                = "locks:binance:futures:klines:stream:%s:%s"
+  LOCKS_ORDERS_OPEN                  = "locks:binance:futures:orders:open:%s"
+  LOCKS_ORDERS_FLUSH                 = "locks:binance:futures:orders:flush:%s:%d"
+  LOCKS_ORDERS_SYNC                  = "locks:binance:futures:orders:sync:%s"
+  LOCKS_TRADINGS_PLACE               = "locks:binance:futures:tradings:place:%s"
   LOCKS_TRADINGS_SCALPING_PLACE      = "locks:binance:futures:tradings:scalping:place:%s"
   LOCKS_TRADINGS_SCALPING_FLUSH      = "locks:binance:futures:tradings:scalping:flush:%s"
   LOCKS_TRADINGS_TRIGGERS_PLACE      = "locks:binance:futures:tradings:triggers:place:%s"

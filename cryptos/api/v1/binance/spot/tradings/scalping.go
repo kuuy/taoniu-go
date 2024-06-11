@@ -23,7 +23,9 @@ func NewScalpingRouter(apiContext *common.ApiContext) http.Handler {
     ApiContext: apiContext,
   }
   h.Repository = &repositories.ScalpingRepository{
-    Db: h.ApiContext.Db,
+    Db:  h.ApiContext.Db,
+    Rdb: h.ApiContext.Rdb,
+    Ctx: h.ApiContext.Ctx,
   }
 
   r := chi.NewRouter()

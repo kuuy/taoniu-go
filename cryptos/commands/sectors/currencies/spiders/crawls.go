@@ -3,9 +3,8 @@ package spiders
 import (
   "log"
 
-  "gorm.io/gorm"
-
   "github.com/urfave/cli/v2"
+  "gorm.io/gorm"
 
   "taoniu.local/cryptos/common"
   repositories "taoniu.local/cryptos/repositories/sectors/currencies/spiders"

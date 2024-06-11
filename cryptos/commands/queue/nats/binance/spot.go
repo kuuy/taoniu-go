@@ -2,12 +2,12 @@ package binance
 
 import (
   "context"
-  "gorm.io/gorm"
   "log"
   "sync"
 
   "github.com/go-redis/redis/v8"
   "github.com/urfave/cli/v2"
+  "gorm.io/gorm"
 
   "taoniu.local/cryptos/common"
   workers "taoniu.local/cryptos/queue/nats/workers/binance"

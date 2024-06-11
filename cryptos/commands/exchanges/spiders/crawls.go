@@ -1,10 +1,12 @@
 package spiders
 
 import (
+  "log"
+
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
-  "log"
-  pool "taoniu.local/cryptos/common"
+
+  "taoniu.local/cryptos/common"
   repositories "taoniu.local/cryptos/repositories/exchanges/spiders"
 )
 
@@ -20,7 +22,7 @@ func NewCrawlsCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = CrawlsHandler{
-        Db: pool.NewDB(1),
+        Db: common.NewDB(1),
       }
       h.Repository = &repositories.CrawlsRepository{
         Db: h.Db,

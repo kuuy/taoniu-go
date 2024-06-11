@@ -49,7 +49,15 @@ func (r *LiveRepository) Listings(conditions map[string]interface{}, current int
 
   var result []*LiveInfo
 
-  fields := []string{"open", "price", "high", "low", "volume", "quota", "timestamp"}
+  fields := []string{
+    "open",
+    "price",
+    "high",
+    "low",
+    "volume",
+    "quota",
+    "timestamp",
+  }
   tickers := r.TickersRepository.Gets(symbols, fields)
 
   for i, ticker := range tickers {

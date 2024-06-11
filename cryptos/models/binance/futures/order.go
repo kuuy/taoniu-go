@@ -6,20 +6,20 @@ import (
 
 type Order struct {
   ID               string    `gorm:"size:20;primaryKey"`
-  Symbol           string    `gorm:"size:20;not null;uniqueIndex:unq_binance_futures_orders_symbol_orderid;index:idx_binance_futures_orders"`
-  OrderID          int64     `gorm:"not null;uniqueIndex:unq_binance_futures_orders_symbol_orderid"`
+  Symbol           string    `gorm:"size:20;not null;uniqueIndex:unq_binance_futures_orders;index:idx_binance_futures_orders;index:idx_binance_futures_orders_lost"`
+  OrderID          int64     `gorm:"not null;uniqueIndex:unq_binance_futures_orders"`
   Type             string    `gorm:"size:30;not null"`
-  PositionSide     string    `gorm:"size:20;not null;index:idx_binance_futures_orders"`
-  Side             string    `gorm:"size:20;not null"`
+  PositionSide     string    `gorm:"size:20;not null;index:idx_binance_futures_orders;index:idx_binance_futures_orders_lost"`
+  Side             string    `gorm:"size:20;not null;index:idx_binance_futures_orders_lost"`
   Price            float64   `gorm:"not null"`
   AvgPrice         float64   `gorm:"not null"`
   ActivatePrice    float64   `gorm:"not null"`
   StopPrice        float64   `gorm:"not null"`
   PriceRate        float64   `gorm:"not null"`
-  Quantity         float64   `gorm:"not null"`
+  Quantity         float64   `gorm:"not null;index:idx_binance_futures_orders_lost"`
   ExecutedQuantity float64   `gorm:"not null"`
   OpenTime         int64     `gorm:"not null"`
-  UpdateTime       int64     `gorm:"not null;index:idx_binance_futures_orders"`
+  UpdateTime       int64     `gorm:"not null;index:idx_binance_futures_orders;index:idx_binance_futures_orders_lost"`
   WorkingType      string    `gorm:"size:30;not null"`
   PriceProtect     bool      `gorm:"not null"`
   ReduceOnly       bool      `gorm:"not null"`

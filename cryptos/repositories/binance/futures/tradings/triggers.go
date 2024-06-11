@@ -1,23 +1,29 @@
 package tradings
 
 import (
+  "context"
   "errors"
   "fmt"
   "log"
   "math"
   "time"
 
-  "github.com/adshao/go-binance/v2/common"
+  apiCommon "github.com/adshao/go-binance/v2/common"
+  "github.com/go-redis/redis/v8"
   "github.com/rs/xid"
   "github.com/shopspring/decimal"
   "gorm.io/gorm"
 
+  "taoniu.local/cryptos/common"
+  config "taoniu.local/cryptos/config/binance/futures"
   futuresModels "taoniu.local/cryptos/models/binance/futures"
   models "taoniu.local/cryptos/models/binance/futures/tradings"
 )
 
 type TriggersRepository struct {
   Db                 *gorm.DB
+  Rdb                *redis.Client
+  Ctx                context.Context
   SymbolsRepository  SymbolsRepository
   AccountRepository  AccountRepository
   OrdersRepository   OrdersRepository
@@ -88,14 +94,9 @@ func (r *TriggersRepository) Listings(conditions map[string]interface{}, current
 
 func (r *TriggersRepository) Place(id string) error {
   var trigger *futuresModels.Trigger
-  result := r.Db.First(&trigger, "id=?", id)
+  result := r.Db.Take(&trigger, "id", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     return errors.New("trigger empty")
-  }
-
-  if trigger.ExpiredAt.Unix() < time.Now().Unix() {
-    r.Db.Model(&trigger).Update("status", 4)
-    return errors.New("trigger expired")
   }
 
   var positionSide string
@@ -114,7 +115,7 @@ func (r *TriggersRepository) Place(id string) error {
   }
 
   if position.EntryQuantity == 0 {
-    return errors.New(fmt.Sprintf("[%s] %s empty position", trigger.Symbol, positionSide))
+    return errors.New(fmt.Sprintf("trigger [%s] %s empty position", trigger.Symbol, positionSide))
   }
 
   entity, err := r.SymbolsRepository.Get(trigger.Symbol)
@@ -138,10 +139,10 @@ func (r *TriggersRepository) Place(id string) error {
 
   if entryPrice > 0 {
     if trigger.Side == 1 && price > entryPrice {
-      return errors.New(fmt.Sprintf("[%s] %s price big than entry price", trigger.Symbol, positionSide))
+      return errors.New(fmt.Sprintf("trigger [%s] %s price big than entry price", trigger.Symbol, positionSide))
     }
     if trigger.Side == 2 && price < entryPrice {
-      return errors.New(fmt.Sprintf("[%s] %s price small than  entry price", trigger.Symbol, positionSide))
+      return errors.New(fmt.Sprintf("trigger [%s] %s price small than  entry price", trigger.Symbol, positionSide))
     }
   }
 
@@ -152,7 +153,7 @@ func (r *TriggersRepository) Place(id string) error {
       var total int64
       r.Db.Model(&models.Scalping{}).Where("scalping_id=? AND status IN ?", scalping.ID, []int{1, 2}).Count(&total)
       if total < 1 {
-        return errors.New(fmt.Sprintf("[%s] %s waiting for the scalping", trigger.Symbol, positionSide))
+        return errors.New(fmt.Sprintf("trigger [%s] %s waiting for the scalping", trigger.Symbol, positionSide))
       }
     }
   }
@@ -214,15 +215,15 @@ func (r *TriggersRepository) Place(id string) error {
   }
 
   if trigger.Side == 1 && price > buyPrice {
-    return errors.New(fmt.Sprintf("[%s] %s price must reach %v", trigger.Symbol, positionSide, buyPrice))
+    return errors.New(fmt.Sprintf("trigger [%s] %s price must reach %v", trigger.Symbol, positionSide, buyPrice))
   }
 
   if trigger.Side == 2 && price < buyPrice {
-    return errors.New(fmt.Sprintf("[%s] %s price must reach %v", trigger.Symbol, positionSide, buyPrice))
+    return errors.New(fmt.Sprintf("trigger [%s] %s price must reach %v", trigger.Symbol, positionSide, buyPrice))
   }
 
   if !r.CanBuy(trigger, buyPrice) {
-    return errors.New(fmt.Sprintf("[%s] can not buy now", trigger.Symbol))
+    return errors.New(fmt.Sprintf("trigger [%s] can not buy now", trigger.Symbol))
   }
 
   balance, err := r.AccountRepository.Balance(entity.QuoteAsset)
@@ -230,49 +231,46 @@ func (r *TriggersRepository) Place(id string) error {
     return err
   }
 
-  if balance["free"] < buyAmount+50 {
+  if balance["free"] < math.Max(buyAmount, config.TRIGGERS_MIN_BINANCE) {
     return errors.New(fmt.Sprintf("[%s] free not enough", entity.Symbol))
   }
 
-  return r.Db.Transaction(func(tx *gorm.DB) (err error) {
-    if position.ID != "" {
-      result = tx.Model(&position).Where("version", position.Version).Updates(map[string]interface{}{
-        "entry_quantity": gorm.Expr("entry_quantity + ?", buyQuantity),
-        "version":        gorm.Expr("version + ?", 1),
-      })
-      if result.Error != nil {
-        return result.Error
-      }
-      if result.RowsAffected == 0 {
-        return errors.New("position update failed")
-      }
-    }
+  mutex := common.NewMutex(
+    r.Rdb,
+    r.Ctx,
+    fmt.Sprintf(config.LOCKS_TRADINGS_PLACE, trigger.Symbol),
+  )
+  if !mutex.Lock(5 * time.Second) {
+    return nil
+  }
+  defer mutex.Unlock()
 
-    orderID, err := r.OrdersRepository.Create(trigger.Symbol, positionSide, side, buyPrice, buyQuantity)
-    if err != nil {
-      _, ok := err.(common.APIError)
-      if ok {
-        return err
-      }
-      tx.Model(&trigger).Where("version", trigger.Version).Updates(map[string]interface{}{
-        "remark":  err.Error(),
-        "version": gorm.Expr("version + ?", 1),
-      })
+  orderID, err := r.OrdersRepository.Create(trigger.Symbol, positionSide, side, buyPrice, buyQuantity)
+  if err != nil {
+    _, ok := err.(apiCommon.APIError)
+    if ok {
+      return err
     }
+    r.Db.Model(&trigger).Where("version", trigger.Version).Updates(map[string]interface{}{
+      "remark":  err.Error(),
+      "version": gorm.Expr("version + ?", 1),
+    })
+  }
 
-    trading := models.Trigger{
-      ID:           xid.New().String(),
-      Symbol:       trigger.Symbol,
-      TriggerID:    trigger.ID,
-      BuyOrderId:   orderID,
-      BuyPrice:     buyPrice,
-      BuyQuantity:  buyQuantity,
-      SellPrice:    sellPrice,
-      SellQuantity: buyQuantity,
-      Version:      1,
-    }
-    return tx.Create(&trading).Error
-  })
+  trading := models.Trigger{
+    ID:           xid.New().String(),
+    Symbol:       trigger.Symbol,
+    TriggerID:    trigger.ID,
+    BuyOrderId:   orderID,
+    BuyPrice:     buyPrice,
+    BuyQuantity:  buyQuantity,
+    SellPrice:    sellPrice,
+    SellQuantity: buyQuantity,
+    Version:      1,
+  }
+  r.Db.Create(&trading)
+
+  return nil
 }
 
 func (r *TriggersRepository) Flush(id string) error {
@@ -515,7 +513,7 @@ func (r *TriggersRepository) Take(trigger *futuresModels.Trigger, price float64)
 
   orderID, err := r.OrdersRepository.Create(trading.Symbol, positionSide, side, sellPrice, trading.SellQuantity)
   if err != nil {
-    _, ok := err.(common.APIError)
+    _, ok := err.(apiCommon.APIError)
     if ok {
       return err
     }

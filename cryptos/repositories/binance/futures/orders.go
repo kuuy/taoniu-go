@@ -129,18 +129,65 @@ func (r *OrdersRepository) Status(symbol string, orderID int64) string {
 }
 
 func (r *OrdersRepository) Open(symbol string) error {
-  client := binance.NewFuturesClient(
-    os.Getenv("BINANCE_FUTURES_ACCOUNT_API_KEY"),
-    os.Getenv("BINANCE_FUTURES_ACCOUNT_API_SECRET"),
-  )
-  client.BaseURL = os.Getenv("BINANCE_FUTURES_API_ENDPOINT")
-  orders, err := client.NewListOpenOrdersService().Symbol(symbol).Do(r.Ctx)
+  tr := &http.Transport{
+    DisableKeepAlives: true,
+  }
+  session := &net.Dialer{}
+  tr.DialContext = session.DialContext
+
+  httpClient := &http.Client{
+    Transport: tr,
+    Timeout:   time.Duration(5) * time.Second,
+  }
+
+  params := url.Values{}
+  params.Add("symbol", symbol)
+  params.Add("recvWindow", "60000")
+
+  value, err := r.Rdb.HGet(r.Ctx, "binance:server", "timediff").Result()
   if err != nil {
     return err
   }
-  for _, order := range orders {
+  timediff, _ := strconv.ParseInt(value, 10, 64)
+
+  timestamp := time.Now().UnixMilli() - timediff
+  params.Add("timestamp", fmt.Sprintf("%v", timestamp))
+
+  mac := hmac.New(sha256.New, []byte(os.Getenv("BINANCE_FUTURES_ACCOUNT_API_SECRET")))
+  _, err = mac.Write([]byte(params.Encode()))
+  if err != nil {
+    return err
+  }
+  signature := mac.Sum(nil)
+  params.Add("signature", fmt.Sprintf("%x", signature))
+
+  url := fmt.Sprintf("%s/fapi/v1/openOrders", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))
+  req, _ := http.NewRequest("GET", url, nil)
+  req.URL.RawQuery = params.Encode()
+  req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+  req.Header.Set("X-MBX-APIKEY", os.Getenv("BINANCE_FUTURES_ACCOUNT_API_KEY"))
+  resp, err := httpClient.Do(req)
+  if err != nil {
+    return err
+  }
+  defer resp.Body.Close()
+
+  if resp.StatusCode != http.StatusOK {
+    return errors.New(
+      fmt.Sprintf(
+        "request error: status[%s] code[%d]",
+        resp.Status,
+        resp.StatusCode,
+      ),
+    )
+  }
+
+  var result []*service.Order
+  json.NewDecoder(resp.Body).Decode(&result)
+  for _, order := range result {
     r.Save(order)
   }
+
   return nil
 }
 
@@ -153,7 +200,7 @@ func (r *OrdersRepository) Sync(symbol string, startTime int64, limit int) error
 
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   time.Duration(3) * time.Second,
+    Timeout:   time.Duration(5) * time.Second,
   }
 
   params := url.Values{}

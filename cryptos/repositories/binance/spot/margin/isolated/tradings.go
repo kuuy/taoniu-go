@@ -2,8 +2,10 @@ package isolated
 
 import (
   "context"
+
   "github.com/go-redis/redis/v8"
   "gorm.io/gorm"
+
   repositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated/tradings"
 )
 

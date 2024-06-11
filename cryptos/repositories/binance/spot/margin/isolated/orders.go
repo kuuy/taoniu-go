@@ -2,11 +2,11 @@ package isolated
 
 import (
   "context"
-  "gorm.io/gorm"
   "os"
 
   "github.com/adshao/go-binance/v2"
   "github.com/go-redis/redis/v8"
+  "gorm.io/gorm"
 )
 
 type OrdersInterface interface {

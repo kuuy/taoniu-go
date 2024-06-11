@@ -36,7 +36,9 @@ func NewScalpingCommand() *cli.Command {
         Ctx: context.Background(),
       }
       h.Repository = &repositories.ScalpingRepository{
-        Db: h.Db,
+        Db:  h.Db,
+        Rdb: h.Rdb,
+        Ctx: h.Ctx,
       }
       h.Repository.SymbolsRepository = &futuresRepositories.SymbolsRepository{
         Db:  h.Db,

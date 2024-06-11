@@ -32,7 +32,7 @@ func NewCrawlsCommand() *cli.Command {
         Name:  "request",
         Usage: "",
         Action: func(c *cli.Context) error {
-          if err := h.request(); err != nil {
+          if err := h.Request(); err != nil {
             return cli.Exit(err.Error(), 1)
           }
           return nil
@@ -42,7 +42,7 @@ func NewCrawlsCommand() *cli.Command {
   }
 }
 
-func (h *CrawlsHandler) request() error {
+func (h *CrawlsHandler) Request() error {
   log.Println("proxies crawl processing...")
 
   //url := "https://www.socks-proxy.net/"

@@ -9,6 +9,7 @@ import (
   "github.com/hibiken/asynq"
 
   "taoniu.local/cryptos/common"
+  config "taoniu.local/cryptos/config/binance/futures"
   repositories "taoniu.local/cryptos/repositories/binance/futures"
 )
 
@@ -51,7 +52,7 @@ func (h *Orders) Open(ctx context.Context, t *asynq.Task) error {
   mutex := common.NewMutex(
     h.AnsqContext.Rdb,
     h.AnsqContext.Ctx,
-    fmt.Sprintf("locks:binance:futures:orders:open:%s", payload.Symbol),
+    fmt.Sprintf(config.LOCKS_ORDERS_OPEN, payload.Symbol),
   )
   if !mutex.Lock(5 * time.Second) {
     return nil
@@ -70,7 +71,7 @@ func (h *Orders) Flush(ctx context.Context, t *asynq.Task) error {
   mutex := common.NewMutex(
     h.AnsqContext.Rdb,
     h.AnsqContext.Ctx,
-    fmt.Sprintf("locks:binance:futures:orders:flush:%s:%d", payload.Symbol, payload.OrderID),
+    fmt.Sprintf(config.LOCKS_ORDERS_FLUSH, payload.Symbol, payload.OrderID),
   )
   if !mutex.Lock(5 * time.Second) {
     return nil
@@ -89,7 +90,7 @@ func (h *Orders) Sync(ctx context.Context, t *asynq.Task) error {
   mutex := common.NewMutex(
     h.AnsqContext.Rdb,
     h.AnsqContext.Ctx,
-    fmt.Sprintf("locks:binance:futures:orders:sync:%s", payload.Symbol),
+    fmt.Sprintf(config.LOCKS_ORDERS_SYNC, payload.Symbol),
   )
   if !mutex.Lock(5 * time.Second) {
     return nil

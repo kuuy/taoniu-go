@@ -1,6 +1,8 @@
 package spot
 
 const (
+  SCALPING_MIN_BINANCE                = 50
+  TRIGGERS_MIN_BINANCE                = 200
   ASYNQ_QUEUE_TICKERS                 = "binance.spot.tickers"
   ASYNQ_QUEUE_KLINES                  = "binance.spot.klines"
   ASYNQ_QUEUE_DEPTH                   = "binance.spot.depth"
@@ -41,6 +43,10 @@ const (
   LOCKS_KLINES_UPDATE                 = "locks:binance:spot:klines:update:%s:%s"
   LOCKS_KLINES_CLEAN                  = "locks:binance:spot:klines:clean:%s"
   LOCKS_KLINES_STREAM                 = "locks:binance:spot:klines:stream:%s:%s"
+  LOCKS_ORDERS_OPEN                   = "locks:binance:spot:orders:open:%s"
+  LOCKS_ORDERS_FLUSH                  = "locks:binance:spot:orders:flush:%s:%d"
+  LOCKS_ORDERS_SYNC                   = "locks:binance:spot:orders:sync:%s"
+  LOCKS_TRADINGS_PLACE                = "locks:binance:spot:tradings:place:%s"
   LOCKS_TRADINGS_LAUNCHPAD_PLACE      = "locks:binance:spot:tradings:launchpad:place:%s"
   LOCKS_TRADINGS_LAUNCHPAD_FLUSH      = "locks:binance:spot:tradings:launchpad:flush:%s"
   LOCKS_TRADINGS_SCALPING_PLACE       = "locks:binance:spot:tradings:scalping:place:%s"

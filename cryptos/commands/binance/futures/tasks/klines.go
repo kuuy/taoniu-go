@@ -12,6 +12,7 @@ import (
   "gorm.io/gorm"
 
   "taoniu.local/cryptos/common"
+  config "taoniu.local/cryptos/config/binance/futures"
   repositories "taoniu.local/cryptos/repositories/binance/futures"
   tradingsRepositories "taoniu.local/cryptos/repositories/binance/futures/tradings"
 )
@@ -86,7 +87,7 @@ func (h *KlinesHandler) Flush() error {
     mutex := common.NewMutex(
       h.Rdb,
       h.Ctx,
-      fmt.Sprintf("locks:binance:futures:klines:flush:%s", symbol),
+      fmt.Sprintf(config.LOCKS_KLINES_FLUSH, symbol, ""),
     )
     if !mutex.Lock(5 * time.Second) {
       continue
@@ -106,7 +107,7 @@ func (h *KlinesHandler) Fix() error {
     mutex := common.NewMutex(
       h.Rdb,
       h.Ctx,
-      fmt.Sprintf("locks:binance:futures:klines:fix:%s", symbol),
+      fmt.Sprintf(config.LOCKS_KLINES_FIX, symbol, ""),
     )
     if !mutex.Lock(30 * time.Second) {
       continue

@@ -6,13 +6,12 @@ import (
   "sync"
   "time"
 
-  "gorm.io/gorm"
-
   "github.com/go-redis/redis/v8"
   "github.com/hibiken/asynq"
   "github.com/nats-io/nats.go"
   "github.com/robfig/cron/v3"
   "github.com/urfave/cli/v2"
+  "gorm.io/gorm"
 
   "taoniu.local/cryptos/common"
   "taoniu.local/cryptos/tasks"

@@ -1,23 +1,29 @@
 package tradings
 
 import (
+  "context"
   "errors"
   "fmt"
   "log"
   "math"
   "time"
 
-  "github.com/adshao/go-binance/v2/common"
+  apiCommon "github.com/adshao/go-binance/v2/common"
+  "github.com/go-redis/redis/v8"
   "github.com/rs/xid"
   "github.com/shopspring/decimal"
   "gorm.io/gorm"
 
+  "taoniu.local/cryptos/common"
+  config "taoniu.local/cryptos/config/binance/spot"
   spotModels "taoniu.local/cryptos/models/binance/spot"
   models "taoniu.local/cryptos/models/binance/spot/tradings"
 )
 
 type TriggersRepository struct {
   Db                 *gorm.DB
+  Rdb                *redis.Client
+  Ctx                context.Context
   SymbolsRepository  SymbolsRepository
   AccountRepository  AccountRepository
   OrdersRepository   OrdersRepository
@@ -88,14 +94,9 @@ func (r *TriggersRepository) Listings(conditions map[string]interface{}, current
 
 func (r *TriggersRepository) Place(id string) error {
   var trigger *spotModels.Trigger
-  result := r.Db.First(&trigger, "id=?", id)
+  result := r.Db.Take(&trigger, "id", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     return errors.New("trigger empty")
-  }
-
-  if trigger.ExpiredAt.Unix() < time.Now().Unix() {
-    r.Db.Model(&trigger).Update("status", 4)
-    return errors.New("trigger expired")
   }
 
   var side = "BUY"
@@ -128,10 +129,8 @@ func (r *TriggersRepository) Place(id string) error {
     return err
   }
 
-  if entryPrice > 0 {
-    if price > entryPrice {
-      return errors.New(fmt.Sprintf("[%s] price big than entry price", trigger.Symbol))
-    }
+  if price > entryPrice {
+    return errors.New(fmt.Sprintf("trigger [%s] price big than entry price", trigger.Symbol))
   }
 
   ipart, _ := math.Modf(trigger.Capital)
@@ -181,11 +180,11 @@ func (r *TriggersRepository) Place(id string) error {
   sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
 
   if price > buyPrice {
-    return errors.New(fmt.Sprintf("[%s] price must reach %v", trigger.Symbol, buyPrice))
+    return errors.New(fmt.Sprintf("trigger [%s] price must reach %v", trigger.Symbol, buyPrice))
   }
 
   if !r.CanBuy(trigger, buyPrice) {
-    return errors.New(fmt.Sprintf("[%s] can not buy now", trigger.Symbol))
+    return errors.New(fmt.Sprintf("trigger [%s] can not buy now", trigger.Symbol))
   }
 
   balance, err := r.AccountRepository.Balance(entity.QuoteAsset)
@@ -193,54 +192,51 @@ func (r *TriggersRepository) Place(id string) error {
     return err
   }
 
-  if balance["free"] < buyAmount+50 {
-    return errors.New(fmt.Sprintf("[%s] free not enough", entity.Symbol))
+  if balance["free"] < math.Max(buyAmount, config.TRIGGERS_MIN_BINANCE) {
+    return errors.New(fmt.Sprintf("trigger [%s] free not enough", entity.Symbol))
   }
 
-  return r.Db.Transaction(func(tx *gorm.DB) (err error) {
-    if position.ID != "" {
-      result = tx.Model(&position).Where("version", position.Version).Updates(map[string]interface{}{
-        "entry_quantity": gorm.Expr("entry_quantity + ?", buyQuantity),
-        "version":        gorm.Expr("version + ?", 1),
-      })
-      if result.Error != nil {
-        return result.Error
-      }
-      if result.RowsAffected == 0 {
-        return errors.New("position update failed")
-      }
-    }
+  mutex := common.NewMutex(
+    r.Rdb,
+    r.Ctx,
+    fmt.Sprintf(config.LOCKS_TRADINGS_PLACE, trigger.Symbol),
+  )
+  if !mutex.Lock(5 * time.Second) {
+    return nil
+  }
+  defer mutex.Unlock()
 
-    orderID, err := r.OrdersRepository.Create(trigger.Symbol, side, buyPrice, buyQuantity)
-    if err != nil {
-      _, ok := err.(common.APIError)
-      if ok {
-        return err
-      }
-      tx.Model(&trigger).Where("version", trigger.Version).Updates(map[string]interface{}{
-        "remark":  err.Error(),
-        "version": gorm.Expr("version + ?", 1),
-      })
+  orderID, err := r.OrdersRepository.Create(trigger.Symbol, side, buyPrice, buyQuantity)
+  if err != nil {
+    _, ok := err.(apiCommon.APIError)
+    if ok {
+      return err
     }
+    r.Db.Model(&trigger).Where("version", trigger.Version).Updates(map[string]interface{}{
+      "remark":  err.Error(),
+      "version": gorm.Expr("version + ?", 1),
+    })
+  }
 
-    trading := models.Trigger{
-      ID:           xid.New().String(),
-      Symbol:       trigger.Symbol,
-      TriggerID:    trigger.ID,
-      BuyOrderId:   orderID,
-      BuyPrice:     buyPrice,
-      BuyQuantity:  buyQuantity,
-      SellPrice:    sellPrice,
-      SellQuantity: buyQuantity,
-      Version:      1,
-    }
-    return tx.Create(&trading).Error
-  })
+  trading := models.Trigger{
+    ID:           xid.New().String(),
+    Symbol:       trigger.Symbol,
+    TriggerID:    trigger.ID,
+    BuyOrderId:   orderID,
+    BuyPrice:     buyPrice,
+    BuyQuantity:  buyQuantity,
+    SellPrice:    sellPrice,
+    SellQuantity: buyQuantity,
+    Version:      1,
+  }
+  r.Db.Create(&trading)
+
+  return nil
 }
 
 func (r *TriggersRepository) Flush(id string) error {
   var trigger *spotModels.Trigger
-  result := r.Db.First(&trigger, "id=?", id)
+  result := r.Db.Take(&trigger, "id", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     return errors.New("trigger empty")
   }
@@ -259,15 +255,17 @@ func (r *TriggersRepository) Flush(id string) error {
   var tradings []*models.Trigger
   r.Db.Where("trigger_id=? AND status IN ?", trigger.ID, []int{0, 2}).Find(&tradings)
 
+  timestamp := time.Now().Add(-15 * time.Minute).Unix()
+
   for _, trading := range tradings {
     if trading.Status == 0 {
       status := r.OrdersRepository.Status(trading.Symbol, trading.BuyOrderId)
-      timestamp := trading.CreatedAt.Unix()
       if trading.BuyOrderId == 0 {
-        orderID := r.OrdersRepository.Lost(trading.Symbol, side, trading.BuyQuantity, timestamp-30)
+        orderID := r.OrdersRepository.Lost(trading.Symbol, side, trading.BuyQuantity, trading.UpdatedAt.Add(-120*time.Second).Unix())
         if orderID > 0 {
+          status = r.OrdersRepository.Status(trading.Symbol, orderID)
           trading.BuyOrderId = orderID
-          result := r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+          result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
             "buy_order_id": trading.BuyOrderId,
             "version":      gorm.Expr("version + ?", 1),
           })
@@ -278,11 +276,20 @@ func (r *TriggersRepository) Flush(id string) error {
             return errors.New("order update failed")
           }
         }
-        if timestamp < time.Now().Unix()-900 {
-          r.Db.Model(&trading).Update("status", 6)
+        if trading.UpdatedAt.Unix() < timestamp {
+          result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+            "status":  6,
+            "version": gorm.Expr("version + ?", 1),
+          })
+          if result.Error != nil {
+            return result.Error
+          }
+          if result.RowsAffected == 0 {
+            return errors.New("order update failed")
+          }
         }
       } else {
-        if timestamp < time.Now().Unix()-900 {
+        if trading.BuyOrderId > 0 && trading.UpdatedAt.Unix() < timestamp {
           if status == "NEW" {
             r.OrdersRepository.Cancel(trading.Symbol, trading.BuyOrderId)
           }
@@ -298,11 +305,11 @@ func (r *TriggersRepository) Flush(id string) error {
 
       if status == "FILLED" {
         trading.Status = 1
-      } else {
+      } else if status == "CANCELED" {
         trading.Status = 4
       }
 
-      result := r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+      result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
         "buy_order_id": trading.BuyOrderId,
         "status":       trading.Status,
         "version":      gorm.Expr("version + ?", 1),
@@ -317,12 +324,11 @@ func (r *TriggersRepository) Flush(id string) error {
 
     if trading.Status == 2 {
       status := r.OrdersRepository.Status(trading.Symbol, trading.SellOrderId)
-      timestamp := trading.UpdatedAt.Unix()
       if trading.SellOrderId == 0 {
-        orderID := r.OrdersRepository.Lost(trading.Symbol, side, trading.SellQuantity, timestamp-30)
+        orderID := r.OrdersRepository.Lost(trading.Symbol, side, trading.SellQuantity, trading.UpdatedAt.Add(-120*time.Second).Unix())
         if orderID > 0 {
           trading.SellOrderId = orderID
-          result := r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+          result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
             "sell_order_id": trading.SellOrderId,
             "version":       gorm.Expr("version + ?", 1),
           })
@@ -332,12 +338,22 @@ func (r *TriggersRepository) Flush(id string) error {
           if result.RowsAffected == 0 {
             return errors.New("order update failed")
           }
-        }
-        if timestamp < time.Now().Unix()-900 {
-          r.Db.Model(&trading).Update("status", 1)
+        } else {
+          if trading.UpdatedAt.Unix() < timestamp {
+            result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+              "status":  1,
+              "version": gorm.Expr("version + ?", 1),
+            })
+            if result.Error != nil {
+              return result.Error
+            }
+            if result.RowsAffected == 0 {
+              return errors.New("order update failed")
+            }
+          }
         }
       } else {
-        if timestamp < time.Now().Unix()-900 {
+        if trading.UpdatedAt.Unix() < timestamp {
           if status == "NEW" {
             r.OrdersRepository.Cancel(trading.Symbol, trading.SellOrderId)
           }
@@ -356,11 +372,9 @@ func (r *TriggersRepository) Flush(id string) error {
       } else if status == "CANCELED" {
         trading.SellOrderId = 0
         trading.Status = 1
-      } else {
-        trading.Status = 5
       }
 
-      result := r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+      result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
         "sell_order_id": trading.SellOrderId,
         "status":        trading.Status,
         "version":       gorm.Expr("version + ?", 1),
@@ -379,6 +393,9 @@ func (r *TriggersRepository) Flush(id string) error {
 
 func (r *TriggersRepository) Take(trigger *spotModels.Trigger, price float64) error {
   var side = "SELL"
+  var entryPrice float64
+  var sellPrice float64
+  var trading *models.Trigger
 
   position, err := r.PositionRepository.Get(trigger.Symbol)
   if err != nil {
@@ -390,14 +407,14 @@ func (r *TriggersRepository) Take(trigger *spotModels.Trigger, price float64) er
     if position.Timestamp > timestamp {
       return errors.New("waiting for more time")
     }
-    if position.Timestamp > trigger.Timestamp {
+    if position.Timestamp > trigger.Timestamp+9e8 {
       r.Close(trigger)
     }
     return errors.New(fmt.Sprintf("[%s] empty position", trigger.Symbol))
   }
 
-  entryPrice := position.EntryPrice
-  if position.Timestamp > trigger.Timestamp {
+  entryPrice = position.EntryPrice
+  if trigger.Timestamp < position.Timestamp {
     trigger.Timestamp = position.Timestamp
   }
 
@@ -411,28 +428,25 @@ func (r *TriggersRepository) Take(trigger *spotModels.Trigger, price float64) er
     return nil
   }
 
-  var sellPrice float64
-  var trading *models.Trigger
-
   result := r.Db.Where("trigger_id=? AND status=?", trigger.ID, 1).Order("sell_price asc").Take(&trading)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     return errors.New(fmt.Sprintf("[%s] empty trading", trigger.Symbol))
   }
   if price < trading.SellPrice {
-    if price < entryPrice*1.0385 {
+    if price < entryPrice*1.0105 {
       return errors.New("compare with sell price too low")
     }
     timestamp := time.Now().Add(-15 * time.Minute).UnixMicro()
     if trading.UpdatedAt.UnixMicro() > timestamp {
       return errors.New("waiting for more time")
     }
-    sellPrice = entryPrice * 1.0385
+    sellPrice = entryPrice * 1.0105
   } else {
     if entryPrice > trading.SellPrice {
-      if price < entryPrice*1.0385 {
+      if price < entryPrice*1.0105 {
         return errors.New("compare with entry price too low")
       }
-      sellPrice = entryPrice * 1.0385
+      sellPrice = entryPrice * 1.0105
     } else {
       sellPrice = trading.SellPrice
     }
@@ -444,7 +458,7 @@ func (r *TriggersRepository) Take(trigger *spotModels.Trigger, price float64) er
 
   orderID, err := r.OrdersRepository.Create(trading.Symbol, side, sellPrice, trading.SellQuantity)
   if err != nil {
-    _, ok := err.(common.APIError)
+    _, ok := err.(apiCommon.APIError)
     if ok {
       return err
     }
@@ -465,12 +479,21 @@ func (r *TriggersRepository) Take(trigger *spotModels.Trigger, price float64) er
 
 func (r *TriggersRepository) Close(trigger *spotModels.Trigger) {
   var total int64
-  var tradings []*models.Scalping
-  r.Db.Model(&tradings).Where("trigger_id = ? AND status IN ?", trigger.ID, []int{0, 1, 2}).Count(&total)
+  var tradings []*models.Trigger
+  r.Db.Model(&tradings).Where("trigger_id = ? AND status IN ?", trigger.ID, []int{0, 1}).Count(&total)
   if total == 0 {
     return
   }
-  r.Db.Model(&tradings).Where("trigger_id=? AND status IN ?", trigger.ID, []int{0, 1, 2}).Update("status", 5)
+  r.Db.Where("trigger_id=? AND status=?", trigger.ID, 1).Find(&tradings)
+  timestamp := time.Now().Add(-30 * time.Minute).UnixMicro()
+  for _, trading := range tradings {
+    if trading.UpdatedAt.UnixMicro() < timestamp {
+      r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+        "status":  5,
+        "version": gorm.Expr("version + ?", 1),
+      })
+    }
+  }
 }
 
 func (r *TriggersRepository) CanBuy(

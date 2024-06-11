@@ -2,11 +2,12 @@ package spot
 
 import (
   "context"
+  "log"
+  "slices"
+
   "github.com/go-redis/redis/v8"
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
-  "log"
-  "slices"
 
   "taoniu.local/cryptos/common"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
@@ -62,7 +63,8 @@ func NewDepthCommand() *cli.Command {
         },
         Action: func(c *cli.Context) error {
           h.Repository.UseProxy = c.Bool("proxy")
-          if err := h.Flush(); err != nil {
+          symbol := c.Args().Get(0)
+          if err := h.Flush(symbol); err != nil {
             return cli.Exit(err.Error(), 1)
           }
           return nil
@@ -72,9 +74,14 @@ func NewDepthCommand() *cli.Command {
   }
 }
 
-func (h *DepthHandler) Flush() error {
+func (h *DepthHandler) Flush(symbol string) error {
   log.Println("symbols depth flush...")
-  symbols := h.Scan()
+  var symbols []string
+  if symbol == "" {
+    symbols = h.Scan()
+  } else {
+    symbols = append(symbols, symbol)
+  }
   for _, symbol := range symbols {
     err := h.Repository.Flush(symbol, 1000)
     if err != nil {

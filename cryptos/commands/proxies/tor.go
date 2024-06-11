@@ -2,13 +2,15 @@ package proxies
 
 import (
   "context"
-  "github.com/go-redis/redis/v8"
-  "github.com/urfave/cli/v2"
   "log"
   "strconv"
-  pool "taoniu.local/cryptos/common"
-  repositories "taoniu.local/cryptos/repositories/proxies"
   "time"
+
+  "github.com/go-redis/redis/v8"
+  "github.com/urfave/cli/v2"
+
+  "taoniu.local/cryptos/common"
+  repositories "taoniu.local/cryptos/repositories/proxies"
 )
 
 type TorHandler struct {
@@ -24,7 +26,7 @@ func NewTorCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = TorHandler{
-        Rdb: pool.NewRedis(1),
+        Rdb: common.NewRedis(1),
         Ctx: context.Background(),
       }
       h.Repository = &repositories.TorRepository{

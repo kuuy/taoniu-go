@@ -6,13 +6,13 @@ import (
   "gorm.io/gorm"
   "os"
   "strconv"
-  models "taoniu.local/cryptos/models/binance/spot/margin/isolated/tradings"
 
   "github.com/adshao/go-binance/v2"
   "github.com/go-redis/redis/v8"
 
   spotModels "taoniu.local/cryptos/models/binance/spot"
   marginModels "taoniu.local/cryptos/models/binance/spot/margin"
+  models "taoniu.local/cryptos/models/binance/spot/margin/isolated/tradings"
   //spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
   //marginRepositories "taoniu.local/cryptos/repositories/binance/spot/margin"
   //isolatedRepositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated"

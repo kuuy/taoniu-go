@@ -1,11 +1,11 @@
 package patterns
 
 import (
-  "gorm.io/gorm"
   "log"
   "strconv"
 
   "github.com/urfave/cli/v2"
+  "gorm.io/gorm"
 
   "taoniu.local/cryptos/common"
   futuresRepositories "taoniu.local/cryptos/repositories/binance/futures"

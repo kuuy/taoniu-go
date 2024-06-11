@@ -2,9 +2,11 @@ package proxies
 
 import (
   "context"
-  "github.com/urfave/cli/v2"
   "log"
-  pool "taoniu.local/cryptos/common"
+
+  "github.com/urfave/cli/v2"
+
+  "taoniu.local/cryptos/common"
   repositories "taoniu.local/cryptos/repositories/proxies"
 )
 
@@ -20,8 +22,8 @@ func NewSourcesCommand() *cli.Command {
     Before: func(c *cli.Context) error {
       h = SourcesHandler{
         Repository: &repositories.SourcesRepository{
-          Db:  pool.NewDB(1),
-          Rdb: pool.NewRedis(1),
+          Db:  common.NewDB(1),
+          Rdb: common.NewRedis(1),
           Ctx: context.Background(),
         },
       }
