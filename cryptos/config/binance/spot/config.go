@@ -3,6 +3,8 @@ package spot
 const (
   SCALPING_MIN_BINANCE                = 50
   TRIGGERS_MIN_BINANCE                = 200
+  LAUNCHPAD_MIN_BINANCE               = 1000
+  LAUNCHPAD_DURATION                  = 30
   ASYNQ_QUEUE_TICKERS                 = "binance.spot.tickers"
   ASYNQ_QUEUE_KLINES                  = "binance.spot.klines"
   ASYNQ_QUEUE_DEPTH                   = "binance.spot.depth"

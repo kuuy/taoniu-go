@@ -9,11 +9,10 @@ import (
   "strconv"
   "time"
 
-  "nhooyr.io/websocket"
-
   "github.com/adshao/go-binance/v2"
   "github.com/nats-io/nats.go"
   "github.com/urfave/cli/v2"
+  "nhooyr.io/websocket"
 
   "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/futures"

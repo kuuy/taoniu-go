@@ -109,7 +109,7 @@ func (r *OrdersRepository) Lost(symbol string, side string, quantity float64, ti
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     return 0
   }
-  if entity.UpdatedAt.Unix() < timestamp {
+  if entity.UpdateTime < timestamp {
     return 0
   }
   return entity.OrderID
@@ -249,6 +249,7 @@ func (r *OrdersRepository) Sync(symbol string, startTime int64, limit int) error
   for _, order := range result {
     r.Save(order)
   }
+
   return nil
 }
 

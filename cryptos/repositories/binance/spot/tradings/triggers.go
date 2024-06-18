@@ -92,32 +92,34 @@ func (r *TriggersRepository) Listings(conditions map[string]interface{}, current
   return tradings
 }
 
-func (r *TriggersRepository) Place(id string) error {
+func (r *TriggersRepository) Place(id string) (err error) {
   var trigger *spotModels.Trigger
   result := r.Db.Take(&trigger, "id", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    return errors.New("trigger empty")
+    err = errors.New("trigger not found")
+    return
   }
 
   var side = "BUY"
 
   position, err := r.PositionRepository.Get(trigger.Symbol)
   if err != nil {
-    return err
+    return
   }
 
   if position.EntryQuantity == 0 {
-    return errors.New(fmt.Sprintf("[%s] empty position", trigger.Symbol))
+    err = errors.New(fmt.Sprintf("trigger [%s] empty position", trigger.Symbol))
+    return
   }
 
   entity, err := r.SymbolsRepository.Get(trigger.Symbol)
   if err != nil {
-    return err
+    return
   }
 
   tickSize, stepSize, notional, err := r.SymbolsRepository.Filters(entity.Filters)
   if err != nil {
-    return nil
+    return
   }
 
   entryPrice := position.EntryPrice
@@ -126,11 +128,12 @@ func (r *TriggersRepository) Place(id string) error {
 
   price, err := r.SymbolsRepository.Price(trigger.Symbol)
   if err != nil {
-    return err
+    return
   }
 
   if price > entryPrice {
-    return errors.New(fmt.Sprintf("trigger [%s] price big than entry price", trigger.Symbol))
+    err = errors.New(fmt.Sprintf("trigger [%s] price big than entry price", trigger.Symbol))
+    return
   }
 
   ipart, _ := math.Modf(trigger.Capital)
@@ -140,7 +143,8 @@ func (r *TriggersRepository) Place(id string) error {
   }
   capital, err := r.PositionRepository.Capital(trigger.Capital, entryAmount, places)
   if err != nil {
-    return errors.New("reach the max invest capital")
+    err = errors.New("reach the max invest capital")
+    return
   }
   ratio := r.PositionRepository.Ratio(capital, entryAmount)
   buyAmount, _ := decimal.NewFromFloat(capital).Mul(decimal.NewFromFloat(ratio)).Float64()
@@ -180,20 +184,23 @@ func (r *TriggersRepository) Place(id string) error {
   sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
 
   if price > buyPrice {
-    return errors.New(fmt.Sprintf("trigger [%s] price must reach %v", trigger.Symbol, buyPrice))
+    err = errors.New(fmt.Sprintf("trigger [%s] price must reach %v", trigger.Symbol, buyPrice))
+    return
   }
 
   if !r.CanBuy(trigger, buyPrice) {
-    return errors.New(fmt.Sprintf("trigger [%s] can not buy now", trigger.Symbol))
+    err = errors.New(fmt.Sprintf("trigger [%s] can not buy now", trigger.Symbol))
+    return
   }
 
   balance, err := r.AccountRepository.Balance(entity.QuoteAsset)
   if err != nil {
-    return err
+    return
   }
 
   if balance["free"] < math.Max(buyAmount, config.TRIGGERS_MIN_BINANCE) {
-    return errors.New(fmt.Sprintf("trigger [%s] free not enough", entity.Symbol))
+    err = errors.New(fmt.Sprintf("trigger [%s] free not enough", entity.Symbol))
+    return
   }
 
   mutex := common.NewMutex(
@@ -202,7 +209,7 @@ func (r *TriggersRepository) Place(id string) error {
     fmt.Sprintf(config.LOCKS_TRADINGS_PLACE, trigger.Symbol),
   )
   if !mutex.Lock(5 * time.Second) {
-    return nil
+    return
   }
   defer mutex.Unlock()
 
@@ -210,7 +217,7 @@ func (r *TriggersRepository) Place(id string) error {
   if err != nil {
     _, ok := err.(apiCommon.APIError)
     if ok {
-      return err
+      return
     }
     r.Db.Model(&trigger).Where("version", trigger.Version).Updates(map[string]interface{}{
       "remark":  err.Error(),
@@ -231,19 +238,19 @@ func (r *TriggersRepository) Place(id string) error {
   }
   r.Db.Create(&trading)
 
-  return nil
+  return
 }
 
-func (r *TriggersRepository) Flush(id string) error {
+func (r *TriggersRepository) Flush(id string) (err error) {
   var trigger *spotModels.Trigger
   result := r.Db.Take(&trigger, "id", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    return errors.New("trigger empty")
+    return errors.New("trigger not found")
   }
 
   price, err := r.SymbolsRepository.Price(trigger.Symbol)
   if err != nil {
-    return err
+    return
   }
   err = r.Take(trigger, price)
   if err != nil {
@@ -388,7 +395,7 @@ func (r *TriggersRepository) Flush(id string) error {
     }
   }
 
-  return nil
+  return
 }
 
 func (r *TriggersRepository) Take(trigger *spotModels.Trigger, price float64) error {

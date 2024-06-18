@@ -1,23 +1,29 @@
 package tradings
 
 import (
+  "context"
   "errors"
   "fmt"
   "log"
   "math"
   "time"
 
-  "github.com/adshao/go-binance/v2/common"
+  commonApi "github.com/adshao/go-binance/v2/common"
+  "github.com/go-redis/redis/v8"
   "github.com/rs/xid"
   "github.com/shopspring/decimal"
   "gorm.io/gorm"
 
+  "taoniu.local/cryptos/common"
+  config "taoniu.local/cryptos/config/binance/spot"
   spotModels "taoniu.local/cryptos/models/binance/spot"
   models "taoniu.local/cryptos/models/binance/spot/tradings"
 )
 
 type LaunchpadRepository struct {
   Db                 *gorm.DB
+  Rdb                *redis.Client
+  Ctx                context.Context
   SymbolsRepository  SymbolsRepository
   OrdersRepository   OrdersRepository
   AccountRepository  AccountRepository
@@ -54,21 +60,22 @@ func (r *LaunchpadRepository) LaunchpadIds() []string {
   return ids
 }
 
-func (r *LaunchpadRepository) Place(id string) error {
+func (r *LaunchpadRepository) Place(id string) (err error) {
   var launchpad *spotModels.Launchpad
-  result := r.Db.First(&launchpad, "id=?", id)
+  result := r.Db.Take(&launchpad, "id", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    return errors.New("launchpads empty")
+    return errors.New("launchpad empty")
   }
 
   if launchpad.IssuedAt.Unix() > time.Now().Unix() {
-    return errors.New(
+    err = errors.New(
       fmt.Sprintf(
         "[%s] launchpad issued at %s",
         launchpad.Symbol,
         launchpad.IssuedAt.Format("2006-01-02 15:04"),
       ),
     )
+    return
   }
 
   if launchpad.ExpiredAt.Unix() < time.Now().Unix() {
@@ -79,27 +86,43 @@ func (r *LaunchpadRepository) Place(id string) error {
 
   entity, err := r.SymbolsRepository.Get(launchpad.Symbol)
   if err != nil {
-    r.SymbolsRepository.Flush()
-    return err
+    return
   }
 
   tickSize, stepSize, _, err := r.SymbolsRepository.Filters(entity.Filters)
   if err != nil {
-    return nil
+    return
   }
 
   price, err := r.SymbolsRepository.Price(launchpad.Symbol)
   if err != nil {
-    return err
+    return
   }
   if price > launchpad.CorePrice {
-    return errors.New(fmt.Sprintf("[%s] price must reach %v", launchpad.Symbol, launchpad.CorePrice))
+    err = errors.New(fmt.Sprintf("[%s] price must reach %v", launchpad.Symbol, launchpad.CorePrice))
+    return
   }
 
   balance, err := r.AccountRepository.Balance(entity.QuoteAsset)
   if err != nil {
-    return err
+    return
   }
+
+  if balance["free"] < config.LAUNCHPAD_MIN_BINANCE {
+    return errors.New(fmt.Sprintf("[%s] free not enough", entity.Symbol))
+  }
+
+  mutex := common.NewMutex(
+    r.Rdb,
+    r.Ctx,
+    fmt.Sprintf(config.LOCKS_TRADINGS_PLACE, launchpad.Symbol),
+  )
+  if !mutex.Lock(5 * time.Second) {
+    return
+  }
+  defer mutex.Unlock()
+
+  var side = "BUY"
 
   buys := r.Buys(launchpad.Capital, launchpad.CorePrice, tickSize, stepSize)
   sells := r.Sells(launchpad.Capital, launchpad.CorePrice, tickSize, stepSize)
@@ -113,45 +136,42 @@ func (r *LaunchpadRepository) Place(id string) error {
     if i < len(buys)-1 {
       basePrice = buys[i+1].BuyPrice
     }
+
     if !r.CanBuy(launchpad, buys[i].BuyPrice, basePrice) {
       log.Println(fmt.Sprintf("[%s] can not buy at %v", launchpad.Symbol, buys[i].BuyPrice))
       balance["free"], _ = decimal.NewFromFloat(balance["free"]).Sub(decimal.NewFromFloat(buys[i].BuyAmount)).Float64()
       continue
     }
 
-    err := r.Db.Transaction(func(tx *gorm.DB) (err error) {
-      orderID, err := r.OrdersRepository.Create(launchpad.Symbol, "BUY", buys[i].BuyPrice, buys[i].BuyQuantity)
-      if err != nil {
-        _, ok := err.(common.APIError)
-        if ok {
-          return err
-        }
-        tx.Model(&launchpad).Where("version", launchpad.Version).Updates(map[string]interface{}{
-          "remark":  err.Error(),
-          "version": gorm.Expr("version + ?", 1),
-        })
-      }
-
-      trading := models.Launchpad{
-        ID:           xid.New().String(),
-        Symbol:       launchpad.Symbol,
-        LaunchpadID:  launchpad.ID,
-        BuyOrderId:   orderID,
-        BuyPrice:     buys[i].BuyPrice,
-        BuyQuantity:  buys[i].BuyQuantity,
-        SellPrice:    sells[i].SellPrice,
-        SellQuantity: sells[i].SellQuantity,
-      }
-      return tx.Create(&trading).Error
-    })
+    var orderId int64
+    orderId, err = r.OrdersRepository.Create(launchpad.Symbol, side, buys[i].BuyPrice, buys[i].BuyQuantity)
     if err != nil {
-      log.Println(fmt.Sprintf("[%s] can not buy at %v", launchpad.Symbol, buys[i].BuyPrice), err.Error())
-      break
+      _, ok := err.(commonApi.APIError)
+      if ok {
+        continue
+      }
+      r.Db.Model(&launchpad).Where("version", launchpad.Version).Updates(map[string]interface{}{
+        "remark":  err.Error(),
+        "version": gorm.Expr("version + ?", 1),
+      })
     }
+
+    trading := models.Launchpad{
+      ID:           xid.New().String(),
+      Symbol:       launchpad.Symbol,
+      LaunchpadID:  launchpad.ID,
+      BuyOrderId:   orderId,
+      BuyPrice:     buys[i].BuyPrice,
+      BuyQuantity:  buys[i].BuyQuantity,
+      SellPrice:    sells[i].SellPrice,
+      SellQuantity: sells[i].SellQuantity,
+    }
+    r.Db.Create(&trading)
+
     balance["free"], _ = decimal.NewFromFloat(balance["free"]).Sub(decimal.NewFromFloat(buys[i].BuyAmount)).Float64()
   }
 
-  return nil
+  return
 }
 
 func (r *LaunchpadRepository) Buys(
@@ -179,7 +199,7 @@ func (r *LaunchpadRepository) Buys(
 
   for {
     var err error
-    capital, err := r.PositionRepository.Capital(maxCapital, entryAmount, places)
+    capital, err = r.PositionRepository.Capital(maxCapital, entryAmount, places)
     if err != nil {
       break
     }
@@ -236,7 +256,7 @@ func (r *LaunchpadRepository) Sells(
 
   for {
     var err error
-    capital, err := r.PositionRepository.Capital(maxCapital, entryAmount, places)
+    capital, err = r.PositionRepository.Capital(maxCapital, entryAmount, places)
     if err != nil {
       break
     }
@@ -379,18 +399,18 @@ func (r *LaunchpadRepository) Flush(id string) error {
   return nil
 }
 
-func (r *LaunchpadRepository) Take(launchpad *spotModels.Launchpad, price float64) error {
+func (r *LaunchpadRepository) Take(launchpad *spotModels.Launchpad, price float64) (err error) {
   var sellPrice float64
   var trading *models.Launchpad
 
   entity, err := r.SymbolsRepository.Get(launchpad.Symbol)
   if err != nil {
-    return err
+    return
   }
 
   tickSize, _, _, err := r.SymbolsRepository.Filters(entity.Filters)
   if err != nil {
-    return nil
+    return
   }
 
   result := r.Db.Where("launchpad_id=? AND status=?", launchpad.ID, 1).Order("sell_price asc").Take(&trading)
@@ -411,9 +431,9 @@ func (r *LaunchpadRepository) Take(launchpad *spotModels.Launchpad, price float6
 
   orderID, err := r.OrdersRepository.Create(trading.Symbol, "SELL", sellPrice, trading.SellQuantity)
   if err != nil {
-    _, ok := err.(common.APIError)
+    _, ok := err.(commonApi.APIError)
     if ok {
-      return err
+      return
     }
     r.Db.Model(&launchpad).Where("version", launchpad.Version).Updates(map[string]interface{}{
       "remark":  err.Error(),
@@ -427,7 +447,7 @@ func (r *LaunchpadRepository) Take(launchpad *spotModels.Launchpad, price float6
     "version":       gorm.Expr("version + ?", 1),
   })
 
-  return nil
+  return
 }
 
 func (r *LaunchpadRepository) Pending() map[string]float64 {

@@ -13,10 +13,11 @@ import (
 )
 
 type TickersHandler struct {
-  ApiContext        *common.ApiContext
-  Response          *api.ResponseHandler
-  Repository        *repositories.TickersRepository
-  SymbolsRepository *repositories.SymbolsRepository
+  ApiContext         *common.ApiContext
+  Response           *api.ResponseHandler
+  Repository         *repositories.TickersRepository
+  SymbolsRepository  *repositories.SymbolsRepository
+  ScalpingRepository *repositories.ScalpingRepository
 }
 
 func NewTickersRouter(apiContext *common.ApiContext) http.Handler {
@@ -28,6 +29,9 @@ func NewTickersRouter(apiContext *common.ApiContext) http.Handler {
     Ctx: h.ApiContext.Ctx,
   }
   h.SymbolsRepository = &repositories.SymbolsRepository{
+    Db: h.ApiContext.Db,
+  }
+  h.ScalpingRepository = &repositories.ScalpingRepository{
     Db: h.ApiContext.Db,
   }
 
@@ -92,7 +96,7 @@ func (h *TickersHandler) Ranking(
 
   var symbols []string
   if q.Get("symbols") == "" {
-    symbols = h.SymbolsRepository.Symbols()
+    symbols = h.ScalpingRepository.Scan()
   } else {
     symbols = strings.Split(q.Get("symbols"), ",")
   }

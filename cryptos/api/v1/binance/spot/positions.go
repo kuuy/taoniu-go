@@ -1,10 +1,12 @@
 package spot
 
 import (
-  "github.com/go-chi/chi/v5"
-  "github.com/shopspring/decimal"
   "math"
   "net/http"
+
+  "github.com/go-chi/chi/v5"
+  "github.com/shopspring/decimal"
+
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
   repositories "taoniu.local/cryptos/repositories/binance/spot"

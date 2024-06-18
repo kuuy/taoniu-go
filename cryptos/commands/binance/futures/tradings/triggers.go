@@ -2,10 +2,11 @@ package tradings
 
 import (
   "context"
+  "log"
+
   "github.com/go-redis/redis/v8"
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
-  "log"
 
   "taoniu.local/cryptos/common"
   futuresRepositories "taoniu.local/cryptos/repositories/binance/futures"

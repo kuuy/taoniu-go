@@ -2,10 +2,11 @@ package isolated
 
 import (
   "context"
+  "log"
+
   "github.com/go-redis/redis/v8"
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
-  "log"
 
   "taoniu.local/cryptos/common"
   repositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated"

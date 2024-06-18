@@ -51,7 +51,7 @@ func (r *LaunchpadRepository) Listings(conditions map[string]interface{}, curren
   } else {
     query.Where("status IN ?", []int{0, 1, 2, 3})
   }
-  query.Order("updated_at desc")
+  query.Order("updated_at DESC")
   query.Offset((current - 1) * pageSize).Limit(pageSize).Find(&grids)
   return grids
 }

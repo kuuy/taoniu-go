@@ -3,15 +3,17 @@ package isolated
 import (
   "context"
   "fmt"
+  "log"
+  "os"
+  "strconv"
+
   "github.com/adshao/go-binance/v2"
   "github.com/bitly/go-simplejson"
   "github.com/go-redis/redis/v8"
   "github.com/urfave/cli/v2"
-  "log"
   "nhooyr.io/websocket"
-  "os"
-  "strconv"
-  pool "taoniu.local/cryptos/common"
+
+  "taoniu.local/cryptos/common"
 )
 
 type WebsocketHandler struct {
@@ -26,7 +28,7 @@ func NewWebsocketCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = WebsocketHandler{
-        Rdb: pool.NewRedis(1),
+        Rdb: common.NewRedis(1),
         Ctx: context.Background(),
       }
       return nil

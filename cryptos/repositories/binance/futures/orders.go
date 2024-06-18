@@ -113,7 +113,7 @@ func (r *OrdersRepository) Lost(symbol string, positionSide string, side string,
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     return 0
   }
-  if entity.UpdatedAt.Unix() < timestamp {
+  if entity.UpdateTime < timestamp {
     return 0
   }
   return entity.OrderID

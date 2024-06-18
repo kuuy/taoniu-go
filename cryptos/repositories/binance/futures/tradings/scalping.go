@@ -127,7 +127,7 @@ func (r *ScalpingRepository) Flush(id string) error {
     if trading.Status == 0 {
       status := r.OrdersRepository.Status(trading.Symbol, trading.BuyOrderId)
       if trading.BuyOrderId == 0 {
-        orderID := r.OrdersRepository.Lost(trading.Symbol, positionSide, side, trading.BuyQuantity, trading.UpdatedAt.Add(-120*time.Second).Unix())
+        orderID := r.OrdersRepository.Lost(trading.Symbol, positionSide, side, trading.BuyQuantity, trading.UpdatedAt.Add(-120*time.Second).UnixMilli())
         if orderID > 0 {
           status = r.OrdersRepository.Status(trading.Symbol, orderID)
           trading.BuyOrderId = orderID
@@ -200,7 +200,7 @@ func (r *ScalpingRepository) Flush(id string) error {
     if trading.Status == 2 {
       status := r.OrdersRepository.Status(trading.Symbol, trading.SellOrderId)
       if trading.SellOrderId == 0 {
-        orderID := r.OrdersRepository.Lost(trading.Symbol, positionSide, side, trading.SellQuantity, trading.UpdatedAt.Add(-120*time.Second).Unix())
+        orderID := r.OrdersRepository.Lost(trading.Symbol, positionSide, side, trading.SellQuantity, trading.UpdatedAt.Add(-120*time.Second).UnixMilli())
         if orderID > 0 {
           status = r.OrdersRepository.Status(trading.Symbol, orderID)
           trading.SellOrderId = orderID
@@ -373,11 +373,11 @@ func (r *ScalpingRepository) Place(planId string) error {
   if entryPrice > 0 {
     if scalping.Side == 1 && price > entryPrice {
       r.Db.Delete(&scalpingPlan, "plan_id", planId)
-      return errors.New(fmt.Sprintf("[%s] long price big than entry price", scalping.Symbol))
+      return errors.New(fmt.Sprintf("scalping [%s] long price big than entry price", scalping.Symbol))
     }
     if scalping.Side == 2 && price < entryPrice {
       r.Db.Delete(&scalpingPlan, "plan_id", planId)
-      return errors.New(fmt.Sprintf("[%s] short price small than entry price", scalping.Symbol))
+      return errors.New(fmt.Sprintf("scalping [%s] short price small than entry price", scalping.Symbol))
     }
   }
 
@@ -434,15 +434,15 @@ func (r *ScalpingRepository) Place(planId string) error {
   buyQuantity, _ = decimal.NewFromFloat(buyQuantity).Div(decimal.NewFromFloat(stepSize)).Ceil().Mul(decimal.NewFromFloat(stepSize)).Float64()
 
   if plan.Side == 1 && price > buyPrice {
-    return errors.New(fmt.Sprintf("[%s] %s price must reach %v", scalping.Symbol, positionSide, buyPrice))
+    return errors.New(fmt.Sprintf("scalping [%s] %s price must reach %v", scalping.Symbol, positionSide, buyPrice))
   }
 
   if plan.Side == 2 && price < buyPrice {
-    return errors.New(fmt.Sprintf("[%s] %s price must reach %v", scalping.Symbol, positionSide, buyPrice))
+    return errors.New(fmt.Sprintf("scalping [%s] %s price must reach %v", scalping.Symbol, positionSide, buyPrice))
   }
 
   if !r.CanBuy(scalping, buyPrice) {
-    return errors.New(fmt.Sprintf("[%s] %s can not buy now", scalping.Symbol, positionSide))
+    return errors.New(fmt.Sprintf("scalping [%s] %s can not buy now", scalping.Symbol, positionSide))
   }
 
   balance, err := r.AccountRepository.Balance(entity.QuoteAsset)
