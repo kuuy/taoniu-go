@@ -312,7 +312,8 @@ func (r *ScalpingRepository) Flush(id string) error {
     log.Println("take error", scalping.Symbol, err)
   }
 
-  var side = "BUY"
+  placeSide := "BUY"
+  takeSide := "SELL"
 
   var tradings []*models.Scalping
   r.Db.Where("scalping_id=? AND status IN ?", scalping.ID, []int{0, 2}).Find(&tradings)
@@ -323,7 +324,7 @@ func (r *ScalpingRepository) Flush(id string) error {
     if trading.Status == 0 {
       status := r.OrdersRepository.Status(trading.Symbol, trading.BuyOrderId)
       if trading.BuyOrderId == 0 {
-        orderID := r.OrdersRepository.Lost(trading.Symbol, side, trading.BuyQuantity, trading.UpdatedAt.Add(-120*time.Second).UnixMilli())
+        orderID := r.OrdersRepository.Lost(trading.Symbol, placeSide, trading.BuyQuantity, trading.UpdatedAt.Add(-120*time.Second).UnixMilli())
         if orderID > 0 {
           status = r.OrdersRepository.Status(trading.Symbol, orderID)
           trading.BuyOrderId = orderID
@@ -387,7 +388,7 @@ func (r *ScalpingRepository) Flush(id string) error {
     if trading.Status == 2 {
       status := r.OrdersRepository.Status(trading.Symbol, trading.SellOrderId)
       if trading.SellOrderId == 0 {
-        orderID := r.OrdersRepository.Lost(trading.Symbol, side, trading.SellQuantity, trading.UpdatedAt.Add(-120*time.Second).UnixMilli())
+        orderID := r.OrdersRepository.Lost(trading.Symbol, takeSide, trading.SellQuantity, trading.UpdatedAt.Add(-120*time.Second).UnixMilli())
         if orderID > 0 {
           trading.SellOrderId = orderID
           result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{

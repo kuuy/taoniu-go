@@ -109,13 +109,16 @@ func (r *ScalpingRepository) Flush(id string) error {
   }
 
   var positionSide string
-  var side string
+  var placeSide string
+  var takeSide string
   if scalping.Side == 1 {
     positionSide = "LONG"
-    side = "BUY"
+    placeSide = "BUY"
+    takeSide = "SELL"
   } else if scalping.Side == 2 {
     positionSide = "SHORT"
-    side = "SELL"
+    placeSide = "SELL"
+    takeSide = "BUY"
   }
 
   var tradings []*models.Scalping
@@ -127,7 +130,7 @@ func (r *ScalpingRepository) Flush(id string) error {
     if trading.Status == 0 {
       status := r.OrdersRepository.Status(trading.Symbol, trading.BuyOrderId)
       if trading.BuyOrderId == 0 {
-        orderID := r.OrdersRepository.Lost(trading.Symbol, positionSide, side, trading.BuyQuantity, trading.UpdatedAt.Add(-120*time.Second).UnixMilli())
+        orderID := r.OrdersRepository.Lost(trading.Symbol, positionSide, placeSide, trading.BuyQuantity, trading.UpdatedAt.Add(-120*time.Second).UnixMilli())
         if orderID > 0 {
           status = r.OrdersRepository.Status(trading.Symbol, orderID)
           trading.BuyOrderId = orderID
@@ -200,7 +203,7 @@ func (r *ScalpingRepository) Flush(id string) error {
     if trading.Status == 2 {
       status := r.OrdersRepository.Status(trading.Symbol, trading.SellOrderId)
       if trading.SellOrderId == 0 {
-        orderID := r.OrdersRepository.Lost(trading.Symbol, positionSide, side, trading.SellQuantity, trading.UpdatedAt.Add(-120*time.Second).UnixMilli())
+        orderID := r.OrdersRepository.Lost(trading.Symbol, positionSide, takeSide, trading.SellQuantity, trading.UpdatedAt.Add(-120*time.Second).UnixMilli())
         if orderID > 0 {
           status = r.OrdersRepository.Status(trading.Symbol, orderID)
           trading.SellOrderId = orderID
