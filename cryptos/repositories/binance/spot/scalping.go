@@ -92,7 +92,7 @@ func (r *ScalpingRepository) AddPlan(planID string) error {
   result := r.Db.Where("plan_id", planID).Take(&scalping)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     entity := &models.ScalpingPlan{
-      PlanID: planID,
+      PlanId: planID,
     }
     r.Db.Create(&entity)
   }

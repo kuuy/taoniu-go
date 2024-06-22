@@ -8,7 +8,7 @@ import (
 type Scalping struct{}
 
 type ScalpingPlacePayload struct {
-  PlanID string `json:"plan_id"`
+  PlanId string `json:"plan_id"`
 }
 
 type ScalpingFlushPayload struct {

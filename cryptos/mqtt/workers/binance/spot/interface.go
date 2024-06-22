@@ -8,7 +8,7 @@ type AccountUpdatePayload struct {
 
 type OrdersUpdatePayload struct {
   Symbol  string `json:"symbol"`
-  OrderID int64  `json:"order_id"`
+  OrderId int64  `json:"order_id"`
   Status  string `json:"status"`
 }
 

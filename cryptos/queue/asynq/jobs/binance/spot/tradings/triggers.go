@@ -16,8 +16,8 @@ func (h *Triggers) Place(symbol string) (*asynq.Task, error) {
   return asynq.NewTask(config.ASYNQ_JOBS_TRADINGS_TRIGGERS_PLACE, payload), nil
 }
 
-func (h *Triggers) Flush(symbol string) (*asynq.Task, error) {
-  payload, err := json.Marshal(TriggersFlushPayload{symbol})
+func (h *Triggers) Flush(id string) (*asynq.Task, error) {
+  payload, err := json.Marshal(TriggersFlushPayload{id})
   if err != nil {
     return nil, err
   }

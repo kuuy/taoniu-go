@@ -307,9 +307,9 @@ func (r *LaunchpadRepository) Flush(id string) error {
     if trading.Status == 0 {
       timestamp := trading.CreatedAt.Unix()
       if trading.BuyOrderId == 0 {
-        orderID := r.OrdersRepository.Lost(trading.Symbol, "BUY", trading.BuyQuantity, timestamp-30)
-        if orderID > 0 {
-          trading.BuyOrderId = orderID
+        orderId := r.OrdersRepository.Lost(trading.Symbol, "BUY", trading.BuyQuantity, timestamp-30)
+        if orderId > 0 {
+          trading.BuyOrderId = orderId
           result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
             "buy_order_id": trading.BuyOrderId,
             "version":      gorm.Expr("version + ?", 1),
@@ -351,9 +351,9 @@ func (r *LaunchpadRepository) Flush(id string) error {
     if trading.Status == 2 {
       timestamp := trading.UpdatedAt.Unix()
       if trading.SellOrderId == 0 {
-        orderID := r.OrdersRepository.Lost(trading.Symbol, "SELL", trading.SellQuantity, timestamp-30)
-        if orderID > 0 {
-          trading.SellOrderId = orderID
+        orderId := r.OrdersRepository.Lost(trading.Symbol, "SELL", trading.SellQuantity, timestamp-30)
+        if orderId > 0 {
+          trading.SellOrderId = orderId
           result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
             "sell_order_id": trading.SellOrderId,
             "version":       gorm.Expr("version + ?", 1),
@@ -429,7 +429,7 @@ func (r *LaunchpadRepository) Take(launchpad *spotModels.Launchpad, price float6
   }
   sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
 
-  orderID, err := r.OrdersRepository.Create(trading.Symbol, "SELL", sellPrice, trading.SellQuantity)
+  orderId, err := r.OrdersRepository.Create(trading.Symbol, "SELL", sellPrice, trading.SellQuantity)
   if err != nil {
     _, ok := err.(commonApi.APIError)
     if ok {
@@ -442,7 +442,7 @@ func (r *LaunchpadRepository) Take(launchpad *spotModels.Launchpad, price float6
   }
 
   r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
-    "sell_order_id": orderID,
+    "sell_order_id": orderId,
     "status":        2,
     "version":       gorm.Expr("version + ?", 1),
   })

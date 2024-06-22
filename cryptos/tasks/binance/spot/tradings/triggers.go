@@ -44,9 +44,9 @@ func (t *TriggersTask) Place() error {
 }
 
 func (t *TriggersTask) Flush() error {
-  symbols := t.Repository.Scan()
-  for _, symbol := range symbols {
-    task, err := t.Job.Flush(symbol)
+  ids := t.Repository.TriggerIds()
+  for _, id := range ids {
+    task, err := t.Job.Flush(id)
     if err != nil {
       return err
     }

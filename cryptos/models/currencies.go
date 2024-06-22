@@ -9,7 +9,7 @@ type Currency struct {
   ID                string         `gorm:"size:20;primaryKey"`
   Symbol            string         `gorm:"size:20;not null;uniqueIndex"`
   Type              int            `gorm:"not null"`
-  SectorID          string         `gorm:"size:20;not null;index"`
+  SectorId          string         `gorm:"size:20;not null;index"`
   TotalSupply       float64        `gorm:"not null"`
   CirculatingSupply float64        `gorm:"not null"`
   Price             float64        `gorm:"not null"`

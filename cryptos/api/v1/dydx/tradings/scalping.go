@@ -84,8 +84,8 @@ func (h *ScalpingHandler) Listings(
     data[i] = &ScalpingTradingInfo{
       ID:           trading.ID,
       Symbol:       trading.Symbol,
-      ScalpingID:   trading.ScalpingID,
-      PlanID:       trading.PlanID,
+      ScalpingId:   trading.ScalpingId,
+      PlanId:       trading.PlanId,
       BuyPrice:     trading.BuyPrice,
       SellPrice:    trading.SellPrice,
       BuyQuantity:  trading.BuyQuantity,

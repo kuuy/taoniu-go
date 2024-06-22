@@ -46,12 +46,6 @@ func NewScalping(ansqContext *common.AnsqServerContext) *Scalping {
   h.Repository.PositionRepository = &spotRepositories.PositionsRepository{
     Db: h.AnsqContext.Db,
   }
-  h.AccountRepository = &spotRepositories.AccountRepository{
-    Db:   h.AnsqContext.Db,
-    Rdb:  h.AnsqContext.Rdb,
-    Ctx:  h.AnsqContext.Ctx,
-    Nats: h.AnsqContext.Nats,
-  }
   return h
 }
 
@@ -62,13 +56,13 @@ func (h *Scalping) Place(ctx context.Context, t *asynq.Task) error {
   mutex := common.NewMutex(
     h.AnsqContext.Rdb,
     h.AnsqContext.Ctx,
-    fmt.Sprintf(config.LOCKS_TRADINGS_SCALPING_PLACE, payload.PlanID),
+    fmt.Sprintf(config.LOCKS_TRADINGS_SCALPING_PLACE, payload.PlanId),
   )
   if !mutex.Lock(30 * time.Second) {
     return nil
   }
 
-  err := h.Repository.Place(payload.PlanID)
+  err := h.Repository.Place(payload.PlanId)
   if err != nil {
     mutex.Unlock()
   }

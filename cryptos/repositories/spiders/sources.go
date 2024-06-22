@@ -48,7 +48,7 @@ func (r *SourcesRepository) Add(
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     entity = &models.Source{
       ID:        xid.New().String(),
-      ParentID:  parentId,
+      ParentId:  parentId,
       Name:      name,
       Slug:      slug,
       Url:       source.Url,
@@ -61,7 +61,7 @@ func (r *SourcesRepository) Add(
     }
     r.Db.Create(&entity)
   } else {
-    entity.ParentID = parentId
+    entity.ParentId = parentId
     entity.Name = name
     entity.Url = source.Url
     entity.UrlSha1 = hex.EncodeToString(hash[:])

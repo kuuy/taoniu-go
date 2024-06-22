@@ -146,8 +146,8 @@ func (h *OrdersHandler) Flush() error {
   log.Println("futures orders flush...")
   orders := h.Repository.Gets(map[string]interface{}{})
   for _, order := range orders {
-    log.Println("order flush", order.Symbol, order.OrderID)
-    h.Repository.Flush(order.Symbol, order.OrderID)
+    log.Println("order flush", order.Symbol, order.OrderId)
+    h.Repository.Flush(order.Symbol, order.OrderId)
   }
   return nil
 }

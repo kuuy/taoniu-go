@@ -5,7 +5,7 @@ import "time"
 type Order struct {
   ID               string    `gorm:"size:20;primaryKey"`
   Symbol           string    `gorm:"size:20;not null;uniqueIndex:unq_binance_spot_margin_orders_symbol_orderid"`
-  OrderID          int64     `gorm:"not null;uniqueIndex:unq_binance_spot_margin_orders_symbol_orderid"`
+  OrderId          int64     `gorm:"not null;uniqueIndex:unq_binance_spot_margin_orders_symbol_orderid"`
   Type             string    `gorm:"size:30;not null"`
   Side             string    `gorm:"size:20;not null"`
   Price            float64   `gorm:"not null"`

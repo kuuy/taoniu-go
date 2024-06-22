@@ -2,13 +2,16 @@ package tradings
 
 import (
   "context"
+  "fmt"
   "log"
+  "time"
 
   "github.com/go-redis/redis/v8"
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
 
   "taoniu.local/cryptos/common"
+  config "taoniu.local/cryptos/config/binance/spot"
   spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
   repositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
 )
@@ -32,7 +35,9 @@ func NewTriggersCommand() *cli.Command {
         Ctx: context.Background(),
       }
       h.Repository = &repositories.TriggersRepository{
-        Db: h.Db,
+        Db:  h.Db,
+        Rdb: h.Rdb,
+        Ctx: h.Ctx,
       }
       h.Repository.SymbolsRepository = &spotRepositories.SymbolsRepository{
         Db:  h.Db,
@@ -40,7 +45,6 @@ func NewTriggersCommand() *cli.Command {
         Ctx: h.Ctx,
       }
       h.Repository.AccountRepository = &spotRepositories.AccountRepository{
-        Db:  h.Db,
         Rdb: h.Rdb,
         Ctx: h.Ctx,
       }
@@ -48,6 +52,9 @@ func NewTriggersCommand() *cli.Command {
         Db:  h.Db,
         Rdb: h.Rdb,
         Ctx: h.Ctx,
+      }
+      h.Repository.PositionRepository = &spotRepositories.PositionsRepository{
+        Db: h.Db,
       }
       return nil
     },
@@ -79,25 +86,41 @@ func NewTriggersCommand() *cli.Command {
 func (h *TriggersHandler) Place() error {
   log.Println("spot tradings triggers place...")
   symbols := h.Repository.Scan()
-  log.Println("symbols", symbols)
   for _, symbol := range symbols {
+    mutex := common.NewMutex(
+      h.Rdb,
+      h.Ctx,
+      fmt.Sprintf(config.LOCKS_TRADINGS_TRIGGERS_PLACE, symbol),
+    )
+    if !mutex.Lock(30 * time.Second) {
+      return nil
+    }
     err := h.Repository.Place(symbol)
     if err != nil {
       log.Println("error", err)
     }
+    mutex.Unlock()
   }
   return nil
 }
 
 func (h *TriggersHandler) Flush() error {
   log.Println("spot tradings triggers flush...")
-  symbols := h.Repository.Scan()
-  log.Println("symbols", symbols)
-  for _, symbol := range symbols {
-    err := h.Repository.Flush(symbol)
+  ids := h.Repository.TriggerIds()
+  for _, id := range ids {
+    mutex := common.NewMutex(
+      h.Rdb,
+      h.Ctx,
+      fmt.Sprintf(config.LOCKS_TRADINGS_TRIGGERS_FLUSH, id),
+    )
+    if !mutex.Lock(30 * time.Second) {
+      return nil
+    }
+    err := h.Repository.Flush(id)
     if err != nil {
       log.Println("error", err)
     }
+    mutex.Unlock()
   }
   return nil
 }

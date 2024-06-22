@@ -114,9 +114,9 @@ func (r *ScalpingRepository) Series(limit int) []interface{} {
   return series
 }
 
-func (r *ScalpingRepository) Amount(symbol string, orderID int64) float64 {
+func (r *ScalpingRepository) Amount(symbol string, orderId int64) float64 {
   var order spotModels.Order
-  r.Db.Where("symbol=? AND order_id=?", symbol, orderID).Find(&order)
+  r.Db.Where("symbol=? AND order_id=?", symbol, orderId).Find(&order)
   return order.Price * order.ExecutedQuantity
 }
 

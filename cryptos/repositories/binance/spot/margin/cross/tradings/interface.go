@@ -20,8 +20,8 @@ type MarginAccountRepository interface {
 }
 
 type OrdersRepository interface {
-  Status(symbol string, orderID int64) string
+  Status(symbol string, orderId int64) string
   Create(symbol string, side string, price float64, quantity float64, isIsolated bool) (int64, error)
   Lost(symbol string, side string, price float64, timestamp int64) int64
-  Flush(symbol string, orderID int64, isIsolated bool) error
+  Flush(symbol string, orderId int64, isIsolated bool) error
 }

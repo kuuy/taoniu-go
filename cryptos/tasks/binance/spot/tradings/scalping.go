@@ -32,9 +32,9 @@ func NewScalpingTask(ansqContext *common.AnsqClientContext) *ScalpingTask {
 }
 
 func (t *ScalpingTask) Place() error {
-  ids := t.ParentRepository.PlanIds(0)
-  for _, id := range ids {
-    task, err := t.Job.Place(id)
+  planIds := t.ParentRepository.PlanIds(0)
+  for _, planId := range planIds {
+    task, err := t.Job.Place(planId)
     if err != nil {
       return err
     }

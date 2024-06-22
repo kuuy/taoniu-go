@@ -116,12 +116,15 @@ func (r *OrdersRepository) Lost(symbol string, positionSide string, side string,
   if entity.UpdateTime < timestamp {
     return 0
   }
-  return entity.OrderID
+  return entity.OrderId
 }
 
-func (r *OrdersRepository) Status(symbol string, orderID int64) string {
+func (r *OrdersRepository) Status(symbol string, orderId int64) string {
+  if orderId == 0 {
+    return ""
+  }
   var entity models.Order
-  result := r.Db.Select("status").Where("symbol=? AND order_id=?", symbol, orderID).Take(&entity)
+  result := r.Db.Select("status").Where("symbol=? AND order_id=?", symbol, orderId).Take(&entity)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     return ""
   }
@@ -674,13 +677,13 @@ func (r *OrdersRepository) Cancel(symbol string, orderId int64) error {
   return nil
 }
 
-func (r *OrdersRepository) Flush(symbol string, orderID int64) error {
+func (r *OrdersRepository) Flush(symbol string, orderId int64) error {
   client := binance.NewFuturesClient(
     os.Getenv("BINANCE_FUTURES_ACCOUNT_API_KEY"),
     os.Getenv("BINANCE_FUTURES_ACCOUNT_API_SECRET"),
   )
   client.BaseURL = os.Getenv("BINANCE_FUTURES_API_ENDPOINT")
-  order, err := client.NewGetOrderService().Symbol(symbol).OrderID(orderID).Do(r.Ctx)
+  order, err := client.NewGetOrderService().Symbol(symbol).OrderID(orderId).Do(r.Ctx)
   if err != nil {
     return err
   }
@@ -692,7 +695,7 @@ func (r *OrdersRepository) Flush(symbol string, orderID int64) error {
 
 func (r *OrdersRepository) Save(order *service.Order) error {
   symbol := order.Symbol
-  orderID := order.OrderID
+  orderId := order.OrderID
 
   price, _ := strconv.ParseFloat(order.Price, 64)
   avgPrice, _ := strconv.ParseFloat(order.AvgPrice, 64)
@@ -704,13 +707,13 @@ func (r *OrdersRepository) Save(order *service.Order) error {
   result := r.Db.Where(
     "symbol=? AND order_id=?",
     symbol,
-    orderID,
+    orderId,
   ).Take(&entity)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     entity = models.Order{
       ID:               xid.New().String(),
       Symbol:           symbol,
-      OrderID:          orderID,
+      OrderId:          orderId,
       Type:             fmt.Sprintf("%v", order.Type),
       PositionSide:     fmt.Sprintf("%v", order.PositionSide),
       Side:             fmt.Sprintf("%v", order.Side),

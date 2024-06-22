@@ -5,7 +5,7 @@ import "time"
 type Grid struct {
   ID           string    `gorm:"size:20;primaryKey"`
   Symbol       string    `gorm:"size:20;not null;index:idx_binance_spot_margin_isolated_tradings_grids_created_symbol,priority:2"`
-  GridID       string    `gorm:"size:20;index;index:idx_binance_spot_margin_isolated_tradings_grids_grid_status"`
+  GridId       string    `gorm:"size:20;index;index:idx_binance_spot_margin_isolated_tradings_grids_grid_status"`
   BuyOrderId   int64     `gorm:"not null"`
   SellOrderId  int64     `gorm:"not null"`
   BuyPrice     float64   `gorm:"not null"`

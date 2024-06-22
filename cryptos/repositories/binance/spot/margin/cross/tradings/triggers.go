@@ -102,7 +102,7 @@ func (r *TriggersRepository) Place(symbol string) error {
   sellQuantity, _ = decimal.NewFromFloat(sellQuantity).Div(decimal.NewFromFloat(stepSize)).Floor().Mul(decimal.NewFromFloat(stepSize)).Float64()
 
   r.Db.Transaction(func(tx *gorm.DB) error {
-    orderID, err := r.OrdersRepository.Create(symbol, "BUY", buyPrice, buyQuantity, false)
+    orderId, err := r.OrdersRepository.Create(symbol, "BUY", buyPrice, buyQuantity, false)
     if err != nil {
       apiError, ok := err.(common.APIError)
       if ok {
@@ -119,7 +119,7 @@ func (r *TriggersRepository) Place(symbol string) error {
       ID:           xid.New().String(),
       Symbol:       symbol,
       TriggerID:    trigger.ID,
-      BuyOrderId:   orderID,
+      BuyOrderId:   orderId,
       BuyPrice:     buyPrice,
       BuyQuantity:  buyQuantity,
       SellPrice:    sellPrice,
@@ -158,9 +158,9 @@ func (r *TriggersRepository) Flush(symbol string) error {
     if grid.Status == 0 {
       timestamp := grid.CreatedAt.Unix()
       if grid.BuyOrderId == 0 {
-        orderID := r.OrdersRepository.Lost(symbol, "BUY", grid.BuyPrice, timestamp-30)
-        if orderID > 0 {
-          grid.BuyOrderId = orderID
+        orderId := r.OrdersRepository.Lost(symbol, "BUY", grid.BuyPrice, timestamp-30)
+        if orderId > 0 {
+          grid.BuyOrderId = orderId
           if err := r.Db.Model(&models.Grid{ID: grid.ID}).Updates(grid).Error; err != nil {
             return err
           }
@@ -220,9 +220,9 @@ func (r *TriggersRepository) Flush(symbol string) error {
     } else if grid.Status == 2 {
       timestamp := grid.UpdatedAt.Unix()
       if grid.SellOrderId == 0 {
-        orderID := r.OrdersRepository.Lost(symbol, "SELL", grid.SellPrice, timestamp-30)
-        if orderID > 0 {
-          grid.SellOrderId = orderID
+        orderId := r.OrdersRepository.Lost(symbol, "SELL", grid.SellPrice, timestamp-30)
+        if orderId > 0 {
+          grid.SellOrderId = orderId
           if err := r.Db.Model(&models.Grid{ID: grid.ID}).Updates(grid).Error; err != nil {
             return err
           }
@@ -278,7 +278,7 @@ func (r *TriggersRepository) Take(trigger *crossModels.Trigger, price float64) e
   }
   r.Db.Transaction(func(tx *gorm.DB) error {
     trigger.EntryQuantity, _ = decimal.NewFromFloat(trigger.EntryQuantity).Sub(decimal.NewFromFloat(grid.SellQuantity)).Float64()
-    orderID, err := r.OrdersRepository.Create(grid.Symbol, "SELL", grid.SellPrice, grid.SellQuantity, false)
+    orderId, err := r.OrdersRepository.Create(grid.Symbol, "SELL", grid.SellPrice, grid.SellQuantity, false)
     if err != nil {
       apiError, ok := err.(common.APIError)
       if ok {
@@ -292,7 +292,7 @@ func (r *TriggersRepository) Take(trigger *crossModels.Trigger, price float64) e
     if err := tx.Model(&crossModels.Trigger{ID: trigger.ID}).Updates(trigger).Error; err != nil {
       return err
     }
-    grid.SellOrderId = orderID
+    grid.SellOrderId = orderId
     grid.Status = 2
     if err := tx.Model(&models.Grid{ID: grid.ID}).Updates(grid).Error; err != nil {
       return err

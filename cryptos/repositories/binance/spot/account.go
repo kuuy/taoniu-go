@@ -8,12 +8,13 @@ import (
   "os"
   "slices"
   "strconv"
-  config "taoniu.local/cryptos/config/binance/spot"
 
   "github.com/adshao/go-binance/v2"
   "github.com/go-redis/redis/v8"
   "github.com/nats-io/nats.go"
   "gorm.io/gorm"
+
+  config "taoniu.local/cryptos/config/binance/spot"
 )
 
 type AccountRepository struct {

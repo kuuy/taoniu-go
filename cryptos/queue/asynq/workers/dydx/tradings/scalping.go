@@ -45,7 +45,7 @@ func NewScalping(ansqContext *common.AnsqServerContext) *Scalping {
 }
 
 type ScalpingPlacePayload struct {
-  PlanID string `json:"plan_id"`
+  PlanId string `json:"plan_id"`
 }
 
 type ScalpingFlushPayload struct {
@@ -59,14 +59,14 @@ func (h *Scalping) Place(ctx context.Context, t *asynq.Task) error {
   mutex := common.NewMutex(
     h.AnsqContext.Rdb,
     h.AnsqContext.Ctx,
-    fmt.Sprintf("locks:dydx:tradings:scalping:place:%s", payload.PlanID),
+    fmt.Sprintf("locks:dydx:tradings:scalping:place:%s", payload.PlanId),
   )
   if !mutex.Lock(30 * time.Second) {
     return nil
   }
   defer mutex.Unlock()
 
-  h.Repository.Place(payload.PlanID)
+  h.Repository.Place(payload.PlanId)
 
   return nil
 }

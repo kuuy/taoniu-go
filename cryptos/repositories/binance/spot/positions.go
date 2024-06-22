@@ -266,7 +266,7 @@ func (r *PositionsRepository) Flush(position *models.Position) (err error) {
       continue
     }
     if order.ExecutedQuantity != order.Quantity {
-      r.OrdersRepository.Flush(order.Symbol, order.OrderID)
+      r.OrdersRepository.Flush(order.Symbol, order.OrderId)
       return
     }
     executedQuantity := decimal.NewFromFloat(order.ExecutedQuantity)

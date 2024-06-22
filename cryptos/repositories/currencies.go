@@ -31,7 +31,7 @@ func (r *CurrenciesRepository) Add(
     entity = &models.Currency{
       ID:                xid.New().String(),
       Symbol:            symbol,
-      SectorID:          selectorID,
+      SectorId:          selectorID,
       TotalSupply:       totalSupply,
       CirculatingSupply: circulatingSupply,
       Price:             price,

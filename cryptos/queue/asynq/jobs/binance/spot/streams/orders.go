@@ -9,12 +9,12 @@ type Orders struct{}
 
 type OrdersUpdatePayload struct {
   Symbol  string
-  OrderID int64
+  OrderId int64
   Status  string
 }
 
-func (h *Orders) Update(symbol string, orderID int64, status string) (*asynq.Task, error) {
-  payload, err := json.Marshal(OrdersUpdatePayload{symbol, orderID, status})
+func (h *Orders) Update(symbol string, orderId int64, status string) (*asynq.Task, error) {
+  payload, err := json.Marshal(OrdersUpdatePayload{symbol, orderId, status})
   if err != nil {
     return nil, err
   }

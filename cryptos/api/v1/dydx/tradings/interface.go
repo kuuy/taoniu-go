@@ -3,8 +3,8 @@ package tradings
 type ScalpingTradingInfo struct {
   ID           string  `json:"id"`
   Symbol       string  `json:"symbol"`
-  ScalpingID   string  `json:"scalping_id"`
-  PlanID       string  `json:"plan_id"`
+  ScalpingId   string  `json:"scalping_id"`
+  PlanId       string  `json:"plan_id"`
   BuyPrice     float64 `json:"buy_price"`
   SellPrice    float64 `json:"sell_price"`
   BuyQuantity  float64 `json:"buy_quantity"`

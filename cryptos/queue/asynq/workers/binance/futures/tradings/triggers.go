@@ -53,14 +53,14 @@ func (h *Triggers) Place(ctx context.Context, t *asynq.Task) error {
   mutex := common.NewMutex(
     h.AnsqContext.Rdb,
     h.AnsqContext.Ctx,
-    fmt.Sprintf(config.LOCKS_TRADINGS_TRIGGERS_PLACE, payload.ID),
+    fmt.Sprintf(config.LOCKS_TRADINGS_TRIGGERS_PLACE, payload.Symbol),
   )
   if !mutex.Lock(30 * time.Second) {
     return nil
   }
   defer mutex.Unlock()
 
-  h.Repository.Place(payload.ID)
+  h.Repository.Place(payload.Symbol)
 
   return nil
 }

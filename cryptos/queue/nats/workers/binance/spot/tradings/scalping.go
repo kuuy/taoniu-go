@@ -57,12 +57,12 @@ func (h *Scalping) Place(m *nats.Msg) {
   mutex := common.NewMutex(
     h.NatsContext.Rdb,
     h.NatsContext.Ctx,
-    fmt.Sprintf("locks:binance:spot:tradings:scalping:place:%s", payload.PlanID),
+    fmt.Sprintf("locks:binance:spot:tradings:scalping:place:%s", payload.PlanId),
   )
   if !mutex.Lock(30 * time.Second) {
     return
   }
   defer mutex.Unlock()
 
-  h.Repository.Place(payload.PlanID)
+  h.Repository.Place(payload.PlanId)
 }

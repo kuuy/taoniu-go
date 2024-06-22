@@ -7,7 +7,7 @@ import (
 type Order struct {
   ID               string    `gorm:"size:20;primaryKey"`
   Symbol           string    `gorm:"size:20;not null;index:idx_dydx_orders"`
-  OrderID          string    `gorm:"size:63;not null;uniqueIndex"`
+  OrderId          string    `gorm:"size:63;not null;uniqueIndex"`
   Type             string    `gorm:"size:30;not null"`
   PositionSide     string    `gorm:"size:20;not null;index:idx_dydx_orders"`
   Side             string    `gorm:"size:20;not null"`

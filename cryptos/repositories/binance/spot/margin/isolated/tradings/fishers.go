@@ -58,9 +58,9 @@ func (r *FishersRepository) Flush(symbol string) error {
     if grid.Status == 0 {
       timestamp := grid.CreatedAt.Unix()
       if grid.BuyOrderId == 0 {
-        orderID := r.OrdersRepository.Lost(symbol, "BUY", grid.BuyPrice, timestamp-30)
-        if orderID > 0 {
-          grid.BuyOrderId = orderID
+        orderId := r.OrdersRepository.Lost(symbol, "BUY", grid.BuyPrice, timestamp-30)
+        if orderId > 0 {
+          grid.BuyOrderId = orderId
           if err := r.Db.Model(&models.Grid{ID: grid.ID}).Updates(grid).Error; err != nil {
             return err
           }
@@ -94,9 +94,9 @@ func (r *FishersRepository) Flush(symbol string) error {
     } else if grid.Status == 2 {
       timestamp := grid.UpdatedAt.Unix()
       if grid.SellOrderId == 0 {
-        orderID := r.OrdersRepository.Lost(symbol, "SELL", grid.SellPrice, timestamp-30)
-        if orderID > 0 {
-          grid.SellOrderId = orderID
+        orderId := r.OrdersRepository.Lost(symbol, "SELL", grid.SellPrice, timestamp-30)
+        if orderId > 0 {
+          grid.SellOrderId = orderId
           if err := r.Db.Model(&models.Grid{ID: grid.ID}).Updates(grid).Error; err != nil {
             return err
           }
@@ -238,7 +238,7 @@ func (r *FishersRepository) Place(symbol string) error {
     r.Db.Transaction(func(tx *gorm.DB) error {
       fisher.Price = buyPrice
       fisher.Balance -= buyPrice * buyQuantity
-      orderID, err := r.OrdersRepository.Create(symbol, "BUY", buyPrice, buyQuantity, true)
+      orderId, err := r.OrdersRepository.Create(symbol, "BUY", buyPrice, buyQuantity, true)
       if err != nil {
         apiError, ok := err.(common.APIError)
         if ok {
@@ -255,7 +255,7 @@ func (r *FishersRepository) Place(symbol string) error {
         ID:           xid.New().String(),
         Symbol:       symbol,
         FisherID:     fisher.ID,
-        BuyOrderId:   orderID,
+        BuyOrderId:   orderId,
         BuyPrice:     buyPrice,
         BuyQuantity:  buyQuantity,
         SellPrice:    sellPrice,
@@ -313,7 +313,7 @@ func (r *FishersRepository) Take(fisher *isolatedModels.Fisher, price float64) e
   }
   r.Db.Transaction(func(tx *gorm.DB) error {
     fisher.Balance += grid.SellPrice * grid.SellQuantity
-    orderID, err := r.OrdersRepository.Create(grid.Symbol, "SELL", grid.SellPrice, grid.SellQuantity, true)
+    orderId, err := r.OrdersRepository.Create(grid.Symbol, "SELL", grid.SellPrice, grid.SellQuantity, true)
     if err != nil {
       apiError, ok := err.(common.APIError)
       if ok {
@@ -327,7 +327,7 @@ func (r *FishersRepository) Take(fisher *isolatedModels.Fisher, price float64) e
     if err := tx.Model(&isolatedModels.Fisher{ID: fisher.ID}).Updates(fisher).Error; err != nil {
       return err
     }
-    grid.SellOrderId = orderID
+    grid.SellOrderId = orderId
     grid.Status = 2
     if err := tx.Model(&models.Grid{ID: grid.ID}).Updates(grid).Error; err != nil {
       return err

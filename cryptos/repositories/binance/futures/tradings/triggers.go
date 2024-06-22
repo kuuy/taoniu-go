@@ -92,11 +92,11 @@ func (r *TriggersRepository) Listings(conditions map[string]interface{}, current
   return tradings
 }
 
-func (r *TriggersRepository) Place(id string) error {
+func (r *TriggersRepository) Place(symbol string) error {
   var trigger *futuresModels.Trigger
-  result := r.Db.Take(&trigger, "id", id)
+  result := r.Db.Take(&trigger, "symbol", symbol)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    return errors.New("trigger empty")
+    return errors.New("trigger not found")
   }
 
   var positionSide string
@@ -137,25 +137,11 @@ func (r *TriggersRepository) Place(id string) error {
     return err
   }
 
-  if entryPrice > 0 {
-    if trigger.Side == 1 && price > entryPrice {
-      return errors.New(fmt.Sprintf("trigger [%s] %s price big than entry price", trigger.Symbol, positionSide))
-    }
-    if trigger.Side == 2 && price < entryPrice {
-      return errors.New(fmt.Sprintf("trigger [%s] %s price small than  entry price", trigger.Symbol, positionSide))
-    }
+  if trigger.Side == 1 && price > entryPrice {
+    return errors.New(fmt.Sprintf("trigger [%s] %s price big than entry price", trigger.Symbol, positionSide))
   }
-
-  if trigger.Side == 1 && trigger.Price < price || trigger.Side == 2 && trigger.Price > price {
-    var scalping *futuresModels.Scalping
-    result = r.Db.Where("symbol=? AND side=?", trigger.Symbol, trigger.Side).Take(&scalping)
-    if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-      var total int64
-      r.Db.Model(&models.Scalping{}).Where("scalping_id=? AND status IN ?", scalping.ID, []int{1, 2}).Count(&total)
-      if total < 1 {
-        return errors.New(fmt.Sprintf("trigger [%s] %s waiting for the scalping", trigger.Symbol, positionSide))
-      }
-    }
+  if trigger.Side == 2 && price < entryPrice {
+    return errors.New(fmt.Sprintf("trigger [%s] %s price small than  entry price", trigger.Symbol, positionSide))
   }
 
   ipart, _ := math.Modf(trigger.Capital)
@@ -245,7 +231,7 @@ func (r *TriggersRepository) Place(id string) error {
   }
   defer mutex.Unlock()
 
-  orderID, err := r.OrdersRepository.Create(trigger.Symbol, positionSide, side, buyPrice, buyQuantity)
+  orderId, err := r.OrdersRepository.Create(trigger.Symbol, positionSide, side, buyPrice, buyQuantity)
   if err != nil {
     _, ok := err.(apiCommon.APIError)
     if ok {
@@ -261,7 +247,7 @@ func (r *TriggersRepository) Place(id string) error {
     ID:           xid.New().String(),
     Symbol:       trigger.Symbol,
     TriggerID:    trigger.ID,
-    BuyOrderId:   orderID,
+    BuyOrderId:   orderId,
     BuyPrice:     buyPrice,
     BuyQuantity:  buyQuantity,
     SellPrice:    sellPrice,
@@ -277,7 +263,7 @@ func (r *TriggersRepository) Flush(id string) error {
   var trigger *futuresModels.Trigger
   result := r.Db.First(&trigger, "id=?", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    return errors.New("trigger empty")
+    return errors.New("trigger not found")
   }
 
   price, err := r.SymbolsRepository.Price(trigger.Symbol)
@@ -290,13 +276,16 @@ func (r *TriggersRepository) Flush(id string) error {
   }
 
   var positionSide string
-  var side string
+  var placeSide string
+  var takeSide string
   if trigger.Side == 1 {
     positionSide = "LONG"
-    side = "BUY"
+    placeSide = "BUY"
+    takeSide = "SELL"
   } else if trigger.Side == 2 {
     positionSide = "SHORT"
-    side = "SELL"
+    placeSide = "SELL"
+    takeSide = "SELL"
   }
 
   var tradings []*models.Trigger
@@ -307,10 +296,10 @@ func (r *TriggersRepository) Flush(id string) error {
       status := r.OrdersRepository.Status(trading.Symbol, trading.BuyOrderId)
       timestamp := trading.CreatedAt.Unix()
       if trading.BuyOrderId == 0 {
-        orderID := r.OrdersRepository.Lost(trading.Symbol, positionSide, side, trading.BuyQuantity, timestamp-30)
-        if orderID > 0 {
-          trading.BuyOrderId = orderID
-          result := r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+        orderId := r.OrdersRepository.Lost(trading.Symbol, positionSide, placeSide, trading.BuyQuantity, timestamp-30)
+        if orderId > 0 {
+          trading.BuyOrderId = orderId
+          result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
             "buy_order_id": trading.BuyOrderId,
             "version":      gorm.Expr("version + ?", 1),
           })
@@ -345,7 +334,7 @@ func (r *TriggersRepository) Flush(id string) error {
         trading.Status = 4
       }
 
-      result := r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+      result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
         "buy_order_id": trading.BuyOrderId,
         "status":       trading.Status,
         "version":      gorm.Expr("version + ?", 1),
@@ -362,10 +351,10 @@ func (r *TriggersRepository) Flush(id string) error {
       status := r.OrdersRepository.Status(trading.Symbol, trading.SellOrderId)
       timestamp := trading.UpdatedAt.Unix()
       if trading.SellOrderId == 0 {
-        orderID := r.OrdersRepository.Lost(trading.Symbol, positionSide, side, trading.SellQuantity, timestamp-30)
-        if orderID > 0 {
-          trading.SellOrderId = orderID
-          result := r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+        orderId := r.OrdersRepository.Lost(trading.Symbol, positionSide, takeSide, trading.SellQuantity, timestamp-30)
+        if orderId > 0 {
+          trading.SellOrderId = orderId
+          result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
             "sell_order_id": trading.SellOrderId,
             "version":       gorm.Expr("version + ?", 1),
           })
@@ -403,7 +392,7 @@ func (r *TriggersRepository) Flush(id string) error {
         trading.Status = 5
       }
 
-      result := r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+      result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
         "sell_order_id": trading.SellOrderId,
         "status":        trading.Status,
         "version":       gorm.Expr("version + ?", 1),
@@ -473,12 +462,23 @@ func (r *TriggersRepository) Take(trigger *futuresModels.Trigger, price float64)
       return errors.New(fmt.Sprintf("[%s] %s empty trading", trigger.Symbol, positionSide))
     }
     if price < trading.SellPrice {
-      if price < entryPrice*1.0138 {
+      if price < entryPrice*1.0105 {
         return errors.New("price too low")
       }
-      sellPrice = entryPrice * 1.0138
+      timestamp := time.Now().Add(-15 * time.Minute).UnixMicro()
+      if trading.UpdatedAt.UnixMicro() > timestamp {
+        return errors.New("waiting for more time")
+      }
+      sellPrice = entryPrice * 1.0105
     } else {
-      sellPrice = trading.SellPrice
+      if entryPrice > trading.SellPrice {
+        if price < entryPrice*1.0105 {
+          return errors.New("compare with entry price too low")
+        }
+        sellPrice = entryPrice * 1.0105
+      } else {
+        sellPrice = trading.SellPrice
+      }
     }
     if sellPrice < price*0.9985 {
       sellPrice = price * 0.9985
@@ -492,18 +492,23 @@ func (r *TriggersRepository) Take(trigger *futuresModels.Trigger, price float64)
       return errors.New("empty trading")
     }
     if price > trading.SellPrice {
-      if price > entryPrice*0.9862 {
-        return errors.New("price too high")
+      if price > entryPrice*0.9895 {
+        return errors.New("compare with entry price too high")
       }
-      sellPrice = entryPrice * 0.9862
+      timestamp := time.Now().Add(-15 * time.Minute).UnixMicro()
+      if trading.UpdatedAt.UnixMicro() > timestamp {
+        return errors.New("waiting for more time")
+      }
+      sellPrice = entryPrice * 0.9895
     } else {
-      if price > entryPrice*0.9862 {
-        return errors.New("price too high")
+      if entryPrice < trading.SellPrice {
+        if price > entryPrice*0.9895 {
+          return errors.New("compare with entry price too high")
+        }
+        sellPrice = entryPrice * 0.9895
+      } else {
+        sellPrice = trading.SellPrice
       }
-      if price > entryPrice*0.9862 {
-        return errors.New("price too high")
-      }
-      sellPrice = trading.SellPrice
     }
     if sellPrice > price*1.0015 {
       sellPrice = price * 1.0015
@@ -511,7 +516,7 @@ func (r *TriggersRepository) Take(trigger *futuresModels.Trigger, price float64)
     sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
   }
 
-  orderID, err := r.OrdersRepository.Create(trading.Symbol, positionSide, side, sellPrice, trading.SellQuantity)
+  orderId, err := r.OrdersRepository.Create(trading.Symbol, positionSide, side, sellPrice, trading.SellQuantity)
   if err != nil {
     _, ok := err.(apiCommon.APIError)
     if ok {
@@ -524,7 +529,7 @@ func (r *TriggersRepository) Take(trigger *futuresModels.Trigger, price float64)
   }
 
   r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
-    "sell_order_id": orderID,
+    "sell_order_id": orderId,
     "status":        2,
     "version":       gorm.Expr("version + ?", 1),
   })
@@ -534,12 +539,21 @@ func (r *TriggersRepository) Take(trigger *futuresModels.Trigger, price float64)
 
 func (r *TriggersRepository) Close(trigger *futuresModels.Trigger) {
   var total int64
-  var tradings []*models.Scalping
-  r.Db.Model(&tradings).Where("trigger_id = ? AND status IN ?", trigger.ID, []int{0, 1, 2}).Count(&total)
+  var tradings []*models.Trigger
+  r.Db.Model(&tradings).Where("trigger_id = ? AND status IN ?", trigger.ID, []int{0, 1}).Count(&total)
   if total == 0 {
     return
   }
-  r.Db.Model(&tradings).Where("trigger_id=? AND status IN ?", trigger.ID, []int{0, 1, 2}).Update("status", 5)
+  r.Db.Where("trigger_id=? AND status=?", trigger.ID, 1).Find(&tradings)
+  timestamp := time.Now().Add(-30 * time.Minute).UnixMicro()
+  for _, trading := range tradings {
+    if trading.UpdatedAt.UnixMicro() < timestamp {
+      r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+        "status":  5,
+        "version": gorm.Expr("version + ?", 1),
+      })
+    }
+  }
 }
 
 func (r *TriggersRepository) CanBuy(

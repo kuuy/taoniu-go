@@ -2,13 +2,16 @@ package tradings
 
 import (
   "context"
+  "fmt"
   "log"
+  "time"
 
   "github.com/go-redis/redis/v8"
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
 
   "taoniu.local/cryptos/common"
+  config "taoniu.local/cryptos/config/binance/spot"
   spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
   repositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
 )
@@ -61,16 +64,6 @@ func NewScalpingCommand() *cli.Command {
     },
     Subcommands: []*cli.Command{
       {
-        Name:  "flush",
-        Usage: "",
-        Action: func(c *cli.Context) error {
-          if err := h.Flush(); err != nil {
-            return cli.Exit(err.Error(), 1)
-          }
-          return nil
-        },
-      },
-      {
         Name:  "place",
         Usage: "",
         Action: func(c *cli.Context) error {
@@ -80,28 +73,56 @@ func NewScalpingCommand() *cli.Command {
           return nil
         },
       },
+      {
+        Name:  "flush",
+        Usage: "",
+        Action: func(c *cli.Context) error {
+          if err := h.Flush(); err != nil {
+            return cli.Exit(err.Error(), 1)
+          }
+          return nil
+        },
+      },
     },
   }
+}
+
+func (h *ScalpingHandler) Place() error {
+  planIds := h.ParentRepository.PlanIds(0)
+  for _, planId := range planIds {
+    mutex := common.NewMutex(
+      h.Rdb,
+      h.Ctx,
+      fmt.Sprintf(config.LOCKS_TRADINGS_SCALPING_PLACE, planId),
+    )
+    if !mutex.Lock(30 * time.Second) {
+      return nil
+    }
+    err := h.Repository.Place(planId)
+    if err != nil {
+      log.Println("scalping place error", err)
+    }
+    mutex.Unlock()
+  }
+  return nil
 }
 
 func (h *ScalpingHandler) Flush() error {
   ids := h.Repository.ScalpingIds()
   for _, id := range ids {
+    mutex := common.NewMutex(
+      h.Rdb,
+      h.Ctx,
+      fmt.Sprintf(config.LOCKS_TRADINGS_SCALPING_FLUSH, id),
+    )
+    if !mutex.Lock(30 * time.Second) {
+      return nil
+    }
     err := h.Repository.Flush(id)
     if err != nil {
       log.Println("scalping flush error", err)
     }
-  }
-  return nil
-}
-
-func (h *ScalpingHandler) Place() error {
-  ids := h.ParentRepository.PlanIds(0)
-  for _, id := range ids {
-    err := h.Repository.Place(id)
-    if err != nil {
-      log.Println("scalping place error", err)
-    }
+    mutex.Unlock()
   }
   return nil
 }

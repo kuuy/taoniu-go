@@ -36,7 +36,7 @@ type OrdersRepository struct {
 
 type OrderInfo struct {
   Symbol           string
-  OrderID          string
+  OrderId          string
   Type             string
   PositionSide     string
   Side             string
@@ -129,12 +129,12 @@ func (r *OrdersRepository) Lost(symbol string, side string, quantity float64, ti
   if entity.UpdatedAt.Unix() < timestamp {
     return ""
   }
-  return entity.OrderID
+  return entity.OrderId
 }
 
-func (r *OrdersRepository) Status(orderID string) string {
+func (r *OrdersRepository) Status(orderId string) string {
   var entity models.Order
-  result := r.Db.Select("status").Where("order_id=?", orderID).Take(&entity)
+  result := r.Db.Select("status").Where("order_id=?", orderId).Take(&entity)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     return ""
   }
@@ -201,11 +201,11 @@ func (r *OrdersRepository) Open(symbol string) (err error) {
 
   for _, order := range result["orders"].([]interface{}) {
     data := order.(map[string]interface{})
-    orderID := data["id"].(string)
+    orderId := data["id"].(string)
     var entity models.Order
-    result := r.Db.Where("order_id", orderID).Take(&entity)
+    result := r.Db.Where("order_id", orderId).Take(&entity)
     if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-      r.Flush(orderID)
+      r.Flush(orderId)
     }
   }
   return nil
@@ -221,7 +221,7 @@ func (r *OrdersRepository) Create(
   price float64,
   quantity float64,
   positionSide string,
-) (orderID string, err error) {
+) (orderId string, err error) {
   tr := &http.Transport{
     DisableKeepAlives: true,
   }
@@ -315,7 +315,7 @@ func (r *OrdersRepository) Create(
 
   order := &OrderInfo{}
   order.Symbol = data["market"].(string)
-  order.OrderID = data["id"].(string)
+  order.OrderId = data["id"].(string)
   order.Type = data["type"].(string)
   order.PositionSide = positionSide
   order.Side = data["side"].(string)
@@ -347,14 +347,14 @@ func (r *OrdersRepository) Create(
 
   r.Save(order)
 
-  return order.OrderID, nil
+  return order.OrderId, nil
 }
 
 func (r *OrdersRepository) Take(
   symbol string,
   positionSide string,
   price float64,
-) (orderID string, err error) {
+) (orderId string, err error) {
   return
 }
 
@@ -362,11 +362,11 @@ func (r *OrdersRepository) Stop(
   symbol string,
   positionSide string,
   price float64,
-) (orderID string, err error) {
+) (orderId string, err error) {
   return
 }
 
-func (r *OrdersRepository) Cancel(orderID string) (err error) {
+func (r *OrdersRepository) Cancel(orderId string) (err error) {
   tr := &http.Transport{
     DisableKeepAlives: true,
   }
@@ -378,7 +378,7 @@ func (r *OrdersRepository) Cancel(orderID string) (err error) {
     Timeout:   time.Duration(3) * time.Second,
   }
 
-  path := fmt.Sprintf("/v3/orders/%s", orderID)
+  path := fmt.Sprintf("/v3/orders/%s", orderId)
 
   isoTimestamp := time.Unix(0, r.Timestamp()).UTC().Format("2006-01-02T15:04:05.000Z")
   payload := fmt.Sprintf("%sDELETE%s", isoTimestamp, path)
@@ -421,12 +421,12 @@ func (r *OrdersRepository) Cancel(orderID string) (err error) {
     return
   }
 
-  r.Flush(orderID)
+  r.Flush(orderId)
 
   return
 }
 
-func (r *OrdersRepository) Flush(orderID string) (err error) {
+func (r *OrdersRepository) Flush(orderId string) (err error) {
   tr := &http.Transport{
     DisableKeepAlives: true,
   }
@@ -438,7 +438,7 @@ func (r *OrdersRepository) Flush(orderID string) (err error) {
     Timeout:   time.Duration(3) * time.Second,
   }
 
-  path := fmt.Sprintf("/v3/orders/%s", orderID)
+  path := fmt.Sprintf("/v3/orders/%s", orderId)
 
   isoTimestamp := time.Unix(0, r.Timestamp()).UTC().Format("2006-01-02T15:04:05.000Z")
   payload := fmt.Sprintf("%sGET%s", isoTimestamp, path)
@@ -485,7 +485,7 @@ func (r *OrdersRepository) Flush(orderID string) (err error) {
 
   order := &OrderInfo{}
   order.Symbol = data["market"].(string)
-  order.OrderID = data["id"].(string)
+  order.OrderId = data["id"].(string)
   order.Type = data["type"].(string)
   order.Side = data["side"].(string)
   order.Price, _ = strconv.ParseFloat(data["price"].(string), 64)
@@ -537,12 +537,12 @@ func (r *OrdersRepository) Flush(orderID string) (err error) {
 
 func (r *OrdersRepository) Save(order *OrderInfo) error {
   var entity models.Order
-  result := r.Db.Where("order_id", order.OrderID).Take(&entity)
+  result := r.Db.Where("order_id", order.OrderId).Take(&entity)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     entity = models.Order{
       ID:               xid.New().String(),
       Symbol:           order.Symbol,
-      OrderID:          order.OrderID,
+      OrderId:          order.OrderId,
       Type:             order.Type,
       PositionSide:     fmt.Sprintf("%v", order.PositionSide),
       Side:             order.Side,

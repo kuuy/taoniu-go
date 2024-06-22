@@ -112,12 +112,15 @@ func (r *OrdersRepository) Lost(symbol string, side string, quantity float64, ti
   if entity.UpdateTime < timestamp {
     return 0
   }
-  return entity.OrderID
+  return entity.OrderId
 }
 
-func (r *OrdersRepository) Status(symbol string, orderID int64) string {
+func (r *OrdersRepository) Status(symbol string, orderId int64) string {
+  if orderId == 0 {
+    return ""
+  }
   var entity models.Order
-  result := r.Db.Select("status").Where("symbol=? AND order_id=?", symbol, orderID).Take(&entity)
+  result := r.Db.Select("status").Where("symbol=? AND order_id=?", symbol, orderId).Take(&entity)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     return ""
   }
@@ -271,7 +274,7 @@ func (r *OrdersRepository) Fix(time time.Time, limit int) error {
     limit,
   ).Find(&orders)
   for _, order := range orders {
-    r.Flush(order.Symbol, order.OrderID)
+    r.Flush(order.Symbol, order.OrderId)
   }
   return nil
 }
@@ -449,13 +452,13 @@ func (r *OrdersRepository) Cancel(symbol string, orderId int64) error {
   return nil
 }
 
-func (r *OrdersRepository) Flush(symbol string, orderID int64) error {
+func (r *OrdersRepository) Flush(symbol string, orderId int64) error {
   client := binance.NewClient(
     os.Getenv("BINANCE_SPOT_ACCOUNT_API_KEY"),
     os.Getenv("BINANCE_SPOT_ACCOUNT_API_SECRET"),
   )
   client.BaseURL = os.Getenv("BINANCE_SPOT_API_ENDPOINT")
-  order, err := client.NewGetOrderService().Symbol(symbol).OrderID(orderID).Do(r.Ctx)
+  order, err := client.NewGetOrderService().Symbol(symbol).OrderID(orderId).Do(r.Ctx)
   if err != nil {
     return err
   }
@@ -467,7 +470,7 @@ func (r *OrdersRepository) Flush(symbol string, orderID int64) error {
 
 func (r *OrdersRepository) Save(order *binance.Order) error {
   symbol := order.Symbol
-  orderID := order.OrderID
+  orderId := order.OrderID
 
   price, _ := strconv.ParseFloat(order.Price, 64)
   stopPrice, _ := strconv.ParseFloat(order.StopPrice, 64)
@@ -478,13 +481,13 @@ func (r *OrdersRepository) Save(order *binance.Order) error {
   result := r.Db.Where(
     "symbol=? AND order_id=?",
     symbol,
-    orderID,
+    orderId,
   ).Take(&entity)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     entity = models.Order{
       ID:               xid.New().String(),
       Symbol:           symbol,
-      OrderID:          orderID,
+      OrderId:          orderId,
       Type:             fmt.Sprint(order.Type),
       Side:             fmt.Sprint(order.Side),
       Price:            price,

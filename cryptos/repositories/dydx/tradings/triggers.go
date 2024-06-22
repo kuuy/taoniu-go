@@ -281,7 +281,7 @@ func (r *TriggersRepository) Place(id string) error {
       }
     }
 
-    orderID, err := r.OrdersRepository.Create(trigger.Symbol, side, buyPrice, buyQuantity, positionSide)
+    orderId, err := r.OrdersRepository.Create(trigger.Symbol, side, buyPrice, buyQuantity, positionSide)
     if err != nil {
       return err
     }
@@ -290,7 +290,7 @@ func (r *TriggersRepository) Place(id string) error {
       ID:           xid.New().String(),
       Symbol:       trigger.Symbol,
       TriggerID:    trigger.ID,
-      BuyOrderId:   orderID,
+      BuyOrderId:   orderId,
       BuyPrice:     buyPrice,
       BuyQuantity:  buyQuantity,
       SellPrice:    sellPrice,
@@ -331,9 +331,9 @@ func (r *TriggersRepository) Flush(id string) error {
       status := r.OrdersRepository.Status(trading.BuyOrderId)
       timestamp := trading.CreatedAt.Unix()
       if trading.BuyOrderId == "" {
-        orderID := r.OrdersRepository.Lost(trading.Symbol, side, trading.BuyQuantity, timestamp-30)
-        if orderID != "" {
-          trading.BuyOrderId = orderID
+        orderId := r.OrdersRepository.Lost(trading.Symbol, side, trading.BuyQuantity, timestamp-30)
+        if orderId != "" {
+          trading.BuyOrderId = orderId
           result := r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
             "buy_order_id": trading.BuyOrderId,
             "version":      gorm.Expr("version + ?", 1),
@@ -386,9 +386,9 @@ func (r *TriggersRepository) Flush(id string) error {
       status := r.OrdersRepository.Status(trading.SellOrderId)
       timestamp := trading.UpdatedAt.Unix()
       if trading.SellOrderId == "" {
-        orderID := r.OrdersRepository.Lost(trading.Symbol, side, trading.SellQuantity, timestamp-30)
-        if orderID != "" {
-          trading.SellOrderId = orderID
+        orderId := r.OrdersRepository.Lost(trading.Symbol, side, trading.SellQuantity, timestamp-30)
+        if orderId != "" {
+          trading.SellOrderId = orderId
           result := r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
             "sell_order_id": trading.SellOrderId,
             "version":       gorm.Expr("version + ?", 1),
@@ -518,13 +518,13 @@ func (r *TriggersRepository) Take(trigger *dydxModels.Trigger, price float64) er
     sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
   }
 
-  orderID, err := r.OrdersRepository.Create(trading.Symbol, side, sellPrice, trading.SellQuantity, positionSide)
+  orderId, err := r.OrdersRepository.Create(trading.Symbol, side, sellPrice, trading.SellQuantity, positionSide)
   if err != nil {
     return err
   }
 
   r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
-    "sell_order_id": orderID,
+    "sell_order_id": orderId,
     "status":        2,
     "version":       gorm.Expr("version + ?", 1),
   })

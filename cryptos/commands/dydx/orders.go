@@ -98,31 +98,31 @@ func (h *OrdersHandler) Create() error {
   price := 0.0735
   quantity := 100.0
   positionSide := "LONG"
-  orderID, err := h.Repository.Create(symbol, side, price, quantity, positionSide)
+  orderId, err := h.Repository.Create(symbol, side, price, quantity, positionSide)
   if err != nil {
     return err
   }
-  log.Println("orderID", orderID)
+  log.Println("orderId", orderId)
   //h.Repository.Test()
   return nil
 }
 
 func (h *OrdersHandler) Cancel() error {
   //symbol := "BTCUSDT"
-  orderID := "5e19d29a8074753357099111b3037a32c0955374bd8abc0fc5940de69dbf3e1"
-  err := h.Repository.Cancel(orderID)
+  orderId := "5e19d29a8074753357099111b3037a32c0955374bd8abc0fc5940de69dbf3e1"
+  err := h.Repository.Cancel(orderId)
   if err != nil {
     return err
   }
-  log.Println("orderID", orderID)
+  log.Println("orderId", orderId)
   return nil
 }
 
 func (h *OrdersHandler) Flush() error {
   log.Println("dydx orders flush...")
   //symbol := "BTCUSDT"
-  orderID := "3711916c36e458f7ee62d1727b697b78482b2bc14f780db8755a051a15cf11e"
-  h.Repository.Flush(orderID)
+  orderId := "3711916c36e458f7ee62d1727b697b78482b2bc14f780db8755a051a15cf11e"
+  h.Repository.Flush(orderId)
   //orders, err := h.Rdb.SMembers(h.Ctx, "dydx:orders:flush").Result()
   //if err != nil {
   //  return nil
@@ -130,8 +130,8 @@ func (h *OrdersHandler) Flush() error {
   //for _, order := range orders {
   //  data := strings.Split(order, ",")
   //  symbol := data[0]
-  //  orderID, _ := strconv.ParseInt(data[1], 10, 64)
-  //  h.Repository.Flush(symbol, orderID)
+  //  orderId, _ := strconv.ParseInt(data[1], 10, 64)
+  //  h.Repository.Flush(symbol, orderId)
   //}
 
   return nil

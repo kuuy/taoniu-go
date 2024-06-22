@@ -20,7 +20,7 @@ type OrdersHandler struct {
 type OrderInfo struct {
   ID           string  `json:"id"`
   Symbol       string  `json:"symbol"`
-  OrderID      int64   `json:"order_id"`
+  OrderId      int64   `json:"order_id"`
   Type         string  `json:"type"`
   PositionSide string  `json:"position_side"`
   Side         string  `json:"side"`
@@ -101,7 +101,7 @@ func (h *OrdersHandler) Listings(
     data[i] = &OrderInfo{
       ID:           order.ID,
       Symbol:       order.Symbol,
-      OrderID:      order.OrderID,
+      OrderId:      order.OrderId,
       PositionSide: order.PositionSide,
       Side:         order.Side,
       Price:        order.Price,

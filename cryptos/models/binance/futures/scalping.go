@@ -27,7 +27,7 @@ func (m *Scalping) TableName() string {
 }
 
 type ScalpingPlan struct {
-  PlanID string `gorm:"size:20;uniqueIndex"`
+  PlanId string `gorm:"size:20;uniqueIndex"`
   Status int    `gorm:"not null;index"`
 }
 

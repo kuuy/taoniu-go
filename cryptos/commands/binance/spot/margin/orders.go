@@ -114,9 +114,9 @@ func (h *OrdersHandler) flush() error {
   for _, order := range orders {
     data := strings.Split(order, ",")
     symbol := data[0]
-    orderID, _ := strconv.ParseInt(data[1], 10, 64)
+    orderId, _ := strconv.ParseInt(data[1], 10, 64)
     isIsolated, _ := strconv.ParseBool(data[2])
-    h.Repository.Flush(symbol, orderID, isIsolated)
+    h.Repository.Flush(symbol, orderId, isIsolated)
   }
   return nil
 }

@@ -1,17 +1,17 @@
 package tradings
 
 type ScalpingPlacePayload struct {
-  PlanID string `json:"plan_id"`
+  PlanId string `json:"plan_id"`
 }
 
 type ScalpingFlushPayload struct {
   ID string `json:"id"`
 }
 
-type TriggersFlushPayload struct {
-  ID string
+type TriggersPlacePayload struct {
+  Symbol string `json:"symbol"`
 }
 
-type TriggersPlacePayload struct {
-  ID string
+type TriggersFlushPayload struct {
+  ID string `json:"id"`
 }

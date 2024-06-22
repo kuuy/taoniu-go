@@ -13,7 +13,7 @@ type OrdersOpenPayload struct {
 
 type OrdersFlushPayload struct {
   Symbol  string `json:"symbol"`
-  OrderID int64  `json:"order_id"`
+  OrderId int64  `json:"order_id"`
 }
 
 type OrdersSyncPayload struct {
@@ -30,8 +30,8 @@ func (h *Orders) Open(symbol string) (*asynq.Task, error) {
   return asynq.NewTask("binance:futures:orders:open", payload), nil
 }
 
-func (h *Orders) Flush(symbol string, orderID int64) (*asynq.Task, error) {
-  payload, err := json.Marshal(OrdersFlushPayload{symbol, orderID})
+func (h *Orders) Flush(symbol string, orderId int64) (*asynq.Task, error) {
+  payload, err := json.Marshal(OrdersFlushPayload{symbol, orderId})
   if err != nil {
     return nil, err
   }

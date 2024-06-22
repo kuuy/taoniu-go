@@ -195,7 +195,7 @@ func (r *GridsRepository) Flush(symbol string) error {
 //	entity = &models.Grid{
 //		ID:           xid.New().String(),
 //		Symbol:       grid.Symbol,
-//		GridID:       grid.ID,
+//		GridId:       grid.ID,
 //		BuyOrderId:   buyOrderId,
 //		BuyPrice:     buyPrice,
 //		BuyQuantity:  buyQuantity,
@@ -261,16 +261,16 @@ func (r *GridsRepository) Update() error {
     []int64{0, 2},
   ).Find(&entities)
   for _, entity := range entities {
-    orderID := entity.BuyOrderId
+    orderId := entity.BuyOrderId
     if entity.Status == 2 {
-      orderID = entity.SellOrderId
+      orderId = entity.SellOrderId
     }
 
     var order marginModels.Order
     result := r.Db.Where(
       "symbol=? AND order_id=?",
       entity.Symbol,
-      orderID,
+      orderId,
     ).Take(&order)
     if errors.Is(result.Error, gorm.ErrRecordNotFound) {
       continue

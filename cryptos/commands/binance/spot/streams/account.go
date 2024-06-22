@@ -86,10 +86,10 @@ func (h *AccountHandler) handler(message map[string]interface{}) {
   }
 
   if event == "executionReport" {
-    orderID, _ := strconv.ParseInt(fmt.Sprintf("%.0f", message["i"]), 10, 64)
+    orderId, _ := strconv.ParseInt(fmt.Sprintf("%.0f", message["i"]), 10, 64)
     data, _ := json.Marshal(map[string]interface{}{
       "symbol":   message["s"].(string),
-      "order_id": orderID,
+      "order_id": orderId,
       "status":   message["X"].(string),
     })
     h.Nats.Publish(config.NATS_ORDERS_UPDATE, data)

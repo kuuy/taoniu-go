@@ -39,7 +39,7 @@ func (h *Scalping) AddPlan(m *nats.Msg) {
 
   h.Repository.AddPlan(payload.ID)
   message, _ := json.Marshal(&tradings.ScalpingPlacePayload{
-    PlanID: payload.ID,
+    PlanId: payload.ID,
   })
   h.NatsContext.Conn.Publish(config.NATS_TRADINGS_SCALPING_PLACE, message)
   h.NatsContext.Conn.Flush()

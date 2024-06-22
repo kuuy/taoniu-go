@@ -5,8 +5,8 @@ import "time"
 type Scalping struct {
   ID           string    `gorm:"size:20;primaryKey"`
   Symbol       string    `gorm:"size:20;not null"`
-  ScalpingID   string    `gorm:"size:20;index"`
-  PlanID       string    `gorm:"size:20;index"`
+  ScalpingId   string    `gorm:"size:20;index"`
+  PlanId       string    `gorm:"size:20;index"`
   BuyPrice     float64   `gorm:"not null"`
   SellPrice    float64   `gorm:"not null"`
   BuyQuantity  float64   `gorm:"not null"`

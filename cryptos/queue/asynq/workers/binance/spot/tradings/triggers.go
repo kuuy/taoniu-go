@@ -25,7 +25,9 @@ func NewTriggers(ansqContext *common.AnsqServerContext) *Triggers {
     AnsqContext: ansqContext,
   }
   h.Repository = &repositories.TriggersRepository{
-    Db: h.AnsqContext.Db,
+    Db:  h.AnsqContext.Db,
+    Rdb: h.AnsqContext.Rdb,
+    Ctx: h.AnsqContext.Ctx,
   }
   h.Repository.SymbolsRepository = &spotRepositories.SymbolsRepository{
     Db:  h.AnsqContext.Db,
@@ -33,7 +35,6 @@ func NewTriggers(ansqContext *common.AnsqServerContext) *Triggers {
     Ctx: h.AnsqContext.Ctx,
   }
   h.Repository.AccountRepository = &spotRepositories.AccountRepository{
-    Db:  h.AnsqContext.Db,
     Rdb: h.AnsqContext.Rdb,
     Ctx: h.AnsqContext.Ctx,
   }
@@ -41,6 +42,9 @@ func NewTriggers(ansqContext *common.AnsqServerContext) *Triggers {
     Db:  h.AnsqContext.Db,
     Rdb: h.AnsqContext.Rdb,
     Ctx: h.AnsqContext.Ctx,
+  }
+  h.Repository.PositionRepository = &spotRepositories.PositionsRepository{
+    Db: h.AnsqContext.Db,
   }
 
   return h
@@ -53,14 +57,14 @@ func (h *Triggers) Place(ctx context.Context, t *asynq.Task) error {
   mutex := common.NewMutex(
     h.AnsqContext.Rdb,
     h.AnsqContext.Ctx,
-    fmt.Sprintf(config.LOCKS_TRADINGS_TRIGGERS_PLACE, payload.ID),
+    fmt.Sprintf(config.LOCKS_TRADINGS_TRIGGERS_PLACE, payload.Symbol),
   )
   if !mutex.Lock(30 * time.Second) {
     return nil
   }
   defer mutex.Unlock()
 
-  h.Repository.Place(payload.ID)
+  h.Repository.Place(payload.Symbol)
 
   return nil
 }

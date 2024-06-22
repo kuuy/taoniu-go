@@ -130,10 +130,10 @@ func (r *ScalpingRepository) Flush(id string) error {
     if trading.Status == 0 {
       status := r.OrdersRepository.Status(trading.Symbol, trading.BuyOrderId)
       if trading.BuyOrderId == 0 {
-        orderID := r.OrdersRepository.Lost(trading.Symbol, positionSide, placeSide, trading.BuyQuantity, trading.UpdatedAt.Add(-120*time.Second).UnixMilli())
-        if orderID > 0 {
-          status = r.OrdersRepository.Status(trading.Symbol, orderID)
-          trading.BuyOrderId = orderID
+        orderId := r.OrdersRepository.Lost(trading.Symbol, positionSide, placeSide, trading.BuyQuantity, trading.UpdatedAt.Add(-120*time.Second).UnixMilli())
+        if orderId > 0 {
+          status = r.OrdersRepository.Status(trading.Symbol, orderId)
+          trading.BuyOrderId = orderId
           result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
             "buy_order_id": trading.BuyOrderId,
             "version":      gorm.Expr("version + ?", 1),
@@ -203,10 +203,10 @@ func (r *ScalpingRepository) Flush(id string) error {
     if trading.Status == 2 {
       status := r.OrdersRepository.Status(trading.Symbol, trading.SellOrderId)
       if trading.SellOrderId == 0 {
-        orderID := r.OrdersRepository.Lost(trading.Symbol, positionSide, takeSide, trading.SellQuantity, trading.UpdatedAt.Add(-120*time.Second).UnixMilli())
-        if orderID > 0 {
-          status = r.OrdersRepository.Status(trading.Symbol, orderID)
-          trading.SellOrderId = orderID
+        orderId := r.OrdersRepository.Lost(trading.Symbol, positionSide, takeSide, trading.SellQuantity, trading.UpdatedAt.Add(-120*time.Second).UnixMilli())
+        if orderId > 0 {
+          status = r.OrdersRepository.Status(trading.Symbol, orderId)
+          trading.SellOrderId = orderId
           result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
             "sell_order_id": trading.SellOrderId,
             "version":       gorm.Expr("version + ?", 1),
@@ -467,7 +467,7 @@ func (r *ScalpingRepository) Place(planId string) error {
   }
   defer mutex.Unlock()
 
-  orderID, err := r.OrdersRepository.Create(plan.Symbol, positionSide, side, buyPrice, buyQuantity)
+  orderId, err := r.OrdersRepository.Create(plan.Symbol, positionSide, side, buyPrice, buyQuantity)
   if err != nil {
     _, ok := err.(apiCommon.APIError)
     if ok {
@@ -484,9 +484,9 @@ func (r *ScalpingRepository) Place(planId string) error {
   trading := &models.Scalping{
     ID:           xid.New().String(),
     Symbol:       plan.Symbol,
-    ScalpingID:   scalping.ID,
-    PlanID:       plan.ID,
-    BuyOrderId:   orderID,
+    ScalpingId:   scalping.ID,
+    PlanId:       plan.ID,
+    BuyOrderId:   orderId,
     BuyPrice:     buyPrice,
     BuyQuantity:  buyQuantity,
     SellPrice:    sellPrice,
@@ -604,7 +604,7 @@ func (r *ScalpingRepository) Take(scalping *futuresModels.Scalping, price float6
     sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
   }
 
-  orderID, err := r.OrdersRepository.Create(trading.Symbol, positionSide, side, sellPrice, trading.SellQuantity)
+  orderId, err := r.OrdersRepository.Create(trading.Symbol, positionSide, side, sellPrice, trading.SellQuantity)
   if err != nil {
     _, ok := err.(apiCommon.APIError)
     if ok {
@@ -617,7 +617,7 @@ func (r *ScalpingRepository) Take(scalping *futuresModels.Scalping, price float6
   }
 
   r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
-    "sell_order_id": orderID,
+    "sell_order_id": orderId,
     "status":        2,
     "version":       gorm.Expr("version + ?", 1),
   })

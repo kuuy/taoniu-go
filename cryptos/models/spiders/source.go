@@ -7,7 +7,7 @@ import (
 
 type Source struct {
   ID        string            `gorm:"size:20;primaryKey"`
-  ParentID  string            `gorm:"size:20;primaryKey"`
+  ParentId  string            `gorm:"size:20;primaryKey"`
   Name      string            `gorm:"size:50"`
   Slug      string            `gorm:"size:50;uniqueIndex"`
   Url       string            `gorm:"size:155;not null;"`

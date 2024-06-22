@@ -1,5 +1,5 @@
 package tradings
 
 type ScalpingPlacePayload struct {
-  PlanID string `json:"plan_id"`
+  PlanId string `json:"plan_id"`
 }

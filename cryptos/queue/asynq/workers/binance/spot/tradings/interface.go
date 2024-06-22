@@ -9,7 +9,7 @@ type LaunchpadFlushPayload struct {
 }
 
 type ScalpingPlacePayload struct {
-  PlanID string `json:"plan_id"`
+  PlanId string `json:"plan_id"`
 }
 
 type ScalpingFlushPayload struct {
@@ -17,9 +17,9 @@ type ScalpingFlushPayload struct {
 }
 
 type TriggersPlacePayload struct {
-  ID string
+  Symbol string `json:"symbol"`
 }
 
 type TriggersFlushPayload struct {
-  ID string
+  ID string `json:"id"`
 }

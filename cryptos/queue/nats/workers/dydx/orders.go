@@ -27,7 +27,7 @@ func NewOrders(natsContext *common.NatsContext) *Orders {
 
 type OrdersUpdatePayload struct {
   Symbol  string `json:"symbol"`
-  OrderID string `json:"order_id"`
+  OrderId string `json:"order_id"`
   Status  string `json:"status"`
 }
 
@@ -44,5 +44,5 @@ func (h *Orders) Update(m *nats.Msg) {
     return
   }
 
-  h.Repository.Flush(payload.OrderID)
+  h.Repository.Flush(payload.OrderId)
 }

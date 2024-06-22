@@ -1,9 +1,14 @@
 package spot
 
 import (
+  "context"
+  "errors"
+  "fmt"
   "log"
+  "strconv"
   "time"
 
+  "github.com/go-redis/redis/v8"
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
 
@@ -13,6 +18,8 @@ import (
 
 type TriggersHandler struct {
   Db         *gorm.DB
+  Rdb        *redis.Client
+  Ctx        context.Context
   Repository *repositories.TriggersRepository
 }
 
@@ -23,7 +30,9 @@ func NewTriggersCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = TriggersHandler{
-        Db: common.NewDB(1),
+        Db:  common.NewDB(1),
+        Rdb: common.NewRedis(1),
+        Ctx: context.Background(),
       }
       h.Repository = &repositories.TriggersRepository{
         Db: h.Db,
@@ -35,7 +44,12 @@ func NewTriggersCommand() *cli.Command {
         Name:  "apply",
         Usage: "",
         Action: func(c *cli.Context) error {
-          if err := h.apply(); err != nil {
+          symbol := c.Args().Get(0)
+          if symbol == "" {
+            log.Fatal("symbol can not be empty")
+            return nil
+          }
+          if err := h.apply(symbol); err != nil {
             return cli.Exit(err.Error(), 1)
           }
           return nil
@@ -45,13 +59,41 @@ func NewTriggersCommand() *cli.Command {
   }
 }
 
-func (h *TriggersHandler) apply() error {
+func (h *TriggersHandler) apply(symbol string) error {
   log.Println("spot cross margin triggers apply...")
-  symbol := "LTCUSDT"
+
   capital := 3000.0
-  price := 77.01
+
+  data, _ := h.Rdb.HMGet(
+    h.Ctx,
+    fmt.Sprintf(
+      "binance:spot:indicators:1d:%s:%s",
+      symbol,
+      time.Now().Format("0102"),
+    ),
+    "take_profit_price",
+    "stop_loss_point",
+  ).Result()
+  if data[0] == nil || data[1] == nil {
+    data, _ = h.Rdb.HMGet(
+      h.Ctx,
+      fmt.Sprintf(
+        "binance:spot:indicators:1m:%s:%s",
+        symbol,
+        time.Now().Format("0102"),
+      ),
+      "take_profit_price",
+      "stop_loss_point",
+    ).Result()
+    if data[0] == nil || data[1] == nil {
+      return errors.New(fmt.Sprintf("[%s] indicators empty", symbol))
+    }
+  }
+  placePrice, _ := strconv.ParseFloat(data[0].(string), 64)
+  //stopPrice, _ := strconv.ParseFloat(data[1].(string), 64)
   expiredAt := time.Now().Add(time.Hour * 24 * 14)
-  err := h.Repository.Apply(symbol, capital, price, expiredAt)
+
+  err := h.Repository.Apply(symbol, capital, placePrice, expiredAt)
   if err != nil {
     return err
   }

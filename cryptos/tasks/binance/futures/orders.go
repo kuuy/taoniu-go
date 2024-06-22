@@ -62,7 +62,7 @@ func (t *OrdersTask) Open() error {
 func (t *OrdersTask) Flush() error {
   orders := t.Repository.Gets(map[string]interface{}{})
   for _, order := range orders {
-    task, err := t.Job.Flush(order.Symbol, order.OrderID)
+    task, err := t.Job.Flush(order.Symbol, order.OrderId)
     if err != nil {
       return err
     }

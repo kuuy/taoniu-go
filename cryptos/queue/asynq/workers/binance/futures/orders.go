@@ -36,7 +36,7 @@ type OrdersOpenPayload struct {
 
 type OrdersFlushPayload struct {
   Symbol  string `json:"symbol"`
-  OrderID int64  `json:"order_id"`
+  OrderId int64  `json:"order_id"`
 }
 
 type OrdersSyncPayload struct {
@@ -71,14 +71,14 @@ func (h *Orders) Flush(ctx context.Context, t *asynq.Task) error {
   mutex := common.NewMutex(
     h.AnsqContext.Rdb,
     h.AnsqContext.Ctx,
-    fmt.Sprintf(config.LOCKS_ORDERS_FLUSH, payload.Symbol, payload.OrderID),
+    fmt.Sprintf(config.LOCKS_ORDERS_FLUSH, payload.Symbol, payload.OrderId),
   )
   if !mutex.Lock(5 * time.Second) {
     return nil
   }
   defer mutex.Unlock()
 
-  h.Repository.Flush(payload.Symbol, payload.OrderID)
+  h.Repository.Flush(payload.Symbol, payload.OrderId)
 
   return nil
 }

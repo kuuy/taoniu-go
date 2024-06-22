@@ -45,12 +45,12 @@ func (r *OrdersRepository) Lost(symbol string, side string, price float64, times
   if entity.UpdatedAt.Unix() < timestamp {
     return 0
   }
-  return entity.OrderID
+  return entity.OrderId
 }
 
-func (r *OrdersRepository) Status(symbol string, orderID int64) string {
+func (r *OrdersRepository) Status(symbol string, orderId int64) string {
   var entity models.Order
-  result := r.Db.Select("status").Where("symbol=? AND order_id=?", symbol, orderID).Take(&entity)
+  result := r.Db.Select("status").Where("symbol=? AND order_id=?", symbol, orderId).Take(&entity)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     return ""
   }
@@ -207,7 +207,7 @@ func (r *OrdersRepository) Cancel(id string) error {
 
   params := url.Values{}
   params.Add("symbol", order.Symbol)
-  params.Add("orderId", fmt.Sprintf("%v", order.OrderID))
+  params.Add("orderId", fmt.Sprintf("%v", order.OrderId))
   if order.IsIsolated {
     params.Add("isIsolated", "TRUE")
   }
@@ -268,14 +268,14 @@ func (r *OrdersRepository) Cancel(id string) error {
   return nil
 }
 
-func (r *OrdersRepository) Flush(symbol string, orderID int64, isIsolated bool) error {
+func (r *OrdersRepository) Flush(symbol string, orderId int64, isIsolated bool) error {
   client := binance.NewClient(
     os.Getenv("BINANCE_SPOT_ACCOUNT_API_KEY"),
     os.Getenv("BINANCE_SPOT_ACCOUNT_API_SECRET"),
   )
   client.BaseURL = os.Getenv("BINANCE_SPOT_API_ENDPOINT")
 
-  order, err := client.NewGetMarginOrderService().Symbol(symbol).OrderID(orderID).IsIsolated(isIsolated).Do(r.Ctx)
+  order, err := client.NewGetMarginOrderService().Symbol(symbol).OrderID(orderId).IsIsolated(isIsolated).Do(r.Ctx)
   if err != nil {
     return err
   }
@@ -290,7 +290,7 @@ func (r *OrdersRepository) Flush(symbol string, orderID int64, isIsolated bool) 
   r.Rdb.SRem(
     r.Ctx,
     "binance:spot:margin:orders:flush",
-    fmt.Sprintf("%s,%d,%d", symbol, orderID, isolated),
+    fmt.Sprintf("%s,%d,%d", symbol, orderId, isolated),
   )
 
   return nil
@@ -342,14 +342,14 @@ func (r *OrdersRepository) Fix(time time.Time, limit int) error {
     limit,
   ).Find(&orders)
   for _, order := range orders {
-    r.Flush(order.Symbol, order.OrderID, order.IsIsolated)
+    r.Flush(order.Symbol, order.OrderId, order.IsIsolated)
   }
   return nil
 }
 
 func (r *OrdersRepository) Save(order *binance.Order) error {
   symbol := order.Symbol
-  orderID := order.OrderID
+  orderId := order.OrderID
 
   price, _ := strconv.ParseFloat(order.Price, 64)
   stopPrice, _ := strconv.ParseFloat(order.StopPrice, 64)
@@ -360,13 +360,13 @@ func (r *OrdersRepository) Save(order *binance.Order) error {
   result := r.Db.Where(
     "symbol=? AND order_id=?",
     symbol,
-    orderID,
+    orderId,
   ).Take(&entity)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     entity = models.Order{
       ID:               xid.New().String(),
       Symbol:           symbol,
-      OrderID:          orderID,
+      OrderId:          orderId,
       Type:             string(order.Type),
       Side:             string(order.Side),
       Price:            price,

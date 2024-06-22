@@ -64,14 +64,14 @@ func (h *WebsocketHandler) handler(message []byte) {
   if event == "executionReport" {
     order := j.MustMap()
     symbol := fmt.Sprint(order["s"])
-    orderID, _ := strconv.ParseInt(fmt.Sprint(order["i"]), 10, 64)
+    orderId, _ := strconv.ParseInt(fmt.Sprint(order["i"]), 10, 64)
     status := order["X"]
 
     if status != "NEW" || status != "PARTIALLY_FILLED" {
       h.Rdb.SAdd(
         h.Ctx,
         "binance:spot:margin:orders:flush",
-        fmt.Sprintf("%s,%d,1", symbol, orderID),
+        fmt.Sprintf("%s,%d,1", symbol, orderId),
       )
     }
   }

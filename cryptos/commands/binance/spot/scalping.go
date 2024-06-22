@@ -110,11 +110,11 @@ func (h *ScalpingHandler) Apply(symbol string) error {
       return errors.New(fmt.Sprintf("[%s] indicators empty", symbol))
     }
   }
-  takePrice, _ := strconv.ParseFloat(data[0].(string), 64)
+  placePrice, _ := strconv.ParseFloat(data[0].(string), 64)
   //stopPrice, _ := strconv.ParseFloat(data[1].(string), 64)
 
   expiredAt := time.Now().Add(time.Hour * 24 * 14)
-  err := h.Repository.Apply(symbol, capital, takePrice, expiredAt)
+  err := h.Repository.Apply(symbol, capital, placePrice, expiredAt)
   if err != nil {
     return err
   }
