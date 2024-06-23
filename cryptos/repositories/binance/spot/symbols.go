@@ -251,6 +251,9 @@ func (r *SymbolsRepository) Price(symbol string) (float64, error) {
     ),
     fields...,
   ).Result()
+  if len(data) != len(fields) {
+    return 0, errors.New(fmt.Sprintf("[%s] price not exists", symbol))
+  }
   for i := 0; i < len(fields); i++ {
     if data[i] == nil {
       return 0, errors.New(fmt.Sprintf("[%s] price not exists", symbol))
