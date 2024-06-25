@@ -7,9 +7,10 @@ import (
 
   "github.com/go-redis/redis/v8"
   "github.com/urfave/cli/v2"
-  "taoniu.local/cryptos/common"
 
+  "taoniu.local/cryptos/common"
   spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
+  marginRepositories "taoniu.local/cryptos/repositories/binance/spot/margin"
   repositories "taoniu.local/cryptos/repositories/binance/spot/margin/cross"
   isolatedRepositories "taoniu.local/cryptos/repositories/binance/spot/margin/isolated"
   spotTradingsRepositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
@@ -20,6 +21,8 @@ type AccountHandler struct {
   Rdb                        *redis.Client
   Ctx                        context.Context
   Repository                 *repositories.AccountRepository
+  SymbolsRepository          *marginRepositories.SymbolsRepository
+  SpotAccountRepository      *spotRepositories.AccountRepository
   SpotSymbolsRepository      *spotRepositories.SymbolsRepository
   SpotTradingsRepository     *spotRepositories.TradingsRepository
   IsolatedAccountRepository  *isolatedRepositories.AccountRepository
@@ -38,6 +41,13 @@ func NewAccountCommand() *cli.Command {
         Ctx: context.Background(),
       }
       h.Repository = &repositories.AccountRepository{
+        Rdb: h.Rdb,
+        Ctx: h.Ctx,
+      }
+      h.SymbolsRepository = &marginRepositories.SymbolsRepository{
+        Db: h.Db,
+      }
+      h.SpotAccountRepository = &spotRepositories.AccountRepository{
         Rdb: h.Rdb,
         Ctx: h.Ctx,
       }
@@ -122,72 +132,71 @@ func (h *AccountHandler) Balance() error {
   return nil
 }
 
-func (h *AccountHandler) Transfer() error {
-  log.Println("cross margin account transfer processing...")
-  //return h.Repository.Flush()
-  return nil
-}
-
 func (h *AccountHandler) Collect() error {
   log.Println("cross margin account collect processing...")
-  //return h.Repository.Flush()
+  var transferId int64
+  balance, err := h.SpotAccountRepository.Balance("USDT")
+  if err == nil {
+    if balance["free"] > 0.0 {
+      h.Repository.Transfer("USDT", 1, balance["free"])
+      transferId, err = h.Repository.Transfer("USDT", 1, balance["free"])
+      if err != nil {
+        log.Println("collect error", "USDT", err.Error())
+      } else {
+        log.Println("collect asset", "USDT", balance["free"], transferId)
+      }
+    }
+  }
+  for _, asset := range h.SymbolsRepository.Assets() {
+    balance, err = h.SpotAccountRepository.Balance(asset)
+    if err != nil {
+      continue
+    }
+    if balance["free"] <= 0.0 {
+      continue
+    }
+    transferId, err = h.Repository.Transfer(asset, 1, balance["free"])
+    if err != nil {
+      log.Println("collect error", asset, err.Error())
+    } else {
+      log.Println("collect asset", asset, balance["free"], transferId)
+    }
+  }
+  h.SpotAccountRepository.Flush()
+  h.Repository.Flush()
   return nil
 }
 
 func (h *AccountHandler) Liquidate() (err error) {
   log.Println("cross margin account liquidate processing...")
-  for _, symbol := range h.IsolatedTradingsRepository.Scan() {
-    entity, err := h.SpotSymbolsRepository.Get(symbol)
-    if err != nil {
-      continue
+  var transferId int64
+  balance, err := h.Repository.Balance("USDT")
+  if err == nil {
+    if balance["free"] > 0.0 {
+      transferId, err = h.Repository.Transfer("USDT", 2, balance["free"])
+      if err != nil {
+        log.Println("liquidate error", "USDT", err.Error())
+      } else {
+        log.Println("liquidate asset", "USDT", balance["free"], transferId)
+      }
     }
-    balance, err := h.Repository.Balance(entity.BaseAsset)
+  }
+  for _, asset := range h.SymbolsRepository.Assets() {
+    balance, err = h.Repository.Balance(asset)
     if err != nil {
-      log.Println("error", symbol, err.Error())
       continue
     }
     if balance["free"] <= 0.0 {
       continue
     }
-    var transferId int64
-    transferId, err = h.Repository.Transfer(entity.BaseAsset, 2, balance["free"])
+    transferId, err = h.Repository.Transfer(asset, 2, balance["free"])
     if err != nil {
-      log.Println("transfer error", symbol, err.Error())
-      continue
+      log.Println("liquidate error", asset, err.Error())
+    } else {
+      log.Println("liquidate asset", asset, balance["free"], transferId)
     }
-    log.Println("transfer to spot", symbol, transferId)
-    transferId, err = h.IsolatedAccountRepository.Transfer(entity.BaseAsset, symbol, "SPOT", "ISOLATED_MARGIN", balance["free"])
-    if err != nil {
-      log.Println("transfer error", symbol, err.Error())
-      continue
-    }
-    h.IsolatedAccountRepository.Transfer(entity.QuoteAsset, symbol, "SPOT", "ISOLATED_MARGIN", 0.5)
-    log.Println("transfer to margin isolated", symbol, transferId)
   }
-  err = h.Repository.Flush()
-  if err != nil {
-    return
-  }
-  for _, symbol := range h.SpotTradingsRepository.Scan() {
-    entity, err := h.SpotSymbolsRepository.Get(symbol)
-    if err != nil {
-      continue
-    }
-    balance, err := h.Repository.Balance(entity.BaseAsset)
-    if err != nil {
-      log.Println("error", symbol, err.Error())
-      continue
-    }
-    if balance["free"] <= 0.0 {
-      continue
-    }
-    transferId, err := h.Repository.Transfer(entity.BaseAsset, 2, balance["free"])
-    if err != nil {
-      log.Println("transfer error", symbol, err.Error())
-      continue
-    }
-    log.Println("transfer to spot", symbol, transferId)
-  }
-  //return h.Repository.Flush()
+  h.SpotAccountRepository.Flush()
+  h.Repository.Flush()
   return
 }

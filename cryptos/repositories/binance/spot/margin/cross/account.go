@@ -111,7 +111,7 @@ func (r *AccountRepository) Transfer(
   params.Add("type", strconv.Itoa(side))
   params.Add("recvWindow", "60000")
 
-  timestamp := time.Now().UnixMicro()
+  timestamp := time.Now().UnixMilli()
   payload := fmt.Sprintf("%s&timestamp=%v", params.Encode(), timestamp)
 
   block, _ := pem.Decode([]byte(os.Getenv("BINANCE_FUND_API_SECRET")))
@@ -161,5 +161,6 @@ func (r *AccountRepository) Transfer(
   if err != nil {
     return 0, err
   }
+
   return response.TranID, nil
 }

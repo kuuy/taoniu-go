@@ -144,60 +144,61 @@ func (r *TriggersRepository) Place(symbol string) error {
     return errors.New(fmt.Sprintf("trigger [%s] %s price small than  entry price", trigger.Symbol, positionSide))
   }
 
+  var capital float64
+  var quantity float64
+  var buyPrice float64
+  var buyQuantity float64
+  var buyAmount float64
+  var sellPrice float64
+
   ipart, _ := math.Modf(trigger.Capital)
   places := 1
   for ; ipart >= 10; ipart = ipart / 10 {
     places++
   }
-  capital, err := r.PositionRepository.Capital(trigger.Capital, entryAmount, places)
-  if err != nil {
-    return errors.New("reach the max invest capital")
-  }
-  ratio := r.PositionRepository.Ratio(capital, entryAmount)
-  buyAmount, _ := decimal.NewFromFloat(capital).Mul(decimal.NewFromFloat(ratio)).Float64()
-  if buyAmount < notional {
-    buyAmount = notional
-  }
 
-  var buyQuantity float64
-  if entryAmount == 0 {
-    buyAmount = notional
-    buyQuantity, _ = decimal.NewFromFloat(buyAmount).Div(decimal.NewFromFloat(trigger.Price)).Float64()
-  } else {
+  for i := 0; i < 2; i++ {
+    capital, err = r.PositionRepository.Capital(trigger.Capital, entryAmount, places)
+    if err != nil {
+      return errors.New("reach the max invest capital")
+    }
+    ratio := r.PositionRepository.Ratio(capital, entryAmount)
+    buyAmount, _ = decimal.NewFromFloat(capital).Mul(decimal.NewFromFloat(ratio)).Float64()
+    if buyAmount < notional {
+      buyAmount = notional
+    }
     buyQuantity = r.PositionRepository.BuyQuantity(trigger.Side, buyAmount, entryPrice, entryAmount)
-  }
-
-  buyPrice, _ := decimal.NewFromFloat(buyAmount).Div(decimal.NewFromFloat(buyQuantity)).Float64()
-  buyQuantity, _ = decimal.NewFromFloat(buyAmount).Div(decimal.NewFromFloat(buyPrice)).Float64()
-  buyQuantity, _ = decimal.NewFromFloat(buyQuantity).Div(decimal.NewFromFloat(stepSize)).Ceil().Mul(decimal.NewFromFloat(stepSize)).Float64()
-  entryQuantity, _ = decimal.NewFromFloat(entryQuantity).Add(decimal.NewFromFloat(buyQuantity)).Float64()
-
-  buyAmount, _ = decimal.NewFromFloat(buyPrice).Mul(decimal.NewFromFloat(buyQuantity)).Float64()
-  entryAmount, _ = decimal.NewFromFloat(entryAmount).Add(decimal.NewFromFloat(buyAmount)).Float64()
-
-  if entryPrice == 0 {
-    entryPrice = buyPrice
-  } else {
+    buyPrice, _ = decimal.NewFromFloat(buyAmount).Div(decimal.NewFromFloat(buyQuantity)).Float64()
+    if trigger.Side == 1 {
+      buyPrice, _ = decimal.NewFromFloat(buyPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+    } else {
+      buyPrice, _ = decimal.NewFromFloat(buyPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
+    }
+    buyQuantity, _ = decimal.NewFromFloat(buyQuantity).Div(decimal.NewFromFloat(stepSize)).Ceil().Mul(decimal.NewFromFloat(stepSize)).Float64()
+    buyAmount, _ = decimal.NewFromFloat(buyPrice).Mul(decimal.NewFromFloat(buyQuantity)).Float64()
+    entryQuantity, _ = decimal.NewFromFloat(entryQuantity).Add(decimal.NewFromFloat(buyQuantity)).Float64()
+    entryAmount, _ = decimal.NewFromFloat(entryAmount).Add(decimal.NewFromFloat(buyAmount)).Float64()
     entryPrice, _ = decimal.NewFromFloat(entryAmount).Div(decimal.NewFromFloat(entryQuantity)).Float64()
+    if i == 0 {
+      quantity = buyQuantity
+    }
   }
 
-  sellPrice := r.PositionRepository.SellPrice(trigger.Side, entryPrice, entryAmount)
+  buyQuantity = quantity
+  if trigger.Side == 1 && price < buyPrice {
+    buyPrice = price
+  } else if trigger.Side == 2 && price > buyPrice {
+    buyPrice = price
+  }
+  buyAmount, _ = decimal.NewFromFloat(buyPrice).Mul(decimal.NewFromFloat(buyQuantity)).Float64()
+  entryQuantity, _ = decimal.NewFromFloat(position.EntryQuantity).Add(decimal.NewFromFloat(buyQuantity)).Float64()
+  entryAmount, _ = decimal.NewFromFloat(position.EntryPrice).Mul(decimal.NewFromFloat(position.EntryQuantity)).Add(decimal.NewFromFloat(buyAmount)).Float64()
+  entryPrice, _ = decimal.NewFromFloat(entryAmount).Div(decimal.NewFromFloat(entryQuantity)).Float64()
+  sellPrice = r.PositionRepository.SellPrice(trigger.Side, entryPrice, entryAmount)
   if trigger.Side == 1 {
     sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
   } else {
     sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
-  }
-
-  if trigger.Side == 1 {
-    if price < buyPrice {
-      buyPrice = price
-    }
-    buyPrice, _ = decimal.NewFromFloat(buyPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
-  } else {
-    if price > buyPrice {
-      buyPrice = price
-    }
-    buyPrice, _ = decimal.NewFromFloat(buyPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
   }
 
   if trigger.Side == 1 && price > buyPrice {
