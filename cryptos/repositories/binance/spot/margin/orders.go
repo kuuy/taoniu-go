@@ -122,13 +122,7 @@ func (r *OrdersRepository) Create(
   params.Add("newOrderRespType", "RESULT")
   params.Add("recvWindow", "60000")
 
-  value, err := r.Rdb.HGet(r.Ctx, "binance:server", "timediff").Result()
-  if err != nil {
-    return
-  }
-  timediff, _ := strconv.ParseInt(value, 10, 64)
-
-  timestamp := time.Now().UnixMilli() - timediff
+  timestamp := time.Now().UnixMilli()
   payload := fmt.Sprintf("%s&timestamp=%v", params.Encode(), timestamp)
 
   block, _ := pem.Decode([]byte(os.Getenv("BINANCE_SPOT_ACCOUNT_API_SECRET")))

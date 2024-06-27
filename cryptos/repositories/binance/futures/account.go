@@ -230,7 +230,7 @@ func (r *AccountRepository) Flush() error {
   return nil
 }
 
-func (r *AccountRepository) Request() (*AccountInfo, error) {
+func (r *AccountRepository) Request() (result *AccountInfo, err error) {
   tr := &http.Transport{
     DisableKeepAlives: true,
   }
@@ -246,13 +246,7 @@ func (r *AccountRepository) Request() (*AccountInfo, error) {
   params.Add("timeInForce", "GTC")
   params.Add("recvWindow", "60000")
 
-  value, err := r.Rdb.HGet(r.Ctx, "binance:server", "timediff").Result()
-  if err != nil {
-    return nil, err
-  }
-  timediff, _ := strconv.ParseInt(value, 10, 64)
-
-  timestamp := time.Now().UnixMilli() - timediff
+  timestamp := time.Now().UnixMilli()
   params.Add("timestamp", fmt.Sprintf("%v", timestamp))
 
   mac := hmac.New(sha256.New, []byte(os.Getenv("BINANCE_FUTURES_ACCOUNT_API_SECRET")))
@@ -286,7 +280,6 @@ func (r *AccountRepository) Request() (*AccountInfo, error) {
     )
   }
 
-  var result *AccountInfo
   json.NewDecoder(resp.Body).Decode(&result)
-  return result, nil
+  return
 }

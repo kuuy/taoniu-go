@@ -127,7 +127,7 @@ func (r *OrdersRepository) Status(symbol string, orderId int64) string {
   return entity.Status
 }
 
-func (r *OrdersRepository) Open(symbol string) error {
+func (r *OrdersRepository) Open(symbol string) (err error) {
   tr := &http.Transport{
     DisableKeepAlives: true,
   }
@@ -143,19 +143,13 @@ func (r *OrdersRepository) Open(symbol string) error {
   params.Add("symbol", symbol)
   params.Add("recvWindow", "60000")
 
-  value, err := r.Rdb.HGet(r.Ctx, "binance:server", "timediff").Result()
-  if err != nil {
-    return err
-  }
-  timediff, _ := strconv.ParseInt(value, 10, 64)
-
-  timestamp := time.Now().UnixMilli() - timediff
+  timestamp := time.Now().UnixMilli()
   params.Add("timestamp", fmt.Sprintf("%v", timestamp))
 
   mac := hmac.New(sha256.New, []byte(os.Getenv("BINANCE_SPOT_ACCOUNT_API_SECRET")))
   _, err = mac.Write([]byte(params.Encode()))
   if err != nil {
-    return err
+    return
   }
   signature := mac.Sum(nil)
   params.Add("signature", fmt.Sprintf("%x", signature))
@@ -167,18 +161,19 @@ func (r *OrdersRepository) Open(symbol string) error {
   req.Header.Set("X-MBX-APIKEY", os.Getenv("BINANCE_SPOT_ACCOUNT_API_KEY"))
   resp, err := httpClient.Do(req)
   if err != nil {
-    return err
+    return
   }
   defer resp.Body.Close()
 
   if resp.StatusCode != http.StatusOK {
-    return errors.New(
+    err = errors.New(
       fmt.Sprintf(
         "request error: status[%s] code[%d]",
         resp.Status,
         resp.StatusCode,
       ),
     )
+    return
   }
 
   var result []*binance.Order
@@ -186,10 +181,10 @@ func (r *OrdersRepository) Open(symbol string) error {
   for _, order := range result {
     r.Save(order)
   }
-  return nil
+  return
 }
 
-func (r *OrdersRepository) Sync(symbol string, startTime int64, limit int) error {
+func (r *OrdersRepository) Sync(symbol string, startTime int64, limit int) (err error) {
   tr := &http.Transport{
     DisableKeepAlives: true,
   }
@@ -209,19 +204,13 @@ func (r *OrdersRepository) Sync(symbol string, startTime int64, limit int) error
   params.Add("limit", fmt.Sprintf("%v", limit))
   params.Add("recvWindow", "60000")
 
-  value, err := r.Rdb.HGet(r.Ctx, "binance:server", "timediff").Result()
-  if err != nil {
-    return err
-  }
-  timediff, _ := strconv.ParseInt(value, 10, 64)
-
-  timestamp := time.Now().UnixMilli() - timediff
+  timestamp := time.Now().UnixMilli()
   params.Add("timestamp", fmt.Sprintf("%v", timestamp))
 
   mac := hmac.New(sha256.New, []byte(os.Getenv("BINANCE_SPOT_ACCOUNT_API_SECRET")))
   _, err = mac.Write([]byte(params.Encode()))
   if err != nil {
-    return err
+    return
   }
   signature := mac.Sum(nil)
   params.Add("signature", fmt.Sprintf("%x", signature))
@@ -233,18 +222,19 @@ func (r *OrdersRepository) Sync(symbol string, startTime int64, limit int) error
   req.Header.Set("X-MBX-APIKEY", os.Getenv("BINANCE_SPOT_ACCOUNT_API_KEY"))
   resp, err := httpClient.Do(req)
   if err != nil {
-    return err
+    return
   }
   defer resp.Body.Close()
 
   if resp.StatusCode != http.StatusOK {
-    return errors.New(
+    err = errors.New(
       fmt.Sprintf(
         "request error: status[%s] code[%d]",
         resp.Status,
         resp.StatusCode,
       ),
     )
+    return
   }
 
   var result []*binance.Order
@@ -253,7 +243,7 @@ func (r *OrdersRepository) Sync(symbol string, startTime int64, limit int) error
     r.Save(order)
   }
 
-  return nil
+  return
 }
 
 func (r *OrdersRepository) Fix(time time.Time, limit int) error {
@@ -306,13 +296,7 @@ func (r *OrdersRepository) Create(
   params.Add("newOrderRespType", "RESULT")
   params.Add("recvWindow", "60000")
 
-  value, err := r.Rdb.HGet(r.Ctx, "binance:server", "timediff").Result()
-  if err != nil {
-    return
-  }
-  timediff, _ := strconv.ParseInt(value, 10, 64)
-
-  timestamp := time.Now().UnixMilli() - timediff
+  timestamp := time.Now().UnixMilli()
   payload := fmt.Sprintf("%s&timestamp=%v", params.Encode(), timestamp)
 
   block, _ := pem.Decode([]byte(os.Getenv("BINANCE_SPOT_TRADE_API_SECRET")))
@@ -370,7 +354,7 @@ func (r *OrdersRepository) Create(
   return response.OrderID, nil
 }
 
-func (r *OrdersRepository) Cancel(symbol string, orderId int64) error {
+func (r *OrdersRepository) Cancel(symbol string, orderId int64) (err error) {
   tr := &http.Transport{
     DisableKeepAlives: true,
   }
@@ -387,13 +371,7 @@ func (r *OrdersRepository) Cancel(symbol string, orderId int64) error {
   params.Add("orderId", fmt.Sprintf("%v", orderId))
   params.Add("recvWindow", "60000")
 
-  value, err := r.Rdb.HGet(r.Ctx, "binance:server", "timediff").Result()
-  if err != nil {
-    return err
-  }
-  timediff, _ := strconv.ParseInt(value, 10, 64)
-
-  timestamp := time.Now().UnixMilli() - timediff
+  timestamp := time.Now().UnixMilli()
   payload := fmt.Sprintf("%s&timestamp=%v", params.Encode(), timestamp)
 
   data := url.Values{}
@@ -405,7 +383,7 @@ func (r *OrdersRepository) Cancel(symbol string, orderId int64) error {
   }
   privateKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
   if err != nil {
-    return err
+    return
   }
   hashed := sha256.Sum256([]byte(payload))
   signature, _ := rsa.SignPKCS1v15(rand.Reader, privateKey.(*rsa.PrivateKey), crypto.SHA256, hashed[:])
@@ -419,7 +397,7 @@ func (r *OrdersRepository) Cancel(symbol string, orderId int64) error {
   req.Header.Set("X-MBX-APIKEY", os.Getenv("BINANCE_SPOT_TRADE_API_KEY"))
   resp, err := httpClient.Do(req)
   if err != nil {
-    return err
+    return
   }
   defer resp.Body.Close()
 
@@ -432,24 +410,25 @@ func (r *OrdersRepository) Cancel(symbol string, orderId int64) error {
   }
 
   if resp.StatusCode != http.StatusOK {
-    return errors.New(
+    err = errors.New(
       fmt.Sprintf(
         "request error: status[%s] code[%d]",
         resp.Status,
         resp.StatusCode,
       ),
     )
+    return
   }
 
   var response binance.CancelOrderResponse
   err = json.NewDecoder(resp.Body).Decode(&response)
   if err != nil {
-    return err
+    return
   }
 
   r.Flush(symbol, orderId)
 
-  return nil
+  return
 }
 
 func (r *OrdersRepository) Flush(symbol string, orderId int64) error {

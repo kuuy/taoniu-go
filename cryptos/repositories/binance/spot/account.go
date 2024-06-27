@@ -2,20 +2,37 @@ package spot
 
 import (
   "context"
+  "crypto/hmac"
+  "crypto/sha256"
   "encoding/json"
   "errors"
   "fmt"
+  "io"
+  "log"
+  "net"
+  "net/http"
+  "net/url"
   "os"
   "slices"
   "strconv"
+  "time"
 
-  "github.com/adshao/go-binance/v2"
   "github.com/go-redis/redis/v8"
   "github.com/nats-io/nats.go"
   "gorm.io/gorm"
 
   config "taoniu.local/cryptos/config/binance/spot"
 )
+
+type Balance struct {
+  Asset  string `json:"asset"`
+  Free   string `json:"free"`
+  Locked string `json:"locked"`
+}
+
+type AccountInfo struct {
+  Balances []Balance `json:"balances"`
+}
 
 type AccountRepository struct {
   Db   *gorm.DB
@@ -25,13 +42,7 @@ type AccountRepository struct {
 }
 
 func (r *AccountRepository) Flush() error {
-  client := binance.NewClient(
-    os.Getenv("BINANCE_SPOT_ACCOUNT_API_KEY"),
-    os.Getenv("BINANCE_SPOT_ACCOUNT_API_SECRET"),
-  )
-  client.BaseURL = os.Getenv("BINANCE_SPOT_API_ENDPOINT")
-
-  account, err := client.NewGetAccountService().Do(r.Ctx)
+  account, err := r.Request()
   if err != nil {
     return err
   }
@@ -103,4 +114,57 @@ func (r *AccountRepository) Balance(asset string) (map[string]float64, error) {
     balance[field], _ = strconv.ParseFloat(data[i].(string), 64)
   }
   return balance, nil
+}
+
+func (r *AccountRepository) Request() (result *AccountInfo, err error) {
+  tr := &http.Transport{
+    DisableKeepAlives: true,
+  }
+  session := &net.Dialer{}
+  tr.DialContext = session.DialContext
+
+  httpClient := &http.Client{
+    Transport: tr,
+    Timeout:   time.Duration(3) * time.Second,
+  }
+
+  params := url.Values{}
+  params.Add("recvWindow", "60000")
+
+  timestamp := time.Now().UnixMilli()
+  params.Add("timestamp", fmt.Sprintf("%v", timestamp))
+
+  mac := hmac.New(sha256.New, []byte(os.Getenv("BINANCE_SPOT_ACCOUNT_API_SECRET")))
+  _, err = mac.Write([]byte(params.Encode()))
+  if err != nil {
+    return nil, err
+  }
+  signature := mac.Sum(nil)
+  params.Add("signature", fmt.Sprintf("%x", signature))
+
+  url := fmt.Sprintf("%s/api/v3/account", os.Getenv("BINANCE_SPOT_API_ENDPOINT"))
+  req, _ := http.NewRequest("GET", url, nil)
+  req.URL.RawQuery = params.Encode()
+  req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+  req.Header.Set("X-MBX-APIKEY", os.Getenv("BINANCE_SPOT_ACCOUNT_API_KEY"))
+  resp, err := httpClient.Do(req)
+  if err != nil {
+    return nil, err
+  }
+  defer resp.Body.Close()
+
+  if resp.StatusCode != http.StatusOK {
+    body, _ := io.ReadAll(resp.Body)
+    log.Println("response", string(body))
+    return nil, errors.New(
+      fmt.Sprintf(
+        "request error: status[%s] code[%d]",
+        resp.Status,
+        resp.StatusCode,
+      ),
+    )
+  }
+
+  json.NewDecoder(resp.Body).Decode(&result)
+  return
 }
