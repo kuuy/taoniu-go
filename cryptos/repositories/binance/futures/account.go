@@ -63,7 +63,6 @@ func (r *AccountRepository) Balance(asset string) (map[string]float64, error) {
   fields := []string{
     "balance",
     "free",
-    "lock",
     "unrealized_profit",
     "margin",
     "initial_margin",
