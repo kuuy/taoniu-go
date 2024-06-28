@@ -27,9 +27,9 @@ func NewTriggersTask(ansqContext *common.AnsqClientContext) *TriggersTask {
 }
 
 func (t *TriggersTask) Place() error {
-  symbols := t.Repository.Scan()
-  for _, symbol := range symbols {
-    task, err := t.Job.Place(symbol)
+  ids := t.Repository.TriggerIds()
+  for _, id := range ids {
+    task, err := t.Job.Place(id)
     if err != nil {
       return err
     }

@@ -83,17 +83,17 @@ func NewTriggersCommand() *cli.Command {
 
 func (h *TriggersHandler) Place() error {
   log.Println("futures tradings triggers place...")
-  symbols := h.Repository.Scan()
-  for _, symbol := range symbols {
+  ids := h.Repository.TriggerIds()
+  for _, id := range ids {
     mutex := common.NewMutex(
       h.Rdb,
       h.Ctx,
-      fmt.Sprintf(config.LOCKS_TRADINGS_TRIGGERS_PLACE, symbol),
+      fmt.Sprintf(config.LOCKS_TRADINGS_TRIGGERS_PLACE, id),
     )
     if !mutex.Lock(30 * time.Second) {
       return nil
     }
-    err := h.Repository.Place(symbol)
+    err := h.Repository.Place(id)
     if err != nil {
       log.Println("error", err)
     }
