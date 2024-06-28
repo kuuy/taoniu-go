@@ -17,7 +17,7 @@ type ScalpingFlushPayload struct {
 }
 
 type TriggersPlacePayload struct {
-  Symbol string `json:"symbol"`
+  ID string `json:"id"`
 }
 
 type TriggersFlushPayload struct {

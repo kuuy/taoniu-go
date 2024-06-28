@@ -8,8 +8,8 @@ import (
 
 type Triggers struct{}
 
-func (h *Triggers) Place(symbol string) (*asynq.Task, error) {
-  payload, err := json.Marshal(TriggersPlacePayload{symbol})
+func (h *Triggers) Place(id string) (*asynq.Task, error) {
+  payload, err := json.Marshal(TriggersPlacePayload{id})
   if err != nil {
     return nil, err
   }

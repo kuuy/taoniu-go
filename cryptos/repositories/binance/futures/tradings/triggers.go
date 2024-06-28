@@ -92,11 +92,12 @@ func (r *TriggersRepository) Listings(conditions map[string]interface{}, current
   return tradings
 }
 
-func (r *TriggersRepository) Place(id string) error {
+func (r *TriggersRepository) Place(id string) (err error) {
   var trigger *futuresModels.Trigger
   result := r.Db.First(&trigger, "id=?", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    return errors.New("trigger not found")
+    err = errors.New("trigger not found")
+    return
   }
 
   var positionSide string
@@ -111,7 +112,7 @@ func (r *TriggersRepository) Place(id string) error {
 
   position, err := r.PositionRepository.Get(trigger.Symbol, trigger.Side)
   if err != nil {
-    return err
+    return
   }
 
   if position.EntryQuantity == 0 {
@@ -120,12 +121,12 @@ func (r *TriggersRepository) Place(id string) error {
 
   entity, err := r.SymbolsRepository.Get(trigger.Symbol)
   if err != nil {
-    return err
+    return
   }
 
   tickSize, stepSize, notional, err := r.SymbolsRepository.Filters(entity.Filters)
   if err != nil {
-    return nil
+    return
   }
 
   entryPrice := position.EntryPrice
@@ -134,14 +135,16 @@ func (r *TriggersRepository) Place(id string) error {
 
   price, err := r.SymbolsRepository.Price(trigger.Symbol)
   if err != nil {
-    return err
+    return
   }
 
   if trigger.Side == 1 && price > entryPrice {
-    return errors.New(fmt.Sprintf("trigger [%s] %s price big than entry price", trigger.Symbol, positionSide))
+    err = errors.New(fmt.Sprintf("trigger [%s] %s price big than entry price", trigger.Symbol, positionSide))
+    return
   }
   if trigger.Side == 2 && price < entryPrice {
-    return errors.New(fmt.Sprintf("trigger [%s] %s price small than  entry price", trigger.Symbol, positionSide))
+    err = errors.New(fmt.Sprintf("trigger [%s] %s price small than  entry price", trigger.Symbol, positionSide))
+    return
   }
 
   var capital float64
@@ -202,24 +205,28 @@ func (r *TriggersRepository) Place(id string) error {
   }
 
   if trigger.Side == 1 && price > buyPrice {
-    return errors.New(fmt.Sprintf("trigger [%s] %s price must reach %v", trigger.Symbol, positionSide, buyPrice))
+    err = errors.New(fmt.Sprintf("trigger [%s] %s price must reach %v", trigger.Symbol, positionSide, buyPrice))
+    return
   }
 
   if trigger.Side == 2 && price < buyPrice {
-    return errors.New(fmt.Sprintf("trigger [%s] %s price must reach %v", trigger.Symbol, positionSide, buyPrice))
+    err = errors.New(fmt.Sprintf("trigger [%s] %s price must reach %v", trigger.Symbol, positionSide, buyPrice))
+    return
   }
 
   if !r.CanBuy(trigger, buyPrice) {
-    return errors.New(fmt.Sprintf("trigger [%s] can not buy now", trigger.Symbol))
+    err = errors.New(fmt.Sprintf("trigger [%s] can not buy now", trigger.Symbol))
+    return
   }
 
   balance, err := r.AccountRepository.Balance(entity.QuoteAsset)
   if err != nil {
-    return err
+    return
   }
 
   if balance["free"] < math.Max(buyAmount, config.TRIGGERS_MIN_BINANCE) {
-    return errors.New(fmt.Sprintf("[%s] free not enough", entity.Symbol))
+    err = errors.New(fmt.Sprintf("[%s] free not enough", entity.Symbol))
+    return
   }
 
   mutex := common.NewMutex(
@@ -236,7 +243,7 @@ func (r *TriggersRepository) Place(id string) error {
   if err != nil {
     _, ok := err.(apiCommon.APIError)
     if ok {
-      return err
+      return
     }
     r.Db.Model(&trigger).Where("version", trigger.Version).Updates(map[string]interface{}{
       "remark":  err.Error(),
@@ -257,14 +264,15 @@ func (r *TriggersRepository) Place(id string) error {
   }
   r.Db.Create(&trading)
 
-  return nil
+  return
 }
 
-func (r *TriggersRepository) Flush(id string) error {
+func (r *TriggersRepository) Flush(id string) (err error) {
   var trigger *futuresModels.Trigger
   result := r.Db.First(&trigger, "id=?", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    return errors.New("trigger not found")
+    err = errors.New("trigger not found")
+    return
   }
 
   price, err := r.SymbolsRepository.Price(trigger.Symbol)
@@ -407,7 +415,7 @@ func (r *TriggersRepository) Flush(id string) error {
     }
   }
 
-  return nil
+  return
 }
 
 func (r *TriggersRepository) Take(trigger *futuresModels.Trigger, price float64) error {

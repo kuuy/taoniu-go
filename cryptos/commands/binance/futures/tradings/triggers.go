@@ -83,7 +83,7 @@ func NewTriggersCommand() *cli.Command {
 
 func (h *TriggersHandler) Place() error {
   log.Println("futures tradings triggers place...")
-  ids := h.Repository.TriggerIds()
+  ids := h.Repository.Ids()
   for _, id := range ids {
     mutex := common.NewMutex(
       h.Rdb,

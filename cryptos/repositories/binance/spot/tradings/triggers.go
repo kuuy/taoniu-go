@@ -92,9 +92,9 @@ func (r *TriggersRepository) Listings(conditions map[string]interface{}, current
   return tradings
 }
 
-func (r *TriggersRepository) Place(symbol string) (err error) {
+func (r *TriggersRepository) Place(id string) (err error) {
   var trigger *spotModels.Trigger
-  result := r.Db.Take(&trigger, "symbol", symbol)
+  result := r.Db.First(&trigger, "id=?", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     err = errors.New("trigger not found")
     return
