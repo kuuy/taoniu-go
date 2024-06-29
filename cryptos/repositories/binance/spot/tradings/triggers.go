@@ -400,7 +400,7 @@ func (r *TriggersRepository) Flush(id string) (err error) {
   return
 }
 
-func (r *TriggersRepository) Take(trigger *spotModels.Trigger, price float64) error {
+func (r *TriggersRepository) Take(trigger *spotModels.Trigger, price float64) (err error) {
   var side = "SELL"
   var entryPrice float64
   var sellPrice float64
@@ -419,7 +419,8 @@ func (r *TriggersRepository) Take(trigger *spotModels.Trigger, price float64) er
     if position.Timestamp > trigger.Timestamp+9e8 {
       r.Close(trigger)
     }
-    return errors.New(fmt.Sprintf("[%s] empty position", trigger.Symbol))
+    err = errors.New(fmt.Sprintf("[%s] empty position", trigger.Symbol))
+    return
   }
 
   entryPrice = position.EntryPrice
@@ -429,12 +430,12 @@ func (r *TriggersRepository) Take(trigger *spotModels.Trigger, price float64) er
 
   entity, err := r.SymbolsRepository.Get(trigger.Symbol)
   if err != nil {
-    return err
+    return
   }
 
   tickSize, _, _, err := r.SymbolsRepository.Filters(entity.Filters)
   if err != nil {
-    return nil
+    return
   }
 
   result := r.Db.Where("trigger_id=? AND status=?", trigger.ID, 1).Order("sell_price asc").Take(&trading)
@@ -465,11 +466,21 @@ func (r *TriggersRepository) Take(trigger *spotModels.Trigger, price float64) er
   }
   sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
 
+  balance, err := r.AccountRepository.Balance(entity.BaseAsset)
+  if err != nil {
+    return
+  }
+
+  if balance["free"] < trading.SellQuantity {
+    err = errors.New(fmt.Sprintf("[%s] free not enough", entity.BaseAsset))
+    return
+  }
+
   orderId, err := r.OrdersRepository.Create(trading.Symbol, side, sellPrice, trading.SellQuantity)
   if err != nil {
     _, ok := err.(apiCommon.APIError)
     if ok {
-      return err
+      return
     }
     r.Db.Model(&trigger).Where("version", trigger.Version).Updates(map[string]interface{}{
       "remark":  err.Error(),
@@ -483,7 +494,7 @@ func (r *TriggersRepository) Take(trigger *spotModels.Trigger, price float64) er
     "version":       gorm.Expr("version + ?", 1),
   })
 
-  return nil
+  return
 }
 
 func (r *TriggersRepository) Close(trigger *spotModels.Trigger) {

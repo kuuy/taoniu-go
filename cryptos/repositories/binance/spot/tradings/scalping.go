@@ -520,6 +520,16 @@ func (r *ScalpingRepository) Take(scalping *spotModels.Scalping, price float64) 
   }
   sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
 
+  balance, err := r.AccountRepository.Balance(entity.BaseAsset)
+  if err != nil {
+    return
+  }
+
+  if balance["free"] < trading.SellQuantity {
+    err = errors.New(fmt.Sprintf("[%s] free not enough", entity.BaseAsset))
+    return
+  }
+
   orderId, err := r.OrdersRepository.Create(trading.Symbol, side, sellPrice, trading.SellQuantity)
   if err != nil {
     _, ok := err.(apiCommon.APIError)
