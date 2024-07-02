@@ -100,6 +100,11 @@ func (r *TriggersRepository) Place(id string) (err error) {
     return
   }
 
+  if trigger.ExpiredAt.Unix() < time.Now().Unix() {
+    r.Db.Model(&trigger).Update("status", 4)
+    return errors.New("trigger expired")
+  }
+
   var positionSide string
   var side string
   if trigger.Side == 1 {

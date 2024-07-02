@@ -37,8 +37,7 @@ func (r *TriggersRepository) Place(symbol string) error {
   }
 
   if trigger.ExpiredAt.Unix() < time.Now().Unix() {
-    trigger.Status = 4
-    r.Db.Model(&crossModels.Trigger{ID: trigger.ID}).Updates(trigger)
+    r.Db.Model(&trigger).Update("status", 4)
     return errors.New("trigger expired")
   }
 
