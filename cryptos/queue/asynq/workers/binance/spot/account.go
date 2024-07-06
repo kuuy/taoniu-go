@@ -2,12 +2,12 @@ package spot
 
 import (
   "context"
-  config "taoniu.local/cryptos/config/binance/spot"
   "time"
 
   "github.com/hibiken/asynq"
-  "taoniu.local/cryptos/common"
 
+  "taoniu.local/cryptos/common"
+  config "taoniu.local/cryptos/config/binance/spot"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 

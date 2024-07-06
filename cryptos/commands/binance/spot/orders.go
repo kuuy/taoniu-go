@@ -140,11 +140,14 @@ func (h *OrdersHandler) Open(symbol string) error {
 
 func (h *OrdersHandler) Flush() error {
   log.Println("margin orders flush...")
-  orders := h.Repository.Gets(map[string]interface{}{})
-  for _, order := range orders {
-    log.Println("order flush", order.Symbol, order.OrderId)
-    h.Repository.Flush(order.Symbol, order.OrderId)
-  }
+  symbol := "DUSKUSDT"
+  orderId := int64(779479093)
+  h.Repository.Flush(symbol, orderId)
+  //orders := h.Repository.Gets(map[string]interface{}{})
+  //for _, order := range orders {
+  //  log.Println("order flush", order.Symbol, order.OrderId)
+  //  h.Repository.Flush(order.Symbol, order.OrderId)
+  //}
   return nil
 }
 

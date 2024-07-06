@@ -17,6 +17,7 @@ func NewBinance(ansqContext *common.AnsqServerContext) *Binance {
 
 func (h *Binance) Register() error {
   binance.NewSpot(h.AnsqContext).Register()
+  binance.NewMargin(h.AnsqContext).Register()
   binance.NewFutures(h.AnsqContext).Register()
   return nil
 }

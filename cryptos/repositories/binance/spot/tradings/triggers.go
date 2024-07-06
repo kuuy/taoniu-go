@@ -221,8 +221,7 @@ func (r *TriggersRepository) Place(id string) (err error) {
 
   orderId, err := r.OrdersRepository.Create(trigger.Symbol, side, buyPrice, buyQuantity)
   if err != nil {
-    _, ok := err.(apiCommon.APIError)
-    if ok {
+    if _, ok := err.(apiCommon.APIError); ok {
       return
     }
     r.Db.Model(&trigger).Where("version", trigger.Version).Updates(map[string]interface{}{
@@ -483,8 +482,7 @@ func (r *TriggersRepository) Take(trigger *spotModels.Trigger, price float64) (e
 
   orderId, err := r.OrdersRepository.Create(trading.Symbol, side, sellPrice, trading.SellQuantity)
   if err != nil {
-    _, ok := err.(apiCommon.APIError)
-    if ok {
+    if _, ok := err.(apiCommon.APIError); ok {
       return
     }
     r.Db.Model(&trigger).Where("version", trigger.Version).Updates(map[string]interface{}{

@@ -106,7 +106,7 @@ func (h *SpotHandler) run() error {
     binance.Spot().Plans().Clean()
   })
   c.AddFunc("@hourly", func() {
-    binance.Spot().Cron().Hourly()
+    binance.Spot().Symbols().Flush()
     //binance.Savings().Products().Flush()
   })
   c.AddFunc("0 8,20 * * * *", func() {

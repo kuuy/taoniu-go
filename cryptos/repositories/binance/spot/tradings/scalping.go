@@ -267,8 +267,7 @@ func (r *ScalpingRepository) Place(planId string) (err error) {
 
   orderId, err := r.OrdersRepository.Create(plan.Symbol, side, buyPrice, buyQuantity)
   if err != nil {
-    _, ok := err.(apiCommon.APIError)
-    if ok {
+    if _, ok := err.(apiCommon.APIError); ok {
       return
     }
     r.Db.Model(&scalping).Where("version", scalping.Version).Updates(map[string]interface{}{

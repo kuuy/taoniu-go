@@ -7,8 +7,6 @@ import (
   "encoding/json"
   "errors"
   "fmt"
-  "io"
-  "log"
   "net"
   "net/http"
   "net/url"
@@ -17,6 +15,7 @@ import (
   "strconv"
   "time"
 
+  apiCommon "github.com/adshao/go-binance/v2/common"
   "github.com/go-redis/redis/v8"
   "github.com/nats-io/nats.go"
   "gorm.io/gorm"
@@ -66,21 +65,6 @@ func (r *AccountRepository) Flush() error {
       },
     )
     currencies = append(currencies, coin.Asset)
-  }
-
-  for _, currency := range oldCurrencies {
-    if !slices.Contains(currencies, currency) {
-      r.Rdb.SRem(r.Ctx, "binance:spot:currencies", currency)
-      r.Rdb.Del(r.Ctx, fmt.Sprintf("binance:spot:balance:%s", currency))
-    }
-  }
-
-  for _, coin := range account.Balances {
-    free, _ := strconv.ParseFloat(coin.Free, 64)
-    locked, _ := strconv.ParseFloat(coin.Locked, 64)
-    if free <= 0.0 {
-      continue
-    }
     message, _ := json.Marshal(map[string]interface{}{
       "asset":  coin.Asset,
       "free":   free,
@@ -88,6 +72,13 @@ func (r *AccountRepository) Flush() error {
     })
     r.Nats.Publish(config.NATS_ACCOUNT_UPDATE, message)
     r.Nats.Flush()
+  }
+
+  for _, currency := range oldCurrencies {
+    if !slices.Contains(currencies, currency) {
+      r.Rdb.SRem(r.Ctx, "binance:spot:currencies", currency)
+      r.Rdb.Del(r.Ctx, fmt.Sprintf("binance:spot:balance:%s", currency))
+    }
   }
 
   return nil
@@ -153,16 +144,24 @@ func (r *AccountRepository) Request() (result *AccountInfo, err error) {
   }
   defer resp.Body.Close()
 
+  if resp.StatusCode >= http.StatusBadRequest {
+    var apiErr *apiCommon.APIError
+    err = json.NewDecoder(resp.Body).Decode(&apiErr)
+    if err == nil {
+      err = apiErr
+      return
+    }
+  }
+
   if resp.StatusCode != http.StatusOK {
-    body, _ := io.ReadAll(resp.Body)
-    log.Println("response", string(body))
-    return nil, errors.New(
+    err = errors.New(
       fmt.Sprintf(
         "request error: status[%s] code[%d]",
         resp.Status,
         resp.StatusCode,
       ),
     )
+    return
   }
 
   json.NewDecoder(resp.Body).Decode(&result)

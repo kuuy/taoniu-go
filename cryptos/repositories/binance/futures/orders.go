@@ -643,16 +643,58 @@ func (r *OrdersRepository) Cancel(symbol string, orderId int64) error {
   return nil
 }
 
-func (r *OrdersRepository) Flush(symbol string, orderId int64) error {
-  client := binance.NewFuturesClient(
-    os.Getenv("BINANCE_FUTURES_ACCOUNT_API_KEY"),
-    os.Getenv("BINANCE_FUTURES_ACCOUNT_API_SECRET"),
-  )
-  client.BaseURL = os.Getenv("BINANCE_FUTURES_API_ENDPOINT")
-  order, err := client.NewGetOrderService().Symbol(symbol).OrderID(orderId).Do(r.Ctx)
-  if err != nil {
-    return err
+func (r *OrdersRepository) Flush(symbol string, orderId int64) (err error) {
+  tr := &http.Transport{
+    DisableKeepAlives: true,
   }
+  session := &net.Dialer{}
+  tr.DialContext = session.DialContext
+
+  httpClient := &http.Client{
+    Transport: tr,
+    Timeout:   time.Duration(5) * time.Second,
+  }
+
+  params := url.Values{}
+  params.Add("symbol", symbol)
+  params.Add("orderId", fmt.Sprintf("%v", orderId))
+  params.Add("recvWindow", "60000")
+
+  timestamp := time.Now().UnixMilli()
+  params.Add("timestamp", fmt.Sprintf("%v", timestamp))
+
+  mac := hmac.New(sha256.New, []byte(os.Getenv("BINANCE_FUTURES_ACCOUNT_API_SECRET")))
+  _, err = mac.Write([]byte(params.Encode()))
+  if err != nil {
+    return
+  }
+  signature := mac.Sum(nil)
+  params.Add("signature", fmt.Sprintf("%x", signature))
+
+  url := fmt.Sprintf("%s/fapi/v1/order", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))
+  req, _ := http.NewRequest("GET", url, nil)
+  req.URL.RawQuery = params.Encode()
+  req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+  req.Header.Set("X-MBX-APIKEY", os.Getenv("BINANCE_FUTURES_ACCOUNT_API_KEY"))
+  resp, err := httpClient.Do(req)
+  if err != nil {
+    return
+  }
+  defer resp.Body.Close()
+
+  if resp.StatusCode != http.StatusOK {
+    err = errors.New(
+      fmt.Sprintf(
+        "request error: status[%s] code[%d]",
+        resp.Status,
+        resp.StatusCode,
+      ),
+    )
+    return
+  }
+
+  var order *service.Order
+  json.NewDecoder(resp.Body).Decode(&order)
 
   r.Save(order)
 
@@ -695,11 +737,13 @@ func (r *OrdersRepository) Save(order *service.Order) error {
     }
     r.Db.Create(&entity)
   } else {
-    entity.AvgPrice = avgPrice
-    entity.ExecutedQuantity = executedQuantity
-    entity.UpdateTime = order.UpdateTime
-    entity.Status = fmt.Sprintf("%v", order.Status)
-    r.Db.Model(&models.Order{ID: entity.ID}).Updates(entity)
+    if entity.AvgPrice != avgPrice || entity.ExecutedQuantity != executedQuantity || entity.UpdateTime != order.UpdateTime || entity.Status != string(order.Status) {
+      entity.AvgPrice = avgPrice
+      entity.ExecutedQuantity = executedQuantity
+      entity.UpdateTime = order.UpdateTime
+      entity.Status = fmt.Sprintf("%v", order.Status)
+      r.Db.Model(&models.Order{ID: entity.ID}).Updates(entity)
+    }
   }
   return nil
 }

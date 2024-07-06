@@ -33,15 +33,9 @@ func (r *SymbolsRepository) Symbols() []string {
   return symbols
 }
 
-func (r *SymbolsRepository) Get(
-  symbol string,
-) (models.Symbol, error) {
-  var entity models.Symbol
-  result := r.Db.Where("symbol", symbol).Take(&entity)
-  if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    return entity, result.Error
-  }
-  return entity, nil
+func (r *SymbolsRepository) Get(symbol string) (entity *models.Symbol, err error) {
+  err = r.Db.Where("symbol", symbol).Take(&entity).Error
+  return
 }
 
 func (r *SymbolsRepository) Filters(params datatypes.JSONMap) (tickSize float64, stepSize float64, notional float64, err error) {

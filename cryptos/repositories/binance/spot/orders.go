@@ -23,7 +23,7 @@ import (
   "time"
 
   "github.com/adshao/go-binance/v2"
-  "github.com/adshao/go-binance/v2/common"
+  apiCommon "github.com/adshao/go-binance/v2/common"
   "github.com/go-redis/redis/v8"
   "github.com/rs/xid"
   "gorm.io/gorm"
@@ -37,13 +37,14 @@ type OrdersRepository struct {
   Ctx context.Context
 }
 
-func (r *OrdersRepository) Find(id string) (*models.Order, error) {
-  var entity *models.Order
-  result := r.Db.First(&entity, "id=?", id)
-  if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    return nil, result.Error
-  }
-  return entity, nil
+func (r *OrdersRepository) Find(id string) (order *models.Order, err error) {
+  err = r.Db.First(&order, "id=?", id).Error
+  return
+}
+
+func (r *OrdersRepository) Get(symbol string, orderId int64) (order *models.Order, err error) {
+  err = r.Db.Where("symbol=? AND order_id=?", symbol, orderId).Take(&order).Error
+  return
 }
 
 func (r *OrdersRepository) Gets(conditions map[string]interface{}) []*models.Order {
@@ -323,10 +324,11 @@ func (r *OrdersRepository) Create(
   defer resp.Body.Close()
 
   if resp.StatusCode >= http.StatusBadRequest {
-    apiErr := new(common.APIError)
+    apiErr := new(apiCommon.APIError)
     err = json.NewDecoder(resp.Body).Decode(&apiErr)
     if err == nil {
-      return 0, apiErr
+      err = apiErr
+      return
     }
   }
 
@@ -402,7 +404,7 @@ func (r *OrdersRepository) Cancel(symbol string, orderId int64) (err error) {
   defer resp.Body.Close()
 
   if resp.StatusCode >= http.StatusBadRequest {
-    apiErr := new(common.APIError)
+    apiErr := new(apiCommon.APIError)
     err = json.NewDecoder(resp.Body).Decode(&apiErr)
     if err == nil {
       return apiErr
@@ -431,20 +433,62 @@ func (r *OrdersRepository) Cancel(symbol string, orderId int64) (err error) {
   return
 }
 
-func (r *OrdersRepository) Flush(symbol string, orderId int64) error {
-  client := binance.NewClient(
-    os.Getenv("BINANCE_SPOT_ACCOUNT_API_KEY"),
-    os.Getenv("BINANCE_SPOT_ACCOUNT_API_SECRET"),
-  )
-  client.BaseURL = os.Getenv("BINANCE_SPOT_API_ENDPOINT")
-  order, err := client.NewGetOrderService().Symbol(symbol).OrderID(orderId).Do(r.Ctx)
-  if err != nil {
-    return err
+func (r *OrdersRepository) Flush(symbol string, orderId int64) (err error) {
+  tr := &http.Transport{
+    DisableKeepAlives: true,
   }
+  session := &net.Dialer{}
+  tr.DialContext = session.DialContext
+
+  httpClient := &http.Client{
+    Transport: tr,
+    Timeout:   time.Duration(5) * time.Second,
+  }
+
+  params := url.Values{}
+  params.Add("symbol", symbol)
+  params.Add("orderId", fmt.Sprintf("%v", orderId))
+  params.Add("recvWindow", "60000")
+
+  timestamp := time.Now().UnixMilli()
+  params.Add("timestamp", fmt.Sprintf("%v", timestamp))
+
+  mac := hmac.New(sha256.New, []byte(os.Getenv("BINANCE_SPOT_ACCOUNT_API_SECRET")))
+  _, err = mac.Write([]byte(params.Encode()))
+  if err != nil {
+    return
+  }
+  signature := mac.Sum(nil)
+  params.Add("signature", fmt.Sprintf("%x", signature))
+
+  url := fmt.Sprintf("%s/api/v3/order", os.Getenv("BINANCE_SPOT_API_ENDPOINT"))
+  req, _ := http.NewRequest("GET", url, nil)
+  req.URL.RawQuery = params.Encode()
+  req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+  req.Header.Set("X-MBX-APIKEY", os.Getenv("BINANCE_SPOT_ACCOUNT_API_KEY"))
+  resp, err := httpClient.Do(req)
+  if err != nil {
+    return
+  }
+  defer resp.Body.Close()
+
+  if resp.StatusCode != http.StatusOK {
+    err = errors.New(
+      fmt.Sprintf(
+        "request error: status[%s] code[%d]",
+        resp.Status,
+        resp.StatusCode,
+      ),
+    )
+    return
+  }
+
+  var order *binance.Order
+  json.NewDecoder(resp.Body).Decode(&order)
 
   r.Save(order)
 
-  return nil
+  return
 }
 
 func (r *OrdersRepository) Save(order *binance.Order) error {
@@ -480,10 +524,12 @@ func (r *OrdersRepository) Save(order *binance.Order) error {
     }
     r.Db.Create(&entity)
   } else {
-    entity.ExecutedQuantity = executedQuantity
-    entity.UpdateTime = order.UpdateTime
-    entity.Status = fmt.Sprint(order.Status)
-    r.Db.Model(&models.Order{ID: entity.ID}).Updates(entity)
+    if entity.ExecutedQuantity != executedQuantity || entity.UpdateTime != order.UpdateTime || entity.Status != string(order.Status) {
+      entity.ExecutedQuantity = executedQuantity
+      entity.UpdateTime = order.UpdateTime
+      entity.Status = fmt.Sprint(order.Status)
+      r.Db.Model(&models.Order{ID: entity.ID}).Updates(entity)
+    }
   }
 
   return nil

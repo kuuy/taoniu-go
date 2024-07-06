@@ -51,8 +51,8 @@ func NewCrawlsCommand() *cli.Command {
 
 func (h *CrawlsHandler) Request() error {
   log.Println("crawl request processing...")
-  for _, currency := range h.SymbolsRepository.Currencies() {
-    err := h.Repository.Request(currency)
+  for _, asset := range h.SymbolsRepository.Currencies() {
+    err := h.Repository.Request(asset)
     if err != nil {
       log.Println("error", err)
     }

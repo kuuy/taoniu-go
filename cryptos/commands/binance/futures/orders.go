@@ -133,8 +133,8 @@ func (h *OrdersHandler) Create() error {
 
 func (h *OrdersHandler) Cancel() error {
   symbol := "BTCUSDT"
-  orderId := 3394265812
-  err := h.Repository.Cancel(symbol, int64(orderId))
+  orderId := int64(3394265812)
+  err := h.Repository.Cancel(symbol, orderId)
   if err != nil {
     return err
   }
@@ -144,11 +144,14 @@ func (h *OrdersHandler) Cancel() error {
 
 func (h *OrdersHandler) Flush() error {
   log.Println("futures orders flush...")
-  orders := h.Repository.Gets(map[string]interface{}{})
-  for _, order := range orders {
-    log.Println("order flush", order.Symbol, order.OrderId)
-    h.Repository.Flush(order.Symbol, order.OrderId)
-  }
+  symbol := "ROSEUSDT"
+  orderId := int64(4605220145)
+  h.Repository.Flush(symbol, orderId)
+  //orders := h.Repository.Gets(map[string]interface{}{})
+  //for _, order := range orders {
+  //  log.Println("order flush", order.Symbol, order.OrderId)
+  //  h.Repository.Flush(order.Symbol, order.OrderId)
+  //}
   return nil
 }
 

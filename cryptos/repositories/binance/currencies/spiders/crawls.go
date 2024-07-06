@@ -43,7 +43,7 @@ type HtmlExtractRules struct {
   Fields    []*HtmlExtractField `json:"fields"`
 }
 
-func (r *CrawlsRepository) Currencies() *repositories.CurrenciesRepository {
+func (r *CrawlsRepository) Assets() *repositories.CurrenciesRepository {
   if r.CurrenciesRepository == nil {
     r.CurrenciesRepository = &repositories.CurrenciesRepository{
       Db: r.Db,
@@ -94,7 +94,7 @@ func (r *CrawlsRepository) Request(currency string) error {
     if item["about"] == nil {
       continue
     }
-    r.Currencies().SetAbout(currency, item["about"].(string))
+    r.Assets().SetAbout(currency, item["about"].(string))
   }
 
   return nil

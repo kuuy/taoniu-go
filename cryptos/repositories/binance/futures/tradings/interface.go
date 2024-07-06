@@ -12,7 +12,7 @@ type PendingInfo struct {
 
 type SymbolsRepository interface {
   Price(symbol string) (float64, error)
-  Get(symbol string) (models.Symbol, error)
+  Get(symbol string) (*models.Symbol, error)
   Filters(params datatypes.JSONMap) (float64, float64, float64, error)
 }
 
@@ -21,7 +21,7 @@ type AccountRepository interface {
 }
 
 type PositionRepository interface {
-  Get(symbol string, side int) (models.Position, error)
+  Get(symbol string, side int) (*models.Position, error)
   Capital(capital float64, entryAmount float64, place int) (float64, error)
   Ratio(capital float64, entryAmount float64) float64
   BuyQuantity(side int, buyAmount float64, entryPrice float64, entryAmount float64) float64

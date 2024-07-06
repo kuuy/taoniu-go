@@ -45,7 +45,7 @@ type HtmlExtractRules struct {
   Fields    []*HtmlExtractField `json:"fields"`
 }
 
-func (r *CrawlsRepository) Currencies() *repositories.CurrenciesRepository {
+func (r *CrawlsRepository) Assets() *repositories.CurrenciesRepository {
   if r.CurrenciesRepository == nil {
     r.CurrenciesRepository = &repositories.CurrenciesRepository{
       Db: r.Db,
@@ -126,7 +126,7 @@ func (r *CrawlsRepository) Request() error {
       circulatingSupply, _ := strconv.ParseFloat(item["supply"].(string), 64)
       price, _ := strconv.ParseFloat(item["price"].(string), 64)
       volume, _ := strconv.ParseFloat(item["volume"].(string), 64)
-      r.Currencies().Add(symbol, sector.ID, 0, circulatingSupply, price, volume)
+      r.Assets().Add(symbol, sector.ID, 0, circulatingSupply, price, volume)
       if !r.contains(slugs, slug) {
         slugs = append(slugs, slug)
       }

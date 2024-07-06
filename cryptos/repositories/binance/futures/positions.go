@@ -16,16 +16,9 @@ type PositionsRepository struct {
   SymbolsRepository *SymbolsRepository
 }
 
-func (r *PositionsRepository) Get(
-  symbol string,
-  side int,
-) (models.Position, error) {
-  var entity models.Position
-  result := r.Db.Where("symbol=? AND side=? AND status=1", symbol, side).Take(&entity)
-  if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    return entity, result.Error
-  }
-  return entity, nil
+func (r *PositionsRepository) Get(symbol string, side int) (position *models.Position, err error) {
+  err = r.Db.Where("symbol=? AND side=? AND status=1", symbol, side).Take(&position).Error
+  return
 }
 
 func (r *PositionsRepository) Gets(conditions map[string]interface{}) []*models.Position {

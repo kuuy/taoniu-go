@@ -2,13 +2,11 @@ package binance
 
 import (
   "taoniu.local/cryptos/common"
-
   tasks "taoniu.local/cryptos/tasks/binance/spot"
 )
 
 type SpotTask struct {
   AnsqContext    *common.AnsqClientContext
-  CronTask       *tasks.CronTask
   SymbolsTask    *tasks.SymbolsTask
   TickersTask    *tasks.TickersTask
   DepthTask      *tasks.DepthTask
@@ -20,22 +18,13 @@ type SpotTask struct {
   AccountTask    *tasks.AccountTask
   OrdersTask     *tasks.OrdersTask
   PositionsTask  *tasks.PositionsTask
-  GridsTask      *tasks.GridsTask
   AnalysisTask   *tasks.AnalysisTask
-  MarginTask     *tasks.MarginTask
 }
 
 func NewSpotTask(ansqContext *common.AnsqClientContext) *SpotTask {
   return &SpotTask{
     AnsqContext: ansqContext,
   }
-}
-
-func (t *SpotTask) Cron() *tasks.CronTask {
-  if t.CronTask == nil {
-    t.CronTask = tasks.NewCronTask(t.AnsqContext)
-  }
-  return t.CronTask
 }
 
 func (t *SpotTask) Account() *tasks.AccountTask {
@@ -120,11 +109,4 @@ func (t *SpotTask) Analysis() *tasks.AnalysisTask {
     t.AnalysisTask = tasks.NewAnalysisTask(t.AnsqContext)
   }
   return t.AnalysisTask
-}
-
-func (t *SpotTask) Margin() *tasks.MarginTask {
-  if t.MarginTask == nil {
-    t.MarginTask = tasks.NewMarginTask(t.AnsqContext)
-  }
-  return t.MarginTask
 }

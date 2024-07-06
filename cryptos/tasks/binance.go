@@ -8,6 +8,7 @@ import (
 type BinanceTask struct {
   AnsqContext *common.AnsqClientContext
   SpotTask    *tasks.SpotTask
+  MarginTask  *tasks.MarginTask
   FuturesTask *tasks.FuturesTask
   SavingsTask *tasks.SavingsTask
   ServerTask  *tasks.ServerTask
@@ -24,6 +25,13 @@ func (t *BinanceTask) Spot() *tasks.SpotTask {
     t.SpotTask = tasks.NewSpotTask(t.AnsqContext)
   }
   return t.SpotTask
+}
+
+func (t *BinanceTask) Margin() *tasks.MarginTask {
+  if t.MarginTask == nil {
+    t.MarginTask = tasks.NewMarginTask(t.AnsqContext)
+  }
+  return t.MarginTask
 }
 
 func (t *BinanceTask) Futures() *tasks.FuturesTask {

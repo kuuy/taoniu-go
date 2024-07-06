@@ -423,7 +423,7 @@ func (r *TriggersRepository) Flush(id string) (err error) {
   return
 }
 
-func (r *TriggersRepository) Take(trigger *futuresModels.Trigger, price float64) error {
+func (r *TriggersRepository) Take(trigger *futuresModels.Trigger, price float64) (err error) {
   var positionSide string
   var side string
 
@@ -532,9 +532,8 @@ func (r *TriggersRepository) Take(trigger *futuresModels.Trigger, price float64)
 
   orderId, err := r.OrdersRepository.Create(trading.Symbol, positionSide, side, sellPrice, trading.SellQuantity)
   if err != nil {
-    _, ok := err.(apiCommon.APIError)
-    if ok {
-      return err
+    if _, ok := err.(apiCommon.APIError); ok {
+      return
     }
     r.Db.Model(&trigger).Where("version", trigger.Version).Updates(map[string]interface{}{
       "remark":  err.Error(),
@@ -548,7 +547,7 @@ func (r *TriggersRepository) Take(trigger *futuresModels.Trigger, price float64)
     "version":       gorm.Expr("version + ?", 1),
   })
 
-  return nil
+  return
 }
 
 func (r *TriggersRepository) Close(trigger *futuresModels.Trigger) {
@@ -570,10 +569,7 @@ func (r *TriggersRepository) Close(trigger *futuresModels.Trigger) {
   }
 }
 
-func (r *TriggersRepository) CanBuy(
-  trigger *futuresModels.Trigger,
-  price float64,
-) bool {
+func (r *TriggersRepository) CanBuy(trigger *futuresModels.Trigger, price float64) bool {
   var trading models.Trigger
   if trigger.Side == 1 {
     result := r.Db.Where("trigger_id=? AND status IN ?", trigger.ID, []int{0, 1, 2}).Order("buy_price asc").Take(&trading)

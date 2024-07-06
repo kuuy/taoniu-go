@@ -40,7 +40,7 @@ const (
   MQTT_TOPICS_ACCOUNT                 = "binance/spot/account/%s"
   MQTT_TOPICS_ORDERS                  = "binance/spot/orders/%s"
   MQTT_TOPICS_TICKERS                 = "binance/spot/tickers/%s"
-  LOCKS_ACCOUNT_FLUSH                 = "locks:binance:spot:klines:flush"
+  LOCKS_ACCOUNT_FLUSH                 = "locks:binance:spot:account:flush"
   LOCKS_KLINES_FLUSH                  = "locks:binance:spot:klines:flush:%s:%s"
   LOCKS_KLINES_UPDATE                 = "locks:binance:spot:klines:update:%s:%s"
   LOCKS_KLINES_CLEAN                  = "locks:binance:spot:klines:clean:%s"

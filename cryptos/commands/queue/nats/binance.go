@@ -10,8 +10,9 @@ func NewBinanceCommand() *cli.Command {
     Name:  "binance",
     Usage: "",
     Subcommands: []*cli.Command{
-      binance.NewFuturesCommand(),
       binance.NewSpotCommand(),
+      binance.NewMarginCommand(),
+      binance.NewFuturesCommand(),
     },
   }
 }

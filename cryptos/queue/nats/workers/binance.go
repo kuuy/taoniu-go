@@ -17,6 +17,7 @@ func NewBinance(natsContext *common.NatsContext) *Binance {
 
 func (h *Binance) Subscribe() error {
   binance.NewSpot(h.NatsContext).Subscribe()
+  binance.NewMargin(h.NatsContext).Subscribe()
   binance.NewFutures(h.NatsContext).Subscribe()
   return nil
 }

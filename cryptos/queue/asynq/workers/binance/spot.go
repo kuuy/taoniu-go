@@ -26,6 +26,5 @@ func (h *Spot) Register() error {
   spot.NewOrders(h.AnsqContext).Register()
   spot.NewPositions(h.AnsqContext).Register()
   spot.NewTradings(h.AnsqContext).Register()
-  spot.NewMargin(h.AnsqContext).Register()
   return nil
 }

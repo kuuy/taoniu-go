@@ -11,7 +11,6 @@ func NewAnalysisCommand() *cli.Command {
     Usage: "",
     Subcommands: []*cli.Command{
       analysis.NewTradingsCommand(),
-      analysis.NewMarginCommand(),
     },
   }
 }
