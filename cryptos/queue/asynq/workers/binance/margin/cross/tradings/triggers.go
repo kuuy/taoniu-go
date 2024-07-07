@@ -12,8 +12,7 @@ import (
   config "taoniu.local/cryptos/config/binance/margin/cross"
   marginRepositories "taoniu.local/cryptos/repositories/binance/margin"
   crossRepositories "taoniu.local/cryptos/repositories/binance/margin/cross"
-  spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
-  repositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
+  repositories "taoniu.local/cryptos/repositories/binance/margin/cross/tradings"
 )
 
 type Triggers struct {
@@ -45,7 +44,7 @@ func NewTriggers(ansqContext *common.AnsqServerContext) *Triggers {
     Rdb: h.AnsqContext.Rdb,
     Ctx: h.AnsqContext.Ctx,
   }
-  h.Repository.PositionRepository = &spotRepositories.PositionsRepository{
+  h.Repository.PositionRepository = &crossRepositories.PositionsRepository{
     Db: h.AnsqContext.Db,
   }
 
