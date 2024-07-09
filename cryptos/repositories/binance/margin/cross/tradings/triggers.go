@@ -235,14 +235,24 @@ func (r *TriggersRepository) Place(id string) (err error) {
   }
 
   if balance["free"] < buyAmount {
+    mutex := common.NewMutex(
+      r.Rdb,
+      r.Ctx,
+      fmt.Sprintf(config.LOCKS_ACCOUNT_BORROW, trigger.Symbol),
+    )
+    if !mutex.Lock(5 * time.Second) {
+      return nil
+    }
     var transferId int64
     transferId, err = r.AccountRepository.Borrow(entity.QuoteAsset, buyAmount)
     if err != nil {
       if _, ok := err.(apiCommon.APIError); ok {
+        mutex.Unlock()
         return
       }
       log.Println("error", err)
     }
+    mutex.Unlock()
     log.Println("loan", transferId, buyAmount)
   }
 

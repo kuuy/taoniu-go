@@ -276,13 +276,23 @@ func (r *ScalpingRepository) Place(planId string) (err error) {
   }
 
   if balance["free"] < buyAmount {
+    mutex := common.NewMutex(
+      r.Rdb,
+      r.Ctx,
+      fmt.Sprintf(config.LOCKS_ACCOUNT_BORROW, plan.Symbol),
+    )
+    if !mutex.Lock(5 * time.Second) {
+      return nil
+    }
     var transferId int64
     transferId, err = r.AccountRepository.Borrow(entity.QuoteAsset, buyAmount)
     if err != nil {
       if _, ok := err.(apiCommon.APIError); ok {
+        mutex.Unlock()
         return
       }
     }
+    mutex.Unlock()
     log.Println("loan", entity.QuoteAsset, transferId, buyAmount)
   }
 

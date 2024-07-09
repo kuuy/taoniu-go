@@ -20,6 +20,7 @@ const (
   MQTT_TOPICS_ACCOUNT                = "binance/margin/cross/account/%s"
   MQTT_TOPICS_ORDERS                 = "binance/margin/cross/orders/%s"
   LOCKS_ACCOUNT_FLUSH                = "locks:binance:margin:cross:account:flush"
+  LOCKS_ACCOUNT_BORROW               = "locks:binance:margin:cross:account:borrow:%s"
   LOCKS_ORDERS_OPEN                  = "locks:binance:margin:cross:orders:open:%s"
   LOCKS_ORDERS_FLUSH                 = "locks:binance:margin:cross:orders:flush:%s:%d"
   LOCKS_ORDERS_SYNC                  = "locks:binance:margin:cross:orders:sync:%s"

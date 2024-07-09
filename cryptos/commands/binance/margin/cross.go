@@ -15,6 +15,7 @@ func NewCrossCommand() *cli.Command {
       cross.NewScalpingCommand(),
       cross.NewTriggersCommand(),
       cross.NewTradingsCommand(),
+      cross.NewAnalysisCommand(),
     },
   }
 }

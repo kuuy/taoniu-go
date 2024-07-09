@@ -106,8 +106,8 @@ func (h *OrdersHandler) Cancel() error {
 
 func (h *OrdersHandler) Flush() error {
   log.Println("margin cross orders flush...")
-  symbol := "BCHUSDT"
-  orderId := int64(3778464925)
+  symbol := "MASKUSDT"
+  orderId := int64(1211210069)
   h.Repository.Flush(symbol, orderId)
   //orders, err := h.Rdb.SMembers(h.Ctx, "binance:margin:cross:orders:flush").Result()
   //if err != nil {
