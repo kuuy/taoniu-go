@@ -5,6 +5,9 @@ import (
   "encoding/json"
   "errors"
   "fmt"
+  "net"
+  "net/http"
+  "os"
   "strconv"
   "strings"
   "time"
@@ -18,6 +21,30 @@ import (
 
   models "taoniu.local/cryptos/models/binance/spot"
 )
+
+type ExchangeInfo struct {
+  Symbols []Symbol `json:"symbols"`
+}
+
+type Symbol struct {
+  Symbol                     string                   `json:"symbol"`
+  Status                     string                   `json:"status"`
+  BaseAsset                  string                   `json:"baseAsset"`
+  BaseAssetPrecision         int                      `json:"baseAssetPrecision"`
+  QuoteAsset                 string                   `json:"quoteAsset"`
+  QuotePrecision             int                      `json:"quotePrecision"`
+  QuoteAssetPrecision        int                      `json:"quoteAssetPrecision"`
+  BaseCommissionPrecision    int32                    `json:"baseCommissionPrecision"`
+  QuoteCommissionPrecision   int32                    `json:"quoteCommissionPrecision"`
+  OrderTypes                 []string                 `json:"orderTypes"`
+  IcebergAllowed             bool                     `json:"icebergAllowed"`
+  OcoAllowed                 bool                     `json:"ocoAllowed"`
+  QuoteOrderQtyMarketAllowed bool                     `json:"quoteOrderQtyMarketAllowed"`
+  IsSpotTradingAllowed       bool                     `json:"isSpotTradingAllowed"`
+  IsMarginTradingAllowed     bool                     `json:"isMarginTradingAllowed"`
+  Filters                    []map[string]interface{} `json:"filters"`
+  Permissions                []string                 `json:"permissions"`
+}
 
 type SymbolsRepository struct {
   Db  *gorm.DB
@@ -56,13 +83,40 @@ func (r *SymbolsRepository) Filters(params datatypes.JSONMap) (tickSize float64,
   return
 }
 
-func (r *SymbolsRepository) Flush() error {
-  client := binance.NewClient("", "")
-  result, err := client.NewExchangeInfoService().Do(r.Ctx)
-  if err != nil {
-    return err
+func (r *SymbolsRepository) Flush() (err error) {
+  tr := &http.Transport{
+    DisableKeepAlives: true,
+    DialContext:       (&net.Dialer{}).DialContext,
   }
-  for _, item := range result.Symbols {
+
+  httpClient := &http.Client{
+    Transport: tr,
+    Timeout:   time.Duration(30) * time.Second,
+  }
+
+  url := fmt.Sprintf("%s/api/v3/exchangeInfo", os.Getenv("BINANCE_SPOT_API_ENDPOINT"))
+  req, _ := http.NewRequest("GET", url, nil)
+  resp, err := httpClient.Do(req)
+  if err != nil {
+    return
+  }
+  defer resp.Body.Close()
+
+  if resp.StatusCode != http.StatusOK {
+    err = errors.New(
+      fmt.Sprintf(
+        "request error: status[%s] code[%d]",
+        resp.Status,
+        resp.StatusCode,
+      ),
+    )
+    return
+  }
+
+  var response ExchangeInfo
+  json.NewDecoder(resp.Body).Decode(&response)
+
+  for _, item := range response.Symbols {
     if item.QuoteAsset != "USDT" {
       continue
     }
@@ -115,6 +169,7 @@ func (r *SymbolsRepository) Flush() error {
     if _, ok := filters["quote"]; !ok {
       continue
     }
+
     var entity models.Symbol
     result := r.Db.Where("symbol", item.Symbol).Take(&entity)
     if errors.Is(result.Error, gorm.ErrRecordNotFound) {
@@ -130,11 +185,12 @@ func (r *SymbolsRepository) Flush() error {
       }
       r.Db.Create(&entity)
     } else {
-      entity.Filters = filters
-      entity.IsSpot = item.IsSpotTradingAllowed
-      entity.IsMargin = item.IsMarginTradingAllowed
-      entity.Status = item.Status
-      r.Db.Model(&models.Symbol{ID: entity.ID}).Updates(entity)
+      r.Db.Model(&entity).Updates(map[string]interface{}{
+        "filters":   filters,
+        "is_spot":   item.IsSpotTradingAllowed,
+        "is_margin": item.IsMarginTradingAllowed,
+        "status":    item.Status,
+      })
     }
   }
 

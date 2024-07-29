@@ -51,7 +51,7 @@ func NewTriggersCommand() *cli.Command {
 }
 
 func (h *TriggersHandler) Flush(side int) error {
-  log.Println("analysis tradings triggers flush...")
+  log.Println("binance futures analysis tradings triggers flush...")
   err := h.Repository.Flush(side)
   if err != nil {
     log.Println("error", err)

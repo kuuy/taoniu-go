@@ -25,10 +25,5 @@ func (r *TradingsRepository) Scan() []string {
       symbols = append(symbols, symbol)
     }
   }
-  for _, symbol := range r.TriggersRepository.Scan() {
-    if !slices.Contains(symbols, symbol) {
-      symbols = append(symbols, symbol)
-    }
-  }
   return symbols
 }

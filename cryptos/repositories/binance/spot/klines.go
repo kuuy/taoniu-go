@@ -18,7 +18,6 @@ import (
   "github.com/shopspring/decimal"
   "gorm.io/gorm"
 
-  "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/spot"
   models "taoniu.local/cryptos/models/binance/spot"
 )
@@ -250,20 +249,12 @@ func (r *KlinesRepository) Fix(symbol string, interval string, limit int) error 
 func (r *KlinesRepository) Request(symbol string, interval string, endtime int64, limit int) ([][]interface{}, error) {
   tr := &http.Transport{
     DisableKeepAlives: true,
-  }
-  if r.UseProxy {
-    session := &common.ProxySession{
-      Proxy: "socks5://127.0.0.1:1088?timeout=5s",
-    }
-    tr.DialContext = session.DialContext
-  } else {
-    session := &net.Dialer{}
-    tr.DialContext = session.DialContext
+    DialContext:       (&net.Dialer{}).DialContext,
   }
 
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   time.Duration(3) * time.Second,
+    Timeout:   time.Duration(30) * time.Second,
   }
 
   url := fmt.Sprintf("%s/api/v3/klines", os.Getenv("BINANCE_SPOT_API_ENDPOINT"))

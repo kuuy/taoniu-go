@@ -19,8 +19,8 @@ func NewScalpingTask(ansqContext *common.AnsqClientContext) *ScalpingTask {
   }
 }
 
-func (t *ScalpingTask) Flush() error {
+func (t *ScalpingTask) Flush() (err error) {
   t.Repository.Flush(1)
   t.Repository.Flush(2)
-  return nil
+  return
 }

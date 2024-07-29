@@ -68,12 +68,12 @@ func (h *FuturesHandler) run() error {
   c.AddFunc("@every 5s", func() {
     binance.Futures().Account().Flush()
     binance.Futures().Tickers().Flush()
-    binance.Futures().Tradings().Triggers().Place()
     binance.Futures().Tradings().Scalping().Place()
+    binance.Futures().Tradings().Triggers().Place()
   })
   c.AddFunc("@every 15s", func() {
-    binance.Futures().Tradings().Triggers().Flush()
     binance.Futures().Tradings().Scalping().Flush()
+    binance.Futures().Tradings().Triggers().Flush()
   })
   c.AddFunc("@every 30s", func() {
     binance.Futures().Orders().Open()
@@ -84,15 +84,15 @@ func (h *FuturesHandler) run() error {
     binance.Futures().Orders().Sync(time.Now().Add(-72*time.Hour).UnixMilli(), 200)
   })
   c.AddFunc("@every 5m", func() {
-    binance.Futures().Analysis().Flush()
+    //binance.Futures().Analysis().Flush()
   })
   c.AddFunc("@every 15m", func() {
-    binance.Futures().Klines().Clean()
-    binance.Futures().Strategies().Clean()
-    binance.Futures().Plans().Clean()
+    //binance.Futures().Klines().Clean()
+    //binance.Futures().Strategies().Clean()
+    //binance.Futures().Plans().Clean()
   })
   c.AddFunc("@hourly", func() {
-    binance.Futures().Cron().Hourly()
+    //binance.Futures().Cron().Hourly()
   })
   c.AddFunc("0 8,20 * * * *", func() {
   })

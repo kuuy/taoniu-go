@@ -6,6 +6,8 @@ import (
   "errors"
   "fmt"
   "math"
+  "net"
+  "net/http"
   "os"
   "strconv"
   "strings"
@@ -20,6 +22,35 @@ import (
 
   models "taoniu.local/cryptos/models/binance/futures"
 )
+
+type ExchangeInfo struct {
+  Symbols []Symbol `json:"symbols"`
+}
+
+type Symbol struct {
+  Symbol                string                   `json:"symbol"`
+  Pair                  string                   `json:"pair"`
+  ContractType          string                   `json:"contractType"`
+  DeliveryDate          int64                    `json:"deliveryDate"`
+  OnboardDate           int64                    `json:"onboardDate"`
+  Status                string                   `json:"status"`
+  MaintMarginPercent    string                   `json:"maintMarginPercent"`
+  RequiredMarginPercent string                   `json:"requiredMarginPercent"`
+  PricePrecision        int                      `json:"pricePrecision"`
+  QuantityPrecision     int                      `json:"quantityPrecision"`
+  BaseAssetPrecision    int                      `json:"baseAssetPrecision"`
+  QuotePrecision        int                      `json:"quotePrecision"`
+  UnderlyingType        string                   `json:"underlyingType"`
+  UnderlyingSubType     []string                 `json:"underlyingSubType"`
+  SettlePlan            int64                    `json:"settlePlan"`
+  TriggerProtect        string                   `json:"triggerProtect"`
+  OrderType             []string                 `json:"OrderType"`
+  TimeInForce           []string                 `json:"timeInForce"`
+  Filters               []map[string]interface{} `json:"filters"`
+  QuoteAsset            string                   `json:"quoteAsset"`
+  MarginAsset           string                   `json:"marginAsset"`
+  BaseAsset             string                   `json:"baseAsset"`
+}
 
 type SymbolsRepository struct {
   Db  *gorm.DB
@@ -52,14 +83,40 @@ func (r *SymbolsRepository) Filters(params datatypes.JSONMap) (tickSize float64,
   return
 }
 
-func (r *SymbolsRepository) Flush() error {
-  client := binance.NewFuturesClient("", "")
-  client.BaseURL = os.Getenv("BINANCE_FUTURES_API_ENDPOINT")
-  result, err := client.NewExchangeInfoService().Do(r.Ctx)
-  if err != nil {
-    return err
+func (r *SymbolsRepository) Flush() (err error) {
+  tr := &http.Transport{
+    DisableKeepAlives: true,
+    DialContext:       (&net.Dialer{}).DialContext,
   }
-  for _, item := range result.Symbols {
+
+  httpClient := &http.Client{
+    Transport: tr,
+    Timeout:   time.Duration(30) * time.Second,
+  }
+
+  url := fmt.Sprintf("%s/fapi/v1/exchangeInfo", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))
+  req, _ := http.NewRequest("GET", url, nil)
+  resp, err := httpClient.Do(req)
+  if err != nil {
+    return
+  }
+  defer resp.Body.Close()
+
+  if resp.StatusCode != http.StatusOK {
+    err = errors.New(
+      fmt.Sprintf(
+        "request error: status[%s] code[%d]",
+        resp.Status,
+        resp.StatusCode,
+      ),
+    )
+    return
+  }
+
+  var response ExchangeInfo
+  json.NewDecoder(resp.Body).Decode(&response)
+
+  for _, item := range response.Symbols {
     if item.QuoteAsset != "USDT" {
       continue
     }
@@ -135,9 +192,10 @@ func (r *SymbolsRepository) Flush() error {
       }
       r.Db.Create(&entity)
     } else {
-      entity.Filters = filters
-      entity.Status = item.Status
-      r.Db.Model(&models.Symbol{ID: entity.ID}).Updates(entity)
+      r.Db.Model(&entity).Updates(map[string]interface{}{
+        "filters": filters,
+        "status":  item.Status,
+      })
     }
   }
 

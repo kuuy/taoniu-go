@@ -6,6 +6,7 @@ import (
   "fmt"
   "log"
   "math"
+  "strconv"
   "time"
 
   apiCommon "github.com/adshao/go-binance/v2/common"
@@ -148,37 +149,82 @@ func (r *TriggersRepository) Place(id string) (err error) {
   var buyAmount float64
   var sellPrice float64
 
-  ipart, _ := math.Modf(trigger.Capital)
-  places := 1
-  for ; ipart >= 10; ipart = ipart / 10 {
-    places++
+  var cachedEntryPrice float64
+  var cachedEntryQuantity float64
+
+  redisKey := fmt.Sprintf(config.REDIS_KEY_TRADINGS_TRIGGERS_PLACE, trigger.Symbol)
+  values, _ := r.Rdb.HMGet(r.Ctx, redisKey, []string{
+    "entry_price",
+    "entry_quantity",
+    "buy_price",
+    "buy_quantity",
+  }...).Result()
+  if values[0] != nil {
+    cachedEntryPrice, _ = strconv.ParseFloat(values[0].(string), 64)
+    cachedEntryQuantity, _ = strconv.ParseFloat(values[1].(string), 64)
   }
 
-  for i := 0; i < 2; i++ {
-    capital, err = r.PositionRepository.Capital(trigger.Capital, entryAmount, places)
-    if err != nil {
-      err = errors.New("reach the max invest capital")
-      return
+  if cachedEntryPrice == entryPrice && cachedEntryQuantity == entryQuantity {
+    buyPrice, _ = strconv.ParseFloat(values[2].(string), 64)
+    buyQuantity, _ = strconv.ParseFloat(values[3].(string), 64)
+    log.Println("load from cached price", buyPrice, buyQuantity)
+  } else {
+    cachedEntryPrice = entryPrice
+    cachedEntryQuantity = entryQuantity
+
+    ipart, _ := math.Modf(trigger.Capital)
+    places := 1
+    for ; ipart >= 10; ipart = ipart / 10 {
+      places++
     }
-    ratio := r.PositionRepository.Ratio(capital, entryAmount)
-    buyAmount, _ = decimal.NewFromFloat(capital).Mul(decimal.NewFromFloat(ratio)).Float64()
-    if buyAmount < notional {
-      buyAmount = notional
+
+    for i := 0; i < 2; i++ {
+      capital, err = r.PositionRepository.Capital(trigger.Capital, entryAmount, places)
+      if err != nil {
+        err = errors.New(fmt.Sprintf("trigger [%s] reach the max invest capital", trigger.Symbol))
+        return
+      }
+      ratio := r.PositionRepository.Ratio(capital, entryAmount)
+      buyAmount, _ = decimal.NewFromFloat(capital).Mul(decimal.NewFromFloat(ratio)).Float64()
+      if buyAmount < notional {
+        buyAmount = notional
+      }
+      buyQuantity = r.PositionRepository.BuyQuantity(buyAmount, entryPrice, entryAmount)
+      buyPrice, _ = decimal.NewFromFloat(buyAmount).Div(decimal.NewFromFloat(buyQuantity)).Float64()
+      buyPrice, _ = decimal.NewFromFloat(buyPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+      buyQuantity, _ = decimal.NewFromFloat(buyQuantity).Div(decimal.NewFromFloat(stepSize)).Ceil().Mul(decimal.NewFromFloat(stepSize)).Float64()
+      buyAmount, _ = decimal.NewFromFloat(buyPrice).Mul(decimal.NewFromFloat(buyQuantity)).Float64()
+      entryQuantity, _ = decimal.NewFromFloat(entryQuantity).Add(decimal.NewFromFloat(buyQuantity)).Float64()
+      entryAmount, _ = decimal.NewFromFloat(entryAmount).Add(decimal.NewFromFloat(buyAmount)).Float64()
+      entryPrice, _ = decimal.NewFromFloat(entryAmount).Div(decimal.NewFromFloat(entryQuantity)).Float64()
+      if i == 0 {
+        quantity = buyQuantity
+      }
     }
-    buyQuantity = r.PositionRepository.BuyQuantity(buyAmount, entryPrice, entryAmount)
-    buyPrice, _ = decimal.NewFromFloat(buyAmount).Div(decimal.NewFromFloat(buyQuantity)).Float64()
-    buyPrice, _ = decimal.NewFromFloat(buyPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
-    buyQuantity, _ = decimal.NewFromFloat(buyQuantity).Div(decimal.NewFromFloat(stepSize)).Ceil().Mul(decimal.NewFromFloat(stepSize)).Float64()
-    buyAmount, _ = decimal.NewFromFloat(buyPrice).Mul(decimal.NewFromFloat(buyQuantity)).Float64()
-    entryQuantity, _ = decimal.NewFromFloat(entryQuantity).Add(decimal.NewFromFloat(buyQuantity)).Float64()
-    entryAmount, _ = decimal.NewFromFloat(entryAmount).Add(decimal.NewFromFloat(buyAmount)).Float64()
-    entryPrice, _ = decimal.NewFromFloat(entryAmount).Div(decimal.NewFromFloat(entryQuantity)).Float64()
-    if i == 0 {
-      quantity = buyQuantity
-    }
+    buyQuantity = quantity
+
+    r.Rdb.HMSet(
+      r.Ctx,
+      redisKey,
+      map[string]interface{}{
+        "entry_price":    cachedEntryPrice,
+        "entry_quantity": cachedEntryQuantity,
+        "buy_price":      buyPrice,
+        "buy_quantity":   buyQuantity,
+      },
+    )
   }
 
-  buyQuantity = quantity
+  if buyPrice < 0 {
+    err = errors.New(fmt.Sprintf("trigger [%s] price %v is negative", trigger.Symbol, buyPrice))
+    return
+  }
+
+  if buyQuantity < 0 {
+    err = errors.New(fmt.Sprintf("trigger [%s] quantity %v is negative", trigger.Symbol, buyQuantity))
+    return
+  }
+
   if price < buyPrice {
     buyPrice = price
   }
@@ -442,7 +488,7 @@ func (r *TriggersRepository) Take(trigger *spotModels.Trigger, price float64) (e
     return
   }
 
-  result := r.Db.Where("trigger_id=? AND status=?", trigger.ID, 1).Order("sell_price asc").Take(&trading)
+  result := r.Db.Where("trigger_id=? AND status=?", trigger.ID, 1).Take(&trading)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     return errors.New("empty trigger to take")
   }

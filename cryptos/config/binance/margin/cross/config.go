@@ -1,6 +1,7 @@
 package cross
 
 const (
+  REDIS_KEY_TRADINGS_TRIGGERS_PLACE  = "binance:margin.cross:tradings:triggers:place:%v:%v"
   SCALPING_MAX_BORROWED              = 10000
   TRIGGERS_MAX_BORROWED              = 10000
   ASYNQ_QUEUE_ACCOUNT                = "binance.margin.cross.account"

@@ -1,6 +1,7 @@
 package isolated
 
 const (
+  REDIS_KEY_TRADINGS_TRIGGERS_PLACE   = "binance:margin.isolated:tradings:triggers:place:%v:%v"
   SCALPING_MIN_BINANCE                = 50
   TRIGGERS_MIN_BINANCE                = 200
   LAUNCHPAD_MIN_BINANCE               = 1000

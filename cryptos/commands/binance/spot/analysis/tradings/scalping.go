@@ -45,7 +45,7 @@ func NewScalpingCommand() *cli.Command {
 }
 
 func (h *ScalpingHandler) Flush() error {
-  log.Println("analysis tradings scalping flush...")
+  log.Println("binance spot analysis tradings scalping flush...")
   err := h.Repository.Flush()
   if err != nil {
     log.Println("error", err)

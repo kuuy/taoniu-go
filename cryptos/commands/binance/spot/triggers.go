@@ -60,7 +60,7 @@ func NewTriggersCommand() *cli.Command {
 }
 
 func (h *TriggersHandler) apply(symbol string) error {
-  log.Println("spot cross margin triggers apply...")
+  log.Println("spot triggers apply...")
 
   capital := 3000.0
 

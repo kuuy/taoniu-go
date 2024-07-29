@@ -23,6 +23,7 @@ type KlinesHandler struct {
   Ctx                context.Context
   Nats               *nats.Conn
   Repository         *repositories.KlinesRepository
+  SymbolsRepository  *repositories.SymbolsRepository
   TradingsRepository *repositories.TradingsRepository
 }
 
@@ -43,6 +44,9 @@ func NewKlinesCommand() *cli.Command {
         Rdb:  h.Rdb,
         Ctx:  h.Ctx,
         Nats: h.Nats,
+      }
+      h.SymbolsRepository = &repositories.SymbolsRepository{
+        Db: h.Db,
       }
       h.TradingsRepository = &repositories.TradingsRepository{
         Db: h.Db,
@@ -76,18 +80,28 @@ func NewKlinesCommand() *cli.Command {
           return nil
         },
       },
+      {
+        Name:  "clean",
+        Usage: "",
+        Action: func(c *cli.Context) error {
+          if err := h.Clean(); err != nil {
+            return cli.Exit(err.Error(), 1)
+          }
+          return nil
+        },
+      },
     },
   }
 }
 
 func (h *KlinesHandler) Flush() error {
-  log.Println("binance futures flush...")
+  log.Println("binance futures tasks klines flush...")
   symbols := h.TradingsRepository.Scan()
   for _, symbol := range symbols {
     mutex := common.NewMutex(
       h.Rdb,
       h.Ctx,
-      fmt.Sprintf(config.LOCKS_KLINES_FLUSH, symbol, ""),
+      fmt.Sprintf(config.LOCKS_TASKS_KLINES_FLUSH, symbol),
     )
     if !mutex.Lock(5 * time.Second) {
       continue
@@ -101,13 +115,13 @@ func (h *KlinesHandler) Flush() error {
 }
 
 func (h *KlinesHandler) Fix() error {
-  log.Println("binance futures fix...")
+  log.Println("binance futures tasks klines fix...")
   symbols := h.TradingsRepository.Scan()
   for _, symbol := range symbols {
     mutex := common.NewMutex(
       h.Rdb,
       h.Ctx,
-      fmt.Sprintf(config.LOCKS_KLINES_FIX, symbol, ""),
+      fmt.Sprintf(config.LOCKS_TASKS_KLINES_FIX, symbol),
     )
     if !mutex.Lock(30 * time.Second) {
       continue
@@ -116,6 +130,23 @@ func (h *KlinesHandler) Fix() error {
     h.Repository.Fix(symbol, "15m", 672)
     h.Repository.Fix(symbol, "4h", 126)
     h.Repository.Fix(symbol, "1d", 100)
+  }
+  return nil
+}
+
+func (h *KlinesHandler) Clean() error {
+  log.Println("binance futures tasks klines clean...")
+  symbols := h.SymbolsRepository.Symbols()
+  for _, symbol := range symbols {
+    mutex := common.NewMutex(
+      h.Rdb,
+      h.Ctx,
+      fmt.Sprintf(config.LOCKS_TASKS_KLINES_CLEAN, symbol),
+    )
+    if !mutex.Lock(5 * time.Second) {
+      continue
+    }
+    h.Repository.Clean(symbol)
   }
   return nil
 }

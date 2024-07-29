@@ -5,6 +5,7 @@ import (
   "fmt"
   "github.com/nats-io/nats.go"
   "taoniu.local/cryptos/common"
+  config "taoniu.local/cryptos/config/binance/futures"
 )
 
 type Account struct {
@@ -19,7 +20,7 @@ func NewAccount(natsContext *common.NatsContext) *Account {
 }
 
 func (h *Account) Subscribe() error {
-  //h.NatsContext.Conn.Subscribe(config.NATS_ACCOUNT_UPDATE, h.Update)
+  h.NatsContext.Conn.Subscribe(config.NATS_ACCOUNT_UPDATE, h.Update)
   return nil
 }
 
@@ -31,7 +32,12 @@ func (h *Account) Update(m *nats.Msg) {
     h.NatsContext.Ctx,
     fmt.Sprintf("binance:futures:balance:%s", payload.Asset),
     map[string]interface{}{
-      "balance": payload.Balance,
+      "balance":           payload.Balance,
+      "free":              payload.Free,
+      "unrealized_profit": payload.UnrealizedProfit,
+      "margin":            payload.Margin,
+      "initial_margin":    payload.InitialMargin,
+      "maint_margin":      payload.MaintMargin,
     },
   )
 }

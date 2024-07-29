@@ -490,7 +490,7 @@ func (r *ScalpingRepository) Take(scalping *spotModels.Scalping, price float64) 
     return
   }
 
-  result := r.Db.Where("scalping_id=? AND status=?", scalping.ID, 1).Order("sell_price asc").Take(&trading)
+  result := r.Db.Where("scalping_id=? AND status=?", scalping.ID, 1).Take(&trading)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     return errors.New("empty scalping to take")
   }

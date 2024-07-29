@@ -21,6 +21,11 @@ type PlansUpdatePayload struct {
 }
 
 type AccountUpdatePayload struct {
-  Asset   string  `json:"asset"`
-  Balance float64 `json:"balance"`
+  Asset            string  `json:"asset"`
+  Balance          float64 `json:"balance"`
+  Free             float64 `json:"free"`
+  UnrealizedProfit float64 `json:"unrealized_profit"`
+  Margin           float64 `json:"margin"`
+  InitialMargin    float64 `json:"initial_margin"`
+  MaintMargin      float64 `json:"maint_margin"`
 }

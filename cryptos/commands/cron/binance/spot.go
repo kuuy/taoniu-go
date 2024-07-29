@@ -77,14 +77,14 @@ func (h *SpotHandler) run() error {
     binance.Spot().Account().Flush()
     binance.Spot().Tickers().Flush()
     //binance.Spot().Tradings().Launchpad().Place()
-    binance.Spot().Tradings().Triggers().Place()
     binance.Spot().Tradings().Scalping().Place()
+    binance.Spot().Tradings().Triggers().Place()
     //binance.Spot().Margin().Cross().Tradings().Triggers().Place()
   })
   c.AddFunc("@every 15s", func() {
     //binance.Spot().Tradings().Launchpad().Flush()
-    binance.Spot().Tradings().Triggers().Flush()
     binance.Spot().Tradings().Scalping().Flush()
+    binance.Spot().Tradings().Triggers().Flush()
     //binance.Spot().Margin().Cross().Tradings().Triggers().Flush()
     //tradingview.Analysis().Flush()
   })
@@ -98,15 +98,15 @@ func (h *SpotHandler) run() error {
     binance.Spot().Orders().Sync(time.Now().Add(-15*time.Minute).UnixMicro(), 20)
   })
   c.AddFunc("@every 5m", func() {
-    binance.Spot().Analysis().Flush()
+    //binance.Spot().Analysis().Flush()
   })
   c.AddFunc("@every 15m", func() {
-    binance.Spot().Klines().Clean()
-    binance.Spot().Strategies().Clean()
-    binance.Spot().Plans().Clean()
+    //binance.Spot().Klines().Clean()
+    //binance.Spot().Strategies().Clean()
+    //binance.Spot().Plans().Clean()
   })
   c.AddFunc("@hourly", func() {
-    binance.Spot().Symbols().Flush()
+    //binance.Spot().Symbols().Flush()
     //binance.Savings().Products().Flush()
   })
   c.AddFunc("0 8,20 * * * *", func() {

@@ -595,7 +595,7 @@ func (r *ScalpingRepository) Take(scalping *crossModels.Scalping, price float64)
   }
 
   if scalping.Side == 2 {
-    result := r.Db.Where("scalping_id=? AND status=?", scalping.ID, 1).Order("sell_price desc").Take(&trading)
+    result := r.Db.Where("scalping_id=? AND status=?", scalping.ID, 1).Take(&trading)
     if errors.Is(result.Error, gorm.ErrRecordNotFound) {
       return errors.New("empty scalping")
     }

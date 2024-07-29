@@ -545,7 +545,7 @@ func (r *ScalpingRepository) Take(scalping *futuresModels.Scalping, price float6
   }
 
   if scalping.Side == 1 {
-    result := r.Db.Where("scalping_id=? AND status=?", scalping.ID, 1).Order("sell_price asc").Take(&trading)
+    result := r.Db.Where("scalping_id=? AND status=?", scalping.ID, 1).Take(&trading)
     if errors.Is(result.Error, gorm.ErrRecordNotFound) {
       return errors.New("empty scalping")
     }
