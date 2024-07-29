@@ -188,9 +188,8 @@ func (r *OrdersRepository) Open(symbol string) (err error) {
 func (r *OrdersRepository) Sync(symbol string, startTime int64, limit int) (err error) {
   tr := &http.Transport{
     DisableKeepAlives: true,
+    DialContext:       (&net.Dialer{}).DialContext,
   }
-  session := &net.Dialer{}
-  tr.DialContext = session.DialContext
 
   httpClient := &http.Client{
     Transport: tr,

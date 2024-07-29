@@ -95,7 +95,7 @@ func (h *SpotHandler) run() error {
   })
   c.AddFunc("@every 1m", func() {
     binance.Spot().Depth().Flush(1000)
-    binance.Spot().Orders().Sync(time.Now().Add(-15*time.Minute).UnixMicro(), 20)
+    binance.Spot().Orders().Sync(time.Now().Add(-15*time.Minute).UnixMilli(), 20)
   })
   c.AddFunc("@every 5m", func() {
     //binance.Spot().Analysis().Flush()

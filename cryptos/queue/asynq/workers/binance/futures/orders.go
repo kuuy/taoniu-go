@@ -103,8 +103,8 @@ func (h *Orders) Sync(ctx context.Context, t *asynq.Task) error {
 }
 
 func (h *Orders) Register() error {
-  h.AnsqContext.Mux.HandleFunc("binance:futures:orders:open", h.Open)
-  h.AnsqContext.Mux.HandleFunc("binance:futures:orders:flush", h.Flush)
-  h.AnsqContext.Mux.HandleFunc("binance:futures:orders:sync", h.Sync)
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_ORDERS_OPEN, h.Open)
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_ORDERS_FLUSH, h.Flush)
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_ORDERS_SYNC, h.Sync)
   return nil
 }

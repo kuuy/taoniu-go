@@ -15,7 +15,7 @@ type Order struct {
   ExecutedQuantity float64   `gorm:"not null"`
   OpenTime         int64     `gorm:"not null;"`
   UpdateTime       int64     `gorm:"not null;index:idx_binance_spot_orders,priority:3;index:idx_binance_spot_orders_lost"`
-  Status           string    `gorm:"size:30;not null;index:idx_binance_spot_orders,priority:2"`
+  Status           string    `gorm:"size:30;not null;index;index:idx_binance_spot_orders,priority:2"`
   Remark           string    `gorm:"size:5000;not null"`
   CreatedAt        time.Time `gorm:"not null"`
   UpdatedAt        time.Time `gorm:"not null"`

@@ -24,7 +24,7 @@ type Order struct {
   PriceProtect     bool      `gorm:"not null"`
   ReduceOnly       bool      `gorm:"not null"`
   ClosePosition    bool      `gorm:"not null"`
-  Status           string    `gorm:"size:30;not null;index:idx_binance_futures_orders,priority:3"`
+  Status           string    `gorm:"size:30;not null;index;index:idx_binance_futures_orders,priority:3"`
   Remark           string    `gorm:"size:5000;not null"`
   CreatedAt        time.Time `gorm:"not null"`
   UpdatedAt        time.Time `gorm:"not null"`

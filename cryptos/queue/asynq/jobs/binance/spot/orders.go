@@ -3,6 +3,7 @@ package spot
 import (
   "encoding/json"
   "github.com/hibiken/asynq"
+  config "taoniu.local/cryptos/config/binance/spot"
 )
 
 type Orders struct{}
@@ -27,7 +28,7 @@ func (h *Orders) Open(symbol string) (*asynq.Task, error) {
   if err != nil {
     return nil, err
   }
-  return asynq.NewTask("binance:spot:orders:open", payload), nil
+  return asynq.NewTask(config.ASYNQ_JOBS_ORDERS_OPEN, payload), nil
 }
 
 func (h *Orders) Flush(symbol string, orderId int64) (*asynq.Task, error) {
@@ -35,7 +36,7 @@ func (h *Orders) Flush(symbol string, orderId int64) (*asynq.Task, error) {
   if err != nil {
     return nil, err
   }
-  return asynq.NewTask("binance:spot:orders:flush", payload), nil
+  return asynq.NewTask(config.ASYNQ_JOBS_ORDERS_FLUSH, payload), nil
 }
 
 func (h *Orders) Sync(symbol string, startTime int64, limit int) (*asynq.Task, error) {
@@ -43,5 +44,5 @@ func (h *Orders) Sync(symbol string, startTime int64, limit int) (*asynq.Task, e
   if err != nil {
     return nil, err
   }
-  return asynq.NewTask("binance:spot:orders:sync", payload), nil
+  return asynq.NewTask(config.ASYNQ_JOBS_ORDERS_SYNC, payload), nil
 }
