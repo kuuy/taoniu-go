@@ -19,8 +19,6 @@ import (
   "github.com/go-redis/redis/v8"
   "github.com/nats-io/nats.go"
   "gorm.io/gorm"
-
-  config "taoniu.local/cryptos/config/binance/spot"
 )
 
 type Balance struct {
@@ -65,13 +63,6 @@ func (r *AccountRepository) Flush() error {
       },
     )
     currencies = append(currencies, coin.Asset)
-    message, _ := json.Marshal(map[string]interface{}{
-      "asset":  coin.Asset,
-      "free":   free,
-      "locked": locked,
-    })
-    r.Nats.Publish(config.NATS_ACCOUNT_UPDATE, message)
-    r.Nats.Flush()
   }
 
   for _, currency := range oldCurrencies {
@@ -110,9 +101,8 @@ func (r *AccountRepository) Balance(asset string) (map[string]float64, error) {
 func (r *AccountRepository) Request() (result *AccountInfo, err error) {
   tr := &http.Transport{
     DisableKeepAlives: true,
+    DialContext:       (&net.Dialer{}).DialContext,
   }
-  session := &net.Dialer{}
-  tr.DialContext = session.DialContext
 
   httpClient := &http.Client{
     Transport: tr,

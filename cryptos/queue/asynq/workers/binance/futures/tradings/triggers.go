@@ -48,7 +48,7 @@ func NewTriggers(ansqContext *common.AnsqServerContext) *Triggers {
   return h
 }
 
-func (h *Triggers) Place(ctx context.Context, t *asynq.Task) error {
+func (h *Triggers) Place(ctx context.Context, t *asynq.Task) (err error) {
   var payload TriggersPlacePayload
   json.Unmarshal(t.Payload(), &payload)
 
@@ -64,10 +64,10 @@ func (h *Triggers) Place(ctx context.Context, t *asynq.Task) error {
 
   h.Repository.Place(payload.ID)
 
-  return nil
+  return
 }
 
-func (h *Triggers) Flush(ctx context.Context, t *asynq.Task) error {
+func (h *Triggers) Flush(ctx context.Context, t *asynq.Task) (err error) {
   var payload TriggersFlushPayload
   json.Unmarshal(t.Payload(), &payload)
 
@@ -83,11 +83,11 @@ func (h *Triggers) Flush(ctx context.Context, t *asynq.Task) error {
 
   h.Repository.Flush(payload.ID)
 
-  return nil
+  return
 }
 
-func (h *Triggers) Register() error {
+func (h *Triggers) Register() (err error) {
   h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_TRADINGS_TRIGGERS_PLACE, h.Place)
   h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_TRADINGS_TRIGGERS_FLUSH, h.Flush)
-  return nil
+  return
 }

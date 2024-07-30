@@ -646,12 +646,13 @@ func (r *ScalpingRepository) Take(scalping *crossModels.Scalping, price float64)
 
 func (r *ScalpingRepository) Close(scalping *crossModels.Scalping) {
   var total int64
-  var tradings []*models.Scalping
-  r.Db.Model(&tradings).Where("scalping_id = ? AND status IN ?", scalping.ID, []int{0, 1}).Count(&total)
+  r.Db.Model(&models.Scalping{}).Where("scalping_id = ? AND status IN ?", scalping.ID, []int{0, 1}).Count(&total)
   if total == 0 {
     return
   }
-  r.Db.Where("scalping_id=? AND status=?", scalping.ID, 1).Find(&tradings)
+
+  var tradings []*models.Scalping
+  r.Db.Select([]string{"id", "version", "updated_at"}).Where("scalping_id=? AND status=?", scalping.ID, 1).Find(&tradings)
   timestamp := time.Now().Add(-30 * time.Minute).Unix()
   for _, trading := range tradings {
     if trading.UpdatedAt.Unix() < timestamp {
@@ -680,27 +681,17 @@ func (r *ScalpingRepository) CanBuy(
   scalping *crossModels.Scalping,
   price float64,
 ) bool {
-  var trading models.Scalping
-  if scalping.Side == 1 {
-    result := r.Db.Where("scalping_id=? AND status IN ?", scalping.ID, []int{0, 1, 2}).Order("buy_price asc").Take(&trading)
-    if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-      if trading.Status == 0 {
-        return false
-      }
-      if price >= trading.BuyPrice*0.9615 {
-        return false
-      }
+  var tradings []*models.Scalping
+  r.Db.Select([]string{"status", "buy_price"}).Where("scalping_id=? AND status IN ?", scalping.ID, []int{0, 1, 2}).Find(&tradings)
+  for _, trading := range tradings {
+    if trading.Status == 0 {
+      return false
     }
-  }
-  if scalping.Side == 2 {
-    result := r.Db.Where("scalping_id=? AND status IN ?", scalping.ID, []int{0, 1, 2}).Order("buy_price desc").Take(&trading)
-    if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-      if trading.Status == 0 {
-        return false
-      }
-      if price <= trading.BuyPrice*1.0385 {
-        return false
-      }
+    if scalping.Side == 1 && price >= trading.BuyPrice*0.9615 {
+      return false
+    }
+    if scalping.Side == 2 && price <= trading.BuyPrice*1.0385 {
+      return false
     }
   }
   return true

@@ -552,12 +552,13 @@ func (r *ScalpingRepository) Take(scalping *spotModels.Scalping, price float64) 
 
 func (r *ScalpingRepository) Close(scalping *spotModels.Scalping) {
   var total int64
-  var tradings []*models.Scalping
-  r.Db.Model(&tradings).Where("scalping_id = ? AND status IN ?", scalping.ID, []int{0, 1}).Count(&total)
+  r.Db.Model(&models.Scalping{}).Where("scalping_id = ? AND status IN ?", scalping.ID, []int{0, 1}).Count(&total)
   if total == 0 {
     return
   }
-  r.Db.Where("scalping_id=? AND status=?", scalping.ID, 1).Find(&tradings)
+
+  var tradings []*models.Scalping
+  r.Db.Select([]string{"id", "version", "updated_at"}).Where("scalping_id=? AND status=?", scalping.ID, 1).Find(&tradings)
   timestamp := time.Now().Add(-30 * time.Minute).UnixMicro()
   for _, trading := range tradings {
     if trading.UpdatedAt.UnixMicro() < timestamp {
@@ -586,9 +587,9 @@ func (r *ScalpingRepository) CanBuy(
   scalping *spotModels.Scalping,
   price float64,
 ) bool {
-  var trading models.Scalping
-  result := r.Db.Where("scalping_id=? AND status IN ?", scalping.ID, []int{0, 1, 2}).Order("buy_price asc").Take(&trading)
-  if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+  var tradings []*models.Scalping
+  r.Db.Select([]string{"status", "buy_price"}).Where("scalping_id=? AND status IN ?", scalping.ID, []int{0, 1, 2}).Find(&tradings)
+  for _, trading := range tradings {
     if trading.Status == 0 {
       return false
     }

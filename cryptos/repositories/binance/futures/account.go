@@ -19,7 +19,6 @@ import (
   "github.com/rs/xid"
   "gorm.io/gorm"
 
-  config "taoniu.local/cryptos/config/binance/futures"
   models "taoniu.local/cryptos/models/binance/futures"
 )
 
@@ -103,17 +102,18 @@ func (r *AccountRepository) Flush() error {
       continue
     }
 
-    message, _ := json.Marshal(map[string]interface{}{
-      "asset":             coin.Asset,
-      "balance":           balance,
-      "free":              free,
-      "unrealized_profit": unrealizedProfit,
-      "margin":            margin,
-      "initial_margin":    initialMargin,
-      "maint_margin":      maintMargin,
-    })
-    r.Nats.Publish(config.NATS_ACCOUNT_UPDATE, message)
-    r.Nats.Flush()
+    r.Rdb.HMSet(
+      r.Ctx,
+      fmt.Sprintf("binance:futures:balance:%s", coin.Asset),
+      map[string]interface{}{
+        "balance":           balance,
+        "free":              free,
+        "unrealized_profit": unrealizedProfit,
+        "margin":            margin,
+        "initial_margin":    initialMargin,
+        "maint_margin":      maintMargin,
+      },
+    )
   }
 
   var symbols []string

@@ -54,7 +54,7 @@ func NewScalping(ansqContext *common.AnsqServerContext) *Scalping {
   return h
 }
 
-func (h *Scalping) Place(ctx context.Context, t *asynq.Task) error {
+func (h *Scalping) Place(ctx context.Context, t *asynq.Task) (err error) {
   var payload ScalpingPlacePayload
   json.Unmarshal(t.Payload(), &payload)
 
@@ -66,16 +66,14 @@ func (h *Scalping) Place(ctx context.Context, t *asynq.Task) error {
   if !mutex.Lock(30 * time.Second) {
     return nil
   }
+  defer mutex.Unlock()
 
-  err := h.Repository.Place(payload.PlanId)
-  if err != nil {
-    mutex.Unlock()
-  }
+  h.Repository.Place(payload.PlanId)
 
-  return nil
+  return
 }
 
-func (h *Scalping) Flush(ctx context.Context, t *asynq.Task) error {
+func (h *Scalping) Flush(ctx context.Context, t *asynq.Task) (err error) {
   var payload ScalpingFlushPayload
   json.Unmarshal(t.Payload(), &payload)
 
@@ -91,11 +89,11 @@ func (h *Scalping) Flush(ctx context.Context, t *asynq.Task) error {
 
   h.Repository.Flush(payload.ID)
 
-  return nil
+  return
 }
 
-func (h *Scalping) Register() error {
+func (h *Scalping) Register() (err error) {
   h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_TRADINGS_SCALPING_PLACE, h.Place)
   h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_TRADINGS_SCALPING_FLUSH, h.Flush)
-  return nil
+  return
 }

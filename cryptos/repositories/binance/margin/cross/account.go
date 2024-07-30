@@ -29,8 +29,6 @@ import (
   "github.com/go-redis/redis/v8"
   "github.com/nats-io/nats.go"
   "gorm.io/gorm"
-
-  config "taoniu.local/cryptos/config/binance/margin/cross"
 )
 
 type AccountRepository struct {
@@ -118,16 +116,17 @@ func (r *AccountRepository) Flush() (err error) {
       continue
     }
     r.Rdb.SAdd(r.Ctx, "binance:margin:cross:currencies", coin.Asset)
+    r.Rdb.HMSet(
+      r.Ctx,
+      fmt.Sprintf("binance:margin:cross:balance:%s", coin.Asset),
+      map[string]interface{}{
+        "free":     free,
+        "locked":   locked,
+        "borrowed": borrowed,
+        "interest": interest,
+      },
+    )
     currencies = append(currencies, coin.Asset)
-    message, _ := json.Marshal(map[string]interface{}{
-      "asset":    coin.Asset,
-      "free":     free,
-      "locked":   locked,
-      "borrowed": borrowed,
-      "interest": interest,
-    })
-    r.Nats.Publish(config.NATS_ACCOUNT_UPDATE, message)
-    r.Nats.Flush()
   }
 
   for _, currency := range oldCurrencies {

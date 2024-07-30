@@ -603,12 +603,13 @@ func (r *TriggersRepository) Take(trigger *futuresModels.Trigger, price float64)
 
 func (r *TriggersRepository) Close(trigger *futuresModels.Trigger) {
   var total int64
-  var tradings []*models.Trigger
-  r.Db.Model(&tradings).Where("trigger_id = ? AND status IN ?", trigger.ID, []int{0, 1}).Count(&total)
+  r.Db.Model(&models.Trigger{}).Where("trigger_id = ? AND status IN ?", trigger.ID, []int{0, 1}).Count(&total)
   if total == 0 {
     return
   }
-  r.Db.Where("trigger_id=? AND status=?", trigger.ID, 1).Find(&tradings)
+
+  var tradings []*models.Trigger
+  r.Db.Select([]string{"id", "version", "updated_at"}).Where("trigger_id=? AND status=?", trigger.ID, 1).Find(&tradings)
   timestamp := time.Now().Add(-30 * time.Minute).UnixMicro()
   for _, trading := range tradings {
     if trading.UpdatedAt.UnixMicro() < timestamp {
@@ -621,27 +622,17 @@ func (r *TriggersRepository) Close(trigger *futuresModels.Trigger) {
 }
 
 func (r *TriggersRepository) CanBuy(trigger *futuresModels.Trigger, price float64) bool {
-  var trading models.Trigger
-  if trigger.Side == 1 {
-    result := r.Db.Where("trigger_id=? AND status IN ?", trigger.ID, []int{0, 1, 2}).Order("buy_price asc").Take(&trading)
-    if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-      if trading.Status == 0 {
-        return false
-      }
-      if price >= trading.BuyPrice*0.9615 {
-        return false
-      }
+  var tradings []*models.Trigger
+  r.Db.Select([]string{"status", "buy_price"}).Where("trigger_id=? AND status=?", trigger.ID, []int{0, 1, 2}).Find(&tradings)
+  for _, trading := range tradings {
+    if trading.Status == 0 {
+      return false
     }
-  }
-  if trigger.Side == 2 {
-    result := r.Db.Where("trigger_id=? AND status IN ?", trigger.ID, []int{0, 1, 2}).Order("buy_price desc").Take(&trading)
-    if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-      if trading.Status == 0 {
-        return false
-      }
-      if price <= trading.BuyPrice*1.0385 {
-        return false
-      }
+    if trigger.Side == 1 && price >= trading.BuyPrice*0.9615 {
+      return false
+    }
+    if trigger.Side == 2 && price <= trading.BuyPrice*1.0385 {
+      return false
     }
   }
   return true

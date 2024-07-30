@@ -29,22 +29,22 @@ func NewAccount(ansqContext *common.AnsqServerContext) *Account {
   return h
 }
 
-func (h *Account) Flush(ctx context.Context, t *asynq.Task) error {
+func (h *Account) Flush(ctx context.Context, t *asynq.Task) (err error) {
   mutex := common.NewMutex(
     h.AnsqContext.Rdb,
     h.AnsqContext.Ctx,
     config.LOCKS_ACCOUNT_FLUSH,
   )
-  if !mutex.Lock(30 * time.Second) {
-    return nil
+  if !mutex.Lock(5 * time.Second) {
+    return
   }
   defer mutex.Unlock()
 
   h.Repository.Flush()
-  return nil
+  return
 }
 
-func (h *Account) Register() error {
+func (h *Account) Register() (err error) {
   h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_ACCOUNT_FLUSH, h.Flush)
-  return nil
+  return
 }
