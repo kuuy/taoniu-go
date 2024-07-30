@@ -460,14 +460,14 @@ func (r *ScalpingRepository) Place(planId string) error {
   mutex := common.NewMutex(
     r.Rdb,
     r.Ctx,
-    fmt.Sprintf(config.LOCKS_TRADINGS_PLACE, plan.Symbol),
+    fmt.Sprintf(config.LOCKS_TRADINGS_PLACE, scalping.Symbol),
   )
   if !mutex.Lock(5 * time.Second) {
     return nil
   }
   defer mutex.Unlock()
 
-  orderId, err := r.OrdersRepository.Create(plan.Symbol, positionSide, side, buyPrice, buyQuantity)
+  orderId, err := r.OrdersRepository.Create(scalping.Symbol, positionSide, side, buyPrice, buyQuantity)
   if err != nil {
     _, ok := err.(apiCommon.APIError)
     if ok {
@@ -478,6 +478,8 @@ func (r *ScalpingRepository) Place(planId string) error {
       "version": gorm.Expr("version + ?", 1),
     })
   }
+
+  r.Rdb.Set(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, scalping.Symbol), buyPrice, -1)
 
   r.Db.Model(&scalpingPlan).Where("plan_id", planId).Update("status", 1)
 

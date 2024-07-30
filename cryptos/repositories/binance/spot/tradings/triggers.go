@@ -276,6 +276,8 @@ func (r *TriggersRepository) Place(id string) (err error) {
     })
   }
 
+  r.Rdb.Set(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, trigger.Symbol), buyPrice, -1)
+
   trading := models.Trigger{
     ID:           xid.New().String(),
     Symbol:       trigger.Symbol,
@@ -571,7 +573,7 @@ func (r *TriggersRepository) CanBuy(
   price float64,
 ) bool {
   var tradings []*models.Trigger
-  r.Db.Select([]string{"status", "buy_price"}).Where("trigger_id=? AND status=?", trigger.ID, []int{0, 1, 2}).Find(&tradings)
+  r.Db.Select([]string{"status", "buy_price"}).Where("trigger_id=? AND status IN ?", trigger.ID, []int{0, 1, 2}).Find(&tradings)
   for _, trading := range tradings {
     if trading.Status == 0 {
       return false

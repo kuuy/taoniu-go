@@ -1,6 +1,7 @@
 package spot
 
 const (
+  REDIS_KEY_TRADINGS_LAST_PRICE                = "binance:spot:tradings:last:price:%v"
   REDIS_KEY_TRADINGS_TRIGGERS_PLACE            = "binance:spot:tradings:triggers:place:%v"
   SCALPING_MIN_BINANCE                         = 50
   TRIGGERS_MIN_BINANCE                         = 200

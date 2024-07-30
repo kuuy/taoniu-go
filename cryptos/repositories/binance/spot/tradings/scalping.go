@@ -258,14 +258,14 @@ func (r *ScalpingRepository) Place(planId string) (err error) {
   mutex := common.NewMutex(
     r.Rdb,
     r.Ctx,
-    fmt.Sprintf(config.LOCKS_TRADINGS_PLACE, plan.Symbol),
+    fmt.Sprintf(config.LOCKS_TRADINGS_PLACE, scalping.Symbol),
   )
   if !mutex.Lock(5 * time.Second) {
     return
   }
   defer mutex.Unlock()
 
-  orderId, err := r.OrdersRepository.Create(plan.Symbol, side, buyPrice, buyQuantity)
+  orderId, err := r.OrdersRepository.Create(scalping.Symbol, side, buyPrice, buyQuantity)
   if err != nil {
     if _, ok := err.(apiCommon.APIError); ok {
       return
@@ -275,6 +275,8 @@ func (r *ScalpingRepository) Place(planId string) (err error) {
       "version": gorm.Expr("version + ?", 1),
     })
   }
+
+  r.Rdb.Set(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, scalping.Symbol), buyPrice, -1)
 
   r.Db.Model(&scalpingPlan).Where("plan_id", planId).Update("status", 1)
 
@@ -470,6 +472,7 @@ func (r *ScalpingRepository) Take(scalping *spotModels.Scalping, price float64) 
       return errors.New("waiting for more time")
     }
     if position.Timestamp > scalping.Timestamp+9e8 {
+      r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, scalping.Symbol))
       r.Close(scalping)
     }
     return errors.New(fmt.Sprintf("[%s] empty position", scalping.Symbol))
