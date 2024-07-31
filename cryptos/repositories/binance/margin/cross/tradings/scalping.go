@@ -418,9 +418,8 @@ func (r *ScalpingRepository) Flush(id string) error {
 
       if status == "FILLED" {
         result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
-          "buy_order_id": trading.BuyOrderId,
-          "status":       1,
-          "version":      gorm.Expr("version + ?", 1),
+          "status":  1,
+          "version": gorm.Expr("version + ?", 1),
         })
         if result.Error != nil {
           return result.Error
@@ -430,9 +429,8 @@ func (r *ScalpingRepository) Flush(id string) error {
         }
       } else if status == "CANCELED" {
         result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
-          "buy_order_id": trading.BuyOrderId,
-          "status":       4,
-          "version":      gorm.Expr("version + ?", 1),
+          "status":  4,
+          "version": gorm.Expr("version + ?", 1),
         })
         if result.Error != nil {
           return result.Error
@@ -491,9 +489,8 @@ func (r *ScalpingRepository) Flush(id string) error {
 
       if status == "FILLED" {
         result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
-          "sell_order_id": trading.SellOrderId,
-          "status":        3,
-          "version":       gorm.Expr("version + ?", 1),
+          "status":  3,
+          "version": gorm.Expr("version + ?", 1),
         })
         if result.Error != nil {
           return result.Error

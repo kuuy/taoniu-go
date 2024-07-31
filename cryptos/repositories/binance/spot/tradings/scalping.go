@@ -351,6 +351,7 @@ func (r *ScalpingRepository) Flush(id string) error {
           if result.RowsAffected == 0 {
             return errors.New("order update failed")
           }
+          r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, scalping.Symbol))
         }
       } else {
         if trading.BuyOrderId > 0 && trading.UpdatedAt.Unix() < timestamp {

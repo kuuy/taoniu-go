@@ -336,17 +336,19 @@ func (r *TriggersRepository) Flush(id string) (err error) {
           if result.RowsAffected == 0 {
             return errors.New("order update failed")
           }
-        }
-        if trading.UpdatedAt.Unix() < timestamp {
-          result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
-            "status":  6,
-            "version": gorm.Expr("version + ?", 1),
-          })
-          if result.Error != nil {
-            return result.Error
-          }
-          if result.RowsAffected == 0 {
-            return errors.New("order update failed")
+        } else {
+          if trading.UpdatedAt.Unix() < timestamp {
+            result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+              "status":  6,
+              "version": gorm.Expr("version + ?", 1),
+            })
+            if result.Error != nil {
+              return result.Error
+            }
+            if result.RowsAffected == 0 {
+              return errors.New("order update failed")
+            }
+            r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, trigger.Symbol))
           }
         }
       } else {
@@ -365,21 +367,27 @@ func (r *TriggersRepository) Flush(id string) (err error) {
       }
 
       if status == "FILLED" {
-        trading.Status = 1
+        result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+          "status":  1,
+          "version": gorm.Expr("version + ?", 1),
+        })
+        if result.Error != nil {
+          return result.Error
+        }
+        if result.RowsAffected == 0 {
+          return errors.New("order update failed")
+        }
       } else if status == "CANCELED" {
-        trading.Status = 4
-      }
-
-      result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
-        "buy_order_id": trading.BuyOrderId,
-        "status":       trading.Status,
-        "version":      gorm.Expr("version + ?", 1),
-      })
-      if result.Error != nil {
-        return result.Error
-      }
-      if result.RowsAffected == 0 {
-        return errors.New("order update failed")
+        result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+          "status":  4,
+          "version": gorm.Expr("version + ?", 1),
+        })
+        if result.Error != nil {
+          return result.Error
+        }
+        if result.RowsAffected == 0 {
+          return errors.New("order update failed")
+        }
       }
     }
 
@@ -429,22 +437,28 @@ func (r *TriggersRepository) Flush(id string) (err error) {
       }
 
       if status == "FILLED" {
-        trading.Status = 3
+        result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+          "status":  3,
+          "version": gorm.Expr("version + ?", 1),
+        })
+        if result.Error != nil {
+          return result.Error
+        }
+        if result.RowsAffected == 0 {
+          return errors.New("order update failed")
+        }
       } else if status == "CANCELED" {
-        trading.SellOrderId = 0
-        trading.Status = 1
-      }
-
-      result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
-        "sell_order_id": trading.SellOrderId,
-        "status":        trading.Status,
-        "version":       gorm.Expr("version + ?", 1),
-      })
-      if result.Error != nil {
-        return result.Error
-      }
-      if result.RowsAffected == 0 {
-        return errors.New("order update failed")
+        result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+          "sell_order_id": 0,
+          "status":        1,
+          "version":       gorm.Expr("version + ?", 1),
+        })
+        if result.Error != nil {
+          return result.Error
+        }
+        if result.RowsAffected == 0 {
+          return errors.New("order update failed")
+        }
       }
     }
   }

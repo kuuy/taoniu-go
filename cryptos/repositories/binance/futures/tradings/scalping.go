@@ -156,6 +156,7 @@ func (r *ScalpingRepository) Flush(id string) error {
             if result.RowsAffected == 0 {
               return errors.New("order update failed")
             }
+            r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, scalping.Symbol))
           }
         }
       } else {
@@ -175,21 +176,19 @@ func (r *ScalpingRepository) Flush(id string) error {
 
       if status == "FILLED" {
         result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
-          "buy_order_id": trading.BuyOrderId,
-          "status":       1,
-          "version":      gorm.Expr("version + ?", 1),
+          "status":  1,
+          "version": gorm.Expr("version + ?", 1),
         })
         if result.Error != nil {
           return result.Error
         }
         if result.RowsAffected == 0 {
-          return errors.New("trading update failed")
+          return errors.New("order update failed")
         }
       } else if status == "CANCELED" {
         result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
-          "buy_order_id": trading.BuyOrderId,
-          "status":       4,
-          "version":      gorm.Expr("version + ?", 1),
+          "status":  4,
+          "version": gorm.Expr("version + ?", 1),
         })
         if result.Error != nil {
           return result.Error
@@ -248,15 +247,14 @@ func (r *ScalpingRepository) Flush(id string) error {
 
       if status == "FILLED" {
         result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
-          "sell_order_id": trading.SellOrderId,
-          "status":        3,
-          "version":       gorm.Expr("version + ?", 1),
+          "status":  3,
+          "version": gorm.Expr("version + ?", 1),
         })
         if result.Error != nil {
           return result.Error
         }
         if result.RowsAffected == 0 {
-          return errors.New("trading update failed")
+          return errors.New("order update failed")
         }
       } else if status == "CANCELED" {
         result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
@@ -526,6 +524,7 @@ func (r *ScalpingRepository) Take(scalping *futuresModels.Scalping, price float6
       return errors.New("waiting for more time")
     }
     if position.Timestamp > scalping.Timestamp+9e8 {
+      r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, scalping.Symbol))
       r.Close(scalping)
     }
     return errors.New(fmt.Sprintf("[%s] %s empty position", scalping.Symbol, positionSide))
