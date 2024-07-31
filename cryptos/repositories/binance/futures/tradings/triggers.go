@@ -178,6 +178,12 @@ func (r *TriggersRepository) Place(id string) (err error) {
   if cachedEntryPrice == entryPrice && cachedEntryQuantity == entryQuantity {
     buyPrice, _ = strconv.ParseFloat(values[2].(string), 64)
     buyQuantity, _ = strconv.ParseFloat(values[3].(string), 64)
+    if trigger.Side == 1 {
+      buyPrice, _ = decimal.NewFromFloat(buyPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+    } else {
+      buyPrice, _ = decimal.NewFromFloat(buyPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
+    }
+    buyQuantity, _ = decimal.NewFromFloat(buyQuantity).Div(decimal.NewFromFloat(stepSize)).Ceil().Mul(decimal.NewFromFloat(stepSize)).Float64()
     log.Println("load from cached price", buyPrice, buyQuantity)
   } else {
     cachedEntryPrice = entryPrice
@@ -652,6 +658,21 @@ func (r *TriggersRepository) Close(trigger *futuresModels.Trigger) {
 }
 
 func (r *TriggersRepository) CanBuy(trigger *futuresModels.Trigger, price float64) bool {
+  var positionSide string
+  if trigger.Side == 1 {
+    positionSide = "LONG"
+  } else if trigger.Side == 2 {
+    positionSide = "SHORT"
+  }
+  val, _ := r.Rdb.Get(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, trigger.Symbol)).Result()
+  if val != "" {
+    buyPrice, _ := strconv.ParseFloat(val, 64)
+    if price >= buyPrice*0.9615 {
+      return false
+    }
+    return true
+  }
+
   var tradings []*models.Trigger
   r.Db.Select([]string{"status", "buy_price"}).Where("trigger_id=? AND status IN ?", trigger.ID, []int{0, 1, 2}).Find(&tradings)
   for _, trading := range tradings {

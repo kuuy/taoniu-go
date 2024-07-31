@@ -5,6 +5,7 @@ import (
   "errors"
   "fmt"
   "log"
+  "strconv"
   "time"
 
   apiCommon "github.com/adshao/go-binance/v2/common"
@@ -591,6 +592,15 @@ func (r *ScalpingRepository) CanBuy(
   scalping *spotModels.Scalping,
   price float64,
 ) bool {
+  val, _ := r.Rdb.Get(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, scalping.Symbol)).Result()
+  if val != "" {
+    buyPrice, _ := strconv.ParseFloat(val, 64)
+    if price >= buyPrice*0.9615 {
+      return false
+    }
+    return true
+  }
+
   var tradings []*models.Scalping
   r.Db.Select([]string{"status", "buy_price"}).Where("scalping_id=? AND status IN ?", scalping.ID, []int{0, 1, 2}).Find(&tradings)
   for _, trading := range tradings {
