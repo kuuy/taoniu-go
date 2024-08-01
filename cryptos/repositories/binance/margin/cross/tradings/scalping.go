@@ -355,12 +355,15 @@ func (r *ScalpingRepository) Flush(id string) error {
     log.Println("take error", scalping.Symbol, err)
   }
 
+  var positionSide string
   var placeSide string
   var takeSide string
   if scalping.Side == 1 {
+    positionSide = "LONG"
     placeSide = "BUY"
     takeSide = "SELL"
   } else if scalping.Side == 2 {
+    positionSide = "SHORT"
     placeSide = "SELL"
     takeSide = "BUY"
   }
@@ -400,6 +403,7 @@ func (r *ScalpingRepository) Flush(id string) error {
             if result.RowsAffected == 0 {
               return errors.New("order update failed")
             }
+            r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, scalping.Symbol))
           }
         }
       } else {
@@ -439,6 +443,7 @@ func (r *ScalpingRepository) Flush(id string) error {
         if result.RowsAffected == 0 {
           return errors.New("order update failed")
         }
+        r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, scalping.Symbol))
       }
     }
 
@@ -544,8 +549,8 @@ func (r *ScalpingRepository) Take(scalping *crossModels.Scalping, price float64)
       return errors.New("waiting for more time")
     }
     if position.Timestamp > scalping.Timestamp+9e8 {
-      r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, scalping.Symbol))
       r.Close(scalping)
+      r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, scalping.Symbol))
     }
     return errors.New(fmt.Sprintf("[%s] %s empty position", scalping.Symbol, positionSide))
   }
@@ -682,6 +687,8 @@ func (r *ScalpingRepository) CanBuy(
   scalping *crossModels.Scalping,
   price float64,
 ) bool {
+  var buyPrice float64
+
   var positionSide string
   if scalping.Side == 1 {
     positionSide = "LONG"
@@ -690,8 +697,11 @@ func (r *ScalpingRepository) CanBuy(
   }
   val, _ := r.Rdb.Get(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, scalping.Symbol)).Result()
   if val != "" {
-    buyPrice, _ := strconv.ParseFloat(val, 64)
-    if price >= buyPrice*0.9615 {
+    buyPrice, _ = strconv.ParseFloat(val, 64)
+    if scalping.Side == 1 && price >= buyPrice*0.9615 {
+      return false
+    }
+    if scalping.Side == 2 && price <= buyPrice*1.0385 {
       return false
     }
     return true
@@ -709,6 +719,21 @@ func (r *ScalpingRepository) CanBuy(
     if scalping.Side == 2 && price <= trading.BuyPrice*1.0385 {
       return false
     }
+    if buyPrice == 0 {
+      buyPrice = trading.BuyPrice
+    } else {
+      if scalping.Side == 1 && buyPrice > trading.BuyPrice {
+        buyPrice = trading.BuyPrice
+      }
+      if scalping.Side == 2 && buyPrice < trading.BuyPrice {
+        buyPrice = trading.BuyPrice
+      }
+    }
   }
+
+  if buyPrice > 0 {
+    r.Rdb.Set(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, scalping.Symbol), buyPrice, -1)
+  }
+
   return true
 }

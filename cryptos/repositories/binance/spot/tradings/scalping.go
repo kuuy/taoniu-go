@@ -370,21 +370,29 @@ func (r *ScalpingRepository) Flush(id string) error {
       }
 
       if status == "FILLED" {
-        trading.Status = 1
+        result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+          "status":  1,
+          "version": gorm.Expr("version + ?", 1),
+        })
+        if result.Error != nil {
+          return result.Error
+        }
+        if result.RowsAffected == 0 {
+          return errors.New("order update failed")
+        }
       } else if status == "CANCELED" {
-        trading.Status = 4
-      }
-
-      result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
-        "buy_order_id": trading.BuyOrderId,
-        "status":       trading.Status,
-        "version":      gorm.Expr("version + ?", 1),
-      })
-      if result.Error != nil {
-        return result.Error
-      }
-      if result.RowsAffected == 0 {
-        return errors.New("order update failed")
+        result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+          "buy_order_id": 0,
+          "status":       4,
+          "version":      gorm.Expr("version + ?", 1),
+        })
+        if result.Error != nil {
+          return result.Error
+        }
+        if result.RowsAffected == 0 {
+          return errors.New("order update failed")
+        }
+        r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, scalping.Symbol))
       }
     }
 
@@ -434,22 +442,28 @@ func (r *ScalpingRepository) Flush(id string) error {
       }
 
       if status == "FILLED" {
-        trading.Status = 3
+        result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+          "status":  3,
+          "version": gorm.Expr("version + ?", 1),
+        })
+        if result.Error != nil {
+          return result.Error
+        }
+        if result.RowsAffected == 0 {
+          return errors.New("order update failed")
+        }
       } else if status == "CANCELED" {
-        trading.SellOrderId = 0
-        trading.Status = 1
-      }
-
-      result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
-        "sell_order_id": trading.SellOrderId,
-        "status":        trading.Status,
-        "version":       gorm.Expr("version + ?", 1),
-      })
-      if result.Error != nil {
-        return result.Error
-      }
-      if result.RowsAffected == 0 {
-        return errors.New("order update failed")
+        result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+          "sell_order_id": 0,
+          "status":        1,
+          "version":       gorm.Expr("version + ?", 1),
+        })
+        if result.Error != nil {
+          return result.Error
+        }
+        if result.RowsAffected == 0 {
+          return errors.New("order update failed")
+        }
       }
     }
   }
@@ -474,8 +488,8 @@ func (r *ScalpingRepository) Take(scalping *spotModels.Scalping, price float64) 
       return errors.New("waiting for more time")
     }
     if position.Timestamp > scalping.Timestamp+9e8 {
-      r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, scalping.Symbol))
       r.Close(scalping)
+      r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, scalping.Symbol))
     }
     return errors.New(fmt.Sprintf("[%s] empty position", scalping.Symbol))
   }
@@ -592,9 +606,11 @@ func (r *ScalpingRepository) CanBuy(
   scalping *spotModels.Scalping,
   price float64,
 ) bool {
+  var buyPrice float64
+
   val, _ := r.Rdb.Get(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, scalping.Symbol)).Result()
   if val != "" {
-    buyPrice, _ := strconv.ParseFloat(val, 64)
+    buyPrice, _ = strconv.ParseFloat(val, 64)
     if price >= buyPrice*0.9615 {
       return false
     }
@@ -610,6 +626,14 @@ func (r *ScalpingRepository) CanBuy(
     if price >= trading.BuyPrice*0.9615 {
       return false
     }
+    if buyPrice == 0 || buyPrice > trading.BuyPrice {
+      buyPrice = trading.BuyPrice
+    }
   }
+
+  if buyPrice > 0 {
+    r.Rdb.Set(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, scalping.Symbol), buyPrice, -1)
+  }
+
   return true
 }

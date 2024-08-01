@@ -390,6 +390,7 @@ func (r *TriggersRepository) Flush(id string) (err error) {
         if result.RowsAffected == 0 {
           return errors.New("order update failed")
         }
+        r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, trigger.Symbol))
       }
     }
 
@@ -588,9 +589,11 @@ func (r *TriggersRepository) CanBuy(
   trigger *spotModels.Trigger,
   price float64,
 ) bool {
+  var buyPrice float64
+
   val, _ := r.Rdb.Get(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, trigger.Symbol)).Result()
   if val != "" {
-    buyPrice, _ := strconv.ParseFloat(val, 64)
+    buyPrice, _ = strconv.ParseFloat(val, 64)
     if price >= buyPrice*0.9615 {
       return false
     }
@@ -606,6 +609,14 @@ func (r *TriggersRepository) CanBuy(
     if price >= trading.BuyPrice*0.9615 {
       return false
     }
+    if buyPrice == 0 || buyPrice > trading.BuyPrice {
+      buyPrice = trading.BuyPrice
+    }
   }
+
+  if buyPrice > 0 {
+    r.Rdb.Set(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, trigger.Symbol), buyPrice, -1)
+  }
+
   return true
 }

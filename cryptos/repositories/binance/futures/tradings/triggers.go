@@ -431,6 +431,7 @@ func (r *TriggersRepository) Flush(id string) (err error) {
         if result.RowsAffected == 0 {
           return errors.New("order update failed")
         }
+        r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, trigger.Symbol))
       }
     }
 
@@ -532,7 +533,6 @@ func (r *TriggersRepository) Take(trigger *futuresModels.Trigger, price float64)
       return errors.New("waiting for more time")
     }
     if position.Timestamp > trigger.Timestamp {
-      r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, trigger.Symbol))
       r.Close(trigger)
     }
     return errors.New(fmt.Sprintf("[%s] %s empty position", trigger.Symbol, positionSide))
@@ -658,6 +658,8 @@ func (r *TriggersRepository) Close(trigger *futuresModels.Trigger) {
 }
 
 func (r *TriggersRepository) CanBuy(trigger *futuresModels.Trigger, price float64) bool {
+  var buyPrice float64
+
   var positionSide string
   if trigger.Side == 1 {
     positionSide = "LONG"
@@ -666,8 +668,11 @@ func (r *TriggersRepository) CanBuy(trigger *futuresModels.Trigger, price float6
   }
   val, _ := r.Rdb.Get(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, trigger.Symbol)).Result()
   if val != "" {
-    buyPrice, _ := strconv.ParseFloat(val, 64)
-    if price >= buyPrice*0.9615 {
+    buyPrice, _ = strconv.ParseFloat(val, 64)
+    if trigger.Side == 1 && price >= buyPrice*0.9615 {
+      return false
+    }
+    if trigger.Side == 2 && price <= buyPrice*1.0385 {
       return false
     }
     return true
@@ -685,6 +690,21 @@ func (r *TriggersRepository) CanBuy(trigger *futuresModels.Trigger, price float6
     if trigger.Side == 2 && price <= trading.BuyPrice*1.0385 {
       return false
     }
+    if buyPrice == 0 {
+      buyPrice = trading.BuyPrice
+    } else {
+      if trigger.Side == 1 && buyPrice > trading.BuyPrice {
+        buyPrice = trading.BuyPrice
+      }
+      if trigger.Side == 2 && buyPrice < trading.BuyPrice {
+        buyPrice = trading.BuyPrice
+      }
+    }
   }
+
+  if buyPrice > 0 {
+    r.Rdb.Set(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, trigger.Symbol), buyPrice, -1)
+  }
+
   return true
 }
