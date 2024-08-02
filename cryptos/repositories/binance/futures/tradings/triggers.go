@@ -170,7 +170,7 @@ func (r *TriggersRepository) Place(id string) (err error) {
     "buy_price",
     "buy_quantity",
   }...).Result()
-  if values[0] != nil {
+  if len(values) == 4 && values[0] != nil && values[1] != nil {
     cachedEntryPrice, _ = strconv.ParseFloat(values[0].(string), 64)
     cachedEntryQuantity, _ = strconv.ParseFloat(values[1].(string), 64)
   }
