@@ -2,7 +2,9 @@ package cross
 
 import (
   "context"
+  "errors"
   "log"
+  "strconv"
   repositories "taoniu.local/cryptos/repositories/binance/margin/cross"
   "time"
 
@@ -39,8 +41,28 @@ func NewOrdersCommand() *cli.Command {
       {
         Name:  "create",
         Usage: "",
-        Action: func(c *cli.Context) error {
-          if err := h.Create(); err != nil {
+        Action: func(c *cli.Context) (err error) {
+          symbol := c.Args().Get(0)
+          if symbol == "" {
+            err = errors.New("symbol can not be empty")
+            return
+          }
+          side := c.Args().Get(1)
+          if side != "BUY" && side != "SELL" {
+            err = errors.New("side is not valid")
+            return
+          }
+          price, _ := strconv.ParseFloat(c.Args().Get(2), 16)
+          if price < 0 {
+            err = errors.New("price is not valid")
+            return
+          }
+          quantity, _ := strconv.ParseFloat(c.Args().Get(3), 16)
+          if price < 0 {
+            err = errors.New("quantity is not valid")
+            return
+          }
+          if err = h.Create(symbol, side, price, quantity); err != nil {
             return cli.Exit(err.Error(), 1)
           }
           return nil
@@ -80,12 +102,9 @@ func NewOrdersCommand() *cli.Command {
   }
 }
 
-func (h *OrdersHandler) Create() error {
-  log.Println("margin cross orders create...")
-  symbol := "RENUSDT"
-  price := 0.03855
-  quantity := 259.0
-  orderId, err := h.Repository.Create(symbol, "BUY", price, quantity)
+func (h *OrdersHandler) Create(symbol string, side string, price float64, quantity float64) error {
+  log.Println("binance margin cross orders create...", symbol, price, quantity)
+  orderId, err := h.Repository.Create(symbol, side, price, quantity)
   if err != nil {
     return err
   }
@@ -94,7 +113,7 @@ func (h *OrdersHandler) Create() error {
 }
 
 func (h *OrdersHandler) Cancel() error {
-  log.Println("margin cross orders cancel...")
+  log.Println("binance margin cross orders cancel...")
   symbol := "BCHUSDT"
   orderId := int64(3778464925)
   err := h.Repository.Cancel(symbol, orderId)
@@ -105,7 +124,7 @@ func (h *OrdersHandler) Cancel() error {
 }
 
 func (h *OrdersHandler) Flush() error {
-  log.Println("margin cross orders flush...")
+  log.Println("binance margin cross orders flush...")
   symbol := "MASKUSDT"
   orderId := int64(1211210069)
   h.Repository.Flush(symbol, orderId)
@@ -123,6 +142,6 @@ func (h *OrdersHandler) Flush() error {
 }
 
 func (h *OrdersHandler) Fix() error {
-  log.Println("margin cross orders fix...")
+  log.Println("binance margin cross orders fix...")
   return h.Repository.Fix(time.Now(), 20)
 }

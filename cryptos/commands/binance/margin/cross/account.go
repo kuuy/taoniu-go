@@ -128,12 +128,12 @@ func NewAccountCommand() *cli.Command {
 }
 
 func (h *AccountHandler) Flush() error {
-  log.Println("cross margin account flush processing...")
+  log.Println("binance margin cross account flush processing...")
   return h.Repository.Flush()
 }
 
 func (h *AccountHandler) Balance() error {
-  log.Println("cross margin account flush processing...")
+  log.Println("binance margin cross account flush processing...")
   balance, err := h.Repository.Balance("USDT")
   if err != nil {
     return err
@@ -143,7 +143,7 @@ func (h *AccountHandler) Balance() error {
 }
 
 func (h *AccountHandler) Collect() error {
-  log.Println("cross margin account collect processing...")
+  log.Println("binance margin cross account collect processing...")
   var transferId int64
   balance, err := h.SpotAccountRepository.Balance("USDT")
   if err == nil {
@@ -179,7 +179,7 @@ func (h *AccountHandler) Collect() error {
 }
 
 func (h *AccountHandler) Liquidate() (err error) {
-  log.Println("cross margin account liquidate processing...")
+  log.Println("binance margin cross account liquidate processing...")
   var transferId int64
   balance, err := h.Repository.Balance("USDT")
   if err == nil {
@@ -213,7 +213,7 @@ func (h *AccountHandler) Liquidate() (err error) {
 }
 
 func (h *AccountHandler) Borrow() (err error) {
-  log.Println("cross margin account borrow processing...")
+  log.Println("binance margin cross account borrow processing...")
   transferId, err := h.Repository.Borrow("USDT", 10.5)
   log.Println("transferId", transferId)
   return

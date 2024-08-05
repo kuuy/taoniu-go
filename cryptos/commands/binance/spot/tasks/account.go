@@ -1,4 +1,4 @@
-package spot
+package tasks
 
 import (
   "context"

@@ -50,7 +50,7 @@ func NewCrossCommand() *cli.Command {
 }
 
 func (h *CrossHandler) run() error {
-  log.Println("cron running...")
+  log.Println("binance margin cross cron running...")
 
   wg := &sync.WaitGroup{}
   wg.Add(1)
@@ -67,7 +67,6 @@ func (h *CrossHandler) run() error {
 
   c := cron.New()
   c.AddFunc("@every 5s", func() {
-    binance.Margin().Cross().Account().Flush()
     binance.Margin().Cross().Tradings().Scalping().Place()
     binance.Margin().Cross().Tradings().Triggers().Place()
   })

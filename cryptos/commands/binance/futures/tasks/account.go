@@ -1,4 +1,4 @@
-package spot
+package tasks
 
 import (
   "context"
@@ -7,12 +7,14 @@ import (
   "github.com/go-redis/redis/v8"
   "github.com/nats-io/nats.go"
   "github.com/urfave/cli/v2"
+  "gorm.io/gorm"
 
   "taoniu.local/cryptos/common"
-  repositories "taoniu.local/cryptos/repositories/binance/spot"
+  repositories "taoniu.local/cryptos/repositories/binance/futures"
 )
 
 type AccountHandler struct {
+  Db         *gorm.DB
   Rdb        *redis.Client
   Ctx        context.Context
   Nats       *nats.Conn
@@ -26,11 +28,13 @@ func NewAccountCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = AccountHandler{
-        Rdb:  common.NewRedis(1),
+        Db:   common.NewDB(2),
+        Rdb:  common.NewRedis(2),
         Ctx:  context.Background(),
         Nats: common.NewNats(),
       }
       h.Repository = &repositories.AccountRepository{
+        Db:   h.Db,
         Rdb:  h.Rdb,
         Ctx:  h.Ctx,
         Nats: h.Nats,

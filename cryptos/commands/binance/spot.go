@@ -28,6 +28,7 @@ func NewSpotCommand() *cli.Command {
       spot.NewTradingsCommand(),
       spot.NewStreamCommand(),
       spot.NewTasksCommand(),
+      spot.NewGamblingCommand(),
     },
   }
 }
