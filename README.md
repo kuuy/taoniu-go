@@ -92,13 +92,13 @@ GRANT ALL PRIVILEGES ON DATABASE taoniu TO taoniu;
 ALTER DATABASE taoniu OWNER TO taoniu;
 
 mkdir ~/build && cd ~/build
-curl -o https://download.redis.io/releases/redis-6.2.14.tar.gz
+curl https://download.redis.io/releases/redis-6.2.14.tar.gz -o redis-6.2.14.tar.gz
 tar xfz redis-6.2.14.tar.gz
 cd redis-6.2.14 && make -j20 && make install
 
 cd ~/build
-curl -o https://go.dev/dl/go1.21.13.linux-amd64.tar.gz
-sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.21.10.linux-amd64.tar.gz
+curl https://go.dev/dl/go1.21.13.linux-amd64.tar.gz -o go1.21.13.linux-amd64.tar.gz
+sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.21.13.linux-amd64.tar.gz
 
 git clone https://github.com/kuuy/taoniu-go ~/
 
