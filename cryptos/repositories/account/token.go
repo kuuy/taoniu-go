@@ -86,7 +86,7 @@ func (r *TokenRepository) RefreshToken(uid string) (refreshToken string, err err
 
   now := time.Now().UTC()
   cl := &jwt.Claims{
-    Expiry:   jwt.NewNumericDate(now.Add(15 * time.Minute)),
+    Expiry:   jwt.NewNumericDate(now.AddDate(0, 0, 14)),
     IssuedAt: jwt.NewNumericDate(now),
   }
   privateCl := &TokenInfo{
