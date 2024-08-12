@@ -1,18 +1,22 @@
 package account
 
 import (
-  "bytes"
   "crypto/rsa"
   "errors"
-  "io/ioutil"
   "os"
   "path"
   "time"
 
-  "github.com/lestrrat/go-jwx/jwa"
-  "github.com/lestrrat/go-jwx/jwt"
+  "github.com/go-jose/go-jose/v4"
+  "github.com/go-jose/go-jose/v4/jwt"
   "golang.org/x/crypto/ssh"
 )
+
+type TokenClaim struct {
+  Uid      string `json:"uid"`
+  Expiry   int64  `json:"iat"`
+  IssuedAt int64  `json:"exp"`
+}
 
 type TokenRepository struct {
   privateKey *rsa.PrivateKey
@@ -25,7 +29,7 @@ func (r *TokenRepository) PrivateKey() *rsa.PrivateKey {
     if err != nil {
       panic(err)
     }
-    bytes, err := ioutil.ReadFile(path.Join(home, ".ssh/jwt_rsa"))
+    bytes, err := os.ReadFile(path.Join(home, ".ssh/jwt_rsa"))
     if err != nil {
       panic(err)
     }
@@ -38,57 +42,57 @@ func (r *TokenRepository) PrivateKey() *rsa.PrivateKey {
   return r.privateKey
 }
 
-func (r *TokenRepository) AccessToken(uid string) (string, error) {
+func (r *TokenRepository) AccessToken(uid string) (accessToken string, err error) {
   now := time.Now().UTC()
 
-  token := jwt.New()
-  token.Set("uid", uid)
-  token.Set("iat", now.Unix())
-  token.Set("exp", now.Add(15*time.Minute).Unix())
-
-  accessToken, err := token.Sign(jwa.RS256, r.PrivateKey())
+  sig, err := jose.NewSigner(jose.SigningKey{Algorithm: jose.RS256, Key: r.PrivateKey()}, (&jose.SignerOptions{}).WithType("JWT"))
   if err != nil {
-    return "", err
+    return
   }
 
-  return string(accessToken), nil
+  cl := &TokenClaim{
+    uid,
+    now.Add(15 * time.Minute).Unix(),
+    now.Unix(),
+  }
+  accessToken, err = jwt.Signed(sig).Claims(cl).Serialize()
+  return
 }
 
-func (r *TokenRepository) RefreshToken(uid string) (string, error) {
+func (r *TokenRepository) RefreshToken(uid string) (refreshToken string, err error) {
   now := time.Now().UTC()
 
-  token := jwt.New()
-  token.Set("uid", uid)
-  token.Set("iat", now.Unix())
-  token.Set("exp", now.AddDate(0, 0, 14).Unix())
-
-  refreshToken, err := token.Sign(jwa.RS256, r.PrivateKey())
+  sig, err := jose.NewSigner(jose.SigningKey{Algorithm: jose.RS256, Key: r.PrivateKey()}, (&jose.SignerOptions{}).WithType("JWT"))
   if err != nil {
-    return "", err
+    return
   }
 
-  return string(refreshToken), nil
+  cl := &TokenClaim{
+    uid,
+    now.AddDate(0, 0, 14).Unix(),
+    now.Unix(),
+  }
+  refreshToken, err = jwt.Signed(sig).Claims(cl).Serialize()
+  return
 }
 
-func (r *TokenRepository) Uid(tokenString string) (string, error) {
-  now := time.Now().UTC()
-
-  token, err := jwt.Parse(
-    bytes.NewReader([]byte(tokenString)),
-    jwt.WithVerify(
-      jwa.RS256,
-      &r.PrivateKey().PublicKey,
-    ),
-  )
+func (r *TokenRepository) Uid(tokenString string) (uid string, err error) {
+  tok, err := jwt.ParseSigned(tokenString, []jose.SignatureAlgorithm{jose.RS256})
   if err != nil {
-    return "", err
+    return
   }
 
-  uid, _ := token.Get("uid")
-  exp, _ := token.Get("exp")
-  if now.Unix() > exp.(*jwt.NumericDate).Unix() {
-    return uid.(string), errors.New("token has been expired")
+  var cl *TokenClaim
+  if err = tok.UnsafeClaimsWithoutVerification(&cl); err != nil {
+    return
   }
 
-  return uid.(string), nil
+  now := time.Now().UTC()
+  if now.Unix() > cl.Expiry {
+    err = errors.New("token has been expired")
+    return
+  }
+
+  uid = cl.Uid
+  return
 }

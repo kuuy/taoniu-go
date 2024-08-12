@@ -1,6 +1,7 @@
 package api
 
 import (
+  "log"
   "net/http"
   "strings"
   repositories "taoniu.local/cryptos/repositories/account"
@@ -23,6 +24,7 @@ func Authenticator(next http.Handler) http.Handler {
     repository := &repositories.TokenRepository{}
     uid, err := repository.Uid(bearer[7:])
     if err != nil {
+      log.Println("token error", err.Error())
       if uid != "" {
         response.Error(http.StatusUnauthorized, 401, err.Error())
       } else {
