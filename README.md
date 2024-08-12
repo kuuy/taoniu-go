@@ -79,21 +79,30 @@ where summary->>'RECOMMENDATION' = 'STRONG_BUY'
 DESKTOP OS: Ubuntu 22.04.4 LTS
 SERVER OS: Debian GNU/Linux 12
 
-sudo apt install postgresql-15
+sudo apt install postgresql-15 pwgen
 
-mkdir ~/build
-curl https://download.redis.io/releases/redis-6.2.14.tar.gz -o ~/build
+sudo su postgres
+psql
+
+pwgen -s 16
+
+CREATE DATABASE taoniu;
+CREATE USER taoniu WITH ENCRYPTED PASSWORD 'xxxxxxxxxxxxxxxx';
+GRANT ALL PRIVILEGES ON DATABASE taoniu TO taoniu;
+ALTER DATABASE taoniu OWNER TO taoniu;
+
+mkdir ~/build && cd ~/build
+curl -o https://download.redis.io/releases/redis-6.2.14.tar.gz
+tar xfz redis-6.2.14.tar.gz
+cd redis-6.2.14 && make -j20 && make install
 
 cd ~/build
-tar xfz redis-6.2.14.tar.gz
-
-cd redis-6.2.14 && make -j20 && make install
+curl -o https://go.dev/dl/go1.21.13.linux-amd64.tar.gz
+sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.21.10.linux-amd64.tar.gz
 
 git clone https://github.com/kuuy/taoniu-go ~/
 
 cd ~/taoniu/cryptos
-
-sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.21.10.linux-amd64.tar.gz
 
 go build -ldflags "-s -w" -o cryptos
 
