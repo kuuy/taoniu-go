@@ -76,39 +76,41 @@ where summary->>'RECOMMENDATION' = 'STRONG_BUY'
 
 # Quick Start
 ```bash
-git clone https://github.com/kuuy/taoniu-go
+DESKTOP OS: Ubuntu 22.04.4 LTS
+SERVER OS: Debian GNU/Linux 12
 
-cd taoniu/cryptos/grpc/protos
+sudo apt install postgresql-15
+
+mkdir ~/build
+curl https://download.redis.io/releases/redis-6.2.14.tar.gz -o ~/build
+
+cd ~/build
+tar xfz redis-6.2.14.tar.gz
+
+cd redis-6.2.14 && make -j20 && make install
+
+git clone https://github.com/kuuy/taoniu-go ~/
+
+cd ~/taoniu/cryptos
+
+sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.21.10.linux-amd64.tar.gz
+
+go build -ldflags "-s -w" -o cryptos
+
+go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28
+go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2
+
+cd ~/taoniu-go/cryptos/grpc/protos
 protoc --go_out=../ --go_opt=paths=source_relative \
     --go-grpc_out=../ --go-grpc_opt=paths=source_relative \
     **/*.proto
 
-cd taoniu/cryptos
-
-go run main.go db migrate
-go run main.go binance spot klines daily flush
-go run main.go binance spot grids open AVAXBUSD 50
-go run main.go cron
-go run main.go api
-go run main.go grpc
-
-go build -ldflags "-s -w" -o cryptos
-```
-
-# taoniu-scripts
-淘牛脚本
-https://github.com/kuuy/taoniu-scripts
-
-相关功能（Features）
-|名称            |说明                    |
-|--------       |----                    |
-|行情实时更新     | websocket live update 24h tickers |
-
-crontab配置
-30 0 * * * /root/taoniu-scripts/cryptos/spot/streams.sh
-
-```shell
-/root/taoniu-scripts/cryptos/spot/streams.sh
+~/taoniu-go/cryptos db migrate
+~/taoniu-go/cryptos binance spot klines flush 1d 100
+~/taoniu-go/cryptos binance spot gambling calc BNBUSDT 1 519.6 173.241
+~/taoniu-go/cryptos cron
+~/taoniu-go/cryptos api
+~/taoniu-go/cryptos grpc
 ```
 
 # taoniu-config
