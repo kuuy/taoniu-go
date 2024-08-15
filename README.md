@@ -116,7 +116,10 @@ protoc --go_out=../ --go_opt=paths=source_relative \
 
 ~/taoniu-go/cryptos db migrate
 ~/taoniu-go/cryptos binance spot klines flush 1d 100
+~/taoniu-go/cryptos binance spot positions calc BNBUSDT 400000000 10 519.6 173.241
 ~/taoniu-go/cryptos binance spot gambling calc BNBUSDT 1 519.6 173.241
+~/taoniu-go/cryptos binance futures positions calc BNBUSDT 400000000 10 1 519.6 173.241
+~/taoniu-go/cryptos binance futures gambling calc BNBUSDT 1 519.6 173.241
 ~/taoniu-go/cryptos cron
 ~/taoniu-go/cryptos api
 ~/taoniu-go/cryptos grpc
