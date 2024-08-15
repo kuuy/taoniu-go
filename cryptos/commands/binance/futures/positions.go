@@ -100,7 +100,7 @@ func (h *PositionsHandler) Calc(
   stepSize, _ := strconv.ParseFloat(filters[2], 64)
 
   entryQuantity, _ = decimal.NewFromFloat(entryAmount).Div(decimal.NewFromFloat(entryPrice)).Float64()
-  log.Println("entry", entryPrice, entryQuantity, entryAmount)
+  log.Println("entry", entryPrice, strconv.FormatFloat(entryQuantity, 'f', -1, 64), entryAmount)
 
   var buyPrice float64
   var buyQuantity float64
@@ -161,7 +161,7 @@ func (h *PositionsHandler) Calc(
     } else {
       sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
     }
-    log.Println("buy", buyPrice, buyQuantity, buyAmount, sellPrice, entryPrice)
+    log.Println("buy", buyPrice, strconv.FormatFloat(buyQuantity, 'f', -1, 64), buyAmount, sellPrice, entryPrice)
   }
 
   stopAmount, _ := decimal.NewFromFloat(entryAmount).Div(decimal.NewFromInt32(int32(leverage))).Mul(decimal.NewFromFloat(0.1)).Float64()

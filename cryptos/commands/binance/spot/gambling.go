@@ -81,7 +81,7 @@ func (h *GamblingHandler) Calc(
   stepSize, _ := strconv.ParseFloat(filters[2], 64)
 
   entryQuantity, _ = decimal.NewFromFloat(entryAmount).Div(decimal.NewFromFloat(entryPrice)).Float64()
-  log.Println("entry", entryPrice, entryQuantity, entryAmount)
+  log.Println("entry", entryPrice, strconv.FormatFloat(entryQuantity, 'f', -1, 64), entryAmount)
 
   takePrice := h.Repository.TakePrice(entryPrice, side, tickSize)
   stopPrice := h.Repository.StopPrice(entryPrice, side, tickSize)
@@ -121,7 +121,7 @@ func (h *GamblingHandler) Calc(
       planQuantity, _ = decimal.NewFromFloat(planQuantity).Sub(decimal.NewFromFloat(plan.TakeQuantity)).Float64()
       planAmount, _ = decimal.NewFromFloat(planAmount).Sub(decimal.NewFromFloat(plan.TakeAmount)).Float64()
       planProfit, _ = decimal.NewFromFloat(planProfit).Add(decimal.NewFromFloat(takeProfit)).Float64()
-      log.Println("plan", plan.TakePrice, plan.TakeQuantity, takeProfit, planAmount, planProfit)
+      log.Println("plan", plan.TakePrice, strconv.FormatFloat(plan.TakeQuantity, 'f', -1, 64), takeProfit, planAmount, planProfit)
     }
     if len(plans) == 0 || lastProfit > 0 {
       break
