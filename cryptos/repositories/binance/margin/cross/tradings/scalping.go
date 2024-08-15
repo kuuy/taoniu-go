@@ -504,6 +504,7 @@ func (r *ScalpingRepository) Flush(id string) error {
         if result.RowsAffected == 0 {
           return errors.New("trading update failed")
         }
+        r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, scalping.Symbol))
       } else if status == "CANCELED" {
         result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
           "sell_order_id": 0,
@@ -721,18 +722,17 @@ func (r *ScalpingRepository) CanBuy(
     }
     if buyPrice == 0 {
       buyPrice = trading.BuyPrice
+      r.Rdb.Set(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, scalping.Symbol), buyPrice, -1)
     } else {
       if scalping.Side == 1 && buyPrice > trading.BuyPrice {
         buyPrice = trading.BuyPrice
+        r.Rdb.Set(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, scalping.Symbol), buyPrice, -1)
       }
       if scalping.Side == 2 && buyPrice < trading.BuyPrice {
         buyPrice = trading.BuyPrice
+        r.Rdb.Set(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, scalping.Symbol), buyPrice, -1)
       }
     }
-  }
-
-  if buyPrice > 0 {
-    r.Rdb.Set(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, scalping.Symbol), buyPrice, -1)
   }
 
   return true
