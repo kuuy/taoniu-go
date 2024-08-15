@@ -122,6 +122,39 @@ protoc --go_out=../ --go_opt=paths=source_relative \
 ~/taoniu-go/cryptos grpc
 ```
 
+# crontab
+
+```
+# m h  dom mon dow   command
+* * * * * for i in $(seq 11) ; do /root/taoniu-go/cryptos binance spot tasks account flush ; sleep 5 ; done
+* * * * * for i in $(seq 11) ; do /root/taoniu-go/cryptos binance spot tasks tradings scalping place ; sleep 5 ; done
+* * * * * for i in $(seq 11) ; do /root/taoniu-go/cryptos binance spot tasks tradings scalping flush ; sleep 5 ; done
+* * * * * for i in $(seq 11) ; do /root/taoniu-go/cryptos binance spot tasks tradings triggers place ; sleep 5 ; done
+* * * * * for i in $(seq 11) ; do /root/taoniu-go/cryptos binance spot tasks tradings triggers flush ; sleep 5 ; done
+* * * * * for i in $(seq 11) ; do /root/taoniu-go/cryptos binance futures tasks tradings scalping place ; sleep 5 ; done
+* * * * * for i in $(seq 11) ; do /root/taoniu-go/cryptos binance futures tasks tradings scalping flush ; sleep 5 ; done
+* * * * * for i in $(seq 11) ; do /root/taoniu-go/cryptos binance futures tasks tradings triggers place ; sleep 5 ; done
+* * * * * for i in $(seq 11) ; do /root/taoniu-go/cryptos binance futures tasks tradings triggers flush ; sleep 5 ; done
+
+* * * * * /root/taoniu-go/cryptos binance spot tasks symbols flush
+*/5 * * * * /root/taoniu-go/cryptos binance spot tasks analysis tradings scalping flush
+*/5 * * * * /root/taoniu-go/cryptos binance spot tasks analysis tradings triggers flush
+3,8,33,48 * * * * /root/taoniu-go/cryptos binance spot tasks klines clean
+7,22,37,52 * * * * /root/taoniu-go/cryptos binance spot tasks strategies clean
+11,26,41,56 * * * * /root/taoniu-go/cryptos binance spot tasks plans clean
+
+* * * * * for i in $(seq 11) ; do /root/taoniu-go/cryptos binance futures tasks account flush ; sleep 5 ; don
+
+* * * * * /root/taoniu-go/cryptos binance futures tasks symbols flush
+*/5 * * * * /root/taoniu-go/cryptos binance futures tasks analysis tradings scalping flush
+*/5 * * * * /root/taoniu-go/cryptos binance futures tasks analysis tradings triggers flush
+3,8,33,48 * * * * /root/taoniu-go/cryptos binance futures tasks klines clean
+7,22,37,52 * * * * /root/taoniu-go/cryptos binance futures tasks strategies clean
+11,26,41,56 * * * * /root/taoniu-go/cryptos binance futures tasks plans clea
+
+* * * * * for i in $(seq 11) ; do /root/taoniu-go/cryptos binance margin cross tasks account flush ; sleep 5 ; done
+```
+
 # taoniu-config
 淘牛配置
 https://github.com/kuuy/taoniu-config
