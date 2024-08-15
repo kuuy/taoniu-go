@@ -491,6 +491,7 @@ func (r *TriggersRepository) Flush(id string) (err error) {
         if result.RowsAffected == 0 {
           return errors.New("order update failed")
         }
+        r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, trigger.Symbol))
       } else if status == "CANCELED" {
         result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
           "sell_order_id": 0,
@@ -634,8 +635,6 @@ func (r *TriggersRepository) Take(trigger *futuresModels.Trigger, price float64)
     "status":        2,
     "version":       gorm.Expr("version + ?", 1),
   })
-
-  r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, trigger.Symbol))
 
   return
 }

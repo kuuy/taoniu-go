@@ -452,6 +452,7 @@ func (r *ScalpingRepository) Flush(id string) error {
         if result.RowsAffected == 0 {
           return errors.New("order update failed")
         }
+        r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, scalping.Symbol))
       } else if status == "CANCELED" {
         result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
           "sell_order_id": 0,
@@ -565,8 +566,6 @@ func (r *ScalpingRepository) Take(scalping *spotModels.Scalping, price float64) 
     "status":        2,
     "version":       gorm.Expr("version + ?", 1),
   })
-
-  r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, scalping.Symbol))
 
   return
 }
