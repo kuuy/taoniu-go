@@ -534,6 +534,7 @@ func (r *TriggersRepository) Take(trigger *futuresModels.Trigger, price float64)
     }
     if position.Timestamp > trigger.Timestamp {
       r.Close(trigger)
+      r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, trigger.Symbol))
     }
     return errors.New(fmt.Sprintf("[%s] %s empty position", trigger.Symbol, positionSide))
   }
@@ -634,6 +635,8 @@ func (r *TriggersRepository) Take(trigger *futuresModels.Trigger, price float64)
     "version":       gorm.Expr("version + ?", 1),
   })
 
+  r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, trigger.Symbol))
+
   return
 }
 
@@ -692,18 +695,17 @@ func (r *TriggersRepository) CanBuy(trigger *futuresModels.Trigger, price float6
     }
     if buyPrice == 0 {
       buyPrice = trading.BuyPrice
+      r.Rdb.Set(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, trigger.Symbol), buyPrice, -1)
     } else {
       if trigger.Side == 1 && buyPrice > trading.BuyPrice {
         buyPrice = trading.BuyPrice
+        r.Rdb.Set(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, trigger.Symbol), buyPrice, -1)
       }
       if trigger.Side == 2 && buyPrice < trading.BuyPrice {
         buyPrice = trading.BuyPrice
+        r.Rdb.Set(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, trigger.Symbol), buyPrice, -1)
       }
     }
-  }
-
-  if buyPrice > 0 {
-    r.Rdb.Set(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, trigger.Symbol), buyPrice, -1)
   }
 
   return true

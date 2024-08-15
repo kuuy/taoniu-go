@@ -566,6 +566,8 @@ func (r *ScalpingRepository) Take(scalping *spotModels.Scalping, price float64) 
     "version":       gorm.Expr("version + ?", 1),
   })
 
+  r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, scalping.Symbol))
+
   return
 }
 
@@ -628,11 +630,8 @@ func (r *ScalpingRepository) CanBuy(
     }
     if buyPrice == 0 || buyPrice > trading.BuyPrice {
       buyPrice = trading.BuyPrice
+      r.Rdb.Set(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, scalping.Symbol), buyPrice, -1)
     }
-  }
-
-  if buyPrice > 0 {
-    r.Rdb.Set(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, scalping.Symbol), buyPrice, -1)
   }
 
   return true

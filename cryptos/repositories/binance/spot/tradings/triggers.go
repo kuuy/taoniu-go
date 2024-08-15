@@ -487,6 +487,7 @@ func (r *TriggersRepository) Take(trigger *spotModels.Trigger, price float64) (e
     }
     if position.Timestamp > trigger.Timestamp+9e8 {
       r.Close(trigger)
+      r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, trigger.Symbol))
     }
     err = errors.New(fmt.Sprintf("[%s] empty position", trigger.Symbol))
     return
@@ -562,6 +563,8 @@ func (r *TriggersRepository) Take(trigger *spotModels.Trigger, price float64) (e
     "version":       gorm.Expr("version + ?", 1),
   })
 
+  r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, trigger.Symbol))
+
   return
 }
 
@@ -611,11 +614,8 @@ func (r *TriggersRepository) CanBuy(
     }
     if buyPrice == 0 || buyPrice > trading.BuyPrice {
       buyPrice = trading.BuyPrice
+      r.Rdb.Set(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, trigger.Symbol), buyPrice, -1)
     }
-  }
-
-  if buyPrice > 0 {
-    r.Rdb.Set(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, trigger.Symbol), buyPrice, -1)
   }
 
   return true
