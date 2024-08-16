@@ -380,6 +380,7 @@ func (r *ScalpingRepository) Flush(id string) error {
         if result.RowsAffected == 0 {
           return errors.New("order update failed")
         }
+        r.Rdb.Set(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, scalping.Symbol), trading.BuyPrice, -1)
       } else if status == "CANCELED" {
         result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
           "buy_order_id": 0,

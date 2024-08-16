@@ -68,11 +68,11 @@ func (h *FuturesHandler) run() error {
   c.AddFunc("@every 5s", func() {
     binance.Futures().Tickers().Flush()
     binance.Futures().Tradings().Scalping().Place()
-    binance.Futures().Tradings().Triggers().Place()
+    //binance.Futures().Tradings().Triggers().Place()
   })
   c.AddFunc("@every 15s", func() {
     binance.Futures().Tradings().Scalping().Flush()
-    binance.Futures().Tradings().Triggers().Flush()
+    //binance.Futures().Tradings().Triggers().Flush()
   })
   c.AddFunc("@every 30s", func() {
     binance.Futures().Orders().Open()

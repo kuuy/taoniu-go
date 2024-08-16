@@ -318,8 +318,6 @@ func (r *ScalpingRepository) Place(planId string) (err error) {
     })
   }
 
-  r.Rdb.Set(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, scalping.Symbol), buyPrice, -1)
-
   r.Db.Model(&scalpingPlan).Where("plan_id", planId).Update("status", 1)
 
   trading := &models.Scalping{
@@ -432,6 +430,7 @@ func (r *ScalpingRepository) Flush(id string) error {
         if result.RowsAffected == 0 {
           return errors.New("trading update failed")
         }
+        r.Rdb.Set(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, scalping.Symbol), trading.BuyPrice, -1)
       } else if status == "CANCELED" {
         result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
           "status":  4,
