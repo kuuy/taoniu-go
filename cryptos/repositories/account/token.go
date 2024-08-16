@@ -6,12 +6,13 @@ import (
   "log"
   "os"
   "path"
-  "taoniu.local/cryptos/common"
   "time"
 
   "github.com/go-jose/go-jose/v4"
   "github.com/go-jose/go-jose/v4/jwt"
   "golang.org/x/crypto/ssh"
+
+  "taoniu.local/cryptos/common"
 )
 
 type TokenRepository struct {

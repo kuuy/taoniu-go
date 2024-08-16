@@ -10,7 +10,8 @@ import (
 
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
-  repositories "taoniu.local/cryptos/repositories/binance/spot/analysis/tradings"
+  "taoniu.local/cryptos/repositories"
+  analysisRepositories "taoniu.local/cryptos/repositories/binance/spot/analysis/tradings"
 )
 
 type ScalpingInfo struct {
@@ -25,16 +26,18 @@ type ScalpingInfo struct {
 }
 
 type ScalpingHandler struct {
-  ApiContext *common.ApiContext
-  Response   *api.ResponseHandler
-  Repository *repositories.ScalpingRepository
+  ApiContext         *common.ApiContext
+  Response           *api.ResponseHandler
+  AnalysisRepository *analysisRepositories.ScalpingRepository
 }
 
 func NewScalpingRouter(apiContext *common.ApiContext) http.Handler {
   h := ScalpingHandler{
     ApiContext: apiContext,
   }
-  h.Repository = &repositories.ScalpingRepository{
+  h.Response = &api.ResponseHandler{}
+  h.Response.JweRepository = &repositories.JweRepository{}
+  h.AnalysisRepository = &analysisRepositories.ScalpingRepository{
     Db:  h.ApiContext.Db,
     Rdb: h.ApiContext.Rdb,
     Ctx: h.ApiContext.Ctx,
@@ -54,9 +57,7 @@ func (h *ScalpingHandler) Listings(
   h.ApiContext.Mux.Lock()
   defer h.ApiContext.Mux.Unlock()
 
-  h.Response = &api.ResponseHandler{
-    Writer: w,
-  }
+  h.Response.Writer = w
 
   var current int
   if !r.URL.Query().Has("current") {
@@ -82,8 +83,8 @@ func (h *ScalpingHandler) Listings(
 
   conditions := map[string]interface{}{}
 
-  total := h.Repository.Count(conditions)
-  tradings := h.Repository.Listings(conditions, current, pageSize)
+  total := h.AnalysisRepository.Count(conditions)
+  tradings := h.AnalysisRepository.Listings(conditions, current, pageSize)
   data := make([]*ScalpingInfo, len(tradings))
   for i, trading := range tradings {
     data[i] = &ScalpingInfo{
@@ -105,9 +106,7 @@ func (h *ScalpingHandler) Series(
   w http.ResponseWriter,
   r *http.Request,
 ) {
-  h.Response = &api.ResponseHandler{
-    Writer: w,
-  }
+  h.Response.Writer = w
 
   var limit int
   if !r.URL.Query().Has("limit") {
@@ -120,6 +119,6 @@ func (h *ScalpingHandler) Series(
     return
   }
 
-  series := h.Repository.Series(limit)
+  series := h.AnalysisRepository.Series(limit)
   h.Response.Json(series)
 }

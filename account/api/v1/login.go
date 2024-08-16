@@ -1,6 +1,8 @@
 package v1
 
 import (
+  "encoding/json"
+  "io"
   "net/http"
 
   "github.com/go-chi/chi/v5"
@@ -12,19 +14,18 @@ import (
 type LoginHandler struct {
   ApiContext      *common.ApiContext
   Response        *api.ResponseHandler
+  JweRepository   *repositories.JweRepository
   UserRepository  *repositories.UsersRepository
   TokenRepository *repositories.TokenRepository
-}
-
-type Token struct {
-  AccessToken  string `json:"access_token"`
-  RefreshToken string `json:"refresh_token"`
 }
 
 func NewLoginRouter(apiContext *common.ApiContext) http.Handler {
   h := LoginHandler{
     ApiContext: apiContext,
   }
+  h.Response = &api.ResponseHandler{}
+  h.Response.JweRepository = &repositories.JweRepository{}
+  h.JweRepository = h.Response.JweRepository
   h.UserRepository = &repositories.UsersRepository{
     Db: h.ApiContext.Db,
   }
@@ -46,31 +47,36 @@ func (h *LoginHandler) Do(
   w http.ResponseWriter,
   r *http.Request,
 ) {
-  h.Response = &api.ResponseHandler{
-    Writer: w,
+  h.Response = &api.ResponseHandler{}
+  h.Response.JweRepository = h.JweRepository
+  h.Response.Writer = w
+
+  body, _ := io.ReadAll(r.Body)
+  payload, err := h.JweRepository.Decrypt(string(body))
+  if err != nil {
+    h.Response.Error(http.StatusForbidden, 1004, "bad request")
+    return
   }
 
-  r.ParseMultipartForm(1024)
+  var request *LoginRequest
+  json.Unmarshal(payload, &request)
 
-  if r.Form.Get("email") == "" {
+  if request.Email == "" {
     h.Response.Error(http.StatusForbidden, 1004, "email is empty")
     return
   }
 
-  if r.Form.Get("password") == "" {
+  if request.Password == "" {
     h.Response.Error(http.StatusForbidden, 1004, "password is empty")
     return
   }
 
-  email := r.Form.Get("email")
-  password := r.Form.Get("password")
-
-  user := h.UserRepository.Get(email)
+  user := h.UserRepository.Get(request.Email)
   if user == nil {
     h.Response.Error(http.StatusForbidden, 1000, "email or password not exists")
     return
   }
-  if !common.VerifyPassword(password, user.Salt, user.Password) {
+  if !common.VerifyPassword(request.Password, user.Salt, user.Password) {
     h.Response.Error(http.StatusForbidden, 1000, "email or password not exists")
     return
   }
@@ -86,10 +92,10 @@ func (h *LoginHandler) Do(
     return
   }
 
-  token := &Token{
+  response := &LoginResponse{
     AccessToken:  accessToken,
     RefreshToken: refreshToken,
   }
 
-  h.Response.Json(token)
+  h.Response.Json(response)
 }

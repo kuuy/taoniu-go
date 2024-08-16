@@ -3,7 +3,12 @@ package api
 import (
   "encoding/json"
   "net/http"
+  "taoniu.local/cryptos/repositories"
 )
+
+type jweResponse struct {
+  Payload string `json:"payload"`
+}
 
 type jsonResponse struct {
   Success bool        `json:"success"`
@@ -25,7 +30,8 @@ type errorResponse struct {
 }
 
 type ResponseHandler struct {
-  Writer http.ResponseWriter
+  JweRepository *repositories.JweRepository
+  Writer        http.ResponseWriter
 }
 
 func (h *ResponseHandler) Out(data interface{}) {
@@ -47,12 +53,13 @@ func (h *ResponseHandler) Json(data interface{}) {
   response := jsonResponse{}
   response.Success = true
   response.Data = data
-  json, err := json.Marshal(response)
+  payload, err := json.Marshal(response)
   if err != nil {
     return
   }
 
-  h.Writer.Write(json)
+  jweCompact, _ := h.JweRepository.Encrypt(payload)
+  h.Writer.Write([]byte(jweCompact))
 }
 
 func (h *ResponseHandler) Pagenate(
@@ -70,12 +77,13 @@ func (h *ResponseHandler) Pagenate(
   response.Total = total
   response.PageSize = pageSize
   response.Current = current
-  json, err := json.Marshal(response)
+  payload, err := json.Marshal(response)
   if err != nil {
     return
   }
 
-  h.Writer.Write(json)
+  jweCompact, _ := h.JweRepository.Encrypt(payload)
+  h.Writer.Write([]byte(jweCompact))
 }
 
 func (h *ResponseHandler) Error(status int, code int, message string) {
@@ -86,10 +94,11 @@ func (h *ResponseHandler) Error(status int, code int, message string) {
   response.Success = false
   response.Code = code
   response.Message = message
-  json, err := json.Marshal(response)
+  payload, err := json.Marshal(response)
   if err != nil {
     return
   }
 
-  h.Writer.Write(json)
+  jweCompact, _ := h.JweRepository.Encrypt(payload)
+  h.Writer.Write([]byte(jweCompact))
 }

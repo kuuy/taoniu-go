@@ -4,16 +4,16 @@ import (
   "log"
   "net/http"
   "strings"
-  repositories "taoniu.local/cryptos/repositories/account"
-)
 
-type JwtHandler struct{}
+  "taoniu.local/cryptos/repositories"
+  accountRepositories "taoniu.local/cryptos/repositories/account"
+)
 
 func Authenticator(next http.Handler) http.Handler {
   return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-    response := &ResponseHandler{
-      Writer: w,
-    }
+    response := &ResponseHandler{}
+    response.JweRepository = &repositories.JweRepository{}
+    response.Writer = w
 
     bearer := r.Header.Get("Authorization")
     if len(bearer) <= 7 || strings.ToUpper(bearer[0:6]) != "TAONIU" {
@@ -21,7 +21,7 @@ func Authenticator(next http.Handler) http.Handler {
       return
     }
 
-    repository := &repositories.TokenRepository{}
+    repository := &accountRepositories.TokenRepository{}
     uid, err := repository.Uid(bearer[7:])
     if err != nil {
       log.Println("token error", err.Error())

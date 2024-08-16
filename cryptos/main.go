@@ -33,6 +33,7 @@ func main() {
     },
     Commands: []*cli.Command{
       commands.NewApiCommand(),
+      commands.NewJweCommand(),
       commands.NewGrpcCommand(),
       commands.NewMqttCommand(),
       commands.NewSocketCommand(),

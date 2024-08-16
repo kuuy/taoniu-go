@@ -1,23 +1,27 @@
 package v1
 
 import (
-  "github.com/go-chi/chi/v5"
+  "encoding/json"
+  "io"
   "net/http"
+
+  "github.com/go-chi/chi/v5"
+
   "taoniu.local/account/api"
   "taoniu.local/account/repositories"
 )
 
 type TokenHandler struct {
   Response        *api.ResponseHandler
+  JweRepository   *repositories.JweRepository
   TokenRepository *repositories.TokenRepository
-}
-
-type AccessToken struct {
-  AccessToken string `json:"access_token"`
 }
 
 func NewTokenRouter() http.Handler {
   h := TokenHandler{}
+  h.Response = &api.ResponseHandler{}
+  h.Response.JweRepository = &repositories.JweRepository{}
+  h.JweRepository = h.Response.JweRepository
 
   r := chi.NewRouter()
   r.Post("/refresh", h.Refresh)
@@ -36,19 +40,23 @@ func (h *TokenHandler) Refresh(
   w http.ResponseWriter,
   r *http.Request,
 ) {
-  h.Response = &api.ResponseHandler{
-    Writer: w,
+  h.Response.Writer = w
+
+  body, _ := io.ReadAll(r.Body)
+  payload, err := h.JweRepository.Decrypt(string(body))
+  if err != nil {
+    h.Response.Error(http.StatusForbidden, 1004, "bad request")
+    return
   }
+  var request *RefreshTokenRequest
+  json.Unmarshal(payload, &request)
 
-  r.ParseMultipartForm(1024)
-
-  if r.Form.Get("refresh_token") == "" {
+  if request.RefreshToken == "" {
     h.Response.Error(http.StatusForbidden, 1004, "token is empty")
     return
   }
 
-  refreshToken := r.Form.Get("refresh_token")
-  uid, err := h.Token().Uid(refreshToken)
+  uid, err := h.Token().Uid(request.RefreshToken)
   if err != nil {
     if uid != "" {
       h.Response.Error(http.StatusForbidden, 401, err.Error())
@@ -64,9 +72,9 @@ func (h *TokenHandler) Refresh(
     return
   }
 
-  token := &AccessToken{
+  response := &RefreshTokenResponse{
     AccessToken: accessToken,
   }
 
-  h.Response.Json(token)
+  h.Response.Json(response)
 }
