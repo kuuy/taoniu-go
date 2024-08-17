@@ -8,37 +8,23 @@ import (
 
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
-  repositories "taoniu.local/cryptos/repositories/binance/futures"
+  "taoniu.local/cryptos/repositories"
+  futuresRepositories "taoniu.local/cryptos/repositories/binance/futures"
 )
 
 type ScalpingHandler struct {
   ApiContext *common.ApiContext
   Response   *api.ResponseHandler
-  Repository *repositories.ScalpingRepository
-}
-
-type ScalpingInfo struct {
-  ID          string  `json:"id"`
-  Symbol      string  `json:"symbol"`
-  Side        int     `json:"side"`
-  Capital     float64 `json:"capital"`
-  Price       float64 `json:"price"`
-  TakePrice   float64 `json:"take_price"`
-  StopPrice   float64 `json:"stop_price"`
-  TakeOrderId int64   `json:"take_order_id"`
-  StopOrderId int64   `json:"stop_order_id"`
-  Profit      float64 `json:"profit"`
-  Timestamp   int64   `json:"timestamp"`
-  Status      int     `json:"status"`
-  ExpiredAt   int64   `json:"expired_at"`
-  CreatedAt   int64   `json:"created_at"`
+  Repository *futuresRepositories.ScalpingRepository
 }
 
 func NewScalpingRouter(apiContext *common.ApiContext) http.Handler {
   h := ScalpingHandler{
     ApiContext: apiContext,
   }
-  h.Repository = &repositories.ScalpingRepository{
+  h.Response = &api.ResponseHandler{}
+  h.Response.JweRepository = &repositories.JweRepository{}
+  h.Repository = &futuresRepositories.ScalpingRepository{
     Db: h.ApiContext.Db,
   }
 
@@ -55,9 +41,7 @@ func (h *ScalpingHandler) Listings(
   h.ApiContext.Mux.Lock()
   defer h.ApiContext.Mux.Unlock()
 
-  h.Response = &api.ResponseHandler{
-    Writer: w,
-  }
+  h.Response.Writer = w
 
   q := r.URL.Query()
   conditions := make(map[string]interface{})

@@ -8,35 +8,23 @@ import (
   "github.com/go-chi/chi/v5"
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
-  repositories "taoniu.local/cryptos/repositories/binance/futures"
+  "taoniu.local/cryptos/repositories"
+  futuresRepositories "taoniu.local/cryptos/repositories/binance/futures"
 )
 
 type OrdersHandler struct {
   ApiContext *common.ApiContext
   Response   *api.ResponseHandler
-  Repository *repositories.OrdersRepository
-}
-
-type OrderInfo struct {
-  ID           string  `json:"id"`
-  Symbol       string  `json:"symbol"`
-  OrderId      int64   `json:"order_id"`
-  Type         string  `json:"type"`
-  PositionSide string  `json:"position_side"`
-  Side         string  `json:"side"`
-  Price        float64 `json:"price"`
-  Quantity     float64 `json:"quantity"`
-  OpenTime     int64   `json:"open_time"`
-  UpdateTime   int64   `json:"update_time"`
-  ReduceOnly   bool    `json:"reduce_only"`
-  Status       string  `json:"status"`
+  Repository *futuresRepositories.OrdersRepository
 }
 
 func NewOrdersRouter(apiContext *common.ApiContext) http.Handler {
   h := OrdersHandler{
     ApiContext: apiContext,
   }
-  h.Repository = &repositories.OrdersRepository{
+  h.Response = &api.ResponseHandler{}
+  h.Response.JweRepository = &repositories.JweRepository{}
+  h.Repository = &futuresRepositories.OrdersRepository{
     Db:  h.ApiContext.Db,
     Rdb: h.ApiContext.Rdb,
     Ctx: h.ApiContext.Ctx,
@@ -55,9 +43,7 @@ func (h *OrdersHandler) Listings(
   h.ApiContext.Mux.Lock()
   defer h.ApiContext.Mux.Unlock()
 
-  h.Response = &api.ResponseHandler{
-    Writer: w,
-  }
+  h.Response.Writer = w
 
   var current int
   if !r.URL.Query().Has("current") {
@@ -123,9 +109,7 @@ func (h *OrdersHandler) Cancel(
   h.ApiContext.Mux.Lock()
   defer h.ApiContext.Mux.Unlock()
 
-  h.Response = &api.ResponseHandler{
-    Writer: w,
-  }
+  h.Response.Writer = w
 
   //id := chi.URLParam(r, "id")
   //err := h.Repository.Cancel(id)

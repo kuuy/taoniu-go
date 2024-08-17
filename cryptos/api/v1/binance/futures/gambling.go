@@ -10,24 +10,27 @@ import (
 
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
-  repositories "taoniu.local/cryptos/repositories/binance/futures"
+  "taoniu.local/cryptos/repositories"
+  futuresRepositories "taoniu.local/cryptos/repositories/binance/futures"
 )
 
 type GamblingHandler struct {
   ApiContext          *common.ApiContext
   Response            *api.ResponseHandler
-  Repository          *repositories.GamblingRepository
-  PositionsRepository *repositories.PositionsRepository
+  Repository          *futuresRepositories.GamblingRepository
+  PositionsRepository *futuresRepositories.PositionsRepository
 }
 
 func NewGamblingRouter(apiContext *common.ApiContext) http.Handler {
   h := GamblingHandler{
     ApiContext: apiContext,
   }
-  h.Repository = &repositories.GamblingRepository{
+  h.Response = &api.ResponseHandler{}
+  h.Response.JweRepository = &repositories.JweRepository{}
+  h.Repository = &futuresRepositories.GamblingRepository{
     Db: h.ApiContext.Db,
   }
-  h.Repository.SymbolsRepository = &repositories.SymbolsRepository{
+  h.Repository.SymbolsRepository = &futuresRepositories.SymbolsRepository{
     Db: h.ApiContext.Db,
   }
 
@@ -44,9 +47,7 @@ func (h *GamblingHandler) Calc(
   h.ApiContext.Mux.Lock()
   defer h.ApiContext.Mux.Unlock()
 
-  h.Response = &api.ResponseHandler{
-    Writer: w,
-  }
+  h.Response.Writer = w
 
   q := r.URL.Query()
 

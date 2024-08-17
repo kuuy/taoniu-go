@@ -8,29 +8,23 @@ import (
 
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
-  repositories "taoniu.local/cryptos/repositories/binance/futures"
+  "taoniu.local/cryptos/repositories"
+  futuresRepositories "taoniu.local/cryptos/repositories/binance/futures"
 )
 
 type StrategiesHandler struct {
   ApiContext *common.ApiContext
   Response   *api.ResponseHandler
-  Repository *repositories.StrategiesRepository
-}
-
-type StrategiesInfo struct {
-  ID        string  `json:"id"`
-  Symbol    string  `json:"symbol"`
-  Indicator string  `json:"indicator"`
-  Signal    int     `json:"signal"`
-  Price     float64 `json:"price"`
-  Timestamp int64   `json:"timestamp"`
+  Repository *futuresRepositories.StrategiesRepository
 }
 
 func NewStrategiesRouter(apiContext *common.ApiContext) http.Handler {
   h := StrategiesHandler{
     ApiContext: apiContext,
   }
-  h.Repository = &repositories.StrategiesRepository{
+  h.Response = &api.ResponseHandler{}
+  h.Response.JweRepository = &repositories.JweRepository{}
+  h.Repository = &futuresRepositories.StrategiesRepository{
     Db: h.ApiContext.Db,
   }
 
@@ -47,9 +41,7 @@ func (h *StrategiesHandler) Listings(
   h.ApiContext.Mux.Lock()
   defer h.ApiContext.Mux.Unlock()
 
-  h.Response = &api.ResponseHandler{
-    Writer: w,
-  }
+  h.Response.Writer = w
 
   q := r.URL.Query()
   conditions := make(map[string]interface{})

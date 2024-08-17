@@ -8,31 +8,23 @@ import (
 
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
-  repositories "taoniu.local/cryptos/repositories/binance/futures"
+  "taoniu.local/cryptos/repositories"
+  futuresRepositories "taoniu.local/cryptos/repositories/binance/futures"
 )
 
 type PlansHandler struct {
   ApiContext *common.ApiContext
   Response   *api.ResponseHandler
-  Repository *repositories.PlansRepository
-}
-
-type PlansInfo struct {
-  ID        string  `json:"id"`
-  Symbol    string  `json:"symbol"`
-  Side      int     `json:"side"`
-  Price     float64 `json:"price"`
-  Quantity  float64 `json:"quantity"`
-  Amount    float64 `json:"amount"`
-  Timestamp int64   `json:"timestamp"`
-  Status    int     `json:"status"`
+  Repository *futuresRepositories.PlansRepository
 }
 
 func NewPlansRouter(apiContext *common.ApiContext) http.Handler {
   h := PlansHandler{
     ApiContext: apiContext,
   }
-  h.Repository = &repositories.PlansRepository{
+  h.Response = &api.ResponseHandler{}
+  h.Response.JweRepository = &repositories.JweRepository{}
+  h.Repository = &futuresRepositories.PlansRepository{
     Db: h.ApiContext.Db,
   }
 
@@ -49,9 +41,7 @@ func (h *PlansHandler) Listings(
   h.ApiContext.Mux.Lock()
   defer h.ApiContext.Mux.Unlock()
 
-  h.Response = &api.ResponseHandler{
-    Writer: w,
-  }
+  h.Response.Writer = w
 
   q := r.URL.Query()
   conditions := make(map[string]interface{})

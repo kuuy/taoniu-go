@@ -8,36 +8,23 @@ import (
 
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
-  repositories "taoniu.local/cryptos/repositories/binance/spot"
+  "taoniu.local/cryptos/repositories"
+  spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
 type TriggersHandler struct {
   ApiContext *common.ApiContext
   Response   *api.ResponseHandler
-  Repository *repositories.TriggersRepository
-}
-
-type TriggersInfo struct {
-  ID          string  `json:"id"`
-  Symbol      string  `json:"symbol"`
-  Capital     float64 `json:"capital"`
-  Price       float64 `json:"price"`
-  TakePrice   float64 `json:"take_price"`
-  StopPrice   float64 `json:"stop_price"`
-  TakeOrderId int64   `json:"take_order_id"`
-  StopOrderId int64   `json:"stop_order_id"`
-  Profit      float64 `json:"profit"`
-  Timestamp   int64   `json:"timestamp"`
-  Status      int     `json:"status"`
-  ExpiredAt   int64   `json:"expired_at"`
-  CreatedAt   int64   `json:"created_at"`
+  Repository *spotRepositories.TriggersRepository
 }
 
 func NewTriggersRouter(apiContext *common.ApiContext) http.Handler {
   h := TriggersHandler{
     ApiContext: apiContext,
   }
-  h.Repository = &repositories.TriggersRepository{
+  h.Response = &api.ResponseHandler{}
+  h.Response.JweRepository = &repositories.JweRepository{}
+  h.Repository = &spotRepositories.TriggersRepository{
     Db: h.ApiContext.Db,
   }
 
@@ -54,9 +41,7 @@ func (h *TriggersHandler) Listings(
   h.ApiContext.Mux.Lock()
   defer h.ApiContext.Mux.Unlock()
 
-  h.Response = &api.ResponseHandler{
-    Writer: w,
-  }
+  h.Response.Writer = w
 
   q := r.URL.Query()
   conditions := make(map[string]interface{})
@@ -90,9 +75,9 @@ func (h *TriggersHandler) Listings(
 
   total := h.Repository.Count(conditions)
   triggers := h.Repository.Listings(conditions, current, pageSize)
-  data := make([]*TriggersInfo, len(triggers))
+  data := make([]*TriggerInfo, len(triggers))
   for i, trigger := range triggers {
-    data[i] = &TriggersInfo{
+    data[i] = &TriggerInfo{
       ID:          trigger.ID,
       Symbol:      trigger.Symbol,
       Capital:     trigger.Capital,

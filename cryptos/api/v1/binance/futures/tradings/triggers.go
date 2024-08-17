@@ -9,20 +9,23 @@ import (
 
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
-  repositories "taoniu.local/cryptos/repositories/binance/futures/tradings"
+  "taoniu.local/cryptos/repositories"
+  tradingsRepositories "taoniu.local/cryptos/repositories/binance/futures/tradings"
 )
 
 type TriggersHandler struct {
   ApiContext *common.ApiContext
   Response   *api.ResponseHandler
-  Repository *repositories.TriggersRepository
+  Repository *tradingsRepositories.TriggersRepository
 }
 
 func NewTriggersRouter(apiContext *common.ApiContext) http.Handler {
   h := TriggersHandler{
     ApiContext: apiContext,
   }
-  h.Repository = &repositories.TriggersRepository{
+  h.Response = &api.ResponseHandler{}
+  h.Response.JweRepository = &repositories.JweRepository{}
+  h.Repository = &tradingsRepositories.TriggersRepository{
     Db: h.ApiContext.Db,
   }
 
@@ -39,9 +42,7 @@ func (h *TriggersHandler) Listings(
   h.ApiContext.Mux.Lock()
   defer h.ApiContext.Mux.Unlock()
 
-  h.Response = &api.ResponseHandler{
-    Writer: w,
-  }
+  h.Response.Writer = w
 
   q := r.URL.Query()
   conditions := make(map[string]interface{})

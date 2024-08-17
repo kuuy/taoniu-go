@@ -9,51 +9,27 @@ import (
 
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
-  repositories "taoniu.local/cryptos/repositories/binance/spot"
+  "taoniu.local/cryptos/repositories"
+  spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
 type PositionsHandler struct {
   ApiContext        *common.ApiContext
   Response          *api.ResponseHandler
-  Repository        *repositories.PositionsRepository
-  SymbolsRepository *repositories.SymbolsRepository
-}
-
-type PositionsInfo struct {
-  ID            string  `json:"id"`
-  Symbol        string  `json:"symbol"`
-  Side          int     `json:"side"`
-  Leverage      int     `json:"leverage"`
-  Capital       float64 `json:"capital"`
-  Notional      float64 `json:"notional"`
-  EntryPrice    float64 `json:"entry_price"`
-  EntryQuantity float64 `json:"entry_quantity"`
-  EntryAmount   float64 `json:"entry_amount"`
-  Timestamp     int64   `json:"timestamp"`
-}
-
-type TradingInfo struct {
-  BuyPrice      float64 `json:"buy_price"`
-  SellPrice     float64 `json:"sell_price"`
-  Quantity      float64 `json:"quantity"`
-  EntryPrice    float64 `json:"entry_price"`
-  EntryQuantity float64 `json:"entry_quantity"`
-}
-
-type CalcResponse struct {
-  TakePrice float64        `json:"take_price"`
-  StopPrice float64        `json:"stop_price"`
-  Tradings  []*TradingInfo `json:"tradings"`
+  Repository        *spotRepositories.PositionsRepository
+  SymbolsRepository *spotRepositories.SymbolsRepository
 }
 
 func NewPositionsRouter(apiContext *common.ApiContext) http.Handler {
   h := PositionsHandler{
     ApiContext: apiContext,
   }
-  h.Repository = &repositories.PositionsRepository{
+  h.Response = &api.ResponseHandler{}
+  h.Response.JweRepository = &repositories.JweRepository{}
+  h.Repository = &spotRepositories.PositionsRepository{
     Db: h.ApiContext.Db,
   }
-  h.Repository.SymbolsRepository = &repositories.SymbolsRepository{
+  h.Repository.SymbolsRepository = &spotRepositories.SymbolsRepository{
     Db: h.ApiContext.Db,
   }
 
@@ -71,9 +47,7 @@ func (h *PositionsHandler) Gets(
   h.ApiContext.Mux.Lock()
   defer h.ApiContext.Mux.Unlock()
 
-  h.Response = &api.ResponseHandler{
-    Writer: w,
-  }
+  h.Response.Writer = w
 
   conditions := make(map[string]interface{})
 
@@ -101,9 +75,7 @@ func (h *PositionsHandler) Calc(
   h.ApiContext.Mux.Lock()
   defer h.ApiContext.Mux.Unlock()
 
-  h.Response = &api.ResponseHandler{
-    Writer: w,
-  }
+  h.Response.Writer = w
 
   q := r.URL.Query()
 
@@ -160,7 +132,7 @@ func (h *PositionsHandler) Calc(
     places++
   }
 
-  result := &CalcResponse{}
+  result := &PositionCalcResponse{}
 
   for {
     var err error

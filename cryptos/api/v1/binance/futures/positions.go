@@ -1,30 +1,35 @@
 package futures
 
 import (
-  "github.com/go-chi/chi/v5"
-  "github.com/shopspring/decimal"
   "math"
   "net/http"
   "strconv"
+
+  "github.com/go-chi/chi/v5"
+  "github.com/shopspring/decimal"
+
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
-  repositories "taoniu.local/cryptos/repositories/binance/futures"
+  "taoniu.local/cryptos/repositories"
+  futuresRepositories "taoniu.local/cryptos/repositories/binance/futures"
 )
 
 type PositionsHandler struct {
   ApiContext *common.ApiContext
   Response   *api.ResponseHandler
-  Repository *repositories.PositionsRepository
+  Repository *futuresRepositories.PositionsRepository
 }
 
 func NewPositionsRouter(apiContext *common.ApiContext) http.Handler {
   h := PositionsHandler{
     ApiContext: apiContext,
   }
-  h.Repository = &repositories.PositionsRepository{
+  h.Response = &api.ResponseHandler{}
+  h.Response.JweRepository = &repositories.JweRepository{}
+  h.Repository = &futuresRepositories.PositionsRepository{
     Db: h.ApiContext.Db,
   }
-  h.Repository.SymbolsRepository = &repositories.SymbolsRepository{
+  h.Repository.SymbolsRepository = &futuresRepositories.SymbolsRepository{
     Db: h.ApiContext.Db,
   }
 
@@ -42,9 +47,7 @@ func (h *PositionsHandler) Gets(
   h.ApiContext.Mux.Lock()
   defer h.ApiContext.Mux.Unlock()
 
-  h.Response = &api.ResponseHandler{
-    Writer: w,
-  }
+  h.Response.Writer = w
 
   q := r.URL.Query()
   conditions := make(map[string]interface{})
@@ -79,9 +82,7 @@ func (h *PositionsHandler) Calc(
   h.ApiContext.Mux.Lock()
   defer h.ApiContext.Mux.Unlock()
 
-  h.Response = &api.ResponseHandler{
-    Writer: w,
-  }
+  h.Response.Writer = w
 
   q := r.URL.Query()
 
@@ -143,7 +144,7 @@ func (h *PositionsHandler) Calc(
     places++
   }
 
-  result := &CalcPositionResponse{}
+  result := &PositionCalcResponse{}
 
   for {
     var err error

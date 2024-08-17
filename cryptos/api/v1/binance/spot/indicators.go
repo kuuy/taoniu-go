@@ -8,25 +8,28 @@ import (
   "github.com/go-chi/chi/v5"
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
-  repositories "taoniu.local/cryptos/repositories/binance/spot"
+  "taoniu.local/cryptos/repositories"
+  spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
 type IndicatorsHandler struct {
   ApiContext        *common.ApiContext
   Response          *api.ResponseHandler
-  Repository        *repositories.IndicatorsRepository
-  SymbolsRepository *repositories.SymbolsRepository
+  Repository        *spotRepositories.IndicatorsRepository
+  SymbolsRepository *spotRepositories.SymbolsRepository
 }
 
 func NewIndicatorsRouter(apiContext *common.ApiContext) http.Handler {
   h := IndicatorsHandler{
     ApiContext: apiContext,
   }
-  h.Repository = &repositories.IndicatorsRepository{
+  h.Response = &api.ResponseHandler{}
+  h.Response.JweRepository = &repositories.JweRepository{}
+  h.Repository = &spotRepositories.IndicatorsRepository{
     Rdb: h.ApiContext.Rdb,
     Ctx: h.ApiContext.Ctx,
   }
-  h.SymbolsRepository = &repositories.SymbolsRepository{
+  h.SymbolsRepository = &spotRepositories.SymbolsRepository{
     Db: h.ApiContext.Db,
   }
 
@@ -44,9 +47,7 @@ func (h *IndicatorsHandler) Gets(
   h.ApiContext.Mux.Lock()
   defer h.ApiContext.Mux.Unlock()
 
-  h.Response = &api.ResponseHandler{
-    Writer: w,
-  }
+  h.Response.Writer = w
 
   q := r.URL.Query()
 
@@ -81,9 +82,7 @@ func (h *IndicatorsHandler) Ranking(
   h.ApiContext.Mux.Lock()
   defer h.ApiContext.Mux.Unlock()
 
-  h.Response = &api.ResponseHandler{
-    Writer: w,
-  }
+  h.Response.Writer = w
 
   q := r.URL.Query()
 

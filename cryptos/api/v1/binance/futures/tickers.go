@@ -8,29 +8,32 @@ import (
   "github.com/go-chi/chi/v5"
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
-  repositories "taoniu.local/cryptos/repositories/binance/futures"
+  "taoniu.local/cryptos/repositories"
+  futuresRepositories "taoniu.local/cryptos/repositories/binance/futures"
 )
 
 type TickersHandler struct {
   ApiContext         *common.ApiContext
   Response           *api.ResponseHandler
-  Repository         *repositories.TickersRepository
-  SymbolsRepository  *repositories.SymbolsRepository
-  ScalpingRepository *repositories.ScalpingRepository
+  Repository         *futuresRepositories.TickersRepository
+  SymbolsRepository  *futuresRepositories.SymbolsRepository
+  ScalpingRepository *futuresRepositories.ScalpingRepository
 }
 
 func NewTickersRouter(apiContext *common.ApiContext) http.Handler {
   h := TickersHandler{
     ApiContext: apiContext,
   }
-  h.Repository = &repositories.TickersRepository{
+  h.Response = &api.ResponseHandler{}
+  h.Response.JweRepository = &repositories.JweRepository{}
+  h.Repository = &futuresRepositories.TickersRepository{
     Rdb: h.ApiContext.Rdb,
     Ctx: h.ApiContext.Ctx,
   }
-  h.SymbolsRepository = &repositories.SymbolsRepository{
+  h.SymbolsRepository = &futuresRepositories.SymbolsRepository{
     Db: h.ApiContext.Db,
   }
-  h.ScalpingRepository = &repositories.ScalpingRepository{
+  h.ScalpingRepository = &futuresRepositories.ScalpingRepository{
     Db: h.ApiContext.Db,
   }
 
@@ -48,9 +51,7 @@ func (h *TickersHandler) Gets(
   h.ApiContext.Mux.Lock()
   defer h.ApiContext.Mux.Unlock()
 
-  h.Response = &api.ResponseHandler{
-    Writer: w,
-  }
+  h.Response.Writer = w
 
   q := r.URL.Query()
   if q.Get("symbols") == "" {
@@ -77,9 +78,7 @@ func (h *TickersHandler) Ranking(
   h.ApiContext.Mux.Lock()
   defer h.ApiContext.Mux.Unlock()
 
-  h.Response = &api.ResponseHandler{
-    Writer: w,
-  }
+  h.Response.Writer = w
 
   q := r.URL.Query()
 

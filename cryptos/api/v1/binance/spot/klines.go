@@ -1,26 +1,31 @@
 package spot
 
 import (
-  "github.com/go-chi/chi/v5"
   "net/http"
   "strconv"
+  "time"
+
+  "github.com/go-chi/chi/v5"
+
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
-  repositories "taoniu.local/cryptos/repositories/binance/spot"
-  "time"
+  "taoniu.local/cryptos/repositories"
+  spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
 type KlinesHandler struct {
   ApiContext *common.ApiContext
   Response   *api.ResponseHandler
-  Repository *repositories.KlinesRepository
+  Repository *spotRepositories.KlinesRepository
 }
 
 func NewKlinesRouter(apiContext *common.ApiContext) http.Handler {
   h := KlinesHandler{
     ApiContext: apiContext,
   }
-  h.Repository = &repositories.KlinesRepository{
+  h.Response = &api.ResponseHandler{}
+  h.Response.JweRepository = &repositories.JweRepository{}
+  h.Repository = &spotRepositories.KlinesRepository{
     Db: h.ApiContext.Db,
   }
 
@@ -37,9 +42,7 @@ func (h *KlinesHandler) Series(
   h.ApiContext.Mux.Lock()
   defer h.ApiContext.Mux.Unlock()
 
-  h.Response = &api.ResponseHandler{
-    Writer: w,
-  }
+  h.Response.Writer = w
 
   symbol := r.URL.Query().Get("symbol")
   if symbol == "" {

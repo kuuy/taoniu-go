@@ -14,17 +14,6 @@ import (
   analysisRepositories "taoniu.local/cryptos/repositories/binance/spot/analysis/tradings"
 )
 
-type ScalpingInfo struct {
-  ID             string `json:"id"`
-  Day            string `json:"day"`
-  BuysCount      int    `json:"buys_count"`
-  SellsCount     int    `json:"sells_count"`
-  BuysAmount     string `json:"buys_amount"`
-  SellsAmount    string `json:"sells_amount"`
-  Profit         string `json:"profit"`
-  AdditiveProfit string `json:"additive_profit"`
-}
-
 type ScalpingHandler struct {
   ApiContext         *common.ApiContext
   Response           *api.ResponseHandler
@@ -106,6 +95,9 @@ func (h *ScalpingHandler) Series(
   w http.ResponseWriter,
   r *http.Request,
 ) {
+  h.ApiContext.Mux.Lock()
+  defer h.ApiContext.Mux.Unlock()
+
   h.Response.Writer = w
 
   var limit int

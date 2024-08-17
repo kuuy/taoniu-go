@@ -9,29 +9,23 @@ import (
 
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
-  repositories "taoniu.local/cryptos/repositories/binance/futures/analysis/tradings"
+  "taoniu.local/cryptos/repositories"
+  analysisRepositories "taoniu.local/cryptos/repositories/binance/futures/analysis/tradings"
 )
-
-type ScalpingInfo struct {
-  ID          string  `json:"id"`
-  Day         string  `json:"day"`
-  BuysCount   int     `json:"buys_count"`
-  SellsCount  int     `json:"sells_count"`
-  BuysAmount  float64 `json:"buys_amount"`
-  SellsAmount float64 `json:"sells_amount"`
-}
 
 type ScalpingHandler struct {
   ApiContext *common.ApiContext
   Response   *api.ResponseHandler
-  Repository *repositories.ScalpingRepository
+  Repository *analysisRepositories.ScalpingRepository
 }
 
 func NewScalpingRouter(apiContext *common.ApiContext) http.Handler {
   h := ScalpingHandler{
     ApiContext: apiContext,
   }
-  h.Repository = &repositories.ScalpingRepository{
+  h.Response = &api.ResponseHandler{}
+  h.Response.JweRepository = &repositories.JweRepository{}
+  h.Repository = &analysisRepositories.ScalpingRepository{
     Db:  h.ApiContext.Db,
     Rdb: h.ApiContext.Rdb,
     Ctx: h.ApiContext.Ctx,
@@ -51,9 +45,7 @@ func (h *ScalpingHandler) Listings(
   h.ApiContext.Mux.Lock()
   defer h.ApiContext.Mux.Unlock()
 
-  h.Response = &api.ResponseHandler{
-    Writer: w,
-  }
+  h.Response.Writer = w
 
   var current int
   if !r.URL.Query().Has("current") {
@@ -99,9 +91,10 @@ func (h *ScalpingHandler) Series(
   w http.ResponseWriter,
   r *http.Request,
 ) {
-  h.Response = &api.ResponseHandler{
-    Writer: w,
-  }
+  h.ApiContext.Mux.Lock()
+  defer h.ApiContext.Mux.Unlock()
+
+  h.Response.Writer = w
 
   var limit int
   if !r.URL.Query().Has("limit") {
