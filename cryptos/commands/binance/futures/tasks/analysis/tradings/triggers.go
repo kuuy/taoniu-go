@@ -29,7 +29,7 @@ func NewTriggersCommand() *cli.Command {
     Before: func(c *cli.Context) error {
       h = TriggersHandler{
         Db:  common.NewDB(2),
-        Rdb: common.NewRedis(1),
+        Rdb: common.NewRedis(2),
         Ctx: context.Background(),
       }
       h.Repository = &repositories.TriggersRepository{

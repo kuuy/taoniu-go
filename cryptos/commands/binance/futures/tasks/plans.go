@@ -30,8 +30,8 @@ func NewPlansCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = PlansHandler{
-        Db:  common.NewDB(1),
-        Rdb: common.NewRedis(1),
+        Db:  common.NewDB(2),
+        Rdb: common.NewRedis(2),
         Ctx: context.Background(),
       }
       h.Repository = &repositories.PlansRepository{

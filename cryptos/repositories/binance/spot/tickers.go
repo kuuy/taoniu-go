@@ -30,7 +30,7 @@ func (r *TickersRepository) Flush(symbols []string) error {
   if err != nil {
     return err
   }
-  timestamp := time.Now().Unix()
+  timestamp := time.Now().UnixMilli()
   pipe := r.Rdb.Pipeline()
   for _, ticker := range tickers {
     data := ticker.(map[string]interface{})

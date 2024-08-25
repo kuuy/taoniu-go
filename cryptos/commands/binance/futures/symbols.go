@@ -4,7 +4,7 @@ import (
   "context"
   "github.com/urfave/cli/v2"
   "log"
-  pool "taoniu.local/cryptos/common"
+  "taoniu.local/cryptos/common"
   repositories "taoniu.local/cryptos/repositories/binance/futures"
 )
 
@@ -20,8 +20,8 @@ func NewSymbolsCommand() *cli.Command {
     Before: func(c *cli.Context) error {
       h = SymbolsHandler{}
       h.Repository = &repositories.SymbolsRepository{
-        Db:  pool.NewDB(2),
-        Rdb: pool.NewRedis(2),
+        Db:  common.NewDB(2),
+        Rdb: common.NewRedis(2),
         Ctx: context.Background(),
       }
       return nil

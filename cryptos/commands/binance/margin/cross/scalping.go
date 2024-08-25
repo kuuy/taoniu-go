@@ -4,6 +4,7 @@ import (
   "context"
   "errors"
   "fmt"
+  "github.com/shopspring/decimal"
   "log"
   "strconv"
   "time"
@@ -57,6 +58,16 @@ func NewScalpingCommand() *cli.Command {
             return nil
           }
           if err := h.Apply(symbol, side); err != nil {
+            return cli.Exit(err.Error(), 1)
+          }
+          return nil
+        },
+      },
+      {
+        Name:  "init",
+        Usage: "",
+        Action: func(c *cli.Context) error {
+          if err := h.Init(); err != nil {
             return cli.Exit(err.Error(), 1)
           }
           return nil
@@ -137,6 +148,17 @@ func (h *ScalpingHandler) Apply(symbol string, side int) error {
     return err
   }
 
+  return nil
+}
+
+func (h *ScalpingHandler) Init() error {
+  log.Println("margin cross scalping init...")
+  var positions []*spotModels.Position
+  h.Db.Select([]string{"symbol", "entry_price", "entry_quantity"}).Where("entry_amount >= 60").Find(&positions)
+  for _, position := range positions {
+    amount, _ := decimal.NewFromFloat(position.EntryPrice).Mul(decimal.NewFromFloat(position.EntryQuantity)).Float64()
+    log.Println("position", position.Symbol, position.EntryPrice, amount)
+  }
   return nil
 }
 

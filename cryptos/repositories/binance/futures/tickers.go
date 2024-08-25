@@ -41,7 +41,7 @@ func (r *TickersRepository) Flush() error {
   if err != nil {
     return err
   }
-  timestamp := time.Now().Unix()
+  timestamp := time.Now().UnixMilli()
   pipe := r.Rdb.Pipeline()
   for _, ticker := range tickers {
     redisKey := fmt.Sprintf("binance:futures:realtime:%s", ticker.Symbol)
