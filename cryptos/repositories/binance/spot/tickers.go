@@ -25,6 +25,18 @@ type TickersRepository struct {
   UseProxy bool
 }
 
+type TickerInfo struct {
+  Symbol    string  `json:"symbol"`
+  Open      float64 `json:"openPrice,string"`
+  Price     float64 `json:"lastPrice,string"`
+  Change    float64 `json:"-"`
+  High      float64 `json:"highPrice,string"`
+  Low       float64 `json:"lowPrice,string"`
+  Volume    float64 `json:"volume,string"`
+  Quota     float64 `json:"quoteVolume,string"`
+  CloseTime int64   `json:"closeTime"`
+}
+
 func (r *TickersRepository) Flush(symbols []string) error {
   tickers, err := r.Request(symbols)
   if err != nil {
@@ -33,9 +45,7 @@ func (r *TickersRepository) Flush(symbols []string) error {
   timestamp := time.Now().UnixMilli()
   pipe := r.Rdb.Pipeline()
   for _, ticker := range tickers {
-    data := ticker.(map[string]interface{})
-    symbol := data["symbol"].(string)
-    redisKey := fmt.Sprintf("binance:spot:realtime:%s", symbol)
+    redisKey := fmt.Sprintf("binance:spot:realtime:%s", ticker.Symbol)
     value, err := r.Rdb.HGet(r.Ctx, redisKey, "price").Result()
     if err == nil {
       lasttime, _ := strconv.ParseInt(value, 10, 64)
@@ -43,43 +53,29 @@ func (r *TickersRepository) Flush(symbols []string) error {
         continue
       }
     }
-    price, _ := strconv.ParseFloat(data["lastPrice"].(string), 64)
-    open, _ := strconv.ParseFloat(data["openPrice"].(string), 64)
-    high, _ := strconv.ParseFloat(data["highPrice"].(string), 64)
-    low, _ := strconv.ParseFloat(data["lowPrice"].(string), 64)
-    volume, _ := strconv.ParseFloat(data["volume"].(string), 64)
-    quota, _ := strconv.ParseFloat(data["quoteVolume"].(string), 64)
-    change, _ := decimal.NewFromFloat(price).Sub(decimal.NewFromFloat(open)).Div(decimal.NewFromFloat(open)).Round(4).Float64()
     pipe.HMSet(
       r.Ctx,
       redisKey,
       map[string]interface{}{
-        "symbol":    symbol,
-        "price":     price,
-        "open":      open,
-        "high":      high,
-        "low":       low,
-        "volume":    volume,
-        "quota":     quota,
-        "change":    change,
+        "symbol":    ticker.Symbol,
+        "open":      ticker.Open,
+        "price":     ticker.Price,
+        "high":      ticker.High,
+        "low":       ticker.Low,
+        "volume":    ticker.Volume,
+        "quota":     ticker.Quota,
+        "change":    ticker.Change,
         "timestamp": timestamp,
       },
     )
-    pipe.ZAdd(
-      r.Ctx,
-      "binance:spot:tickers:flush",
-      &redis.Z{
-        float64(timestamp),
-        symbol,
-      },
-    )
+    pipe.ZRem(r.Ctx, "binance:spot:tickers:flush", ticker.Symbol)
   }
   pipe.Exec(r.Ctx)
 
   return nil
 }
 
-func (r *TickersRepository) Request(symbols []string) ([]interface{}, error) {
+func (r *TickersRepository) Request(symbols []string) ([]*TickerInfo, error) {
   tr := &http.Transport{
     DisableKeepAlives: true,
   }
@@ -120,8 +116,12 @@ func (r *TickersRepository) Request(symbols []string) ([]interface{}, error) {
     )
   }
 
-  var result []interface{}
+  var result []*TickerInfo
   json.NewDecoder(resp.Body).Decode(&result)
+
+  for _, ticker := range result {
+    ticker.Change, _ = decimal.NewFromFloat(ticker.Price).Sub(decimal.NewFromFloat(ticker.Open)).Div(decimal.NewFromFloat(ticker.Open)).Round(4).Float64()
+  }
 
   if len(result) == 0 {
     return nil, errors.New("invalid response")

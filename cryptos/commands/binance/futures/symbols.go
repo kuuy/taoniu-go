@@ -38,6 +38,17 @@ func NewSymbolsCommand() *cli.Command {
         },
       },
       {
+        Name:  "price",
+        Usage: "",
+        Action: func(c *cli.Context) error {
+          symbol := c.Args().Get(0)
+          if err := h.Price(symbol); err != nil {
+            return cli.Exit(err.Error(), 1)
+          }
+          return nil
+        },
+      },
+      {
         Name:  "count",
         Usage: "",
         Action: func(c *cli.Context) error {
@@ -64,6 +75,16 @@ func NewSymbolsCommand() *cli.Command {
 func (h *SymbolsHandler) Flush() error {
   log.Println("symbols flush...")
   return h.Repository.Flush()
+}
+
+func (h *SymbolsHandler) Price(symbol string) (err error) {
+  log.Println("symbols price...")
+  price, err := h.Repository.Price(symbol)
+  if err != nil {
+    return
+  }
+  log.Println("symbol price", symbol, price)
+  return
 }
 
 func (h *SymbolsHandler) Count() error {

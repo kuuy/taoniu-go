@@ -322,6 +322,10 @@ func (r *SymbolsRepository) Price(symbol string) (float64, error) {
   price, _ := strconv.ParseFloat(data[0].(string), 64)
   lasttime, _ := strconv.ParseInt(data[1].(string), 10, 64)
   if timestamp-lasttime > 30000 {
+    r.Rdb.ZAdd(r.Ctx, "binance:futures:tickers:flush", &redis.Z{
+      float64(timestamp),
+      symbol,
+    })
     return 0, errors.New(fmt.Sprintf("[%s] price long time not freshed", symbol))
   }
 

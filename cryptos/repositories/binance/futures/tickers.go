@@ -5,6 +5,7 @@ import (
   "encoding/json"
   "errors"
   "fmt"
+  "github.com/shopspring/decimal"
   "net"
   "net/http"
   "os"
@@ -14,8 +15,6 @@ import (
   "time"
 
   "github.com/go-redis/redis/v8"
-  "github.com/shopspring/decimal"
-
   "taoniu.local/cryptos/common"
 )
 
@@ -27,8 +26,9 @@ type TickersRepository struct {
 
 type TickerInfo struct {
   Symbol    string  `json:"symbol"`
-  Price     float64 `json:"lastPrice,string"`
   Open      float64 `json:"openPrice,string"`
+  Price     float64 `json:"lastPrice,string"`
+  Change    float64 `json:"-"`
   High      float64 `json:"highPrice,string"`
   Low       float64 `json:"lowPrice,string"`
   Volume    float64 `json:"volume,string"`
@@ -52,24 +52,23 @@ func (r *TickersRepository) Flush() error {
         continue
       }
     }
-    change, _ := decimal.NewFromFloat(ticker.Price).Sub(decimal.NewFromFloat(ticker.Open)).Div(decimal.NewFromFloat(ticker.Open)).Round(4).Float64()
-    values := map[string]interface{}{
-      "symbol":    ticker.Symbol,
-      "price":     ticker.Price,
-      "open":      ticker.Open,
-      "high":      ticker.High,
-      "low":       ticker.Low,
-      "volume":    ticker.Volume,
-      "quota":     ticker.Quota,
-      "change":    change,
-      "lasttime":  ticker.CloseTime,
-      "timestamp": timestamp,
-    }
     pipe.HMSet(
       r.Ctx,
       redisKey,
-      values,
+      map[string]interface{}{
+        "symbol":    ticker.Symbol,
+        "open":      ticker.Open,
+        "price":     ticker.Price,
+        "high":      ticker.High,
+        "low":       ticker.Low,
+        "volume":    ticker.Volume,
+        "quota":     ticker.Quota,
+        "change":    ticker.Change,
+        "lasttime":  ticker.CloseTime,
+        "timestamp": timestamp,
+      },
     )
+    pipe.ZRem(r.Ctx, "binance:spot:tickers:flush", ticker.Symbol)
   }
   pipe.Exec(r.Ctx)
   return nil
@@ -116,6 +115,10 @@ func (r *TickersRepository) Request() ([]*TickerInfo, error) {
 
   var result []*TickerInfo
   json.NewDecoder(resp.Body).Decode(&result)
+
+  for _, ticker := range result {
+    ticker.Change, _ = decimal.NewFromFloat(ticker.Price).Sub(decimal.NewFromFloat(ticker.Open)).Div(decimal.NewFromFloat(ticker.Open)).Round(4).Float64()
+  }
 
   return result, nil
 }
