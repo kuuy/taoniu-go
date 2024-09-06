@@ -154,10 +154,11 @@ func (h *ScalpingHandler) Apply(symbol string, side int) error {
 func (h *ScalpingHandler) Init() error {
   log.Println("margin cross scalping init...")
   var positions []*spotModels.Position
-  h.Db.Select([]string{"symbol", "entry_price", "entry_quantity"}).Where("entry_amount >= 60").Find(&positions)
+  h.Db.Select([]string{"symbol", "entry_price", "entry_quantity"}).Where("entry_amount >= 0").Find(&positions)
   for _, position := range positions {
     amount, _ := decimal.NewFromFloat(position.EntryPrice).Mul(decimal.NewFromFloat(position.EntryQuantity)).Float64()
     log.Println("position", position.Symbol, position.EntryPrice, amount)
+    h.Apply(position.Symbol, 1)
   }
   return nil
 }

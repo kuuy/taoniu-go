@@ -4,8 +4,10 @@ import (
   "context"
   "errors"
   "fmt"
+  "github.com/shopspring/decimal"
   "log"
   "strconv"
+  spotModels "taoniu.local/cryptos/models/binance/spot"
   "time"
 
   "github.com/go-redis/redis/v8"
@@ -56,6 +58,16 @@ func NewTriggersCommand() *cli.Command {
             return nil
           }
           if err := h.Apply(symbol, side); err != nil {
+            return cli.Exit(err.Error(), 1)
+          }
+          return nil
+        },
+      },
+      {
+        Name:  "init",
+        Usage: "",
+        Action: func(c *cli.Context) error {
+          if err := h.Init(); err != nil {
             return cli.Exit(err.Error(), 1)
           }
           return nil
@@ -196,6 +208,18 @@ func (h *TriggersHandler) Reverse(side int) error {
     }
   }
 
+  return nil
+}
+
+func (h *TriggersHandler) Init() error {
+  log.Println("margin cross triggers init...")
+  var positions []*spotModels.Position
+  h.Db.Select([]string{"symbol", "entry_price", "entry_quantity"}).Where("entry_amount >= 0").Find(&positions)
+  for _, position := range positions {
+    amount, _ := decimal.NewFromFloat(position.EntryPrice).Mul(decimal.NewFromFloat(position.EntryQuantity)).Float64()
+    log.Println("position", position.Symbol, position.EntryPrice, amount)
+    h.Apply(position.Symbol, 1)
+  }
   return nil
 }
 

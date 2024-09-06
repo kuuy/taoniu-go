@@ -131,7 +131,7 @@ func (r *AccountRepository) Flush() error {
     symbols = append(symbols, position.Symbol)
 
     var side int
-    if fmt.Sprintf("%v", position.PositionSide) == "LONG" {
+    if position.PositionSide == "LONG" {
       side = 1
     } else {
       side = 2

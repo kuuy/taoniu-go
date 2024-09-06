@@ -685,7 +685,6 @@ func (r *IndicatorsRepository) IchimokuCloud(symbol string, interval string, ten
 
   lastConversionLine, _ := decimal.Avg(prices[1], prices[2:tenkanPeriod]...).Float64()
   lastBaseLine, _ := decimal.Avg(prices[1], prices[2:kijunPeriod]...).Float64()
-
   conversionLine, _ := decimal.Avg(prices[0], prices[1:tenkanPeriod]...).Float64()
   baseLine, _ := decimal.Avg(prices[0], prices[1:kijunPeriod]...).Float64()
   senkouSpanA := (conversionLine + baseLine) / 2
@@ -883,7 +882,7 @@ func (r *IndicatorsRepository) VolumeProfile(symbol string, interval string, lim
       }
       areaVolume += data[j]["volume"].(float64)
       if areaVolume > targetVolume {
-        if bestVolume == 0.0 || bestVolume > areaVolume {
+        if bestVolume < areaVolume {
           startIndex = i
           endIndex = j
           bestVolume = areaVolume
