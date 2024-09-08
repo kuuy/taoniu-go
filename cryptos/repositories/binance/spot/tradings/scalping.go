@@ -619,6 +619,8 @@ func (r *ScalpingRepository) CanBuy(
     return true
   }
 
+  isChange := false
+
   var tradings []*models.Scalping
   r.Db.Select([]string{"status", "buy_price"}).Where("scalping_id=? AND status IN ?", scalping.ID, []int{0, 1, 2}).Find(&tradings)
   for _, trading := range tradings {
@@ -630,8 +632,12 @@ func (r *ScalpingRepository) CanBuy(
     }
     if buyPrice == 0 || buyPrice > trading.BuyPrice {
       buyPrice = trading.BuyPrice
-      r.Rdb.Set(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, scalping.Symbol), buyPrice, -1)
+      isChange = true
     }
+  }
+
+  if isChange {
+    r.Rdb.Set(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, scalping.Symbol), buyPrice, -1)
   }
 
   return true

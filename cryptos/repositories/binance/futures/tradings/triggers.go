@@ -679,6 +679,8 @@ func (r *TriggersRepository) CanBuy(trigger *futuresModels.Trigger, price float6
     return true
   }
 
+  isChange := false
+
   var tradings []*models.Trigger
   r.Db.Select([]string{"status", "buy_price"}).Where("trigger_id=? AND status IN ?", trigger.ID, []int{0, 1, 2}).Find(&tradings)
   for _, trading := range tradings {
@@ -693,17 +695,21 @@ func (r *TriggersRepository) CanBuy(trigger *futuresModels.Trigger, price float6
     }
     if buyPrice == 0 {
       buyPrice = trading.BuyPrice
-      r.Rdb.Set(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, trigger.Symbol), buyPrice, -1)
+      isChange = true
     } else {
       if trigger.Side == 1 && buyPrice > trading.BuyPrice {
         buyPrice = trading.BuyPrice
-        r.Rdb.Set(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, trigger.Symbol), buyPrice, -1)
+        isChange = true
       }
       if trigger.Side == 2 && buyPrice < trading.BuyPrice {
         buyPrice = trading.BuyPrice
-        r.Rdb.Set(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, trigger.Symbol), buyPrice, -1)
+        isChange = true
       }
     }
+  }
+
+  if isChange {
+    r.Rdb.Set(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, trigger.Symbol), buyPrice, -1)
   }
 
   return true
