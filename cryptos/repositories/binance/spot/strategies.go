@@ -452,15 +452,15 @@ func (r *StrategiesRepository) Filters(symbol string) (tickSize float64, stepSiz
 }
 
 func (r *StrategiesRepository) Clean(symbol string) (err error) {
-  var result *gorm.DB
-  var strategy = &models.Strategy{}
-
+  var strategy *models.Strategy
   for _, interval := range []string{"1m", "15m", "4h", "1d"} {
-    result = r.Db.Where("symbol=? AND interval = ?", symbol, interval).Order("timestamp DESC").Offset(10).First(&strategy)
-    if result.Error == nil {
-      r.Db.Where("symbol=? AND interval = ? AND timestamp < ?", symbol, interval, strategy.Timestamp).Delete(&strategy)
+    for _, indicator := range []string{"zlema", "ha_zlema", "kdj", "bbands", "ichimoku_cloud"} {
+      var timestamp int64
+      err = r.Db.Model(&strategy).Select("timestamp").Where("symbol=? AND interval = ? AND indicator = ?", symbol, interval, indicator).Order("timestamp DESC").Offset(3).Take(&timestamp).Error
+      if err == nil {
+        r.Db.Where("symbol=? AND interval = ? AND indicator = ? AND timestamp < ?", symbol, interval, indicator, timestamp).Delete(&strategy)
+      }
     }
   }
-
   return
 }

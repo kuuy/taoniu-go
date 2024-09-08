@@ -4,7 +4,6 @@ import (
   "context"
   "fmt"
   "log"
-  config "taoniu.local/cryptos/config/binance/spot"
   "time"
 
   "github.com/go-redis/redis/v8"
@@ -12,15 +11,17 @@ import (
   "gorm.io/gorm"
 
   "taoniu.local/cryptos/common"
+  config "taoniu.local/cryptos/config/binance/spot"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
+  tradingsRepositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
 )
 
 type StrategiesHandler struct {
-  Db                *gorm.DB
-  Rdb               *redis.Client
-  Ctx               context.Context
-  Repository        *repositories.StrategiesRepository
-  SymbolsRepository *repositories.SymbolsRepository
+  Db                 *gorm.DB
+  Rdb                *redis.Client
+  Ctx                context.Context
+  Repository         *repositories.StrategiesRepository
+  TradingsRepository *repositories.TradingsRepository
 }
 
 func NewStrategiesCommand() *cli.Command {
@@ -35,14 +36,15 @@ func NewStrategiesCommand() *cli.Command {
         Ctx: context.Background(),
       }
       h.Repository = &repositories.StrategiesRepository{
-        Db:  h.Db,
-        Rdb: h.Rdb,
-        Ctx: h.Ctx,
-      }
-      h.Repository.SymbolsRepository = &repositories.SymbolsRepository{
         Db: h.Db,
       }
-      h.SymbolsRepository = &repositories.SymbolsRepository{
+      h.TradingsRepository = &repositories.TradingsRepository{
+        Db: h.Db,
+      }
+      h.TradingsRepository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
+        Db: h.Db,
+      }
+      h.TradingsRepository.TriggersRepository = &tradingsRepositories.TriggersRepository{
         Db: h.Db,
       }
       return nil
@@ -64,7 +66,7 @@ func NewStrategiesCommand() *cli.Command {
 
 func (h *StrategiesHandler) Clean() error {
   log.Println("binance spot tasks strategies clean...")
-  symbols := h.SymbolsRepository.Symbols()
+  symbols := h.TradingsRepository.Scan()
   for _, symbol := range symbols {
     mutex := common.NewMutex(
       h.Rdb,

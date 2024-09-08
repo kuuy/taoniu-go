@@ -13,14 +13,15 @@ import (
   "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/futures"
   repositories "taoniu.local/cryptos/repositories/binance/futures"
+  tradingsRepositories "taoniu.local/cryptos/repositories/binance/futures/tradings"
 )
 
 type PlansHandler struct {
-  Db                *gorm.DB
-  Rdb               *redis.Client
-  Ctx               context.Context
-  Repository        *repositories.PlansRepository
-  SymbolsRepository *repositories.SymbolsRepository
+  Db                 *gorm.DB
+  Rdb                *redis.Client
+  Ctx                context.Context
+  Repository         *repositories.PlansRepository
+  TradingsRepository *repositories.TradingsRepository
 }
 
 func NewPlansCommand() *cli.Command {
@@ -37,10 +38,13 @@ func NewPlansCommand() *cli.Command {
       h.Repository = &repositories.PlansRepository{
         Db: h.Db,
       }
-      h.Repository.SymbolsRepository = &repositories.SymbolsRepository{
+      h.TradingsRepository = &repositories.TradingsRepository{
         Db: h.Db,
       }
-      h.SymbolsRepository = &repositories.SymbolsRepository{
+      h.TradingsRepository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
+        Db: h.Db,
+      }
+      h.TradingsRepository.TriggersRepository = &tradingsRepositories.TriggersRepository{
         Db: h.Db,
       }
       return nil
@@ -62,7 +66,7 @@ func NewPlansCommand() *cli.Command {
 
 func (h *PlansHandler) Clean() error {
   log.Println("binance futures tasks plans clean...")
-  symbols := h.SymbolsRepository.Symbols()
+  symbols := h.TradingsRepository.Scan()
   for _, symbol := range symbols {
     mutex := common.NewMutex(
       h.Rdb,
