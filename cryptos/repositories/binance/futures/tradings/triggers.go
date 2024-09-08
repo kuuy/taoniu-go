@@ -676,7 +676,6 @@ func (r *TriggersRepository) CanBuy(trigger *futuresModels.Trigger, price float6
     if trigger.Side == 2 && price <= buyPrice*1.0385 {
       return false
     }
-    return true
   }
 
   isChange := false

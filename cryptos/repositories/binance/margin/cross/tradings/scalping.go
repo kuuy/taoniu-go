@@ -704,7 +704,6 @@ func (r *ScalpingRepository) CanBuy(
     if scalping.Side == 2 && price <= buyPrice*1.0385 {
       return false
     }
-    return true
   }
 
   isChange := false

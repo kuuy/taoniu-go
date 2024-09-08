@@ -600,7 +600,6 @@ func (r *TriggersRepository) CanBuy(
     if price >= buyPrice*0.9615 {
       return false
     }
-    return true
   }
 
   isChange := false
