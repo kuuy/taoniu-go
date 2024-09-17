@@ -69,7 +69,7 @@ func (h *Strategies) Zlema(ctx context.Context, t *asynq.Task) error {
   }
   defer mutex.Unlock()
 
-  h.Repository.Atr(payload.Symbol, payload.Interval)
+  h.Repository.Zlema(payload.Symbol, payload.Interval)
 
   return nil
 }
