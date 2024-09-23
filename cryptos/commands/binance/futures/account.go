@@ -57,6 +57,6 @@ func NewAccountCommand() *cli.Command {
 }
 
 func (h *AccountHandler) Flush() error {
-  log.Println("binance spot account flush processing...")
+  log.Println("binance futures account flush processing...")
   return h.Repository.Flush()
 }

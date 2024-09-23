@@ -1,8 +1,10 @@
 package binance
 
 import (
-  "github.com/go-chi/chi/v5"
   "net/http"
+
+  "github.com/go-chi/chi/v5"
+
   "taoniu.local/cryptos/api/v1/binance/margin"
   "taoniu.local/cryptos/common"
 )
@@ -10,6 +12,6 @@ import (
 func NewMarginRouter(apiContext *common.ApiContext) http.Handler {
   r := chi.NewRouter()
   r.Mount("/cross", margin.NewCrossRouter(apiContext))
-  r.Mount("/cross", margin.NewIsolatedRouter(apiContext))
+  r.Mount("/isolated", margin.NewIsolatedRouter(apiContext))
   return r
 }

@@ -1,9 +1,11 @@
 package analysis
 
 import (
-  "github.com/go-chi/chi/v5"
   "net/http"
-  "taoniu.local/cryptos/api/v1/binance/spot/analysis/tradings"
+
+  "github.com/go-chi/chi/v5"
+
+  "taoniu.local/cryptos/api/v1/binance/margin/cross/analysis/tradings"
   "taoniu.local/cryptos/common"
 )
 

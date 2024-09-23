@@ -138,7 +138,9 @@ func (h *GamblingHandler) Calc(
     } else {
       takeProfit, _ = decimal.NewFromFloat(entryPrice).Sub(decimal.NewFromFloat(takePrice)).Mul(decimal.NewFromFloat(planQuantity)).Float64()
     }
-    log.Println("plan", takePrice, planQuantity, takeProfit, 0, 0)
+    planAmount, _ = decimal.NewFromFloat(planAmount).Add(decimal.NewFromFloat(takePrice).Mul(decimal.NewFromFloat(planQuantity))).Float64()
+    planProfit, _ = decimal.NewFromFloat(planProfit).Add(decimal.NewFromFloat(takeProfit)).Float64()
+    log.Println("plan", takePrice, planQuantity, takeProfit, planAmount, planProfit)
   }
 
   log.Println("planProfit", planProfit)

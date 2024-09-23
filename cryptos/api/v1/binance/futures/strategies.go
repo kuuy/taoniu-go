@@ -30,6 +30,7 @@ func NewStrategiesRouter(apiContext *common.ApiContext) http.Handler {
 
   r := chi.NewRouter()
   r.Get("/", h.Listings)
+  r.Get("/signals", h.Signals)
 
   return r
 }
@@ -88,4 +89,41 @@ func (h *StrategiesHandler) Listings(
   }
 
   h.Response.Pagenate(data, total, current, pageSize)
+}
+
+func (h *StrategiesHandler) Signals(
+  w http.ResponseWriter,
+  r *http.Request,
+) {
+  h.ApiContext.Mux.Lock()
+  defer h.ApiContext.Mux.Unlock()
+
+  h.Response.Writer = w
+
+  q := r.URL.Query()
+  if q.Get("symbol") == "" {
+    h.Response.Error(http.StatusForbidden, 1004, "symbol is empty")
+    return
+  }
+  if q.Get("interval") == "" {
+    h.Response.Error(http.StatusForbidden, 1004, "interval is empty")
+    return
+  }
+
+  conditions := map[string]interface{}{
+    "symbol":   q.Get("symbol"),
+    "interval": q.Get("interval"),
+  }
+
+  strategies := h.Repository.Signals(conditions)
+  data := make([]*SignalInfo, len(strategies))
+  for i, strategy := range strategies {
+    data[i] = &SignalInfo{
+      Price:     strategy.Price,
+      Signal:    strategy.Signal,
+      Timestamp: strategy.Timestamp,
+    }
+  }
+
+  h.Response.Json(data)
 }

@@ -37,6 +37,12 @@ type PositionInfo struct {
   Timestamp     int64   `json:"timestamp"`
 }
 
+type SignalInfo struct {
+  Price     float64 `json:"price"`
+  Signal    int     `json:"signal"`
+  Timestamp int64   `json:"timestamp"`
+}
+
 type TradingInfo struct {
   BuyPrice      float64 `json:"buy_price"`
   SellPrice     float64 `json:"sell_price"`

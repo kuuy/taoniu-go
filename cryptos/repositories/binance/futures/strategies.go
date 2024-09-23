@@ -36,6 +36,16 @@ func (r *StrategiesRepository) Count(conditions map[string]interface{}) int64 {
   return total
 }
 
+func (r *StrategiesRepository) Signals(conditions map[string]interface{}) []*models.Strategy {
+  var strategies []*models.Strategy
+  r.Db.Select([]string{
+    "price",
+    "signal",
+    "timestamp",
+  }).Where("symbol=? AND interval=?", conditions["symbol"].(string), conditions["interval"].(string)).Find(&strategies)
+  return strategies
+}
+
 func (r *StrategiesRepository) Listings(conditions map[string]interface{}, current int, pageSize int) []*models.Strategy {
   var strategies []*models.Strategy
   query := r.Db.Select([]string{

@@ -11,22 +11,22 @@ import (
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
   "taoniu.local/cryptos/repositories"
-  analysisRepositories "taoniu.local/cryptos/repositories/binance/futures/analysis/tradings"
+  analysisRepositories "taoniu.local/cryptos/repositories/binance/margin/cross/analysis/tradings"
 )
 
-type ScalpingHandler struct {
-  ApiContext *common.ApiContext
-  Response   *api.ResponseHandler
-  Repository *analysisRepositories.ScalpingRepository
+type TriggersHandler struct {
+  ApiContext         *common.ApiContext
+  Response           *api.ResponseHandler
+  AnalysisRepository *analysisRepositories.TriggersRepository
 }
 
-func NewScalpingRouter(apiContext *common.ApiContext) http.Handler {
-  h := ScalpingHandler{
+func NewTriggersRouter(apiContext *common.ApiContext) http.Handler {
+  h := TriggersHandler{
     ApiContext: apiContext,
   }
   h.Response = &api.ResponseHandler{}
   h.Response.JweRepository = &repositories.JweRepository{}
-  h.Repository = &analysisRepositories.ScalpingRepository{
+  h.AnalysisRepository = &analysisRepositories.TriggersRepository{
     Db:  h.ApiContext.Db,
     Rdb: h.ApiContext.Rdb,
     Ctx: h.ApiContext.Ctx,
@@ -39,7 +39,7 @@ func NewScalpingRouter(apiContext *common.ApiContext) http.Handler {
   return r
 }
 
-func (h *ScalpingHandler) Listings(
+func (h *TriggersHandler) Listings(
   w http.ResponseWriter,
   r *http.Request,
 ) {
@@ -51,8 +51,9 @@ func (h *ScalpingHandler) Listings(
   var current int
   if !r.URL.Query().Has("current") {
     current = 1
+  } else {
+    current, _ = strconv.Atoi(r.URL.Query().Get("current"))
   }
-  current, _ = strconv.Atoi(r.URL.Query().Get("current"))
   if current < 1 {
     h.Response.Error(http.StatusForbidden, 1004, "current not valid")
     return
@@ -71,11 +72,11 @@ func (h *ScalpingHandler) Listings(
 
   conditions := map[string]interface{}{}
 
-  total := h.Repository.Count(conditions)
-  tradings := h.Repository.Listings(conditions, current, pageSize)
-  data := make([]*ScalpingInfo, len(tradings))
+  total := h.AnalysisRepository.Count(conditions)
+  tradings := h.AnalysisRepository.Listings(conditions, current, pageSize)
+  data := make([]*TriggerInfo, len(tradings))
   for i, trading := range tradings {
-    data[i] = &ScalpingInfo{
+    data[i] = &TriggerInfo{
       ID:             trading.ID,
       Day:            time.Time(trading.Day).Format("2006-01-02"),
       BuysCount:      trading.BuysCount,
@@ -90,7 +91,7 @@ func (h *ScalpingHandler) Listings(
   h.Response.Pagenate(data, total, current, pageSize)
 }
 
-func (h *ScalpingHandler) Series(
+func (h *TriggersHandler) Series(
   w http.ResponseWriter,
   r *http.Request,
 ) {
@@ -110,6 +111,6 @@ func (h *ScalpingHandler) Series(
     return
   }
 
-  series := h.Repository.Series(limit)
+  series := h.AnalysisRepository.Series(limit)
   h.Response.Json(series)
 }

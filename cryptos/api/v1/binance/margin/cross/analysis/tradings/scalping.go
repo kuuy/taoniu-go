@@ -11,7 +11,7 @@ import (
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
   "taoniu.local/cryptos/repositories"
-  analysisRepositories "taoniu.local/cryptos/repositories/binance/futures/analysis/tradings"
+  analysisRepositories "taoniu.local/cryptos/repositories/binance/margin/cross/analysis/tradings"
 )
 
 type ScalpingHandler struct {
