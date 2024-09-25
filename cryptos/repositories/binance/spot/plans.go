@@ -209,7 +209,7 @@ func (r *PlansRepository) Create(symbol string, interval string) (plan models.Pl
   amount := 10.0
 
   for _, indicators := range [][]string{
-    {"bbands"},
+    {"bbands", "ichimoku_cloud"},
     {"zlema", "ha_zlema"},
   } {
     var entity models.Strategy
