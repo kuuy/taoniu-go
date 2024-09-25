@@ -192,7 +192,7 @@ func (r *PlansRepository) Signals(interval string) (map[string]interface{}, map[
 func (r *PlansRepository) Create(symbol string, interval string) (plan models.Plan, err error) {
   var strategy models.Strategy
   result := r.Db.Select([]string{"price", "signal", "timestamp"}).Where(
-    "symbol = ? AND interval = ? AND indicator = 'kdj' AND timestamp >= ?",
+    "symbol = ? AND interval = ? AND indicator IN ('kdj','ichimoku_cloud') AND timestamp >= ?",
     symbol,
     interval,
     r.Timestamp(interval)-60000,
@@ -208,7 +208,7 @@ func (r *PlansRepository) Create(symbol string, interval string) (plan models.Pl
   amount := 10.0
 
   for _, indicators := range [][]string{
-    {"bbands", "ichimoku_cloud"},
+    {"bbands"},
     {"zlema", "ha_zlema"},
   } {
     var entity models.Strategy
