@@ -20,5 +20,5 @@ type Trigger struct {
 }
 
 func (m *Trigger) TableName() string {
-  return "binance_margin_cross_analysis_tradings_trigger"
+  return "binance_margin_cross_analysis_tradings_triggers"
 }
