@@ -217,10 +217,10 @@ func (r *PlansRepository) Create(symbol string, interval string) (plan models.Pl
       "price",
       "signal",
     }).Where(
-      "symbol = ? AND interval = ? AND indicator IN ? AND timestamp = ?",
+      "symbol = ? AND indicator IN ? AND interval = ? AND timestamp >= ?",
       symbol,
-      interval,
       indicators,
+      interval,
       strategy.Timestamp-14*r.Timestep(interval),
     ).Order(
       "timestamp desc",
@@ -231,7 +231,7 @@ func (r *PlansRepository) Create(symbol string, interval string) (plan models.Pl
     if entity.Signal != strategy.Signal {
       continue
     }
-    if entity.Indicator == "bbands" || entity.Indicator == "ichimoku_cloud" {
+    if entity.Indicator == "bbands" {
       amount += 10
     }
     if entity.Indicator == "zlema" || entity.Indicator == "ha_zlema" {

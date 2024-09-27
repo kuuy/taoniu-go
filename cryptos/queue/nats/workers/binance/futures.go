@@ -20,7 +20,7 @@ func (h *Futures) Subscribe() error {
   //futures.NewPatterns(h.NatsContext).Subscribe()
   //futures.NewIndicators(h.NatsContext).Subscribe()
   //futures.NewStrategies(h.NatsContext).Subscribe()
-  futures.NewPlans(h.NatsContext).Subscribe()
+  //futures.NewPlans(h.NatsContext).Subscribe()
   futures.NewAccount(h.NatsContext).Subscribe()
   futures.NewOrders(h.NatsContext).Subscribe()
   futures.NewScalping(h.NatsContext).Subscribe()
