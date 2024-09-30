@@ -208,10 +208,6 @@ func (r *KlinesRepository) Fix(symbol string, interval string, limit int) error 
     count = int((timestamp - lasttime) / timestep)
   }
 
-  if len(klines) > 0 {
-    count++
-  }
-
   for i := 1; i < len(klines); i++ {
     if lasttime-klines[i].Timestamp != timestep {
       if endtime == 0 {
@@ -219,7 +215,7 @@ func (r *KlinesRepository) Fix(symbol string, interval string, limit int) error 
         count = int((endtime - klines[i].Timestamp) / timestep)
       }
     } else {
-      if endtime > 0 {
+      if endtime > 0 && count > 0 {
         err := r.Flush(symbol, interval, endtime, count)
         if err != nil {
           log.Println("klines fix error", err.Error())
@@ -237,7 +233,7 @@ func (r *KlinesRepository) Fix(symbol string, interval string, limit int) error 
 
   log.Println("endtime", endtime, count)
 
-  if endtime > 0 {
+  if endtime > 0 && count > 0 {
     log.Println("klines fix", symbol, interval, endtime, count)
     err := r.Flush(symbol, interval, endtime, count)
     if err != nil {
