@@ -33,10 +33,12 @@ func (h *Scalping) AddPlan(m *nats.Msg) {
   var payload *PlansUpdatePayload
   json.Unmarshal(m.Data, &payload)
 
-  h.Repository.AddPlan(payload.ID)
-  message, _ := json.Marshal(&tradings.ScalpingPlacePayload{
-    PlanId: payload.ID,
-  })
-  h.NatsContext.Conn.Publish(config.NATS_TRADINGS_SCALPING_PLACE, message)
-  h.NatsContext.Conn.Flush()
+  if payload.Side == 1 {
+    h.Repository.AddPlan(payload.ID)
+    message, _ := json.Marshal(&tradings.ScalpingPlacePayload{
+      PlanId: payload.ID,
+    })
+    h.NatsContext.Conn.Publish(config.NATS_TRADINGS_SCALPING_PLACE, message)
+    h.NatsContext.Conn.Flush()
+  }
 }

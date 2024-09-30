@@ -43,6 +43,7 @@ func (h *Plans) Create(m *nats.Msg) {
   }
   message, _ := json.Marshal(&PlansUpdatePayload{
     ID:     plan.ID,
+    Side:   plan.Side,
     Amount: plan.Amount,
   })
   h.NatsContext.Conn.Publish(config.NATS_PLANS_UPDATE, message)
