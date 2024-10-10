@@ -105,7 +105,7 @@ func (h *TickersHandler) handler(message map[string]interface{}) {
       "volume":    volume,
       "quota":     quota,
       "change":    change,
-      "timestamp": time.Now().Unix(),
+      "timestamp": time.Now().UnixMilli(),
     })
     h.Nats.Publish(config.NATS_TICKERS_UPDATE, data)
     h.Nats.Flush()

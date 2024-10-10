@@ -82,6 +82,7 @@ func (h *StrategiesHandler) Listings(
       ID:        strategy.ID,
       Symbol:    strategy.Symbol,
       Indicator: strategy.Indicator,
+      Interval:  strategy.Interval,
       Signal:    strategy.Signal,
       Price:     strategy.Price,
       Timestamp: strategy.Timestamp,

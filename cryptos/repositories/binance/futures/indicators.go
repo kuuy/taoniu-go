@@ -883,7 +883,7 @@ func (r *IndicatorsRepository) VolumeProfile(symbol string, interval string, lim
       }
       areaVolume += data[j]["volume"].(float64)
       if areaVolume > targetVolume {
-        if bestVolume == 0.0 || bestVolume > areaVolume {
+        if bestVolume < areaVolume {
           startIndex = i
           endIndex = j
           bestVolume = areaVolume

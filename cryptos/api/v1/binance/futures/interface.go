@@ -19,9 +19,22 @@ type StrategiesInfo struct {
   ID        string  `json:"id"`
   Symbol    string  `json:"symbol"`
   Indicator string  `json:"indicator"`
+  Interval  string  `json:"interval"`
   Signal    int     `json:"signal"`
   Price     float64 `json:"price"`
   Timestamp int64   `json:"timestamp"`
+}
+
+type PlansInfo struct {
+  ID        string  `json:"id"`
+  Symbol    string  `json:"symbol"`
+  Side      int     `json:"side"`
+  Interval  string  `json:"interval"`
+  Price     float64 `json:"price"`
+  Quantity  float64 `json:"quantity"`
+  Amount    float64 `json:"amount"`
+  Timestamp int64   `json:"timestamp"`
+  Status    int     `json:"status"`
 }
 
 type PositionInfo struct {
@@ -68,17 +81,6 @@ type CalcGamblingResponse struct {
   StopPrice   float64             `json:"stop_price"`
   PlansProfit string              `json:"plans_profit"`
   Plans       []*GamblingPlanInfo `json:"plans"`
-}
-
-type PlansInfo struct {
-  ID        string  `json:"id"`
-  Symbol    string  `json:"symbol"`
-  Side      int     `json:"side"`
-  Price     float64 `json:"price"`
-  Quantity  float64 `json:"quantity"`
-  Amount    float64 `json:"amount"`
-  Timestamp int64   `json:"timestamp"`
-  Status    int     `json:"status"`
 }
 
 type ScalpingInfo struct {

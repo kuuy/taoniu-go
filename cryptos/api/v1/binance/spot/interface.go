@@ -25,6 +25,7 @@ type StrategiesInfo struct {
   ID        string  `json:"id"`
   Symbol    string  `json:"symbol"`
   Indicator string  `json:"indicator"`
+  Interval  string  `json:"interval"`
   Signal    int     `json:"signal"`
   Price     float64 `json:"price"`
   Timestamp int64   `json:"timestamp"`
@@ -33,6 +34,7 @@ type StrategiesInfo struct {
 type PlansInfo struct {
   ID        string  `json:"id"`
   Symbol    string  `json:"symbol"`
+  Interval  string  `json:"interval"`
   Side      int     `json:"side"`
   Price     float64 `json:"price"`
   Quantity  float64 `json:"quantity"`

@@ -81,6 +81,7 @@ func (h *PlansHandler) Listings(
       ID:        plan.ID,
       Symbol:    plan.Symbol,
       Side:      plan.Side,
+      Interval:  plan.Interval,
       Price:     plan.Price,
       Quantity:  plan.Quantity,
       Amount:    plan.Amount,
