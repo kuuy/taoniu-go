@@ -46,6 +46,7 @@ const (
   LOCKS_KLINES_UPDATE                          = "locks:binance:futures:klines:update:%s:%s"
   LOCKS_KLINES_CLEAN                           = "locks:binance:futures:klines:clean:%s"
   LOCKS_KLINES_STREAM                          = "locks:binance:futures:klines:stream:%s:%s"
+  LOCKS_STRATEGIES_FLUSH                       = "locks:binance:futures:strategies:flush:%s:%s"
   LOCKS_ORDERS_OPEN                            = "locks:binance:futures:orders:open:%s"
   LOCKS_ORDERS_FLUSH                           = "locks:binance:futures:orders:flush:%s:%d"
   LOCKS_ORDERS_SYNC                            = "locks:binance:futures:orders:sync:%s"

@@ -2,10 +2,12 @@ package spot
 
 import (
   "encoding/json"
+  "fmt"
   "github.com/nats-io/nats.go"
   "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/spot"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
+  "time"
 )
 
 type Strategies struct {
@@ -60,6 +62,16 @@ func (h *Strategies) IchimokuCloud(symbol string, interval string) error {
 func (h *Strategies) Flush(m *nats.Msg) {
   var payload *IndicatorsUpdatePayload
   json.Unmarshal(m.Data, &payload)
+
+  mutex := common.NewMutex(
+    h.NatsContext.Rdb,
+    h.NatsContext.Ctx,
+    fmt.Sprintf(config.LOCKS_STRATEGIES_FLUSH, payload.Interval, payload.Symbol),
+  )
+  if !mutex.Lock(30 * time.Second) {
+    return
+  }
+  defer mutex.Unlock()
 
   h.Atr(payload.Symbol, payload.Interval)
   h.Zlema(payload.Symbol, payload.Interval)
