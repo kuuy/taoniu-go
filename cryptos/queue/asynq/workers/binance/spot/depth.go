@@ -39,10 +39,6 @@ func (h *Depth) Flush(ctx context.Context, t *asynq.Task) error {
   var payload DepthFlushPayload
   json.Unmarshal(t.Payload(), &payload)
 
-  if payload.UseProxy {
-    h.Repository.UseProxy = true
-  }
-
   h.Repository.Flush(payload.Symbol, payload.Limit)
   h.SymbolsRepository.Slippage(payload.Symbol)
 

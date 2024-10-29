@@ -11,7 +11,6 @@ import (
 
   "gorm.io/gorm"
 
-  "taoniu.local/cryptos/common"
   models "taoniu.local/cryptos/models/binance/spot"
 )
 
@@ -32,15 +31,7 @@ func (r *DepthRepository) Flush(symbol string, limit int) error {
 func (r *DepthRepository) Request(symbol string, limit int) (map[string]interface{}, error) {
   tr := &http.Transport{
     DisableKeepAlives: true,
-  }
-  if r.UseProxy {
-    session := &common.ProxySession{
-      Proxy: "socks5://127.0.0.1:1088?timeout=5s",
-    }
-    tr.DialContext = session.DialContext
-  } else {
-    session := &net.Dialer{}
-    tr.DialContext = session.DialContext
+    DialContext:       (&net.Dialer{}).DialContext,
   }
 
   httpClient := &http.Client{

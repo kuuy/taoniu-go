@@ -50,7 +50,8 @@ func NewTickersCommand() *cli.Command {
         Name:  "flush",
         Usage: "",
         Action: func(c *cli.Context) error {
-          if err := h.Flush(); err != nil {
+          symbol := c.Args().Get(0)
+          if err := h.Flush(symbol); err != nil {
             return cli.Exit(err.Error(), 1)
           }
           return nil
@@ -70,11 +71,11 @@ func NewTickersCommand() *cli.Command {
   }
 }
 
-func (h *TickersHandler) Flush() error {
+func (h *TickersHandler) Flush(symbol string) error {
   log.Println("binance spot tickers flush...")
   //symbols := h.SymbolsRepository.Symbols()
   //log.Println(symbols)
-  symbols := []string{"BTCUSDT"}
+  symbols := []string{symbol}
   for i := 0; i < len(symbols); i += 20 {
     j := i + 20
     if j > len(symbols) {

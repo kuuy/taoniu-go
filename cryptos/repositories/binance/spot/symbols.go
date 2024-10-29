@@ -211,12 +211,12 @@ func (r *SymbolsRepository) Slippage(symbol string) error {
   asks := depth["asks"].([]interface{})
   bids := depth["bids"].([]interface{})
   data := make(map[string]float64)
-  data["slippage@1%"] = 0
-  data["slippage@-1%"] = 0
-  data["slippage@2%"] = 0
-  data["slippage@-2%"] = 0
-  data["slippage_percent@1%"] = 0
-  data["slippage_percent@2%"] = 0
+  data["slippage@1%"] = 0.0
+  data["slippage@-1%"] = 0.0
+  data["slippage@2%"] = 0.0
+  data["slippage@-2%"] = 0.0
+  data["slippage_percent@1%"] = 0.0
+  data["slippage_percent@2%"] = 0.0
   var stop1, stop2 float64
   for i, item := range asks {
     price, _ := strconv.ParseFloat(item.([]interface{})[0].(string), 64)
@@ -248,6 +248,13 @@ func (r *SymbolsRepository) Slippage(symbol string) error {
       break
     }
     data["slippage@-2%"] += volume
+  }
+
+  if data["slippage@1%"]+data["slippage@-1%"] == 0.0 {
+    return nil
+  }
+  if data["slippage@2%"]+data["slippage@-2%"] == 0.0 {
+    return nil
   }
 
   data["slippage_percent@1%"], _ = decimal.NewFromFloat(data["slippage@1%"]).Div(decimal.NewFromFloat(data["slippage@1%"]).Add(decimal.NewFromFloat(data["slippage@-1%"]))).Round(4).Float64()

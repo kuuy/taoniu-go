@@ -56,8 +56,7 @@ func (t *DepthTask) Flush(limit int) error {
 }
 
 func (t *DepthTask) FlushDelay(limit int) error {
-  symbols := t.SymbolsRepository.Symbols()
-  for _, symbol := range symbols {
+  for _, symbol := range t.TradingsRepository.Scan() {
     task, err := t.Job.Flush(symbol, limit, true)
     if err != nil {
       return err
