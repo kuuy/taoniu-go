@@ -117,7 +117,9 @@ func (r *TickersRepository) Request() ([]*TickerInfo, error) {
   json.NewDecoder(resp.Body).Decode(&result)
 
   for _, ticker := range result {
-    ticker.Change, _ = decimal.NewFromFloat(ticker.Price).Sub(decimal.NewFromFloat(ticker.Open)).Div(decimal.NewFromFloat(ticker.Open)).Round(4).Float64()
+    if ticker.Open > 0 {
+      ticker.Change, _ = decimal.NewFromFloat(ticker.Price).Sub(decimal.NewFromFloat(ticker.Open)).Div(decimal.NewFromFloat(ticker.Open)).Round(4).Float64()
+    }
   }
 
   return result, nil
