@@ -2,7 +2,9 @@ package futures
 
 import (
   "encoding/json"
+
   "github.com/nats-io/nats.go"
+
   "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/futures"
   repositories "taoniu.local/cryptos/repositories/binance/futures"

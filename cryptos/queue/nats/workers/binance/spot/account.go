@@ -3,7 +3,9 @@ package spot
 import (
   "encoding/json"
   "fmt"
+
   "github.com/nats-io/nats.go"
+
   "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/spot"
 )

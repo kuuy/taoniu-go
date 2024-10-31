@@ -3,11 +3,11 @@ package dydx
 import (
   "encoding/json"
   "fmt"
-  "taoniu.local/cryptos/common"
   "time"
 
   "github.com/nats-io/nats.go"
 
+  "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/dydx"
 )
 

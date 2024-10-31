@@ -33,9 +33,6 @@ func (t *TradingviewTask) Analysis() *tasks.AnalysisTask {
     t.AnalysisTask.Repository = &repositories.AnalysisRepository{
       Db: t.Db,
     }
-    t.AnalysisTask.SymbolsRepository = &spotRepositories.SymbolsRepository{
-      Db: t.Db,
-    }
     t.AnalysisTask.TradingsRepository = &spotRepositories.TradingsRepository{
       Db: t.Db,
     }

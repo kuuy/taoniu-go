@@ -16,7 +16,7 @@ type ScalpingRepository struct {
 
 func (r *ScalpingRepository) Scan() []string {
   var symbols []string
-  r.Db.Model(&models.Scalping{}).Where("status", 1).Distinct().Pluck("symbol", &symbols)
+  r.Db.Model(&models.Scalping{}).Where("status", []int{1, 2}).Distinct().Pluck("symbol", &symbols)
   return symbols
 }
 

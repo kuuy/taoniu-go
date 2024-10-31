@@ -3,11 +3,13 @@ package spot
 import (
   "encoding/json"
   "fmt"
+  "time"
+
   "github.com/nats-io/nats.go"
+
   "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/spot"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
-  "time"
 )
 
 type Indicators struct {
