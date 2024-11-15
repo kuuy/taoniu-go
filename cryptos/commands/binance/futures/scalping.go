@@ -118,6 +118,16 @@ func NewScalpingCommand() *cli.Command {
           return nil
         },
       },
+      {
+        Name:  "init",
+        Usage: "",
+        Action: func(c *cli.Context) error {
+          if err := h.Init(); err != nil {
+            return cli.Exit(err.Error(), 1)
+          }
+          return nil
+        },
+      },
     },
   }
 }
@@ -247,6 +257,15 @@ func (h *ScalpingHandler) Copy() error {
   h.Db.Model(&models.Scalping{}).Where("side=? AND status=1", 2).Find(&scalping)
   for _, entity := range scalping {
     h.Apply(entity.Symbol, 1)
+  }
+  return nil
+}
+
+func (h *ScalpingHandler) Init() error {
+  var symbols []string
+  h.Db.Model(&models.Kline{}).Select("DISTINCT symbol").Where("interval=?", "1d").Find(&symbols)
+  for _, symbol := range symbols {
+    h.Apply(symbol, 2)
   }
   return nil
 }

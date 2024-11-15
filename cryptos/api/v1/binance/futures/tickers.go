@@ -94,7 +94,7 @@ func (h *TickersHandler) Ranking(
 
   var symbols []string
   if q.Get("symbols") == "" {
-    symbols = h.ScalpingRepository.Scan()
+    symbols = h.ScalpingRepository.Scan(2)
   } else {
     symbols = strings.Split(q.Get("symbols"), ",")
   }

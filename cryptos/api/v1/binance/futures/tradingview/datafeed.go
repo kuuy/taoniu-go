@@ -185,10 +185,10 @@ func (h *DatafeedHandler) Search(
     symbols = h.SymbolsRepository.Symbols()
   }
   if t == "scalping" {
-    symbols = h.ScalpingRepository.Scan()
+    symbols = h.ScalpingRepository.Scan(2)
   }
   if t == "triggers" {
-    symbols = h.TriggersRepository.Scan()
+    symbols = h.TriggersRepository.Scan(2)
   }
 
   var result []*SearchInfo

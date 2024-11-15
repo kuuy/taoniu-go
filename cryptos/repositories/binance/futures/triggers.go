@@ -14,9 +14,9 @@ type TriggersRepository struct {
   Db *gorm.DB
 }
 
-func (r *TriggersRepository) Scan() []string {
+func (r *TriggersRepository) Scan(side int) []string {
   var symbols []string
-  r.Db.Model(&models.Trigger{}).Where("status", 1).Distinct().Pluck("symbol", &symbols)
+  r.Db.Model(&models.Trigger{}).Where("side = ? AND status IN ?", side, []int{1, 2}).Distinct().Pluck("symbol", &symbols)
   return symbols
 }
 
