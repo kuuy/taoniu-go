@@ -649,7 +649,7 @@ func (r *IndicatorsRepository) BBands(symbol string, interval string, period int
 func (r *IndicatorsRepository) IchimokuCloud(symbol string, interval string, tenkanPeriod int, kijunPeriod int, senkouPeriod int, limit int) error {
   var klines []*models.Kline
   r.Db.Select(
-    []string{"open", "close", "high", "low", "timestamp"},
+    []string{"close", "high", "low", "timestamp"},
   ).Where(
     "symbol=? AND interval=?", symbol, interval,
   ).Order(
@@ -683,13 +683,27 @@ func (r *IndicatorsRepository) IchimokuCloud(symbol string, interval string, ten
     return errors.New(fmt.Sprintf("[%s] waiting for %s klines flush", symbol, interval))
   }
 
-  lastConversionLine, _ := decimal.Avg(prices[1], prices[2:tenkanPeriod]...).Float64()
-  lastBaseLine, _ := decimal.Avg(prices[1], prices[2:kijunPeriod]...).Float64()
-
-  conversionLine, _ := decimal.Avg(prices[0], prices[1:tenkanPeriod]...).Float64()
-  baseLine, _ := decimal.Avg(prices[0], prices[1:kijunPeriod]...).Float64()
+  lastConversionLine, _ := decimal.Avg(
+    decimal.Min(prices[1], prices[2:tenkanPeriod]...),
+    decimal.Max(prices[1], prices[2:tenkanPeriod]...),
+  ).Float64()
+  lastBaseLine, _ := decimal.Avg(
+    decimal.Min(prices[1], prices[2:kijunPeriod]...),
+    decimal.Max(prices[1], prices[2:kijunPeriod]...),
+  ).Float64()
+  conversionLine, _ := decimal.Avg(
+    decimal.Min(prices[0], prices[1:tenkanPeriod]...),
+    decimal.Max(prices[0], prices[1:tenkanPeriod]...),
+  ).Float64()
+  baseLine, _ := decimal.Avg(
+    decimal.Min(prices[0], prices[1:kijunPeriod]...),
+    decimal.Max(prices[0], prices[1:kijunPeriod]...),
+  ).Float64()
   senkouSpanA := (conversionLine + baseLine) / 2
-  senkouSpanB, _ := decimal.Avg(prices[0], prices[1:senkouPeriod]...).Float64()
+  senkouSpanB, _ := decimal.Avg(
+    decimal.Min(prices[0], prices[1:senkouPeriod]...),
+    decimal.Max(prices[0], prices[1:senkouPeriod]...),
+  ).Float64()
   chikouSpan, _ := decimal.Avg(
     decimal.Min(prices[0], prices[1:kijunPeriod]...),
     decimal.Max(prices[0], prices[1:kijunPeriod]...),
