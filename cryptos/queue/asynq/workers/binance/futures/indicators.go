@@ -7,7 +7,9 @@ import (
   "time"
 
   "github.com/hibiken/asynq"
+
   "taoniu.local/cryptos/common"
+  config "taoniu.local/cryptos/config/binance/futures"
   repositories "taoniu.local/cryptos/repositories/binance/futures"
 )
 
@@ -245,14 +247,14 @@ func (h *Indicators) AndeanOscillator(ctx context.Context, t *asynq.Task) error 
 }
 
 func (h *Indicators) Register() error {
-  h.AnsqContext.Mux.HandleFunc("binance:futures:indicators:atr", h.Atr)
-  h.AnsqContext.Mux.HandleFunc("binance:futures:indicators:zlema", h.Zlema)
-  h.AnsqContext.Mux.HandleFunc("binance:futures:indicators:ha_zlema", h.HaZlema)
-  h.AnsqContext.Mux.HandleFunc("binance:futures:indicators:kdj", h.Kdj)
-  h.AnsqContext.Mux.HandleFunc("binance:futures:indicators:bbands", h.BBands)
-  h.AnsqContext.Mux.HandleFunc("binance:futures:indicators:ichimoku_cloud", h.IchimokuCloud)
-  h.AnsqContext.Mux.HandleFunc("binance:futures:indicators:pivot", h.Pivot)
-  h.AnsqContext.Mux.HandleFunc("binance:futures:indicators:volume_profile", h.VolumeProfile)
-  h.AnsqContext.Mux.HandleFunc("binance:futures:indicators:andean_oscillator", h.AndeanOscillator)
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_ATR, h.Atr)
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_ZLEMA, h.Zlema)
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_HA_ZLEMA, h.HaZlema)
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_KDJ, h.Kdj)
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_BBANDS, h.BBands)
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_ICHIMOKU_CLOUD, h.IchimokuCloud)
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_PIVOT, h.Pivot)
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_VOLUME_PROFILE, h.VolumeProfile)
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_ANDEAN_OSCILLATOR, h.AndeanOscillator)
   return nil
 }

@@ -68,15 +68,3 @@ func (r *DepthRepository) Request(symbol string, limit int) (map[string]interfac
   }
   return result, nil
 }
-
-func (r *DepthRepository) Clean() error {
-  var timestamp int64
-
-  timestamp = time.Now().AddDate(0, 0, -101).Unix()
-  r.Db.Where("interval = ? AND timestamp < ?", "1d", timestamp).Delete(&models.Kline{})
-
-  timestamp = time.Now().AddDate(0, 0, -3).Unix()
-  r.Db.Where("interval = ? AND timestamp < ?", "1m", timestamp).Delete(&models.Kline{})
-
-  return nil
-}

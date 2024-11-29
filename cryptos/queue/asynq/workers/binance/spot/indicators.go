@@ -7,47 +7,15 @@ import (
   "time"
 
   "github.com/hibiken/asynq"
+
   "taoniu.local/cryptos/common"
+  config "taoniu.local/cryptos/config/binance/spot"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
 type Indicators struct {
   AnsqContext *common.AnsqServerContext
   Repository  *repositories.IndicatorsRepository
-}
-
-type IndicatorPayload struct {
-  Symbol   string
-  Interval string
-  Period   int
-  Limit    int
-}
-
-type PivotPayload struct {
-  Symbol   string
-  Interval string
-}
-
-type KdjPayload struct {
-  Symbol      string
-  Interval    string
-  LongPeriod  int
-  ShortPeriod int
-  Limit       int
-}
-
-type VolumeProfilePayload struct {
-  Symbol   string
-  Interval string
-  Limit    int
-}
-
-type AndeanOscillatorPayload struct {
-  Symbol   string
-  Interval string
-  Period   int
-  Length   int
-  Limit    int
 }
 
 func NewIndicators(ansqContext *common.AnsqServerContext) *Indicators {
@@ -245,14 +213,14 @@ func (h *Indicators) AndeanOscillator(ctx context.Context, t *asynq.Task) error 
 }
 
 func (h *Indicators) Register() error {
-  h.AnsqContext.Mux.HandleFunc("binance:spot:indicators:atr", h.Atr)
-  h.AnsqContext.Mux.HandleFunc("binance:spot:indicators:zlema", h.Zlema)
-  h.AnsqContext.Mux.HandleFunc("binance:spot:indicators:ha_zlema", h.HaZlema)
-  h.AnsqContext.Mux.HandleFunc("binance:spot:indicators:kdj", h.Kdj)
-  h.AnsqContext.Mux.HandleFunc("binance:spot:indicators:bbands", h.BBands)
-  h.AnsqContext.Mux.HandleFunc("binance:spot:indicators:ichimoku_cloud", h.IchimokuCloud)
-  h.AnsqContext.Mux.HandleFunc("binance:spot:indicators:pivot", h.Pivot)
-  h.AnsqContext.Mux.HandleFunc("binance:spot:indicators:volume_profile", h.VolumeProfile)
-  h.AnsqContext.Mux.HandleFunc("binance:spot:indicators:andean_oscillator", h.AndeanOscillator)
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_ATR, h.Atr)
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_ZLEMA, h.Zlema)
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_HA_ZLEMA, h.HaZlema)
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_KDJ, h.Kdj)
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_BBANDS, h.BBands)
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_ICHIMOKU_CLOUD, h.IchimokuCloud)
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_PIVOT, h.Pivot)
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_VOLUME_PROFILE, h.VolumeProfile)
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_ANDEAN_OSCILLATOR, h.AndeanOscillator)
   return nil
 }

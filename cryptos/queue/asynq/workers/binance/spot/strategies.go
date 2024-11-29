@@ -7,18 +7,15 @@ import (
   "time"
 
   "github.com/hibiken/asynq"
+
   "taoniu.local/cryptos/common"
+  config "taoniu.local/cryptos/config/binance/spot"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
 type Strategies struct {
   AnsqContext *common.AnsqServerContext
   Repository  *repositories.StrategiesRepository
-}
-
-type StrategyPayload struct {
-  Symbol   string
-  Interval string
 }
 
 func NewStrategies(ansqContext *common.AnsqServerContext) *Strategies {
@@ -151,11 +148,11 @@ func (h *Strategies) IchimokuCloud(ctx context.Context, t *asynq.Task) error {
 }
 
 func (h *Strategies) Register() error {
-  h.AnsqContext.Mux.HandleFunc("binance:spot:strategies:atr", h.Atr)
-  h.AnsqContext.Mux.HandleFunc("binance:spot:strategies:zlema", h.Zlema)
-  h.AnsqContext.Mux.HandleFunc("binance:spot:strategies:ha_zlema", h.HaZlema)
-  h.AnsqContext.Mux.HandleFunc("binance:spot:strategies:kdj", h.Kdj)
-  h.AnsqContext.Mux.HandleFunc("binance:spot:strategies:bbands", h.BBands)
-  h.AnsqContext.Mux.HandleFunc("binance:spot:strategies:ichimoku_cloud", h.IchimokuCloud)
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_STRATEGIES_ATR, h.Atr)
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_STRATEGIES_ZLEMA, h.Zlema)
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_STRATEGIES_HA_ZLEMA, h.HaZlema)
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_STRATEGIES_KDJ, h.Kdj)
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_STRATEGIES_BBANDS, h.BBands)
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_STRATEGIES_ICHIMOKU_CLOUD, h.IchimokuCloud)
   return nil
 }

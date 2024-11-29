@@ -16,10 +16,6 @@ type Plans struct {
   Repository  *repositories.PlansRepository
 }
 
-type PlansPayload struct {
-  Interval string
-}
-
 func NewPlans(ansqContext *common.AnsqServerContext) *Plans {
   h := &Plans{
     AnsqContext: ansqContext,

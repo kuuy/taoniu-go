@@ -19,6 +19,8 @@ import (
   "github.com/go-redis/redis/v8"
   "github.com/nats-io/nats.go"
   "gorm.io/gorm"
+
+  config "taoniu.local/cryptos/config/binance/spot"
 )
 
 type Balance struct {
@@ -50,13 +52,13 @@ func (r *AccountRepository) Flush() error {
     locked, _ := strconv.ParseFloat(coin.Locked, 64)
     if free <= 0.0 {
       r.Rdb.SRem(r.Ctx, "binance:spot:currencies", coin.Asset)
-      r.Rdb.Del(r.Ctx, fmt.Sprintf("binance:spot:balance:%s", coin.Asset))
+      r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_BALANCE, coin.Asset))
       continue
     }
     r.Rdb.SAdd(r.Ctx, "binance:spot:currencies", coin.Asset)
     r.Rdb.HMSet(
       r.Ctx,
-      fmt.Sprintf("binance:spot:balance:%s", coin.Asset),
+      fmt.Sprintf(config.REDIS_KEY_BALANCE, coin.Asset),
       map[string]interface{}{
         "free":   free,
         "locked": locked,
@@ -68,7 +70,7 @@ func (r *AccountRepository) Flush() error {
   for _, currency := range oldCurrencies {
     if !slices.Contains(currencies, currency) {
       r.Rdb.SRem(r.Ctx, "binance:spot:currencies", currency)
-      r.Rdb.Del(r.Ctx, fmt.Sprintf("binance:spot:balance:%s", currency))
+      r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_BALANCE, currency))
     }
   }
 

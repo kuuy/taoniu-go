@@ -7,10 +7,6 @@ type ProductsRepository interface {
   Purchase(productId string, amount float64) (int64, error)
 }
 
-type TradingsTriggersRepository interface {
-  Scan() []string
-}
-
 type RankingResult struct {
   Total int
   Data  []string

@@ -1,6 +1,7 @@
 package futures
 
 const (
+  REDIS_KEY_BALANCE                            = "binance:futures:balance:%s"
   REDIS_KEY_TRADINGS_LAST_PRICE                = "binance:futures:tradings:last:price:%v:%v"
   REDIS_KEY_TRADINGS_TRIGGERS_PLACE            = "binance:futures:tradings:triggers:place:%v:%v"
   SCALPING_MIN_BINANCE                         = 50
@@ -25,6 +26,15 @@ const (
   ASYNQ_JOBS_KLINES_FLUSH                      = "binance:futures:klines:flush"
   ASYNQ_JOBS_KLINES_UPDATE                     = "binance:futures:klines:update"
   ASYNQ_JOBS_KLINES_CLEAN                      = "binance:futures:klines:clean"
+  ASYNQ_JOBS_INDICATORS_ATR                    = "binance:futures:indicators:atr"
+  ASYNQ_JOBS_INDICATORS_ZLEMA                  = "binance:futures:indicators:zlema"
+  ASYNQ_JOBS_INDICATORS_HA_ZLEMA               = "binance:futures:indicators:ha_zlema"
+  ASYNQ_JOBS_INDICATORS_KDJ                    = "binance:futures:indicators:kdj"
+  ASYNQ_JOBS_INDICATORS_BBANDS                 = "binance:futures:indicators:bbands"
+  ASYNQ_JOBS_INDICATORS_ICHIMOKU_CLOUD         = "binance:futures:indicators:ichimoku_cloud"
+  ASYNQ_JOBS_INDICATORS_PIVOT                  = "binance:futures:indicators:pivot"
+  ASYNQ_JOBS_INDICATORS_VOLUME_PROFILE         = "binance:futures:indicators:volume_profile"
+  ASYNQ_JOBS_INDICATORS_ANDEAN_OSCILLATOR      = "binance:futures:indicators:andean_oscillator"
   ASYNQ_JOBS_ORDERS_OPEN                       = "binance:futures:orders:open"
   ASYNQ_JOBS_ORDERS_FLUSH                      = "binance:futures:orders:flush"
   ASYNQ_JOBS_ORDERS_SYNC                       = "binance:futures:orders:sync"

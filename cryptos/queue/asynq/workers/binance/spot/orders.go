@@ -30,21 +30,6 @@ func NewOrders(ansqContext *common.AnsqServerContext) *Orders {
   return h
 }
 
-type OrdersOpenPayload struct {
-  Symbol string `json:"symbol"`
-}
-
-type OrdersFlushPayload struct {
-  Symbol  string `json:"symbol"`
-  OrderId int64  `json:"order_id"`
-}
-
-type OrdersSyncPayload struct {
-  Symbol    string `json:"symbol"`
-  StartTime int64  `json:"start_time"`
-  limit     int    `json:"limit"`
-}
-
 func (h *Orders) Open(ctx context.Context, t *asynq.Task) error {
   var payload OrdersFlushPayload
   json.Unmarshal(t.Payload(), &payload)

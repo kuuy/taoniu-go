@@ -1,6 +1,7 @@
 package spot
 
 const (
+  REDIS_KEY_BALANCE                            = "binance:spot:balance:%s"
   REDIS_KEY_TRADINGS_LAST_PRICE                = "binance:spot:tradings:last:price:%v"
   REDIS_KEY_TRADINGS_TRIGGERS_PLACE            = "binance:spot:tradings:triggers:place:%v"
   SCALPING_MIN_BINANCE                         = 50
@@ -25,6 +26,21 @@ const (
   ASYNQ_JOBS_KLINES_FLUSH                      = "binance:spot:klines:flush"
   ASYNQ_JOBS_KLINES_UPDATE                     = "binance:spot:klines:update"
   ASYNQ_JOBS_KLINES_CLEAN                      = "binance:spot:klines:clean"
+  ASYNQ_JOBS_INDICATORS_ATR                    = "binance:spot:indicators:atr"
+  ASYNQ_JOBS_INDICATORS_ZLEMA                  = "binance:spot:indicators:zlema"
+  ASYNQ_JOBS_INDICATORS_HA_ZLEMA               = "binance:spot:indicators:ha_zlema"
+  ASYNQ_JOBS_INDICATORS_KDJ                    = "binance:spot:indicators:kdj"
+  ASYNQ_JOBS_INDICATORS_BBANDS                 = "binance:spot:indicators:bbands"
+  ASYNQ_JOBS_INDICATORS_ICHIMOKU_CLOUD         = "binance:spot:indicators:ichimoku_cloud"
+  ASYNQ_JOBS_INDICATORS_PIVOT                  = "binance:spot:indicators:pivot"
+  ASYNQ_JOBS_INDICATORS_VOLUME_PROFILE         = "binance:spot:indicators:volume_profile"
+  ASYNQ_JOBS_INDICATORS_ANDEAN_OSCILLATOR      = "binance:spot:indicators:andean_oscillator"
+  ASYNQ_JOBS_STRATEGIES_ATR                    = "binance:spot:strategies:atr"
+  ASYNQ_JOBS_STRATEGIES_ZLEMA                  = "binance:spot:strategies:zlema"
+  ASYNQ_JOBS_STRATEGIES_HA_ZLEMA               = "binance:spot:strategies:ha_zlema"
+  ASYNQ_JOBS_STRATEGIES_KDJ                    = "binance:spot:strategies:kdj"
+  ASYNQ_JOBS_STRATEGIES_BBANDS                 = "binance:spot:strategies:bbands"
+  ASYNQ_JOBS_STRATEGIES_ICHIMOKU_CLOUD         = "binance:spot:strategies:ichimoku_cloud"
   ASYNQ_JOBS_ORDERS_OPEN                       = "binance:spot:orders:open"
   ASYNQ_JOBS_ORDERS_FLUSH                      = "binance:spot:orders:flush"
   ASYNQ_JOBS_ORDERS_SYNC                       = "binance:spot:orders:sync"
