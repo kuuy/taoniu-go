@@ -1,22 +1,26 @@
 package gambling
 
 import (
-  "log"
-  "strconv"
-  "strings"
-
   "github.com/shopspring/decimal"
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
+  "log"
+  "strconv"
+  "strings"
+  "time"
 
   "taoniu.local/cryptos/common"
   repositories "taoniu.local/cryptos/repositories/binance/futures"
+  gamblingRepositories "taoniu.local/cryptos/repositories/binance/futures/gambling"
+  tradingsRepositories "taoniu.local/cryptos/repositories/binance/futures/tradings/gambling"
 )
 
 type AntHandler struct {
-  Db                *gorm.DB
-  Repository        *repositories.GamblingRepository
-  SymbolsRepository *repositories.SymbolsRepository
+  Db                 *gorm.DB
+  Repository         *repositories.GamblingRepository
+  AntRepository      *gamblingRepositories.AntRepository
+  TradingsRepository *tradingsRepositories.AntRepository
+  SymbolsRepository  *repositories.SymbolsRepository
 }
 
 func NewAntCommand() *cli.Command {
@@ -34,9 +38,33 @@ func NewAntCommand() *cli.Command {
       h.SymbolsRepository = &repositories.SymbolsRepository{
         Db: h.Db,
       }
+      h.AntRepository = &gamblingRepositories.AntRepository{
+        Db: h.Db,
+      }
+      h.TradingsRepository = &tradingsRepositories.AntRepository{
+        Db: h.Db,
+      }
       return nil
     },
     Subcommands: []*cli.Command{
+      {
+        Name:  "apply",
+        Usage: "",
+        Action: func(c *cli.Context) error {
+          symbol := c.Args().Get(0)
+          if symbol == "" {
+            log.Fatal("symbol can not be empty")
+            return nil
+          }
+          side, _ := strconv.Atoi(c.Args().Get(1))
+          entryPrice, _ := strconv.ParseFloat(c.Args().Get(2), 16)
+          entryQuantity, _ := strconv.ParseFloat(c.Args().Get(3), 16)
+          if err := h.Apply(symbol, side, entryPrice, entryQuantity); err != nil {
+            return cli.Exit(err.Error(), 1)
+          }
+          return nil
+        },
+      },
       {
         Name:  "calc",
         Usage: "",
@@ -57,6 +85,18 @@ func NewAntCommand() *cli.Command {
       },
     },
   }
+}
+
+func (h *AntHandler) Apply(symbol string, side int, entryPrice float64, entryQuantity float64) error {
+  log.Println("futures gambling ant apply...")
+
+  expiredAt := time.Now().Add(time.Hour * 24 * 14)
+  err := h.AntRepository.Apply(symbol, side, entryPrice, entryQuantity, expiredAt)
+  if err != nil {
+    return err
+  }
+
+  return nil
 }
 
 func (h *AntHandler) Calc(

@@ -4,7 +4,7 @@ import (
   "encoding/binary"
   "errors"
   "fmt"
-  "io/ioutil"
+  "io"
   "net"
   "net/http"
   "regexp"
@@ -159,7 +159,7 @@ func (r *CrawlsRepository) ExtractHtml(resp *http.Response, rules *HtmlExtractRu
       result = append(result, data)
     })
   } else {
-    body, _ = ioutil.ReadAll(resp.Body)
+    body, _ = io.ReadAll(resp.Body)
   }
 
   for _, item := range rules.Json {

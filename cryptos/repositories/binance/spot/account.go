@@ -23,16 +23,6 @@ import (
   config "taoniu.local/cryptos/config/binance/spot"
 )
 
-type Balance struct {
-  Asset  string `json:"asset"`
-  Free   string `json:"free"`
-  Locked string `json:"locked"`
-}
-
-type AccountInfo struct {
-  Balances []Balance `json:"balances"`
-}
-
 type AccountRepository struct {
   Db   *gorm.DB
   Rdb  *redis.Client

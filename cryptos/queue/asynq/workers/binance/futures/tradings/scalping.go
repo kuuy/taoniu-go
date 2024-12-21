@@ -7,6 +7,7 @@ import (
   "time"
 
   "github.com/hibiken/asynq"
+
   "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/futures"
   futuresRepositories "taoniu.local/cryptos/repositories/binance/futures"
