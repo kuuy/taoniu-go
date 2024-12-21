@@ -19,6 +19,7 @@ import (
   "github.com/rs/xid"
   "gorm.io/gorm"
 
+  "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/futures"
   models "taoniu.local/cryptos/models/binance/futures"
 )
@@ -189,7 +190,18 @@ func (r *AccountRepository) Request() (result *AccountInfo, err error) {
   timestamp := time.Now().UnixMilli()
   params.Add("timestamp", fmt.Sprintf("%v", timestamp))
 
-  mac := hmac.New(sha256.New, []byte(os.Getenv("BINANCE_FUTURES_ACCOUNT_API_SECRET")))
+  var apiKey, apiSecret string
+  var isTestNet bool
+  if common.GetEnvInt("BINANCE_FUTURES_TESTNET_ENABLE") == 1 {
+    apiKey = common.GetEnvString("BINANCE_FUTURES_TESTNET_API_KEY")
+    apiSecret = common.GetEnvString("BINANCE_FUTURES_TESTNET_API_SECRET")
+    isTestNet = true
+  } else {
+    apiKey = common.GetEnvString("BINANCE_FUTURES_ACCOUNT_API_KEY")
+    apiSecret = common.GetEnvString("BINANCE_FUTURES_ACCOUNT_API_SECRET")
+  }
+
+  mac := hmac.New(sha256.New, []byte(apiSecret))
   _, err = mac.Write([]byte(params.Encode()))
   if err != nil {
     return nil, err
@@ -197,11 +209,17 @@ func (r *AccountRepository) Request() (result *AccountInfo, err error) {
   signature := mac.Sum(nil)
   params.Add("signature", fmt.Sprintf("%x", signature))
 
-  url := fmt.Sprintf("%s/fapi/v2/account", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))
+  var url string
+  if isTestNet {
+    url = fmt.Sprintf("%s/fapi/v2/account", os.Getenv("BINANCE_FUTURES_TESTNET_API_ENDPOINT"))
+  } else {
+    url = fmt.Sprintf("%s/fapi/v2/account", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))
+  }
+
   req, _ := http.NewRequest("GET", url, nil)
   req.URL.RawQuery = params.Encode()
   req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-  req.Header.Set("X-MBX-APIKEY", os.Getenv("BINANCE_FUTURES_ACCOUNT_API_KEY"))
+  req.Header.Set("X-MBX-APIKEY", apiKey)
   resp, err := httpClient.Do(req)
   if err != nil {
     return

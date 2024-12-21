@@ -14,6 +14,7 @@ import (
   "encoding/pem"
   "errors"
   "fmt"
+  "log"
   "net"
   "net/http"
   "net/url"
@@ -22,12 +23,13 @@ import (
   "time"
 
   "github.com/adshao/go-binance/v2"
-  "github.com/adshao/go-binance/v2/common"
+  apiCommon "github.com/adshao/go-binance/v2/common"
   service "github.com/adshao/go-binance/v2/futures"
   "github.com/go-redis/redis/v8"
   "github.com/rs/xid"
   "gorm.io/gorm"
 
+  "taoniu.local/cryptos/common"
   models "taoniu.local/cryptos/models/binance/futures"
 )
 
@@ -150,7 +152,18 @@ func (r *OrdersRepository) Open(symbol string) (err error) {
   timestamp := time.Now().UnixMilli()
   params.Add("timestamp", fmt.Sprintf("%v", timestamp))
 
-  mac := hmac.New(sha256.New, []byte(os.Getenv("BINANCE_FUTURES_ACCOUNT_API_SECRET")))
+  var apiKey, apiSecret string
+  var isTestNet bool
+  if common.GetEnvInt("BINANCE_FUTURES_TESTNET_ENABLE") == 1 {
+    apiKey = common.GetEnvString("BINANCE_FUTURES_TESTNET_API_KEY")
+    apiSecret = common.GetEnvString("BINANCE_FUTURES_TESTNET_API_SECRET")
+    isTestNet = true
+  } else {
+    apiKey = common.GetEnvString("BINANCE_FUTURES_ACCOUNT_API_KEY")
+    apiSecret = common.GetEnvString("BINANCE_FUTURES_ACCOUNT_API_SECRET")
+  }
+
+  mac := hmac.New(sha256.New, []byte(apiSecret))
   _, err = mac.Write([]byte(params.Encode()))
   if err != nil {
     return
@@ -158,11 +171,17 @@ func (r *OrdersRepository) Open(symbol string) (err error) {
   signature := mac.Sum(nil)
   params.Add("signature", fmt.Sprintf("%x", signature))
 
-  url := fmt.Sprintf("%s/fapi/v1/openOrders", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))
+  var url string
+  if isTestNet {
+    url = fmt.Sprintf("%s/fapi/v1/openOrders", os.Getenv("BINANCE_FUTURES_TESTNET_API_ENDPOINT"))
+  } else {
+    url = fmt.Sprintf("%s/fapi/v1/openOrders", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))
+  }
+
   req, _ := http.NewRequest("GET", url, nil)
   req.URL.RawQuery = params.Encode()
   req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-  req.Header.Set("X-MBX-APIKEY", os.Getenv("BINANCE_FUTURES_ACCOUNT_API_KEY"))
+  req.Header.Set("X-MBX-APIKEY", apiKey)
   resp, err := httpClient.Do(req)
   if err != nil {
     return
@@ -212,7 +231,18 @@ func (r *OrdersRepository) Sync(symbol string, startTime int64, limit int) (err 
   timestamp := time.Now().UnixMilli()
   params.Add("timestamp", fmt.Sprintf("%v", timestamp))
 
-  mac := hmac.New(sha256.New, []byte(os.Getenv("BINANCE_FUTURES_ACCOUNT_API_SECRET")))
+  var apiKey, apiSecret string
+  var isTestNet bool
+  if common.GetEnvInt("BINANCE_FUTURES_TESTNET_ENABLE") == 1 {
+    apiKey = common.GetEnvString("BINANCE_FUTURES_TESTNET_API_KEY")
+    apiSecret = common.GetEnvString("BINANCE_FUTURES_TESTNET_API_SECRET")
+    isTestNet = true
+  } else {
+    apiKey = common.GetEnvString("BINANCE_FUTURES_ACCOUNT_API_KEY")
+    apiSecret = common.GetEnvString("BINANCE_FUTURES_ACCOUNT_API_SECRET")
+  }
+
+  mac := hmac.New(sha256.New, []byte(apiSecret))
   _, err = mac.Write([]byte(params.Encode()))
   if err != nil {
     return
@@ -220,11 +250,17 @@ func (r *OrdersRepository) Sync(symbol string, startTime int64, limit int) (err 
   signature := mac.Sum(nil)
   params.Add("signature", fmt.Sprintf("%x", signature))
 
-  url := fmt.Sprintf("%s/fapi/v1/allOrders", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))
+  var url string
+  if isTestNet {
+    url = fmt.Sprintf("%s/fapi/v1/allOrders", os.Getenv("BINANCE_FUTURES_TESTNET_API_ENDPOINT"))
+  } else {
+    url = fmt.Sprintf("%s/fapi/v1/allOrders", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))
+  }
+
   req, _ := http.NewRequest("GET", url, nil)
   req.URL.RawQuery = params.Encode()
   req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-  req.Header.Set("X-MBX-APIKEY", os.Getenv("BINANCE_FUTURES_ACCOUNT_API_KEY"))
+  req.Header.Set("X-MBX-APIKEY", apiKey)
   resp, err := httpClient.Do(req)
   if err != nil {
     return
@@ -280,14 +316,26 @@ func (r *OrdersRepository) Create(
   params.Add("newOrderRespType", "RESULT")
   params.Add("recvWindow", "60000")
 
+  log.Println("params", params)
+
   timestamp := time.Now().UnixMilli()
   payload := fmt.Sprintf("%s&timestamp=%v", params.Encode(), timestamp)
 
   data := url.Values{}
 
-  secretKey := os.Getenv("BINANCE_FUTURES_TRADE_API_SECRET")
-  if len(secretKey) == 64 {
-    mac := hmac.New(sha256.New, []byte(secretKey))
+  var apiKey, apiSecret string
+  var isTestNet bool
+  if common.GetEnvInt("BINANCE_FUTURES_TESTNET_ENABLE") == 1 {
+    apiKey = common.GetEnvString("BINANCE_FUTURES_TESTNET_API_KEY")
+    apiSecret = common.GetEnvString("BINANCE_FUTURES_TESTNET_API_SECRET")
+    isTestNet = true
+  } else {
+    apiKey = common.GetEnvString("BINANCE_FUTURES_TRADE_API_KEY")
+    apiSecret = common.GetEnvString("BINANCE_FUTURES_TRADE_API_SECRET")
+  }
+
+  if len(apiSecret) == 64 {
+    mac := hmac.New(sha256.New, []byte(apiSecret))
     _, err = mac.Write([]byte(payload))
     if err != nil {
       return
@@ -295,7 +343,7 @@ func (r *OrdersRepository) Create(
     signature := mac.Sum(nil)
     data.Add("signature", fmt.Sprintf("%x", signature))
   } else {
-    block, _ := pem.Decode([]byte(secretKey))
+    block, _ := pem.Decode([]byte(apiSecret))
     if block == nil {
       err = errors.New("invalid raa secret key")
       return
@@ -311,10 +359,16 @@ func (r *OrdersRepository) Create(
 
   body := bytes.NewBufferString(fmt.Sprintf("%s&%s", payload, data.Encode()))
 
-  url := fmt.Sprintf("%s/fapi/v1/order", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))
+  var url string
+  if isTestNet {
+    url = fmt.Sprintf("%s/fapi/v1/order", os.Getenv("BINANCE_FUTURES_TESTNET_API_ENDPOINT"))
+  } else {
+    url = fmt.Sprintf("%s/fapi/v1/order", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))
+  }
+
   req, _ := http.NewRequest("POST", url, body)
   req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-  req.Header.Set("X-MBX-APIKEY", os.Getenv("BINANCE_FUTURES_TRADE_API_KEY"))
+  req.Header.Set("X-MBX-APIKEY", apiKey)
   resp, err := httpClient.Do(req)
   if err != nil {
     return
@@ -322,7 +376,7 @@ func (r *OrdersRepository) Create(
   defer resp.Body.Close()
 
   if resp.StatusCode >= http.StatusBadRequest {
-    var apiErr common.APIError
+    var apiErr apiCommon.APIError
     err = json.NewDecoder(resp.Body).Decode(&apiErr)
     if err == nil {
       return 0, apiErr
@@ -390,9 +444,19 @@ func (r *OrdersRepository) Take(
 
   data := url.Values{}
 
-  secretKey := os.Getenv("BINANCE_FUTURES_TRADE_API_SECRET")
-  if len(secretKey) == 64 {
-    mac := hmac.New(sha256.New, []byte(secretKey))
+  var apiKey, apiSecret string
+  var isTestNet bool
+  if common.GetEnvInt("BINANCE_FUTURES_TESTNET_ENABLE") == 1 {
+    apiKey = common.GetEnvString("BINANCE_FUTURES_TESTNET_API_KEY")
+    apiSecret = common.GetEnvString("BINANCE_FUTURES_TESTNET_API_SECRET")
+    isTestNet = true
+  } else {
+    apiKey = common.GetEnvString("BINANCE_FUTURES_TRADE_API_KEY")
+    apiSecret = common.GetEnvString("BINANCE_FUTURES_TRADE_API_SECRET")
+  }
+
+  if len(apiSecret) == 64 {
+    mac := hmac.New(sha256.New, []byte(apiSecret))
     _, err = mac.Write([]byte(payload))
     if err != nil {
       return
@@ -400,7 +464,7 @@ func (r *OrdersRepository) Take(
     signature := mac.Sum(nil)
     data.Add("signature", fmt.Sprintf("%x", signature))
   } else {
-    block, _ := pem.Decode([]byte(secretKey))
+    block, _ := pem.Decode([]byte(apiSecret))
     if block == nil {
       err = errors.New("invalid raa secret key")
       return
@@ -416,10 +480,16 @@ func (r *OrdersRepository) Take(
 
   body := bytes.NewBufferString(fmt.Sprintf("%s&%s", payload, data.Encode()))
 
-  url := fmt.Sprintf("%s/fapi/v1/order", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))
+  var url string
+  if isTestNet {
+    url = fmt.Sprintf("%s/fapi/v1/order", os.Getenv("BINANCE_FUTURES_TESTNET_API_ENDPOINT"))
+  } else {
+    url = fmt.Sprintf("%s/fapi/v1/order", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))
+  }
+
   req, _ := http.NewRequest("POST", url, body)
   req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-  req.Header.Set("X-MBX-APIKEY", os.Getenv("BINANCE_FUTURES_TRADE_API_KEY"))
+  req.Header.Set("X-MBX-APIKEY", apiKey)
   resp, err := httpClient.Do(req)
   if err != nil {
     return
@@ -427,7 +497,7 @@ func (r *OrdersRepository) Take(
   defer resp.Body.Close()
 
   if resp.StatusCode >= http.StatusBadRequest {
-    apiErr := new(common.APIError)
+    apiErr := new(apiCommon.APIError)
     err = json.NewDecoder(resp.Body).Decode(&apiErr)
     if err == nil {
       return 0, apiErr
@@ -493,9 +563,19 @@ func (r *OrdersRepository) Stop(
 
   data := url.Values{}
 
-  secretKey := os.Getenv("BINANCE_FUTURES_TRADE_API_SECRET")
-  if len(secretKey) == 64 {
-    mac := hmac.New(sha256.New, []byte(secretKey))
+  var apiKey, apiSecret string
+  var isTestNet bool
+  if common.GetEnvInt("BINANCE_FUTURES_TESTNET_ENABLE") == 1 {
+    apiKey = common.GetEnvString("BINANCE_FUTURES_TESTNET_API_KEY")
+    apiSecret = common.GetEnvString("BINANCE_FUTURES_TESTNET_API_SECRET")
+    isTestNet = true
+  } else {
+    apiKey = common.GetEnvString("BINANCE_FUTURES_TRADE_API_KEY")
+    apiSecret = common.GetEnvString("BINANCE_FUTURES_TRADE_API_SECRET")
+  }
+
+  if len(apiSecret) == 64 {
+    mac := hmac.New(sha256.New, []byte(apiSecret))
     _, err = mac.Write([]byte(payload))
     if err != nil {
       return
@@ -503,7 +583,7 @@ func (r *OrdersRepository) Stop(
     signature := mac.Sum(nil)
     data.Add("signature", fmt.Sprintf("%x", signature))
   } else {
-    block, _ := pem.Decode([]byte(secretKey))
+    block, _ := pem.Decode([]byte(apiSecret))
     if block == nil {
       err = errors.New("invalid raa secret key")
       return
@@ -519,10 +599,16 @@ func (r *OrdersRepository) Stop(
 
   body := bytes.NewBufferString(fmt.Sprintf("%s&%s", payload, data.Encode()))
 
-  url := fmt.Sprintf("%s/fapi/v1/order", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))
+  var url string
+  if isTestNet {
+    url = fmt.Sprintf("%s/fapi/v1/order", os.Getenv("BINANCE_FUTURES_TESTNET_API_ENDPOINT"))
+  } else {
+    url = fmt.Sprintf("%s/fapi/v1/order", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))
+  }
+
   req, _ := http.NewRequest("POST", url, body)
   req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-  req.Header.Set("X-MBX-APIKEY", os.Getenv("BINANCE_FUTURES_TRADE_API_KEY"))
+  req.Header.Set("X-MBX-APIKEY", apiKey)
   resp, err := httpClient.Do(req)
   if err != nil {
     return
@@ -530,7 +616,7 @@ func (r *OrdersRepository) Stop(
   defer resp.Body.Close()
 
   if resp.StatusCode >= http.StatusBadRequest {
-    apiErr := new(common.APIError)
+    apiErr := new(apiCommon.APIError)
     err = json.NewDecoder(resp.Body).Decode(&apiErr)
     if err == nil {
       return 0, apiErr
@@ -579,9 +665,19 @@ func (r *OrdersRepository) Cancel(symbol string, orderId int64) error {
 
   data := url.Values{}
 
-  secretKey := os.Getenv("BINANCE_FUTURES_TRADE_API_SECRET")
-  if len(secretKey) == 64 {
-    mac := hmac.New(sha256.New, []byte(secretKey))
+  var apiKey, apiSecret string
+  var isTestNet bool
+  if common.GetEnvInt("BINANCE_FUTURES_TESTNET_ENABLE") == 1 {
+    apiKey = common.GetEnvString("BINANCE_FUTURES_TESTNET_API_KEY")
+    apiSecret = common.GetEnvString("BINANCE_FUTURES_TESTNET_API_SECRET")
+    isTestNet = true
+  } else {
+    apiKey = common.GetEnvString("BINANCE_FUTURES_TRADE_API_KEY")
+    apiSecret = common.GetEnvString("BINANCE_FUTURES_TRADE_API_SECRET")
+  }
+
+  if len(apiSecret) == 64 {
+    mac := hmac.New(sha256.New, []byte(apiSecret))
     _, err := mac.Write([]byte(payload))
     if err != nil {
       return err
@@ -589,7 +685,7 @@ func (r *OrdersRepository) Cancel(symbol string, orderId int64) error {
     signature := mac.Sum(nil)
     data.Add("signature", fmt.Sprintf("%x", signature))
   } else {
-    block, _ := pem.Decode([]byte(secretKey))
+    block, _ := pem.Decode([]byte(apiSecret))
     if block == nil {
       return errors.New("invalid raa secret key")
     }
@@ -604,10 +700,16 @@ func (r *OrdersRepository) Cancel(symbol string, orderId int64) error {
 
   body := bytes.NewBufferString(fmt.Sprintf("%s&%s", payload, data.Encode()))
 
-  url := fmt.Sprintf("%s/fapi/v1/order", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))
+  var url string
+  if isTestNet {
+    url = fmt.Sprintf("%s/fapi/v1/order", os.Getenv("BINANCE_FUTURES_TESTNET_API_ENDPOINT"))
+  } else {
+    url = fmt.Sprintf("%s/fapi/v1/order", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))
+  }
+
   req, _ := http.NewRequest("DELETE", url, body)
   req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-  req.Header.Set("X-MBX-APIKEY", os.Getenv("BINANCE_FUTURES_TRADE_API_KEY"))
+  req.Header.Set("X-MBX-APIKEY", apiKey)
   resp, err := httpClient.Do(req)
   if err != nil {
     return err
@@ -615,7 +717,7 @@ func (r *OrdersRepository) Cancel(symbol string, orderId int64) error {
   defer resp.Body.Close()
 
   if resp.StatusCode >= http.StatusBadRequest {
-    apiErr := new(common.APIError)
+    apiErr := new(apiCommon.APIError)
     err = json.NewDecoder(resp.Body).Decode(&apiErr)
     if err == nil {
       return apiErr
@@ -663,7 +765,18 @@ func (r *OrdersRepository) Flush(symbol string, orderId int64) (err error) {
   timestamp := time.Now().UnixMilli()
   params.Add("timestamp", fmt.Sprintf("%v", timestamp))
 
-  mac := hmac.New(sha256.New, []byte(os.Getenv("BINANCE_FUTURES_ACCOUNT_API_SECRET")))
+  var apiKey, apiSecret string
+  var isTestNet bool
+  if common.GetEnvInt("BINANCE_FUTURES_TESTNET_ENABLE") == 1 {
+    apiKey = common.GetEnvString("BINANCE_FUTURES_TESTNET_API_KEY")
+    apiSecret = common.GetEnvString("BINANCE_FUTURES_TESTNET_API_SECRET")
+    isTestNet = true
+  } else {
+    apiKey = common.GetEnvString("BINANCE_FUTURES_ACCOUNT_API_KEY")
+    apiSecret = common.GetEnvString("BINANCE_FUTURES_ACCOUNT_API_SECRET")
+  }
+
+  mac := hmac.New(sha256.New, []byte(apiSecret))
   _, err = mac.Write([]byte(params.Encode()))
   if err != nil {
     return
@@ -671,11 +784,17 @@ func (r *OrdersRepository) Flush(symbol string, orderId int64) (err error) {
   signature := mac.Sum(nil)
   params.Add("signature", fmt.Sprintf("%x", signature))
 
-  url := fmt.Sprintf("%s/fapi/v1/order", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))
+  var url string
+  if isTestNet {
+    url = fmt.Sprintf("%s/fapi/v1/order", os.Getenv("BINANCE_FUTURES_TESTNET_API_ENDPOINT"))
+  } else {
+    url = fmt.Sprintf("%s/fapi/v1/order", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))
+  }
+
   req, _ := http.NewRequest("GET", url, nil)
   req.URL.RawQuery = params.Encode()
   req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-  req.Header.Set("X-MBX-APIKEY", os.Getenv("BINANCE_FUTURES_ACCOUNT_API_KEY"))
+  req.Header.Set("X-MBX-APIKEY", apiKey)
   resp, err := httpClient.Do(req)
   if err != nil {
     return

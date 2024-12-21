@@ -99,22 +99,49 @@ func (h *AccountHandler) handler(message map[string]interface{}) {
 func (h *AccountHandler) start() (err error) {
   log.Println("stream start")
 
+  var apiKey, apiSecret string
+  var isTestNet bool
+  if common.GetEnvInt("BINANCE_FUTURES_TESTNET_ENABLE") == 1 {
+    apiKey = common.GetEnvString("BINANCE_FUTURES_TESTNET_API_KEY")
+    apiSecret = common.GetEnvString("BINANCE_FUTURES_TESTNET_API_SECRET")
+    isTestNet = true
+  } else {
+    apiKey = common.GetEnvString("BINANCE_FUTURES_STREAMS_API_KEY")
+    apiSecret = common.GetEnvString("BINANCE_FUTURES_STREAMS_API_SECRET")
+  }
+
   client := binance.NewFuturesClient(
-    os.Getenv("BINANCE_FUTURES_STREAMS_API_KEY"),
-    os.Getenv("BINANCE_FUTURES_STREAMS_API_SECRET"),
+    apiKey,
+    apiSecret,
   )
-  client.BaseURL = os.Getenv("BINANCE_FUTURES_API_ENDPOINT")
+  if isTestNet {
+    client.BaseURL = common.GetEnvString("BINANCE_FUTURES_TESTNET_API_ENDPOINT")
+  } else {
+    client.BaseURL = common.GetEnvString("BINANCE_FUTURES_API_ENDPOINT")
+  }
   listenKey, err := client.NewStartUserStreamService().Do(h.Ctx)
   if err != nil {
     return err
   }
   defer client.NewCloseUserStreamService().ListenKey(listenKey).Do(h.Ctx)
 
-  endpoint := fmt.Sprintf(
-    "%s/ws/%s",
-    os.Getenv("BINANCE_FUTURES_STREAMS_ENDPOINT"),
-    listenKey,
-  )
+  var endpoint string
+  if isTestNet {
+    endpoint = fmt.Sprintf(
+      "%s/ws/%s",
+      os.Getenv("BINANCE_FUTURES_TESTNET_STREAMS_ENDPOINT"),
+      listenKey,
+    )
+  } else {
+    endpoint = fmt.Sprintf(
+      "%s/ws/%s",
+      os.Getenv("BINANCE_FUTURES_STREAMS_ENDPOINT"),
+      listenKey,
+    )
+  }
+
+  log.Println("endpoint", endpoint, client.BaseURL, isTestNet, listenKey)
+
   h.Socket, _, err = websocket.Dial(h.Ctx, endpoint, &websocket.DialOptions{
     CompressionMode: websocket.CompressionDisabled,
   })

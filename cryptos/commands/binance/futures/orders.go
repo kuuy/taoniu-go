@@ -121,8 +121,8 @@ func (h *OrdersHandler) Create() error {
   symbol := "BTCUSDT"
   positionSide := "LONG"
   side := "BUY"
-  price := 25000.0
-  quantity := 0.001
+  price := 95875.3
+  quantity := 0.003
   orderId, err := h.Repository.Create(symbol, positionSide, side, price, quantity)
   if err != nil {
     return err
