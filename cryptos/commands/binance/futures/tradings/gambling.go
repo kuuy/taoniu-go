@@ -19,6 +19,7 @@ func NewGamblingCommand() *cli.Command {
     Name:  "gambling",
     Usage: "",
     Subcommands: []*cli.Command{
+      gambling.NewScalpingCommand(),
       gambling.NewAntCommand(),
     },
   }
