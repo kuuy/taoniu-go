@@ -283,7 +283,7 @@ func (r *TriggersRepository) Place(id string) (err error) {
   }
 
   if balance["free"] < math.Max(buyAmount, config.TRIGGERS_MIN_BINANCE) {
-    err = errors.New(fmt.Sprintf("[%s] free not enough", entity.Symbol))
+    err = errors.New(fmt.Sprintf("triggers free balance must reach %v", math.Max(buyAmount, config.TRIGGERS_MIN_BINANCE)))
     return
   }
 
@@ -545,12 +545,12 @@ func (r *TriggersRepository) Take(trigger *futuresModels.Trigger, price float64)
 
   entity, err := r.SymbolsRepository.Get(trigger.Symbol)
   if err != nil {
-    return err
+    return
   }
 
   tickSize, _, _, err := r.SymbolsRepository.Filters(entity.Filters)
   if err != nil {
-    return nil
+    return
   }
 
   entryPrice := position.EntryPrice

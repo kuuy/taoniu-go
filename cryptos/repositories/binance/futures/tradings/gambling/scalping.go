@@ -185,8 +185,16 @@ func (r *ScalpingRepository) Place(id string) (err error) {
     return errors.New(fmt.Sprintf("gambling scalping [%s] %s price must reach %v", scalping.Symbol, positionSide, buyPrice))
   }
 
+  buyAmount, _ = decimal.NewFromFloat(buyQuantity).Mul(decimal.NewFromFloat(buyPrice)).Float64()
+  if buyAmount < config.GAMBLING_SCALPING_MIN_AMOUNT {
+    return errors.New(fmt.Sprintf("gambling scalping [%s] %s amount must reach %v", scalping.Symbol, positionSide, config.GAMBLING_SCALPING_MIN_AMOUNT))
+  }
+  if buyAmount > config.GAMBLING_SCALPING_MAX_AMOUNT {
+    return errors.New(fmt.Sprintf("gambling scalping [%s] %s amount can not exceed %v", scalping.Symbol, positionSide, config.GAMBLING_SCALPING_MAX_AMOUNT))
+  }
+
   if !r.CanBuy(scalping, buyPrice) {
-    return errors.New(fmt.Sprintf("scalping [%s] %s can not buy now", scalping.Symbol, positionSide))
+    return errors.New(fmt.Sprintf("gambling scalping [%s] %s can not buy now", scalping.Symbol, positionSide))
   }
 
   balance, err := r.AccountRepository.Balance(entity.QuoteAsset)
@@ -195,7 +203,7 @@ func (r *ScalpingRepository) Place(id string) (err error) {
   }
 
   if balance["free"] < config.GAMBLING_SCALPING_MIN_BINANCE {
-    return errors.New(fmt.Sprintf("[%s] free not enough", entity.Symbol))
+    return errors.New(fmt.Sprintf("gambling scalping free balance must reach %v", config.GAMBLING_SCALPING_MIN_BINANCE))
   }
 
   mutex := common.NewMutex(

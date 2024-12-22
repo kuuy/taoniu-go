@@ -456,7 +456,7 @@ func (r *ScalpingRepository) Place(planId string) error {
   }
 
   if balance["free"] < config.SCALPING_MIN_BINANCE {
-    return errors.New(fmt.Sprintf("[%s] free not enough", entity.Symbol))
+    return errors.New(fmt.Sprintf("scalping free balance must reach %v", config.SCALPING_MIN_BINANCE))
   }
 
   mutex := common.NewMutex(
