@@ -5,16 +5,16 @@ import "time"
 type Launchpad struct {
   ID          string    `gorm:"size:20;primaryKey"`
   Symbol      string    `gorm:"size:20;not null;index:idx_binance_spot_launchpad_symbol_status"`
-  Capital     float64   `gorm:"not null"`
-  Price       float64   `gorm:"not null"`
-  CorePrice   float64   `gorm:"not null"`
-  TakePrice   float64   `gorm:"not null"`
-  StopPrice   float64   `gorm:"not null"`
+  Capital     float64   `gorm:"type:double precision;not null"`
+  Price       float64   `gorm:"type:double precision;not null"`
+  CorePrice   float64   `gorm:"type:double precision;not null"`
+  TakePrice   float64   `gorm:"type:double precision;not null"`
+  StopPrice   float64   `gorm:"type:double precision;not null"`
   TakeOrderId int64     `gorm:"not null"`
   StopOrderId int64     `gorm:"not null"`
-  Profit      float64   `gorm:"not null"`
+  Profit      float64   `gorm:"type:double precision;not null"`
   Timestamp   int64     `gorm:"not null"`
-  Status      int       `gorm:"size:30;not null;index;index:idx_binance_spot_launchpad_symbol_status"`
+  Status      int       `gorm:"type:integer;not null;index;index:idx_binance_spot_launchpad_symbol_status"`
   Version     int       `gorm:"not null"`
   Remark      string    `gorm:"size:5000;not null"`
   IssuedAt    time.Time `gorm:"not null"`

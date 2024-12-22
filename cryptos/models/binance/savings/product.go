@@ -8,12 +8,12 @@ type FlexibleProduct struct {
   ID                       string    `gorm:"size:20;primaryKey"`
   Asset                    string    `gorm:"size:20;not null;uniqueIndex"`
   ProductId                string    `gorm:"size:30;not null"`
-  AvgAnnualInterestRate    float64   `gorm:"not null"`
-  DailyInterestPerThousand float64   `gorm:"not null"`
-  MinPurchaseAmount        float64   `gorm:"not null"`
-  PurchasedAmount          float64   `gorm:"not null"`
-  UpLimit                  float64   `gorm:"not null"`
-  UpLimitPerUser           float64   `gorm:"not null"`
+  AvgAnnualInterestRate    float64   `gorm:"type:double precision;not null"`
+  DailyInterestPerThousand float64   `gorm:"type:double precision;not null"`
+  MinPurchaseAmount        float64   `gorm:"type:double precision;not null"`
+  PurchasedAmount          float64   `gorm:"type:double precision;not null"`
+  UpLimit                  float64   `gorm:"type:double precision;not null"`
+  UpLimitPerUser           float64   `gorm:"type:double precision;not null"`
   CanPurchase              bool      `gorm:"not null;"`
   CanRedeem                bool      `gorm:"not null;"`
   Featured                 bool      `gorm:"not null;"`

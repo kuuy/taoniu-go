@@ -11,13 +11,13 @@ type Order struct {
   Type             string    `gorm:"size:30;not null"`
   PositionSide     string    `gorm:"size:20;not null;index:idx_dydx_orders"`
   Side             string    `gorm:"size:20;not null"`
-  Price            float64   `gorm:"not null"`
-  AvgPrice         float64   `gorm:"not null"`
-  ActivatePrice    float64   `gorm:"not null"`
-  StopPrice        float64   `gorm:"not null"`
-  PriceRate        float64   `gorm:"not null"`
-  Quantity         float64   `gorm:"not null"`
-  ExecutedQuantity float64   `gorm:"not null"`
+  Price            float64   `gorm:"type:double precision;not null"`
+  AvgPrice         float64   `gorm:"type:double precision;not null"`
+  ActivatePrice    float64   `gorm:"type:double precision;not null"`
+  StopPrice        float64   `gorm:"type:double precision;not null"`
+  PriceRate        float64   `gorm:"type:double precision;not null"`
+  Quantity         float64   `gorm:"type:double precision;not null"`
+  ExecutedQuantity float64   `gorm:"type:double precision;not null"`
   OpenTime         int64     `gorm:"not null;"`
   UpdateTime       int64     `gorm:"not null;index:idx_dydx_orders"`
   WorkingType      string    `gorm:"size:30;not null"`

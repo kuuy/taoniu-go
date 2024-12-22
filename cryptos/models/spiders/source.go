@@ -14,10 +14,10 @@ type Source struct {
   UrlSha1   string            `gorm:"size:40;not null;index"`
   Headers   datatypes.JSONMap `gorm:"not null"`
   UseProxy  bool              `gorm:"not null"`
-  Timeout   int               `gorm:"not null"`
+  Timeout   int               `gorm:"type:integer;not null"`
   HtmlRules datatypes.JSONMap `gorm:"not null"`
   Result    datatypes.JSON    `gorm:"not null"`
-  Status    int               `gorm:"not null;index"`
+  Status    int               `gorm:"type:integer;not null;index"`
   Remark    string            `gorm:"size:5000;not null"`
   CreatedAt time.Time         `gorm:"not null"`
   UpdatedAt time.Time         `gorm:"not null"`

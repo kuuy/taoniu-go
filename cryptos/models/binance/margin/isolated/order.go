@@ -8,10 +8,10 @@ type Order struct {
   OrderId          int64     `gorm:"not null;uniqueIndex:unq_binance_margin_isolated_orders"`
   Type             string    `gorm:"size:30;not null"`
   Side             string    `gorm:"size:20;not null;index:idx_binance_margin_isolated_orders_lost"`
-  Price            float64   `gorm:"not null"`
-  StopPrice        float64   `gorm:"not null"`
+  Price            float64   `gorm:"type:double precision;not null"`
+  StopPrice        float64   `gorm:"type:double precision;not null"`
   Quantity         float64   `gorm:"not null;index:idx_binance_margin_isolated_orders_lost"`
-  ExecutedQuantity float64   `gorm:"not null"`
+  ExecutedQuantity float64   `gorm:"type:double precision;not null"`
   OpenTime         int64     `gorm:"not null;"`
   UpdateTime       int64     `gorm:"not null;;index:idx_binance_margin_isolated_orders,priority:3;index:idx_binance_margin_isolated_orders_lost"`
   Status           string    `gorm:"size:30;not null;index;index:idx_binance_margin_isolated_orders,priority:2"`
