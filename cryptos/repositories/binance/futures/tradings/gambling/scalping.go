@@ -209,7 +209,7 @@ func (r *ScalpingRepository) Place(id string) (err error) {
   mutex := common.NewMutex(
     r.Rdb,
     r.Ctx,
-    fmt.Sprintf(config.LOCKS_TRADINGS_PLACE, scalping.Symbol),
+    fmt.Sprintf(config.LOCKS_TRADINGS_PLACE, scalping.Symbol, scalping.Side),
   )
   if !mutex.Lock(5 * time.Second) {
     return nil

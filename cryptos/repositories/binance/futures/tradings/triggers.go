@@ -290,7 +290,7 @@ func (r *TriggersRepository) Place(id string) (err error) {
   mutex := common.NewMutex(
     r.Rdb,
     r.Ctx,
-    fmt.Sprintf(config.LOCKS_TRADINGS_PLACE, trigger.Symbol),
+    fmt.Sprintf(config.LOCKS_TRADINGS_PLACE, trigger.Symbol, trigger.Side),
   )
   if !mutex.Lock(5 * time.Second) {
     return nil

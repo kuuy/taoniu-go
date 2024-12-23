@@ -1,13 +1,13 @@
 package futures
 
 import (
-  "log"
-  "strconv"
-  "strings"
-
+  "errors"
+  "fmt"
   "github.com/shopspring/decimal"
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
+  "log"
+  "strconv"
 
   "taoniu.local/cryptos/commands/binance/futures/gambling"
   "taoniu.local/cryptos/common"
@@ -66,21 +66,20 @@ func (h *GamblingHandler) Calc(
   side int,
   entryPrice float64,
   entryQuantity float64,
-) error {
+) (err error) {
   log.Println("binance futures positions calc...")
 
   entryAmount, _ := decimal.NewFromFloat(entryPrice).Mul(decimal.NewFromFloat(entryQuantity)).Float64()
 
   entity, err := h.SymbolsRepository.Get(symbol)
   if err != nil {
-    return nil
+    return
   }
 
-  var filters []string
-  filters = strings.Split(entity.Filters["price"].(string), ",")
-  tickSize, _ := strconv.ParseFloat(filters[2], 64)
-  filters = strings.Split(entity.Filters["quote"].(string), ",")
-  stepSize, _ := strconv.ParseFloat(filters[2], 64)
+  tickSize, stepSize, notional, err := h.SymbolsRepository.Filters(entity.Filters)
+  if err != nil {
+    return
+  }
 
   entryQuantity, _ = decimal.NewFromFloat(entryAmount).Div(decimal.NewFromFloat(entryPrice)).Float64()
   log.Println("entry", entryPrice, strconv.FormatFloat(entryQuantity, 'f', -1, 64), entryAmount)
@@ -123,7 +122,12 @@ func (h *GamblingHandler) Calc(
       planQuantity, _ = decimal.NewFromFloat(planQuantity).Sub(decimal.NewFromFloat(plan.TakeQuantity)).Float64()
       planAmount, _ = decimal.NewFromFloat(planAmount).Sub(decimal.NewFromFloat(plan.TakeAmount)).Float64()
       planProfit, _ = decimal.NewFromFloat(planProfit).Add(decimal.NewFromFloat(takeProfit)).Float64()
-      log.Println("plan", plan.TakePrice, strconv.FormatFloat(plan.TakeQuantity, 'f', -1, 64), takeProfit, planAmount, planProfit)
+
+      if plan.TakeAmount < notional {
+        return errors.New(fmt.Sprintf("plan amount less then %v", notional))
+      }
+
+      log.Println("plan", plan.TakePrice, plan.TakeAmount, notional, strconv.FormatFloat(plan.TakeQuantity, 'f', -1, 64), takeProfit, planAmount, planProfit)
     }
     if len(plans) == 0 || lastProfit > 0 {
       break
@@ -138,9 +142,15 @@ func (h *GamblingHandler) Calc(
     } else {
       takeProfit, _ = decimal.NewFromFloat(entryPrice).Sub(decimal.NewFromFloat(takePrice)).Mul(decimal.NewFromFloat(planQuantity)).Float64()
     }
-    planAmount, _ = decimal.NewFromFloat(planAmount).Add(decimal.NewFromFloat(takePrice).Mul(decimal.NewFromFloat(planQuantity))).Float64()
+    takeAmount, _ := decimal.NewFromFloat(takePrice).Mul(decimal.NewFromFloat(planQuantity)).Float64()
+    planAmount, _ = decimal.NewFromFloat(planAmount).Add(decimal.NewFromFloat(takeAmount)).Float64()
     planProfit, _ = decimal.NewFromFloat(planProfit).Add(decimal.NewFromFloat(takeProfit)).Float64()
-    log.Println("plan", takePrice, planQuantity, takeProfit, planAmount, planProfit)
+
+    if takeAmount < notional {
+      return errors.New(fmt.Sprintf("plan amount less then %v", notional))
+    }
+
+    log.Println("plan", takePrice, takeAmount, notional, planQuantity, takeProfit, planAmount, planProfit)
   }
 
   log.Println("planProfit", planProfit)

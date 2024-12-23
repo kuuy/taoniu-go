@@ -93,7 +93,7 @@ func (r *ScalpingRepository) Listings(conditions map[string]interface{}, current
   return tradings
 }
 
-func (r *ScalpingRepository) Flush(id string) error {
+func (r *ScalpingRepository) Flush(id string) (err error) {
   var scalping *futuresModels.Scalping
   var result = r.Db.First(&scalping, "id=?", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
@@ -276,10 +276,10 @@ func (r *ScalpingRepository) Flush(id string) error {
     }
   }
 
-  return nil
+  return
 }
 
-func (r *ScalpingRepository) Place(planId string) error {
+func (r *ScalpingRepository) Place(planId string) (err error) {
   var scalpingPlan *futuresModels.ScalpingPlan
   result := r.Db.Take(&scalpingPlan, "plan_id", planId)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
@@ -330,12 +330,12 @@ func (r *ScalpingRepository) Place(planId string) error {
 
   entity, err := r.SymbolsRepository.Get(plan.Symbol)
   if err != nil {
-    return err
+    return
   }
 
   tickSize, stepSize, notional, err := r.SymbolsRepository.Filters(entity.Filters)
   if err != nil {
-    return nil
+    return
   }
 
   var positionSide string
@@ -350,7 +350,7 @@ func (r *ScalpingRepository) Place(planId string) error {
 
   price, err := r.SymbolsRepository.Price(plan.Symbol)
   if err != nil {
-    return err
+    return
   }
 
   buyPrice := plan.Price
@@ -452,7 +452,7 @@ func (r *ScalpingRepository) Place(planId string) error {
 
   balance, err := r.AccountRepository.Balance(entity.QuoteAsset)
   if err != nil {
-    return err
+    return
   }
 
   if balance["free"] < config.SCALPING_MIN_BINANCE {
@@ -462,7 +462,7 @@ func (r *ScalpingRepository) Place(planId string) error {
   mutex := common.NewMutex(
     r.Rdb,
     r.Ctx,
-    fmt.Sprintf(config.LOCKS_TRADINGS_PLACE, scalping.Symbol),
+    fmt.Sprintf(config.LOCKS_TRADINGS_PLACE, scalping.Symbol, scalping.Side),
   )
   if !mutex.Lock(5 * time.Second) {
     return nil
@@ -473,7 +473,7 @@ func (r *ScalpingRepository) Place(planId string) error {
   if err != nil {
     _, ok := err.(apiCommon.APIError)
     if ok {
-      return err
+      return
     }
     r.Db.Model(&scalping).Where("version", scalping.Version).Updates(map[string]interface{}{
       "remark":  err.Error(),
@@ -497,10 +497,10 @@ func (r *ScalpingRepository) Place(planId string) error {
   }
   r.Db.Create(&trading)
 
-  return nil
+  return
 }
 
-func (r *ScalpingRepository) Take(scalping *futuresModels.Scalping, price float64) error {
+func (r *ScalpingRepository) Take(scalping *futuresModels.Scalping, price float64) (err error) {
   var positionSide string
   var side string
   if scalping.Side == 1 {
@@ -517,7 +517,7 @@ func (r *ScalpingRepository) Take(scalping *futuresModels.Scalping, price float6
 
   position, err := r.PositionRepository.Get(scalping.Symbol, scalping.Side)
   if err != nil {
-    return err
+    return
   }
 
   if position.EntryQuantity == 0 {
@@ -539,12 +539,12 @@ func (r *ScalpingRepository) Take(scalping *futuresModels.Scalping, price float6
 
   entity, err := r.SymbolsRepository.Get(scalping.Symbol)
   if err != nil {
-    return err
+    return
   }
 
   tickSize, _, _, err := r.SymbolsRepository.Filters(entity.Filters)
   if err != nil {
-    return nil
+    return
   }
 
   if scalping.Side == 1 {
@@ -611,7 +611,7 @@ func (r *ScalpingRepository) Take(scalping *futuresModels.Scalping, price float6
   if err != nil {
     _, ok := err.(apiCommon.APIError)
     if ok {
-      return err
+      return
     }
     r.Db.Model(&scalping).Where("version", scalping.Version).Updates(map[string]interface{}{
       "remark":  err.Error(),
@@ -625,7 +625,7 @@ func (r *ScalpingRepository) Take(scalping *futuresModels.Scalping, price float6
     "version":       gorm.Expr("version + ?", 1),
   })
 
-  return nil
+  return
 }
 
 func (r *ScalpingRepository) Close(scalping *futuresModels.Scalping) {
