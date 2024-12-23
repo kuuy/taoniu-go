@@ -71,16 +71,6 @@ func NewAntCommand() *cli.Command {
         },
       },
       {
-        Name:  "take",
-        Usage: "",
-        Action: func(c *cli.Context) error {
-          if err := h.Take(); err != nil {
-            return cli.Exit(err.Error(), 1)
-          }
-          return nil
-        },
-      },
-      {
         Name:  "flush",
         Usage: "",
         Action: func(c *cli.Context) error {
@@ -96,7 +86,7 @@ func NewAntCommand() *cli.Command {
 
 func (h *AntHandler) Place() error {
   log.Println("futures tradings gambling ant place...")
-  ids := h.Repository.PlaceIds()
+  ids := h.Repository.Ids()
   for _, id := range ids {
     mutex := common.NewMutex(
       h.Rdb,
@@ -115,30 +105,9 @@ func (h *AntHandler) Place() error {
   return nil
 }
 
-func (h *AntHandler) Take() error {
-  log.Println("futures tradings gambling ant take...")
-  ids := h.Repository.TakeIds()
-  for _, id := range ids {
-    mutex := common.NewMutex(
-      h.Rdb,
-      h.Ctx,
-      fmt.Sprintf(config.LOCKS_TRADINGS_GAMBLING_ANT_TAKE, id),
-    )
-    if !mutex.Lock(30 * time.Second) {
-      return nil
-    }
-    err := h.Repository.Take(id)
-    if err != nil {
-      log.Println("error", err)
-    }
-    mutex.Unlock()
-  }
-  return nil
-}
-
 func (h *AntHandler) Flush() error {
   log.Println("futures tradings gambling ant flush...")
-  ids := h.Repository.AntIds()
+  ids := h.Repository.Ids()
   for _, id := range ids {
     mutex := common.NewMutex(
       h.Rdb,

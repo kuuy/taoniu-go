@@ -57,24 +57,26 @@ func (r *AntRepository) Apply(
   side int,
   entryPrice float64,
   entryQuantity float64,
-  planPrices []float64,
-  planQuantities []float64,
+  placePrices []float64,
+  placeQuantities []float64,
   expiredAt time.Time,
 ) error {
   var scalping *models.Ant
   result := r.Db.Where("symbol = ? AND side = ? AND status = 1", symbol, side).Take(&scalping)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     entity := &models.Ant{
-      ID:             xid.New().String(),
-      Symbol:         symbol,
-      Side:           side,
-      Mode:           1,
-      EntryPrice:     entryPrice,
-      EntryQuantity:  entryQuantity,
-      PlanPrices:     planPrices,
-      PlanQuantities: planQuantities,
-      ExpiredAt:      expiredAt,
-      Status:         1,
+      ID:              xid.New().String(),
+      Symbol:          symbol,
+      Side:            side,
+      Mode:            1,
+      EntryPrice:      entryPrice,
+      EntryQuantity:   entryQuantity,
+      PlacePrices:     placePrices,
+      PlaceQuantities: placeQuantities,
+      TakePrices:      []float64{},
+      TakeQuantities:  []float64{},
+      ExpiredAt:       expiredAt,
+      Status:          1,
     }
     r.Db.Create(&entity)
   } else {

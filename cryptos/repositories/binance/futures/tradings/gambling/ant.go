@@ -4,14 +4,15 @@ import (
   "context"
   "errors"
   "fmt"
-  apiCommon "github.com/adshao/go-binance/v2/common"
-  "github.com/rs/xid"
+  "gorm.io/datatypes"
   "log"
   "math"
   "strconv"
   "time"
 
+  apiCommon "github.com/adshao/go-binance/v2/common"
   "github.com/go-redis/redis/v8"
+  "github.com/rs/xid"
   "github.com/shopspring/decimal"
   "gorm.io/gorm"
 
@@ -34,21 +35,9 @@ type AntRepository struct {
   GamblingRepository *repositories.GamblingRepository
 }
 
-func (r *AntRepository) PlaceIds() []string {
+func (r *AntRepository) Ids() []string {
   var ids []string
-  r.Db.Model(&gamblingModels.Ant{}).Where("mode=1 AND status=?", 1).Pluck("id", &ids)
-  return ids
-}
-
-func (r *AntRepository) TakeIds() []string {
-  var ids []string
-  r.Db.Model(&gamblingModels.Ant{}).Where("place_quantity>take_quantity AND status=?", 1).Pluck("id", &ids)
-  return ids
-}
-
-func (r *AntRepository) AntIds() []string {
-  var ids []string
-  r.Db.Model(&tradingsModels.Ant{}).Select("ant_id").Where("status IN ?", []int{0, 1}).Distinct("ant_id").Find(&ids)
+  r.Db.Model(&gamblingModels.Ant{}).Where("status=?", 1).Pluck("id", &ids)
   return ids
 }
 
@@ -99,6 +88,15 @@ func (r *AntRepository) Flush(id string) (err error) {
   var result = r.Db.First(&ant, "id=?", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     return errors.New("empty gambling ant to flush")
+  }
+
+  price, err := r.SymbolsRepository.Price(ant.Symbol)
+  if err != nil {
+    return err
+  }
+  err = r.Take(ant, price)
+  if err != nil {
+    log.Println("take error", ant.Symbol, err)
   }
 
   var positionSide string
@@ -246,7 +244,7 @@ func (r *AntRepository) Flush(id string) (err error) {
 
       if status == "FILLED" {
         result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
-          "status":  3,
+          "status":  1,
           "version": gorm.Expr("version + ?", 1),
         })
         if result.Error != nil {
@@ -256,14 +254,15 @@ func (r *AntRepository) Flush(id string) (err error) {
           return errors.New("order update failed")
         }
         r.Db.Model(&ant).Updates(map[string]interface{}{
-          "take_quantity": gorm.Expr("take_quantity + ?", trading.Quantity),
+          "take_prices":     datatypes.NewJSONSlice(ant.TakePrices[1:]),
+          "take_quantities": datatypes.NewJSONSlice(ant.TakeQuantities[1:]),
+          "take_quantity":   gorm.Expr("take_quantity + ?", trading.Quantity),
         })
         r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_GAMBLING_ANT_LAST_PRICE, positionSide, ant.Symbol, trading.Mode))
       } else if status == "CANCELED" {
         result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
-          "sell_order_id": 0,
-          "status":        1,
-          "version":       gorm.Expr("version + ?", 1),
+          "status":  4,
+          "version": gorm.Expr("version + ?", 1),
         })
         if result.Error != nil {
           return result.Error
@@ -384,7 +383,7 @@ func (r *AntRepository) Place(id string) (err error) {
     var tradings []*tradingsModels.Ant
     r.Db.Select("price").Where("ant_id=? AND mode=1 AND status IN ?", ant.ID, []int{0, 1}).Find(&tradings)
 
-    lastPrice := ant.PlanPrices[len(ant.PlanPrices)-1]
+    lastPrice := ant.PlacePrices[len(ant.PlacePrices)-1]
     for _, trading := range tradings {
       if buyPrice == 0.0 || ant.Side == 1 && buyPrice > trading.Price || ant.Side == 2 && buyPrice > trading.Price {
         buyPrice = trading.Price
@@ -397,10 +396,10 @@ func (r *AntRepository) Place(id string) (err error) {
       }
     }
 
-    for i, planPrice := range ant.PlanPrices {
+    for i, planPrice := range ant.PlacePrices {
       if buyPrice == 0.0 || ant.Side == 1 && buyPrice > planPrice || ant.Side == 2 && buyPrice > planPrice {
         buyPrice = planPrice
-        buyQuantity = ant.PlanQuantities[i]
+        buyQuantity = ant.PlaceQuantities[i]
         break
       }
     }
@@ -485,7 +484,7 @@ func (r *AntRepository) Place(id string) (err error) {
     })
   }
 
-  trading := models.Ant{
+  r.Db.Create(&models.Ant{
     ID:       xid.New().String(),
     Symbol:   ant.Symbol,
     AntId:    ant.ID,
@@ -494,19 +493,12 @@ func (r *AntRepository) Place(id string) (err error) {
     Price:    buyPrice,
     Quantity: buyQuantity,
     Version:  1,
-  }
-  r.Db.Create(&trading)
+  })
 
   return
 }
 
-func (r *AntRepository) Take(id string) (err error) {
-  var ant *gamblingModels.Ant
-  result := r.Db.First(&ant, "id=?", id)
-  if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    return errors.New("gambling ant not found")
-  }
-
+func (r *AntRepository) Take(ant *gamblingModels.Ant, price float64) (err error) {
   var positionSide string
   var side string
   if ant.Side == 1 {
@@ -516,13 +508,8 @@ func (r *AntRepository) Take(id string) (err error) {
     positionSide = "SHORT"
     side = "BUY"
   }
-  mode := 2
 
-  log.Println("side", side)
-
-  //var entryPrice float64
-  //var sellPrice float64
-  //var trading *models.Ant
+  log.Println("side", side, price)
 
   position, err := r.PositionRepository.Get(ant.Symbol, ant.Side)
   if err != nil {
@@ -536,116 +523,158 @@ func (r *AntRepository) Take(id string) (err error) {
     }
     if position.Timestamp > ant.Timestamp+9e8 {
       r.Close(ant)
-      r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_GAMBLING_ANT_LAST_PRICE, positionSide, ant.Symbol, mode))
+      r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_GAMBLING_ANT_LAST_PRICE, positionSide, ant.Symbol, 1))
+      r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_GAMBLING_ANT_LAST_PRICE, positionSide, ant.Symbol, 2))
     }
     return errors.New(fmt.Sprintf("[%s] %s empty position", ant.Symbol, positionSide))
   }
 
-  //entryPrice = position.EntryPrice
   if position.Timestamp > ant.Timestamp {
     ant.Timestamp = position.Timestamp
   }
 
-  //entity, err := r.SymbolsRepository.Get(ant.Symbol)
-  //if err != nil {
-  //  return err
-  //}
+  entity, err := r.SymbolsRepository.Get(ant.Symbol)
+  if err != nil {
+    return
+  }
 
-  //tickSize, _, _, err := r.SymbolsRepository.Filters(entity.Filters)
-  //if err != nil {
-  //  return nil
-  //}
+  tickSize, stepSize, _, err := r.SymbolsRepository.Filters(entity.Filters)
+  if err != nil {
+    return
+  }
+
+  if ant.PlaceQuantity <= ant.TakeQuantity {
+    return errors.New(fmt.Sprintf("[%s] %s no quantity to take", ant.Symbol, positionSide))
+  }
+
+  takeQuantity := 0.0
+  for _, quantity := range ant.TakeQuantities {
+    takeQuantity, _ = decimal.NewFromFloat(takeQuantity).Add(decimal.NewFromFloat(quantity)).Float64()
+  }
+  restQuantity, _ := decimal.NewFromFloat(ant.PlaceQuantity).Sub(decimal.NewFromFloat(ant.TakeQuantity)).Float64()
+
+  entryPrice := position.EntryPrice
+
+  if takeQuantity != restQuantity {
+    takePrice := r.GamblingRepository.TakePrice(entryPrice, ant.Side, tickSize)
+
+    planPrice := entryPrice
+    planQuantity := restQuantity
+    lastProfit := 0.0
+
+    ant.TakePrices = []float64{}
+    ant.TakeQuantities = []float64{}
+
+    for {
+      plans := r.GamblingRepository.Calc(planPrice, planQuantity, ant.Side, tickSize, stepSize)
+      for _, plan := range plans {
+        if plan.TakeQuantity < stepSize {
+          if ant.Side == 1 {
+            lastProfit, _ = decimal.NewFromFloat(takePrice).Sub(decimal.NewFromFloat(entryPrice)).Mul(decimal.NewFromFloat(planQuantity)).Float64()
+          } else {
+            lastProfit, _ = decimal.NewFromFloat(entryPrice).Sub(decimal.NewFromFloat(takePrice)).Mul(decimal.NewFromFloat(planQuantity)).Float64()
+          }
+          break
+        }
+        if ant.Side == 1 && plan.TakePrice > takePrice {
+          lastProfit, _ = decimal.NewFromFloat(takePrice).Sub(decimal.NewFromFloat(entryPrice)).Mul(decimal.NewFromFloat(planQuantity)).Float64()
+          break
+        }
+        if ant.Side == 2 && plan.TakePrice < takePrice {
+          lastProfit, _ = decimal.NewFromFloat(entryPrice).Sub(decimal.NewFromFloat(takePrice)).Mul(decimal.NewFromFloat(planQuantity)).Float64()
+          break
+        }
+        planPrice = plan.TakePrice
+        planQuantity, _ = decimal.NewFromFloat(planQuantity).Sub(decimal.NewFromFloat(plan.TakeQuantity)).Float64()
+
+        ant.TakePrices = append(ant.TakePrices, plan.TakePrice)
+        ant.TakeQuantities = append(ant.TakeQuantities, plan.TakeQuantity)
+      }
+      if len(plans) == 0 || lastProfit > 0 {
+        break
+      }
+    }
+
+    if planQuantity > 0 {
+      ant.TakePrices = append(ant.TakePrices, takePrice)
+      ant.TakeQuantities = append(ant.TakeQuantities, planQuantity)
+    }
+
+    if len(ant.TakeQuantities) == 0 {
+      ant.TakePrices = append(ant.TakePrices, r.GamblingRepository.TakePrice(entryPrice, ant.Side, tickSize))
+      ant.TakeQuantities = append(ant.TakeQuantities, restQuantity)
+    }
+
+    r.Db.Model(&ant).Updates(map[string]interface{}{
+      "take_prices":     datatypes.NewJSONSlice(ant.TakePrices),
+      "take_quantities": datatypes.NewJSONSlice(ant.TakeQuantities),
+    })
+  }
+
+  var trading *tradingsModels.Ant
+  r.Db.Where("ant_id=? AND mode=2 AND status=?", ant.ID, 0).Take(&trading)
+  if trading.ID != "" {
+    return errors.New("waiting for take order")
+  }
+
+  sellPrice := ant.TakePrices[0]
+  sellQuantity := ant.TakeQuantities[0]
 
   if ant.Side == 1 {
-    //result := r.Db.Where("ant_id=? AND status=?", ant.ID, 1).Take(&trading)
-    //if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    //  return errors.New("empty scalping")
-    //}
-    //if price < trading.SellPrice {
-    //  if price < entryPrice*1.0105 {
-    //    return errors.New("compare with sell price too low")
-    //  }
-    //  timestamp := time.Now().Add(-15 * time.Minute).UnixMicro()
-    //  if trading.UpdatedAt.UnixMicro() > timestamp {
-    //    return errors.New("waiting for more time")
-    //  }
-    //  sellPrice = entryPrice * 1.0105
-    //} else {
-    //  if entryPrice > trading.SellPrice {
-    //    if price < entryPrice*1.0105 {
-    //      return errors.New("compare with entry price too low")
-    //    }
-    //    sellPrice = entryPrice * 1.0105
-    //  } else {
-    //    sellPrice = trading.SellPrice
-    //  }
-    //}
-    //if sellPrice < price*0.9985 {
-    //  sellPrice = price * 0.9985
-    //}
-    //sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
+    if price < sellPrice {
+      return errors.New(fmt.Sprintf("take price must reach %v", sellPrice))
+    }
+    if sellPrice < price*0.9985 {
+      sellPrice = price * 0.9985
+    }
+    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
   }
 
   if ant.Side == 2 {
-    //result := r.Db.Where("ant_id=? AND status=?", scalping.ID, 1).Order("sell_price desc").Take(&trading)
-    //if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    //  return errors.New("empty scalping")
-    //}
-    //if price > trading.SellPrice {
-    //  if price > entryPrice*0.9895 {
-    //    return errors.New("price too high")
-    //  }
-    //  timestamp := time.Now().Add(-15 * time.Minute).UnixMicro()
-    //  if trading.UpdatedAt.UnixMicro() > timestamp {
-    //    return errors.New("waiting for more time")
-    //  }
-    //  sellPrice = entryPrice * 0.9895
-    //} else {
-    //  if entryPrice < trading.SellPrice {
-    //    if price > entryPrice*0.9895 {
-    //      return errors.New("compare with entry price too high")
-    //    }
-    //    sellPrice = entryPrice * 0.9895
-    //  } else {
-    //    sellPrice = trading.SellPrice
-    //  }
-    //}
-    //if sellPrice > price*1.0015 {
-    //  sellPrice = price * 1.0015
-    //}
-    //sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+    if price > sellPrice {
+      return errors.New(fmt.Sprintf("take price can not exceed %v", sellPrice))
+    }
+    if sellPrice > price*1.0015 {
+      sellPrice = price * 1.0015
+    }
+    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
   }
 
-  //orderId, err := r.OrdersRepository.Create(trading.Symbol, positionSide, side, sellPrice, trading.SellQuantity)
-  //if err != nil {
-  //  _, ok := err.(apiCommon.APIError)
-  //  if ok {
-  //    return err
-  //  }
-  //  r.Db.Model(&scalping).Where("version", scalping.Version).Updates(map[string]interface{}{
-  //    "remark":  err.Error(),
-  //    "version": gorm.Expr("version + ?", 1),
-  //  })
-  //}
+  orderId, err := r.OrdersRepository.Create(ant.Symbol, positionSide, side, sellPrice, takeQuantity)
+  if err != nil {
+    _, ok := err.(apiCommon.APIError)
+    if ok {
+      return err
+    }
+    r.Db.Model(&ant).Where("version", ant.Version).Updates(map[string]interface{}{
+      "remark":  err.Error(),
+      "version": gorm.Expr("version + ?", 1),
+    })
+  }
 
-  //r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
-  //  "sell_order_id": orderId,
-  //  "status":        2,
-  //  "version":       gorm.Expr("version + ?", 1),
-  //})
+  r.Db.Create(&models.Ant{
+    ID:       xid.New().String(),
+    Symbol:   ant.Symbol,
+    AntId:    ant.ID,
+    Mode:     2,
+    OrderId:  orderId,
+    Price:    sellPrice,
+    Quantity: sellQuantity,
+    Version:  1,
+  })
 
   return nil
 }
 
-func (r *AntRepository) Close(scalping *gamblingModels.Ant) {
+func (r *AntRepository) Close(ant *gamblingModels.Ant) {
   var total int64
-  r.Db.Model(&models.Ant{}).Where("ant_id = ? AND status IN ?", scalping.ID, []int{0, 1}).Count(&total)
+  r.Db.Model(&models.Ant{}).Where("ant_id = ? AND status = ?", ant.ID, 0).Count(&total)
   if total == 0 {
     return
   }
 
   var tradings []*models.Ant
-  r.Db.Select([]string{"id", "version", "updated_at"}).Where("ant_id=? AND status=?", scalping.ID, 1).Find(&tradings)
+  r.Db.Select([]string{"id", "version", "updated_at"}).Where("ant_id=? AND status=?", ant.ID, 0).Find(&tradings)
   timestamp := time.Now().Add(-30 * time.Minute).Unix()
   for _, trading := range tradings {
     if trading.UpdatedAt.Unix() < timestamp {
@@ -693,7 +722,7 @@ func (r *AntRepository) CanBuy(ant *gamblingModels.Ant, price float64) bool {
   isChange := false
 
   var tradings []*tradingsModels.Ant
-  r.Db.Select([]string{"status", "price"}).Where("ant_id=? AND mode=? AND status IN ?", ant.ID, 1, []int{0, 1, 3}).Find(&tradings)
+  r.Db.Select([]string{"status", "price"}).Where("ant_id=? AND mode=1 AND status IN ?", ant.ID, []int{0, 1}).Find(&tradings)
   for _, trading := range tradings {
     if trading.Status == 0 {
       return false
@@ -721,62 +750,6 @@ func (r *AntRepository) CanBuy(ant *gamblingModels.Ant, price float64) bool {
 
   if isChange {
     r.Rdb.Set(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_GAMBLING_ANT_LAST_PRICE, positionSide, ant.Symbol, 1), buyPrice, -1)
-  }
-
-  return true
-}
-
-func (r *AntRepository) CanTake(ant *gamblingModels.Ant, price float64) bool {
-  var buyPrice float64
-
-  var positionSide string
-  if ant.Side == 1 {
-    positionSide = "LONG"
-  } else if ant.Side == 2 {
-    positionSide = "SHORT"
-  }
-  val, _ := r.Rdb.Get(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, ant.Symbol)).Result()
-  if val != "" {
-    buyPrice, _ = strconv.ParseFloat(val, 64)
-    if ant.Side == 1 && price >= buyPrice*0.9615 {
-      return false
-    }
-    if ant.Side == 2 && price <= buyPrice*1.0385 {
-      return false
-    }
-  }
-
-  isChange := false
-
-  //var tradings []*models.Trigger
-  //r.Db.Select([]string{"status", "buy_price"}).Where("trigger_id=? AND status IN ?", trigger.ID, []int{0, 1, 2}).Find(&tradings)
-  //for _, trading := range tradings {
-  //  if trading.Status == 0 {
-  //    return false
-  //  }
-  //  if trigger.Side == 1 && price >= trading.BuyPrice*0.9615 {
-  //    return false
-  //  }
-  //  if trigger.Side == 2 && price <= trading.BuyPrice*1.0385 {
-  //    return false
-  //  }
-  //  if buyPrice == 0 {
-  //    buyPrice = trading.BuyPrice
-  //    isChange = true
-  //  } else {
-  //    if trigger.Side == 1 && buyPrice > trading.BuyPrice {
-  //      buyPrice = trading.BuyPrice
-  //      isChange = true
-  //    }
-  //    if trigger.Side == 2 && buyPrice < trading.BuyPrice {
-  //      buyPrice = trading.BuyPrice
-  //      isChange = true
-  //    }
-  //  }
-  //}
-
-  if isChange {
-    r.Rdb.Set(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_GAMBLING_ANT_LAST_PRICE, positionSide, ant.Symbol, 2), buyPrice, -1)
   }
 
   return true

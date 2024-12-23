@@ -117,11 +117,8 @@ func (h *AntHandler) Apply(symbol string, side int, entryPrice float64, entryQua
 
   planPrice := entryPrice
   planQuantity := entryQuantity
-  planAmount := entryAmount
-  planProfit := 0.0
   lastPrice := 0.0
   lastProfit := 0.0
-  takeProfit := 0.0
 
   var planPrices, planQuantities []float64
   var quantities []float64
@@ -154,7 +151,6 @@ func (h *AntHandler) Apply(symbol string, side int, entryPrice float64, entryQua
   }
 
   if planQuantity > 0 {
-    planAmount = 0.0
     quantities = append(quantities, planQuantity)
   }
 
@@ -183,15 +179,8 @@ func (h *AntHandler) Apply(symbol string, side int, entryPrice float64, entryQua
           lastProfit, _ = decimal.NewFromFloat(lastPrice).Sub(decimal.NewFromFloat(takePrice)).Mul(decimal.NewFromFloat(planQuantity)).Float64()
           break
         }
-        if antSide == 1 {
-          takeProfit, _ = decimal.NewFromFloat(plan.TakePrice).Sub(decimal.NewFromFloat(entryPrice)).Mul(decimal.NewFromFloat(plan.TakeQuantity)).Float64()
-        } else {
-          takeProfit, _ = decimal.NewFromFloat(entryPrice).Sub(decimal.NewFromFloat(plan.TakePrice)).Mul(decimal.NewFromFloat(plan.TakeQuantity)).Float64()
-        }
         planPrice = plan.TakePrice
         planQuantity, _ = decimal.NewFromFloat(planQuantity).Sub(decimal.NewFromFloat(plan.TakeQuantity)).Float64()
-        planAmount, _ = decimal.NewFromFloat(planAmount).Add(decimal.NewFromFloat(plan.TakeAmount)).Float64()
-        planProfit, _ = decimal.NewFromFloat(planProfit).Add(decimal.NewFromFloat(takeProfit)).Float64()
 
         if plan.TakeAmount < notional {
           return errors.New(fmt.Sprintf("plan amount less then %v", notional))
@@ -205,15 +194,7 @@ func (h *AntHandler) Apply(symbol string, side int, entryPrice float64, entryQua
       }
     }
     if planQuantity > 0 {
-      if antSide == 1 {
-        takeProfit, _ = decimal.NewFromFloat(takePrice).Sub(decimal.NewFromFloat(entryPrice)).Mul(decimal.NewFromFloat(planQuantity)).Float64()
-      } else {
-        takeProfit, _ = decimal.NewFromFloat(entryPrice).Sub(decimal.NewFromFloat(takePrice)).Mul(decimal.NewFromFloat(planQuantity)).Float64()
-      }
       takeAmount, _ := decimal.NewFromFloat(takePrice).Mul(decimal.NewFromFloat(planQuantity)).Float64()
-      planAmount, _ = decimal.NewFromFloat(planAmount).Add(decimal.NewFromFloat(takeAmount)).Float64()
-      planProfit, _ = decimal.NewFromFloat(planProfit).Add(decimal.NewFromFloat(takeProfit)).Float64()
-
       if takeAmount < notional {
         return errors.New(fmt.Sprintf("plan amount less then %v", notional))
       }
