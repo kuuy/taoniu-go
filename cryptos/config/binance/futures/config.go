@@ -13,7 +13,7 @@ const (
   GAMBLING_SCALPING_MIN_AMOUNT                 = 16
   GAMBLING_SCALPING_MAX_AMOUNT                 = 440
   GAMBLING_SCALPING_PRICE_LOSE_PERCENT         = 20
-  GAMBLING_ANT_MIN_BINANCE                     = 7070
+  GAMBLING_ANT_MIN_BINANCE                     = 3000
   GAMBLING_ANT_MAX_AMOUNT                      = 125
   ASYNQ_QUEUE_TICKERS                          = "binance.futures.tickers"
   ASYNQ_QUEUE_KLINES                           = "binance.futures.klines"
