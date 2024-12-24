@@ -73,6 +73,7 @@ const (
   LOCKS_ORDERS_FLUSH                           = "locks:binance:spot:orders:flush:%v:%d"
   LOCKS_ORDERS_SYNC                            = "locks:binance:spot:orders:sync:%v"
   LOCKS_TRADINGS_PLACE                         = "locks:binance:spot:tradings:place:%v"
+  LOCKS_TRADINGS_TAKE                          = "locks:binance:spot:tradings:take:%v"
   LOCKS_TRADINGS_LAUNCHPAD_PLACE               = "locks:binance:spot:tradings:launchpad:place:%v"
   LOCKS_TRADINGS_LAUNCHPAD_FLUSH               = "locks:binance:spot:tradings:launchpad:flush:%v"
   LOCKS_TRADINGS_SCALPING_PLACE                = "locks:binance:spot:tradings:scalping:place:%v"
