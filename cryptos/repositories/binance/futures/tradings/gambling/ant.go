@@ -167,19 +167,32 @@ func (r *AntRepository) Flush(id string) (err error) {
       }
 
       if status == "FILLED" {
-        result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
-          "status":  1,
-          "version": gorm.Expr("version + ?", 1),
+        err = r.Db.Transaction(func(tx *gorm.DB) (err error) {
+          result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+            "status":  1,
+            "version": gorm.Expr("version + ?", 1),
+          })
+          if result.Error != nil {
+            return result.Error
+          }
+          if result.RowsAffected == 0 {
+            return errors.New("trading update failed")
+          }
+          result = r.Db.Model(&ant).Where("version", ant.Version).Updates(map[string]interface{}{
+            "place_quantity": gorm.Expr("place_quantity + ?", trading.Quantity),
+            "version":        gorm.Expr("version + ?", 1),
+          })
+          if result.Error != nil {
+            return result.Error
+          }
+          if result.RowsAffected == 0 {
+            return errors.New("gambling ant update failed")
+          }
+          return
         })
-        if result.Error != nil {
-          return result.Error
+        if err != nil {
+          return
         }
-        if result.RowsAffected == 0 {
-          return errors.New("order update failed")
-        }
-        r.Db.Model(&ant).Updates(map[string]interface{}{
-          "place_quantity": gorm.Expr("place_quantity + ?", trading.Quantity),
-        })
         r.Rdb.Set(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_GAMBLING_ANT_LAST_PRICE, positionSide, ant.Symbol, trading.Mode), trading.Price, -1)
       } else if status == "CANCELED" {
         result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
@@ -243,21 +256,34 @@ func (r *AntRepository) Flush(id string) (err error) {
       }
 
       if status == "FILLED" {
-        result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
-          "status":  1,
-          "version": gorm.Expr("version + ?", 1),
+        err = r.Db.Transaction(func(tx *gorm.DB) (err error) {
+          result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+            "status":  1,
+            "version": gorm.Expr("version + ?", 1),
+          })
+          if result.Error != nil {
+            return result.Error
+          }
+          if result.RowsAffected == 0 {
+            return errors.New("trading update failed")
+          }
+          result = r.Db.Model(&ant).Where("version", ant.Version).Updates(map[string]interface{}{
+            "take_prices":     datatypes.NewJSONSlice(ant.TakePrices[1:]),
+            "take_quantities": datatypes.NewJSONSlice(ant.TakeQuantities[1:]),
+            "take_quantity":   gorm.Expr("take_quantity + ?", trading.Quantity),
+            "version":         gorm.Expr("version + ?", 1),
+          })
+          if result.Error != nil {
+            return result.Error
+          }
+          if result.RowsAffected == 0 {
+            return errors.New("ant update failed")
+          }
+          return
         })
-        if result.Error != nil {
-          return result.Error
+        if err != nil {
+          return
         }
-        if result.RowsAffected == 0 {
-          return errors.New("order update failed")
-        }
-        r.Db.Model(&ant).Updates(map[string]interface{}{
-          "take_prices":     datatypes.NewJSONSlice(ant.TakePrices[1:]),
-          "take_quantities": datatypes.NewJSONSlice(ant.TakeQuantities[1:]),
-          "take_quantity":   gorm.Expr("take_quantity + ?", trading.Quantity),
-        })
         r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_GAMBLING_ANT_LAST_PRICE, positionSide, ant.Symbol, trading.Mode))
       } else if status == "CANCELED" {
         result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
@@ -275,7 +301,7 @@ func (r *AntRepository) Flush(id string) (err error) {
     }
   }
 
-  return nil
+  return
 }
 
 func (r *AntRepository) Place(id string) (err error) {
@@ -605,9 +631,10 @@ func (r *AntRepository) Take(ant *gamblingModels.Ant, price float64) (err error)
       ant.TakeQuantities = append(ant.TakeQuantities, restQuantity)
     }
 
-    r.Db.Model(&ant).Updates(map[string]interface{}{
+    r.Db.Model(&ant).Where("version", ant.Version).Updates(map[string]interface{}{
       "take_prices":     datatypes.NewJSONSlice(ant.TakePrices),
       "take_quantities": datatypes.NewJSONSlice(ant.TakeQuantities),
+      "version":         gorm.Expr("version + ?", 1),
     })
   }
 
@@ -639,6 +666,16 @@ func (r *AntRepository) Take(ant *gamblingModels.Ant, price float64) (err error)
     }
     sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
   }
+
+  mutex := common.NewMutex(
+    r.Rdb,
+    r.Ctx,
+    fmt.Sprintf(config.LOCKS_TRADINGS_TAKE, ant.Symbol, ant.Side),
+  )
+  if !mutex.Lock(5 * time.Second) {
+    return nil
+  }
+  defer mutex.Unlock()
 
   orderId, err := r.OrdersRepository.Create(ant.Symbol, positionSide, side, sellPrice, takeQuantity)
   if err != nil {
@@ -683,6 +720,15 @@ func (r *AntRepository) Close(ant *gamblingModels.Ant) {
         "version": gorm.Expr("version + ?", 1),
       })
     }
+  }
+
+  if ant.PlaceQuantity != ant.TakeQuantity {
+    r.Db.Model(&ant).Where("version", ant.Version).Updates(map[string]interface{}{
+      "take_prices":     datatypes.NewJSONSlice([]float64{}),
+      "take_quantities": datatypes.NewJSONSlice([]float64{}),
+      "take_quantity":   gorm.Expr("place_quantity"),
+      "version":         gorm.Expr("version + ?", 1),
+    })
   }
 }
 

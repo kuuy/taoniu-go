@@ -122,6 +122,13 @@ func (r *ScalpingRepository) Flush(id string) (err error) {
     takeSide = "BUY"
   }
 
+  var closeTrading *models.Scalping
+  if scalping.Side == 1 {
+    r.Db.Where("scalping_id=? AND status=?", scalping.ID, 1).Take(&closeTrading)
+  } else {
+    r.Db.Where("scalping_id=? AND status=?", scalping.ID, 1).Take(&closeTrading)
+  }
+
   var tradings []*models.Scalping
   r.Db.Where("scalping_id=? AND status IN ?", scalping.ID, []int{0, 2}).Find(&tradings)
 
@@ -176,15 +183,45 @@ func (r *ScalpingRepository) Flush(id string) (err error) {
       }
 
       if status == "FILLED" {
-        result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
-          "status":  1,
-          "version": gorm.Expr("version + ?", 1),
-        })
-        if result.Error != nil {
-          return result.Error
-        }
-        if result.RowsAffected == 0 {
-          return errors.New("order update failed")
+        if closeTrading.ID != "" && closeTrading.CreatedAt.Unix() < trading.CreatedAt.Unix() {
+          err = r.Db.Transaction(func(tx *gorm.DB) (err error) {
+            result = r.Db.Model(&trading).Where("version", closeTrading.Version).Updates(map[string]interface{}{
+              "status":  5,
+              "version": gorm.Expr("version + ?", 1),
+            })
+            if result.Error != nil {
+              return result.Error
+            }
+            if result.RowsAffected == 0 {
+              return errors.New("last trading close failed")
+            }
+            result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+              "sell_quantity": gorm.Expr("sell_quantity + ?", closeTrading.SellQuantity),
+              "status":        1,
+              "version":       gorm.Expr("version + ?", 1),
+            })
+            if result.Error != nil {
+              return result.Error
+            }
+            if result.RowsAffected == 0 {
+              return errors.New("trading update failed")
+            }
+            return
+          })
+          if err != nil {
+            return
+          }
+        } else {
+          result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+            "status":  1,
+            "version": gorm.Expr("version + ?", 1),
+          })
+          if result.Error != nil {
+            return result.Error
+          }
+          if result.RowsAffected == 0 {
+            return errors.New("trading update failed")
+          }
         }
         r.Rdb.Set(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, scalping.Symbol), trading.BuyPrice, -1)
       } else if status == "CANCELED" {
@@ -249,15 +286,45 @@ func (r *ScalpingRepository) Flush(id string) (err error) {
       }
 
       if status == "FILLED" {
-        result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
-          "status":  3,
-          "version": gorm.Expr("version + ?", 1),
-        })
-        if result.Error != nil {
-          return result.Error
-        }
-        if result.RowsAffected == 0 {
-          return errors.New("order update failed")
+        if closeTrading.ID != "" && closeTrading.CreatedAt.Unix() < trading.CreatedAt.Unix() {
+          err = r.Db.Transaction(func(tx *gorm.DB) (err error) {
+            result = r.Db.Model(&trading).Where("version", closeTrading.Version).Updates(map[string]interface{}{
+              "status":  5,
+              "version": gorm.Expr("version + ?", 1),
+            })
+            if result.Error != nil {
+              return result.Error
+            }
+            if result.RowsAffected == 0 {
+              return errors.New("last trading close failed")
+            }
+            result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+              "sell_quantity": gorm.Expr("sell_quantity + ?", closeTrading.SellQuantity),
+              "status":        3,
+              "version":       gorm.Expr("version + ?", 1),
+            })
+            if result.Error != nil {
+              return result.Error
+            }
+            if result.RowsAffected == 0 {
+              return errors.New("trading update failed")
+            }
+            return
+          })
+          if err != nil {
+            return
+          }
+        } else {
+          result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+            "status":  3,
+            "version": gorm.Expr("version + ?", 1),
+          })
+          if result.Error != nil {
+            return result.Error
+          }
+          if result.RowsAffected == 0 {
+            return errors.New("order update failed")
+          }
         }
         r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, scalping.Symbol))
       } else if status == "CANCELED" {
@@ -548,7 +615,7 @@ func (r *ScalpingRepository) Take(scalping *futuresModels.Scalping, price float6
   }
 
   if scalping.Side == 1 {
-    result := r.Db.Where("scalping_id=? AND status=?", scalping.ID, 1).Take(&trading)
+    result := r.Db.Where("scalping_id=? AND status=?", scalping.ID, 1).Order("sell_price asc").Take(&trading)
     if errors.Is(result.Error, gorm.ErrRecordNotFound) {
       return errors.New("empty scalping")
     }
@@ -606,6 +673,16 @@ func (r *ScalpingRepository) Take(scalping *futuresModels.Scalping, price float6
     }
     sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
   }
+
+  mutex := common.NewMutex(
+    r.Rdb,
+    r.Ctx,
+    fmt.Sprintf(config.LOCKS_TRADINGS_TAKE, scalping.Symbol, scalping.Side),
+  )
+  if !mutex.Lock(5 * time.Second) {
+    return nil
+  }
+  defer mutex.Unlock()
 
   orderId, err := r.OrdersRepository.Create(trading.Symbol, positionSide, side, sellPrice, trading.SellQuantity)
   if err != nil {

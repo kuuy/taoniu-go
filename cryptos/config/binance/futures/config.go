@@ -71,6 +71,7 @@ const (
   LOCKS_ORDERS_FLUSH                           = "locks:binance:futures:orders:flush:%v:%d"
   LOCKS_ORDERS_SYNC                            = "locks:binance:futures:orders:sync:%v"
   LOCKS_TRADINGS_PLACE                         = "locks:binance:futures:tradings:place:%v:%v"
+  LOCKS_TRADINGS_TAKE                          = "locks:binance:futures:tradings:take:%v:%v"
   LOCKS_TRADINGS_SCALPING_PLACE                = "locks:binance:futures:tradings:scalping:place:%v"
   LOCKS_TRADINGS_SCALPING_FLUSH                = "locks:binance:futures:tradings:scalping:flush:%v"
   LOCKS_TRADINGS_TRIGGERS_PLACE                = "locks:binance:futures:tradings:triggers:place:%v"
