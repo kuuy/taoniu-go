@@ -150,7 +150,7 @@ func (r *ScalpingRepository) Place(id string) (err error) {
     buyPrice, _ = decimal.NewFromFloat(entryPrice).Mul(
       decimal.NewFromFloat(100).Sub(
         decimal.NewFromFloat(config.GAMBLING_SCALPING_PRICE_LOSE_PERCENT),
-      ).Div(decimal.NewFromFloat(config.GAMBLING_SCALPING_PRICE_LOSE_PERCENT)),
+      ).Div(decimal.NewFromFloat(100)),
     ).Float64()
     if price < buyPrice {
       buyPrice = price
@@ -160,7 +160,7 @@ func (r *ScalpingRepository) Place(id string) (err error) {
     buyPrice, _ = decimal.NewFromFloat(entryPrice).Mul(
       decimal.NewFromFloat(100).Add(
         decimal.NewFromFloat(config.GAMBLING_SCALPING_PRICE_LOSE_PERCENT),
-      ).Div(decimal.NewFromFloat(config.GAMBLING_SCALPING_PRICE_LOSE_PERCENT)),
+      ).Div(decimal.NewFromFloat(100)),
     ).Float64()
     if price > buyPrice {
       buyPrice = price
