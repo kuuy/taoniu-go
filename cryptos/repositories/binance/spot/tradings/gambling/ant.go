@@ -636,7 +636,7 @@ func (r *AntRepository) Take(ant *gamblingModels.Ant, price float64) (err error)
   }
   defer mutex.Unlock()
 
-  orderId, err := r.OrdersRepository.Create(ant.Symbol, side, sellPrice, takeQuantity)
+  orderId, err := r.OrdersRepository.Create(ant.Symbol, side, sellPrice, sellQuantity)
   if err != nil {
     _, ok := err.(apiCommon.APIError)
     if ok {
