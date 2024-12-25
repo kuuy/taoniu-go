@@ -3,11 +3,20 @@ package spot
 const (
   REDIS_KEY_BALANCE                            = "binance:spot:balance:%v"
   REDIS_KEY_TRADINGS_LAST_PRICE                = "binance:spot:tradings:last:price:%v"
+  REDIS_KEY_TRADINGS_GAMBLING_ANT_LAST_PRICE   = "binance:spot:tradings:gambling:ant:last:price:%v:%v"
   REDIS_KEY_TRADINGS_TRIGGERS_PLACE            = "binance:spot:tradings:triggers:place:%v"
+  REDIS_KEY_TRADINGS_GAMBLING_SCALPING_PLACE   = "binance:spot:tradings:gambling:scalping:place:%v"
+  REDIS_KEY_TRADINGS_GAMBLING_ANT_PLACE        = "binance:spot:tradings:gambling:ant:place:%v"
   SCALPING_MIN_BINANCE                         = 50
   TRIGGERS_MIN_BINANCE                         = 200
   LAUNCHPAD_MIN_BINANCE                        = 1000
   LAUNCHPAD_DURATION                           = 30
+  GAMBLING_SCALPING_MIN_BINANCE                = 2121
+  GAMBLING_SCALPING_MIN_AMOUNT                 = 16
+  GAMBLING_SCALPING_MAX_AMOUNT                 = 440
+  GAMBLING_SCALPING_PRICE_LOSE_PERCENT         = 20
+  GAMBLING_ANT_MIN_BINANCE                     = 3000
+  GAMBLING_ANT_MAX_AMOUNT                      = 125
   ASYNQ_QUEUE_TICKERS                          = "binance.spot.tickers"
   ASYNQ_QUEUE_KLINES                           = "binance.spot.klines"
   ASYNQ_QUEUE_DEPTH                            = "binance.spot.depth"
@@ -80,6 +89,9 @@ const (
   LOCKS_TRADINGS_SCALPING_FLUSH                = "locks:binance:spot:tradings:scalping:flush:%v"
   LOCKS_TRADINGS_TRIGGERS_PLACE                = "locks:binance:spot:tradings:triggers:place:%v"
   LOCKS_TRADINGS_TRIGGERS_FLUSH                = "locks:binance:spot:tradings:triggers:flush:%v"
+  LOCKS_TRADINGS_GAMBLING_ANT_PLACE            = "locks:binance:spot:tradings:gambling:ant:place:%v"
+  LOCKS_TRADINGS_GAMBLING_ANT_TAKE             = "locks:binance:spot:tradings:gambling:ant:take:%v"
+  LOCKS_TRADINGS_GAMBLING_ANT_FLUSH            = "locks:binance:spot:tradings:gambling:ant:flush:%v"
   LOCKS_TASKS_SYMBOLS_FLUSH                    = "locks:binance:spot:tasks:symbols:flush"
   LOCKS_TASKS_KLINES_FLUSH                     = "locks:binance:spot:tasks:klines:flush:%v"
   LOCKS_TASKS_KLINES_FIX                       = "locks:binance:spot:tasks:klines:fix:%v"

@@ -18,13 +18,13 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/kuuy/go-tvscanner v0.0.1
 	github.com/markcheno/go-talib v0.0.0-20190307022042-cd53a9264d70
-	github.com/nats-io/nats.go v1.26.0
+	github.com/nats-io/nats.go v1.38.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/xid v1.4.0
 	github.com/satori/go.uuid v1.2.0
 	github.com/shopspring/decimal v1.3.1
 	github.com/tidwall/gjson v1.14.4
-	github.com/urfave/cli/v2 v2.5.1
+	github.com/urfave/cli/v2 v2.27.5
 	github.com/vchitai/go-socket.io/v4 v4.1.12
 	github.com/yanue/starkex v0.0.0-20230614033702-2d7a3a7e494e
 	golang.org/x/crypto v0.31.0
@@ -41,8 +41,8 @@ require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/andybalholm/cascadia v1.3.1 // indirect
 	github.com/btcsuite/btcd v0.21.0-beta // indirect
-	github.com/cespare/xxhash/v2 v2.2.0 // indirect
-	github.com/cpuguy83/go-md2man/v2 v2.0.1 // indirect
+	github.com/cespare/xxhash/v2 v2.3.0 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.6 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/ethereum/go-ethereum v1.10.16 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
@@ -59,16 +59,16 @@ require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.16.5 // indirect
+	github.com/klauspost/compress v1.17.11 // indirect
 	github.com/miguelmota/go-solidity-sha3 v0.1.1 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/nats-io/nats-server/v2 v2.9.17 // indirect
-	github.com/nats-io/nkeys v0.4.4 // indirect
+	github.com/nats-io/nkeys v0.4.9 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/redis/go-redis/v9 v9.0.2 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
-	github.com/sirupsen/logrus v1.7.0 // indirect
+	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
@@ -78,6 +78,7 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.4.0 // indirect
 	github.com/valyala/fastjson v1.4.1 // indirect
+	github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 // indirect
 	golang.org/x/net v0.21.0 // indirect
 	golang.org/x/sync v0.10.0 // indirect
 	golang.org/x/sys v0.28.0 // indirect

@@ -13,6 +13,7 @@ func NewTradingsCommand() *cli.Command {
       tradings.NewLaunchpadCommand(),
       tradings.NewTriggersCommand(),
       tradings.NewScalpingCommand(),
+      tradings.NewGamblingCommand(),
     },
   }
 }
