@@ -83,10 +83,10 @@ func (r *ScalpingRepository) Place(id string) (err error) {
   }
 
   if scalping.Side == 1 && price > entryPrice {
-    return errors.New(fmt.Sprintf("gambling scalping [%s] long price big than entry price", scalping.Symbol))
+    return errors.New(fmt.Sprintf("gambling scalping [%v] %v price big than entry price", scalping.Symbol, positionSide))
   }
   if scalping.Side == 2 && price < entryPrice {
-    return errors.New(fmt.Sprintf("gambling scalping [%s] short price small than entry price", scalping.Symbol))
+    return errors.New(fmt.Sprintf("gambling scalping [%v] %v price small than entry price", scalping.Symbol, positionSide))
   }
 
   var capital float64
@@ -124,7 +124,7 @@ func (r *ScalpingRepository) Place(id string) (err error) {
 
     capital, err = r.PositionRepository.Capital(scalping.Capital, entryAmount, places)
     if err != nil {
-      err = errors.New(fmt.Sprintf("scalping [%s] %s reach the max invest capital", scalping.Symbol, positionSide))
+      err = errors.New(fmt.Sprintf("scalping [%v] %v reach the max invest capital", scalping.Symbol, positionSide))
       return
     }
     ratio := r.PositionRepository.Ratio(capital, entryAmount)
@@ -178,23 +178,23 @@ func (r *ScalpingRepository) Place(id string) (err error) {
   }
 
   if scalping.Side == 1 && price > buyPrice {
-    return errors.New(fmt.Sprintf("gambling scalping [%s] %s price must reach %v", scalping.Symbol, positionSide, buyPrice))
+    return errors.New(fmt.Sprintf("gambling scalping [%v] %v price must reach %v", scalping.Symbol, positionSide, buyPrice))
   }
 
   if scalping.Side == 2 && price < buyPrice {
-    return errors.New(fmt.Sprintf("gambling scalping [%s] %s price must reach %v", scalping.Symbol, positionSide, buyPrice))
+    return errors.New(fmt.Sprintf("gambling scalping [%v] %v price must reach %v", scalping.Symbol, positionSide, buyPrice))
   }
 
   buyAmount, _ = decimal.NewFromFloat(buyQuantity).Mul(decimal.NewFromFloat(buyPrice)).Float64()
   if buyAmount < config.GAMBLING_SCALPING_MIN_AMOUNT {
-    return errors.New(fmt.Sprintf("gambling scalping [%s] %s amount must reach %v", scalping.Symbol, positionSide, config.GAMBLING_SCALPING_MIN_AMOUNT))
+    return errors.New(fmt.Sprintf("gambling scalping [%v] %v amount must reach %v", scalping.Symbol, positionSide, config.GAMBLING_SCALPING_MIN_AMOUNT))
   }
   if buyAmount > config.GAMBLING_SCALPING_MAX_AMOUNT {
-    return errors.New(fmt.Sprintf("gambling scalping [%s] %s amount can not exceed %v", scalping.Symbol, positionSide, config.GAMBLING_SCALPING_MAX_AMOUNT))
+    return errors.New(fmt.Sprintf("gambling scalping [%v] %v can not exceed %v", scalping.Symbol, positionSide, config.GAMBLING_SCALPING_MAX_AMOUNT))
   }
 
   if !r.CanBuy(scalping, buyPrice) {
-    return errors.New(fmt.Sprintf("gambling scalping [%s] %s can not buy now", scalping.Symbol, positionSide))
+    return errors.New(fmt.Sprintf("gambling scalping [%v] %v not buy now", scalping.Symbol, positionSide))
   }
 
   balance, err := r.AccountRepository.Balance(entity.QuoteAsset)

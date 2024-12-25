@@ -185,7 +185,7 @@ func (r *ScalpingRepository) Flush(id string) (err error) {
       if status == "FILLED" {
         if closeTrading.ID != "" && closeTrading.CreatedAt.Unix() < trading.CreatedAt.Unix() {
           err = r.Db.Transaction(func(tx *gorm.DB) (err error) {
-            result = r.Db.Model(&trading).Where("version", closeTrading.Version).Updates(map[string]interface{}{
+            result = r.Db.Model(&closeTrading).Where("version", closeTrading.Version).Updates(map[string]interface{}{
               "status":  5,
               "version": gorm.Expr("version + ?", 1),
             })
@@ -193,6 +193,7 @@ func (r *ScalpingRepository) Flush(id string) (err error) {
               return result.Error
             }
             if result.RowsAffected == 0 {
+              log.Println("trading", closeTrading.ID, closeTrading.Version)
               return errors.New("last trading close failed")
             }
             result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{

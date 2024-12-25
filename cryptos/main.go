@@ -24,10 +24,10 @@ func main() {
     Name:  "cryptos commands",
     Usage: "",
     Action: func(c *cli.Context) error {
-      if c.Command.Action == nil {
+      if c.Command.Args == false {
         cli.ShowAppHelp(c)
       } else {
-        log.Fatalln("error", c.Err)
+        log.Fatalln("error", c.Err())
       }
       return nil
     },
