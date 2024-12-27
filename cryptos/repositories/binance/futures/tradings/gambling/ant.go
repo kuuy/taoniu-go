@@ -168,6 +168,7 @@ func (r *AntRepository) Flush(id string) (err error) {
 
       if status == "FILLED" {
         err = r.Db.Transaction(func(tx *gorm.DB) (err error) {
+          placeQuantity, _ := decimal.NewFromFloat(ant.PlaceQuantity).Add(decimal.NewFromFloat(trading.Quantity)).Float64()
           result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
             "status":  1,
             "version": gorm.Expr("version + ?", 1),
@@ -179,7 +180,7 @@ func (r *AntRepository) Flush(id string) (err error) {
             return errors.New("trading update failed")
           }
           result = r.Db.Model(&ant).Where("version", ant.Version).Updates(map[string]interface{}{
-            "place_quantity": gorm.Expr("place_quantity + ?", trading.Quantity),
+            "place_quantity": placeQuantity,
             "version":        gorm.Expr("version + ?", 1),
           })
           if result.Error != nil {
@@ -257,6 +258,7 @@ func (r *AntRepository) Flush(id string) (err error) {
 
       if status == "FILLED" {
         err = r.Db.Transaction(func(tx *gorm.DB) (err error) {
+          takeQuantity, _ := decimal.NewFromFloat(ant.TakeQuantity).Add(decimal.NewFromFloat(trading.Quantity)).Float64()
           result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
             "status":  1,
             "version": gorm.Expr("version + ?", 1),
@@ -270,7 +272,7 @@ func (r *AntRepository) Flush(id string) (err error) {
           result = r.Db.Model(&ant).Where("version", ant.Version).Updates(map[string]interface{}{
             "take_prices":     datatypes.NewJSONSlice(ant.TakePrices[1:]),
             "take_quantities": datatypes.NewJSONSlice(ant.TakeQuantities[1:]),
-            "take_quantity":   gorm.Expr("take_quantity + ?", trading.Quantity),
+            "take_quantity":   takeQuantity,
             "version":         gorm.Expr("version + ?", 1),
           })
           if result.Error != nil {
