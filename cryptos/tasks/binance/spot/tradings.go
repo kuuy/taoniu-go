@@ -10,6 +10,7 @@ type TradingsTask struct {
   LaunchpadTask *tasks.LaunchpadTask
   TriggersTask  *tasks.TriggersTask
   ScalpingTask  *tasks.ScalpingTask
+  GamblingTask  *tasks.GamblingTask
 }
 
 func NewTradingsTask(ansqContext *common.AnsqClientContext) *TradingsTask {
@@ -37,4 +38,11 @@ func (t *TradingsTask) Triggers() *tasks.TriggersTask {
     t.TriggersTask = tasks.NewTriggersTask(t.AnsqContext)
   }
   return t.TriggersTask
+}
+
+func (t *TradingsTask) Gambling() *tasks.GamblingTask {
+  if t.GamblingTask == nil {
+    t.GamblingTask = tasks.NewGamblingTask(t.AnsqContext)
+  }
+  return t.GamblingTask
 }

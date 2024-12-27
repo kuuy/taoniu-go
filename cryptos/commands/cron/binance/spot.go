@@ -75,17 +75,13 @@ func (h *SpotHandler) run() error {
   c := cron.New()
   c.AddFunc("@every 5s", func() {
     binance.Spot().Tickers().Flush()
-    //binance.Spot().Tradings().Launchpad().Place()
     binance.Spot().Tradings().Scalping().Place()
-    //binance.Spot().Tradings().Triggers().Place()
-    //binance.Spot().Margin().Cross().Tradings().Triggers().Place()
+    binance.Spot().Tradings().Gambling().Ant().Place()
+    binance.Spot().Tradings().Gambling().Scalping().Place()
   })
   c.AddFunc("@every 15s", func() {
-    //binance.Spot().Tradings().Launchpad().Flush()
     binance.Spot().Tradings().Scalping().Flush()
-    //binance.Spot().Tradings().Triggers().Flush()
-    //binance.Spot().Margin().Cross().Tradings().Triggers().Flush()
-    //tradingview.Analysis().Flush()
+    binance.Spot().Tradings().Gambling().Ant().Flush()
   })
   c.AddFunc("@every 30s", func() {
     binance.Spot().Orders().Open()
