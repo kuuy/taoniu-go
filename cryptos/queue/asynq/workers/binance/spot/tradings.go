@@ -16,9 +16,9 @@ func NewTradings(ansqContext *common.AnsqServerContext) *Tradings {
 }
 
 func (h *Tradings) Register() error {
-  tradings.NewLaunchpad(h.AnsqContext).Register()
+  //tradings.NewLaunchpad(h.AnsqContext).Register()
   tradings.NewScalping(h.AnsqContext).Register()
-  tradings.NewTriggers(h.AnsqContext).Register()
+  //tradings.NewTriggers(h.AnsqContext).Register()
   tradings.NewGambling(h.AnsqContext).Register()
   return nil
 }

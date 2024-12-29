@@ -76,8 +76,8 @@ func (h *SpotHandler) run() error {
   c.AddFunc("@every 5s", func() {
     binance.Spot().Tickers().Flush()
     binance.Spot().Tradings().Scalping().Place()
-    binance.Spot().Tradings().Gambling().Ant().Place()
-    binance.Spot().Tradings().Gambling().Scalping().Place()
+    //binance.Spot().Tradings().Gambling().Ant().Place()
+    //binance.Spot().Tradings().Gambling().Scalping().Place()
   })
   c.AddFunc("@every 15s", func() {
     binance.Spot().Tradings().Scalping().Flush()

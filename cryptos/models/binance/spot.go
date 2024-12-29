@@ -28,6 +28,7 @@ func (m *Spot) AutoMigrate(db *gorm.DB) error {
   spot.NewPatterns().AutoMigrate(db)
   spot.NewTradings().AutoMigrate(db)
   spot.NewAnalysis().AutoMigrate(db)
+  spot.NewGambling().AutoMigrate(db)
 
   return nil
 }
