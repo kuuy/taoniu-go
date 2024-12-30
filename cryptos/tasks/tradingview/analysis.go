@@ -19,11 +19,11 @@ type AnalysisTask struct {
   Asynq              *asynq.Client
   Job                *jobs.Analysis
   Repository         *repositories.AnalysisRepository
-  TradingsRepository *spotRepositories.TradingsRepository
+  ScalpingRepository *spotRepositories.ScalpingRepository
 }
 
 func (t *AnalysisTask) Flush() error {
-  for _, symbol := range t.TradingsRepository.Scan() {
+  for _, symbol := range t.ScalpingRepository.Scan() {
     task, err := t.Job.Flush("BINANCE", symbol, "1m", false)
     if err != nil {
       return err

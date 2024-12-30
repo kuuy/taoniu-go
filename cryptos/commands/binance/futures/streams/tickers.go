@@ -22,7 +22,6 @@ import (
   config "taoniu.local/cryptos/config/binance/futures"
   jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/futures/streams"
   repositories "taoniu.local/cryptos/repositories/binance/futures"
-  tradingsRepositories "taoniu.local/cryptos/repositories/binance/futures/tradings"
 )
 
 type TickersHandler struct {
@@ -31,7 +30,7 @@ type TickersHandler struct {
   Socket             *websocket.Conn
   Nats               *nats.Conn
   TickersJob         *jobs.Tickers
-  TradingsRepository *repositories.TradingsRepository
+  ScalpingRepository *repositories.ScalpingRepository
 }
 
 func NewTickersCommand() *cli.Command {
@@ -46,13 +45,7 @@ func NewTickersCommand() *cli.Command {
         Nats:       common.NewNats(),
         TickersJob: &jobs.Tickers{},
       }
-      h.TradingsRepository = &repositories.TradingsRepository{
-        Db: h.Db,
-      }
-      h.TradingsRepository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
-        Db: h.Db,
-      }
-      h.TradingsRepository.TriggersRepository = &tradingsRepositories.TriggersRepository{
+      h.ScalpingRepository = &repositories.ScalpingRepository{
         Db: h.Db,
       }
       return nil
@@ -115,7 +108,7 @@ func (h *TickersHandler) handler(message map[string]interface{}) {
 func (h *TickersHandler) Start(current int) (err error) {
   log.Println("stream start")
 
-  symbols := h.Scan()
+  symbols := h.ScalpingRepository.Scan(2)
 
   offset := (current - 1) * 33
   if offset >= len(symbols) {
@@ -183,33 +176,10 @@ func (h *TickersHandler) Start(current int) (err error) {
         h.Socket.Close(websocket.StatusNormalClosure, "")
         return
       }
-      if len(symbols) != len(h.Scan()) {
-        h.Socket.Close(websocket.StatusNormalClosure, "")
-        return
-      }
     case <-h.Ctx.Done():
       return
     case <-quit:
       return
     }
   }
-}
-
-func (h *TickersHandler) Scan() []string {
-  var symbols []string
-  for _, symbol := range h.TradingsRepository.Scan() {
-    if !h.contains(symbols, symbol) {
-      symbols = append(symbols, symbol)
-    }
-  }
-  return symbols
-}
-
-func (h *TickersHandler) contains(s []string, str string) bool {
-  for _, v := range s {
-    if v == str {
-      return true
-    }
-  }
-  return false
 }

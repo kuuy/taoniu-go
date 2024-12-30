@@ -11,7 +11,6 @@ import (
 
   "taoniu.local/cryptos/common"
   repositories "taoniu.local/cryptos/repositories/binance/futures"
-  tradingsRepositories "taoniu.local/cryptos/repositories/binance/futures/tradings"
 )
 
 type DepthHandler struct {
@@ -20,7 +19,7 @@ type DepthHandler struct {
   Ctx                context.Context
   Repository         *repositories.DepthRepository
   SymbolsRepository  *repositories.SymbolsRepository
-  TradingsRepository *repositories.TradingsRepository
+  ScalpingRepository *repositories.ScalpingRepository
 }
 
 func NewDepthCommand() *cli.Command {
@@ -40,13 +39,7 @@ func NewDepthCommand() *cli.Command {
       h.SymbolsRepository = &repositories.SymbolsRepository{
         Db: h.Db,
       }
-      h.TradingsRepository = &repositories.TradingsRepository{
-        Db: h.Db,
-      }
-      h.TradingsRepository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
-        Db: h.Db,
-      }
-      h.TradingsRepository.TriggersRepository = &tradingsRepositories.TriggersRepository{
+      h.ScalpingRepository = &repositories.ScalpingRepository{
         Db: h.Db,
       }
       return nil
@@ -87,7 +80,7 @@ func (h *DepthHandler) Flush() error {
 
 func (h *DepthHandler) Scan() []string {
   var symbols []string
-  for _, symbol := range h.TradingsRepository.Scan() {
+  for _, symbol := range h.ScalpingRepository.Scan(2) {
     if !slices.Contains(symbols, symbol) {
       symbols = append(symbols, symbol)
     }

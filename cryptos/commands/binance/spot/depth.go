@@ -2,16 +2,13 @@ package spot
 
 import (
   "context"
-  "log"
-  "slices"
-
   "github.com/go-redis/redis/v8"
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
+  "log"
 
   "taoniu.local/cryptos/common"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
-  tradingsRepositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
 )
 
 type DepthHandler struct {
@@ -20,7 +17,7 @@ type DepthHandler struct {
   Ctx                context.Context
   Repository         *repositories.DepthRepository
   SymbolsRepository  *repositories.SymbolsRepository
-  TradingsRepository *repositories.TradingsRepository
+  ScalpingRepository *repositories.ScalpingRepository
 }
 
 func NewDepthCommand() *cli.Command {
@@ -40,13 +37,7 @@ func NewDepthCommand() *cli.Command {
       h.SymbolsRepository = &repositories.SymbolsRepository{
         Db: h.Db,
       }
-      h.TradingsRepository = &repositories.TradingsRepository{
-        Db: h.Db,
-      }
-      h.TradingsRepository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
-        Db: h.Db,
-      }
-      h.TradingsRepository.TriggersRepository = &tradingsRepositories.TriggersRepository{
+      h.ScalpingRepository = &repositories.ScalpingRepository{
         Db: h.Db,
       }
       return nil
@@ -78,7 +69,7 @@ func (h *DepthHandler) Flush(symbol string) error {
   log.Println("symbols depth flush...")
   var symbols []string
   if symbol == "" {
-    symbols = h.Scan()
+    symbols = h.ScalpingRepository.Scan()
   } else {
     symbols = append(symbols, symbol)
   }
@@ -89,14 +80,4 @@ func (h *DepthHandler) Flush(symbol string) error {
     }
   }
   return nil
-}
-
-func (h *DepthHandler) Scan() []string {
-  var symbols []string
-  for _, symbol := range h.TradingsRepository.Scan() {
-    if !slices.Contains(symbols, symbol) {
-      symbols = append(symbols, symbol)
-    }
-  }
-  return symbols
 }

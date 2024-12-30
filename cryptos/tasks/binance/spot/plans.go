@@ -9,14 +9,13 @@ import (
   config "taoniu.local/cryptos/config/binance/spot"
   jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/spot"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
-  tradingsRepositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
 )
 
 type PlansTask struct {
   AnsqContext        *common.AnsqClientContext
   Job                *jobs.Plans
   Repository         *repositories.PlansRepository
-  TradingsRepository *repositories.TradingsRepository
+  ScalpingRepository *repositories.ScalpingRepository
 }
 
 func NewPlansTask(ansqContext *common.AnsqClientContext) *PlansTask {
@@ -25,14 +24,8 @@ func NewPlansTask(ansqContext *common.AnsqClientContext) *PlansTask {
     Repository: &repositories.PlansRepository{
       Db: ansqContext.Db,
     },
-    TradingsRepository: &repositories.TradingsRepository{
+    ScalpingRepository: &repositories.ScalpingRepository{
       Db: ansqContext.Db,
-      ScalpingRepository: &tradingsRepositories.ScalpingRepository{
-        Db: ansqContext.Db,
-      },
-      TriggersRepository: &tradingsRepositories.TriggersRepository{
-        Db: ansqContext.Db,
-      },
     },
   }
 }
@@ -52,7 +45,7 @@ func (t *PlansTask) Flush(interval string) error {
 }
 
 func (t *PlansTask) Clean() error {
-  for _, symbol := range t.TradingsRepository.Scan() {
+  for _, symbol := range t.ScalpingRepository.Scan() {
     t.Repository.Clean(symbol)
   }
   return nil

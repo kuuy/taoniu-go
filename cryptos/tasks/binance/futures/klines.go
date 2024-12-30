@@ -9,14 +9,13 @@ import (
   config "taoniu.local/cryptos/config/binance/futures"
   jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/futures"
   repositories "taoniu.local/cryptos/repositories/binance/futures"
-  tradingsRepositories "taoniu.local/cryptos/repositories/binance/futures/tradings"
 )
 
 type KlinesTask struct {
   AnsqContext        *common.AnsqClientContext
   Job                *jobs.Klines
   Repository         *repositories.KlinesRepository
-  TradingsRepository *repositories.TradingsRepository
+  ScalpingRepository *repositories.ScalpingRepository
 }
 
 func NewKlinesTask(ansqContext *common.AnsqClientContext) *KlinesTask {
@@ -25,20 +24,14 @@ func NewKlinesTask(ansqContext *common.AnsqClientContext) *KlinesTask {
     Repository: &repositories.KlinesRepository{
       Db: ansqContext.Db,
     },
-    TradingsRepository: &repositories.TradingsRepository{
+    ScalpingRepository: &repositories.ScalpingRepository{
       Db: ansqContext.Db,
-      ScalpingRepository: &tradingsRepositories.ScalpingRepository{
-        Db: ansqContext.Db,
-      },
-      TriggersRepository: &tradingsRepositories.TriggersRepository{
-        Db: ansqContext.Db,
-      },
     },
   }
 }
 
 func (t *KlinesTask) Clean() error {
-  for _, symbol := range t.TradingsRepository.Scan() {
+  for _, symbol := range t.ScalpingRepository.Scan(2) {
     task, err := t.Job.Clean(symbol)
     if err != nil {
       return err

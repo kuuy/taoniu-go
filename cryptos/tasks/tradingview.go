@@ -9,7 +9,6 @@ import (
 
   jobs "taoniu.local/cryptos/queue/asynq/jobs/tradingview"
   spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
-  tradingsRepositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
   repositories "taoniu.local/cryptos/repositories/tradingview"
   tasks "taoniu.local/cryptos/tasks/tradingview"
 )
@@ -33,13 +32,7 @@ func (t *TradingviewTask) Analysis() *tasks.AnalysisTask {
     t.AnalysisTask.Repository = &repositories.AnalysisRepository{
       Db: t.Db,
     }
-    t.AnalysisTask.TradingsRepository = &spotRepositories.TradingsRepository{
-      Db: t.Db,
-    }
-    t.AnalysisTask.TradingsRepository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
-      Db: t.Db,
-    }
-    t.AnalysisTask.TradingsRepository.TriggersRepository = &tradingsRepositories.TriggersRepository{
+    t.AnalysisTask.ScalpingRepository = &spotRepositories.ScalpingRepository{
       Db: t.Db,
     }
     //t.AnalysisTask.CrossTradingsRepository = &crossRepositories.TradingsRepository{

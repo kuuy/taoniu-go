@@ -22,7 +22,6 @@ import (
   config "taoniu.local/cryptos/config/binance/spot"
   jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/spot/streams"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
-  tradingsRepositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
 )
 
 type KlinesHandler struct {
@@ -33,7 +32,7 @@ type KlinesHandler struct {
   Ctx                context.Context
   AnsqContext        *common.AnsqClientContext
   Job                *jobs.Klines
-  TradingsRepository *repositories.TradingsRepository
+  ScalpingRepository *repositories.ScalpingRepository
 }
 
 func NewKlinesCommand() *cli.Command {
@@ -54,13 +53,7 @@ func NewKlinesCommand() *cli.Command {
         Ctx:  h.Ctx,
         Conn: h.Asynq,
       }
-      h.TradingsRepository = &repositories.TradingsRepository{
-        Db: h.Db,
-      }
-      h.TradingsRepository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
-        Db: h.Db,
-      }
-      h.TradingsRepository.TriggersRepository = &tradingsRepositories.TriggersRepository{
+      h.ScalpingRepository = &repositories.ScalpingRepository{
         Db: h.Db,
       }
       return nil
@@ -154,7 +147,7 @@ func (h *KlinesHandler) handler(message map[string]interface{}) {
 func (h *KlinesHandler) Start(current int, interval string) (err error) {
   log.Println("stream start")
 
-  symbols := h.Scan()
+  symbols := h.ScalpingRepository.Scan()
 
   offset := (current - 1) * 33
   if offset >= len(symbols) {
@@ -217,10 +210,6 @@ func (h *KlinesHandler) Start(current int, interval string) (err error) {
   for {
     select {
     case <-ticker.C:
-      if len(symbols) != len(h.Scan()) {
-        h.Socket.Close(websocket.StatusNormalClosure, "")
-        return
-      }
       err = h.ping()
       if err != nil {
         h.Socket.Close(websocket.StatusNormalClosure, "")
@@ -232,14 +221,4 @@ func (h *KlinesHandler) Start(current int, interval string) (err error) {
       return
     }
   }
-}
-
-func (h *KlinesHandler) Scan() []string {
-  var symbols []string
-  for _, symbol := range h.TradingsRepository.Scan() {
-    if !slices.Contains(symbols, symbol) {
-      symbols = append(symbols, symbol)
-    }
-  }
-  return symbols
 }

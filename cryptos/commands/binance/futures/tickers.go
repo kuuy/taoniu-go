@@ -11,16 +11,14 @@ import (
 
   "taoniu.local/cryptos/common"
   repositories "taoniu.local/cryptos/repositories/binance/futures"
-  tradingsRepositories "taoniu.local/cryptos/repositories/binance/futures/tradings"
 )
 
 type TickersHandler struct {
-  Db                 *gorm.DB
-  Rdb                *redis.Client
-  Ctx                context.Context
-  Nats               *nats.Conn
-  Repository         *repositories.TickersRepository
-  TradingsRepository *repositories.TradingsRepository
+  Db         *gorm.DB
+  Rdb        *redis.Client
+  Ctx        context.Context
+  Nats       *nats.Conn
+  Repository *repositories.TickersRepository
 }
 
 func NewTickersCommand() *cli.Command {
@@ -38,15 +36,6 @@ func NewTickersCommand() *cli.Command {
       h.Repository = &repositories.TickersRepository{
         Rdb: h.Rdb,
         Ctx: h.Ctx,
-      }
-      h.TradingsRepository = &repositories.TradingsRepository{
-        Db: h.Db,
-      }
-      h.TradingsRepository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
-        Db: h.Db,
-      }
-      h.TradingsRepository.TriggersRepository = &tradingsRepositories.TriggersRepository{
-        Db: h.Db,
       }
       return nil
     },

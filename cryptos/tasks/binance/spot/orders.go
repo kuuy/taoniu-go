@@ -1,10 +1,10 @@
 package spot
 
 import (
-  "slices"
   "time"
 
   "github.com/hibiken/asynq"
+
   "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/spot"
   jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/spot"
@@ -36,15 +36,12 @@ func NewOrdersTask(ansqContext *common.AnsqClientContext) *OrdersTask {
       ScalpingRepository: &tradingsRepositories.ScalpingRepository{
         Db: ansqContext.Db,
       },
-      TriggersRepository: &tradingsRepositories.TriggersRepository{
-        Db: ansqContext.Db,
-      },
     },
   }
 }
 
 func (t *OrdersTask) Open() error {
-  symbols := t.Scan()
+  symbols := t.TradingsRepository.Scan()
   for _, symbol := range symbols {
     task, err := t.Job.Open(symbol)
     if err != nil {
@@ -78,7 +75,7 @@ func (t *OrdersTask) Flush() error {
 }
 
 func (t *OrdersTask) Sync(startTime int64, limit int) error {
-  symbols := t.Scan()
+  symbols := t.TradingsRepository.Scan()
   for _, symbol := range symbols {
     task, err := t.Job.Sync(symbol, startTime, limit)
     if err != nil {
@@ -97,14 +94,4 @@ func (t *OrdersTask) Sync(startTime int64, limit int) error {
 func (t *OrdersTask) Fix() error {
   t.Repository.Fix(time.Now().Add(-30*time.Minute), 20)
   return nil
-}
-
-func (t *OrdersTask) Scan() []string {
-  var symbols []string
-  for _, symbol := range t.TradingsRepository.Scan() {
-    if !slices.Contains(symbols, symbol) {
-      symbols = append(symbols, symbol)
-    }
-  }
-  return symbols
 }

@@ -36,15 +36,12 @@ func NewOrdersTask(ansqContext *common.AnsqClientContext) *OrdersTask {
       ScalpingRepository: &tradingsRepositories.ScalpingRepository{
         Db: ansqContext.Db,
       },
-      TriggersRepository: &tradingsRepositories.TriggersRepository{
-        Db: ansqContext.Db,
-      },
     },
   }
 }
 
 func (t *OrdersTask) Open() error {
-  for _, symbol := range t.TradingsRepository.Scan() {
+  for _, symbol := range t.TradingsRepository.Scan(2) {
     task, err := t.Job.Open(symbol)
     if err != nil {
       return err
@@ -77,7 +74,7 @@ func (t *OrdersTask) Flush() error {
 }
 
 func (t *OrdersTask) Sync(startTime int64, limit int) error {
-  for _, symbol := range t.TradingsRepository.Scan() {
+  for _, symbol := range t.TradingsRepository.Scan(2) {
     task, err := t.Job.Sync(symbol, startTime, limit)
     if err != nil {
       return err

@@ -14,7 +14,6 @@ import (
   "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/futures"
   repositories "taoniu.local/cryptos/repositories/binance/futures"
-  tradingsRepositories "taoniu.local/cryptos/repositories/binance/futures/tradings"
 )
 
 type KlinesHandler struct {
@@ -24,7 +23,7 @@ type KlinesHandler struct {
   Nats               *nats.Conn
   Repository         *repositories.KlinesRepository
   SymbolsRepository  *repositories.SymbolsRepository
-  TradingsRepository *repositories.TradingsRepository
+  ScalpingRepository *repositories.ScalpingRepository
 }
 
 func NewKlinesCommand() *cli.Command {
@@ -48,13 +47,7 @@ func NewKlinesCommand() *cli.Command {
       h.SymbolsRepository = &repositories.SymbolsRepository{
         Db: h.Db,
       }
-      h.TradingsRepository = &repositories.TradingsRepository{
-        Db: h.Db,
-      }
-      h.TradingsRepository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
-        Db: h.Db,
-      }
-      h.TradingsRepository.TriggersRepository = &tradingsRepositories.TriggersRepository{
+      h.ScalpingRepository = &repositories.ScalpingRepository{
         Db: h.Db,
       }
       return nil
@@ -96,7 +89,7 @@ func NewKlinesCommand() *cli.Command {
 
 func (h *KlinesHandler) Flush() error {
   log.Println("binance futures tasks klines flush...")
-  symbols := h.TradingsRepository.Scan()
+  symbols := h.ScalpingRepository.Scan(2)
   for _, symbol := range symbols {
     mutex := common.NewMutex(
       h.Rdb,
@@ -116,7 +109,7 @@ func (h *KlinesHandler) Flush() error {
 
 func (h *KlinesHandler) Fix() error {
   log.Println("binance futures tasks klines fix...")
-  symbols := h.TradingsRepository.Scan()
+  symbols := h.ScalpingRepository.Scan(2)
   for _, symbol := range symbols {
     mutex := common.NewMutex(
       h.Rdb,
@@ -136,7 +129,7 @@ func (h *KlinesHandler) Fix() error {
 
 func (h *KlinesHandler) Clean() error {
   log.Println("binance futures tasks klines clean...")
-  symbols := h.SymbolsRepository.Symbols()
+  symbols := h.ScalpingRepository.Scan(2)
   for _, symbol := range symbols {
     mutex := common.NewMutex(
       h.Rdb,

@@ -30,9 +30,6 @@ func NewPositionsTask(ansqContext *common.AnsqClientContext) *PositionsTask {
       ScalpingRepository: &tradingsRepositories.ScalpingRepository{
         Db: ansqContext.Db,
       },
-      TriggersRepository: &tradingsRepositories.TriggersRepository{
-        Db: ansqContext.Db,
-      },
     },
   }
 }

@@ -10,14 +10,13 @@ import (
   config "taoniu.local/cryptos/config/binance/spot"
   jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/spot"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
-  tradingsRepositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
 )
 
 type TickersTask struct {
   AnsqContext        *common.AnsqClientContext
   Job                *jobs.Tickers
   SymbolsRepository  *repositories.SymbolsRepository
-  TradingsRepository *repositories.TradingsRepository
+  ScalpingRepository *repositories.ScalpingRepository
 }
 
 func NewTickersTask(ansqContext *common.AnsqClientContext) *TickersTask {
@@ -26,20 +25,14 @@ func NewTickersTask(ansqContext *common.AnsqClientContext) *TickersTask {
     SymbolsRepository: &repositories.SymbolsRepository{
       Db: ansqContext.Db,
     },
-    TradingsRepository: &repositories.TradingsRepository{
+    ScalpingRepository: &repositories.ScalpingRepository{
       Db: ansqContext.Db,
-      ScalpingRepository: &tradingsRepositories.ScalpingRepository{
-        Db: ansqContext.Db,
-      },
-      TriggersRepository: &tradingsRepositories.TriggersRepository{
-        Db: ansqContext.Db,
-      },
     },
   }
 }
 
 func (t *TickersTask) Flush() error {
-  symbols := t.TradingsRepository.Scan()
+  symbols := t.ScalpingRepository.Scan()
   rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
   rnd.Shuffle(len(symbols), func(i, j int) { symbols[i], symbols[j] = symbols[j], symbols[i] })
   for i := 0; i < len(symbols); i += 20 {

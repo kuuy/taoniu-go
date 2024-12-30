@@ -60,9 +60,6 @@ func NewAccountCommand() *cli.Command {
       h.SpotTradingsRepository.ScalpingRepository = &spotTradingsRepositories.ScalpingRepository{
         Db: h.Db,
       }
-      h.SpotTradingsRepository.TriggersRepository = &spotTradingsRepositories.TriggersRepository{
-        Db: h.Db,
-      }
       //h.IsolatedAccountRepository = &isolatedRepositories.AccountRepository{}
       //h.IsolatedTradingsRepository = &isolatedRepositories.TradingsRepository{
       //  Db: h.Db,

@@ -30,9 +30,9 @@ type ScalpingRepository struct {
   PositionRepository PositionRepository
 }
 
-func (r *ScalpingRepository) Scan() []string {
+func (r *ScalpingRepository) Scan(side int) []string {
   var symbols []string
-  r.Db.Model(&futuresModels.Scalping{}).Select("symbol").Where("status", 1).Find(&symbols)
+  r.Db.Model(&futuresModels.Scalping{}).Select("symbol").Where("side = ? AND status = ?", side, 1).Find(&symbols)
   return symbols
 }
 
