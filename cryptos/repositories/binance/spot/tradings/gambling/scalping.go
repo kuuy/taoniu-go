@@ -9,7 +9,6 @@ import (
   "strconv"
   "time"
 
-  apiCommon "github.com/adshao/go-binance/v2/common"
   "github.com/go-redis/redis/v8"
   "github.com/rs/xid"
   "github.com/shopspring/decimal"
@@ -33,7 +32,7 @@ type ScalpingRepository struct {
 
 func (r *ScalpingRepository) Place(id string) (err error) {
   var scalping *models.Scalping
-  result := r.Db.First(&scalping, "id=?", id)
+  result := r.Db.Take(&scalping, "id", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     err = errors.New("scalping not found")
     return
@@ -186,9 +185,8 @@ func (r *ScalpingRepository) Place(id string) (err error) {
 
   orderId, err := r.OrdersRepository.Create(scalping.Symbol, side, buyPrice, buyQuantity)
   if err != nil {
-    _, ok := err.(apiCommon.APIError)
-    if ok {
-      return err
+    if common.IsBinanceAPIError(err) {
+      return
     }
     r.Db.Model(&scalping).Where("version", scalping.Version).Updates(map[string]interface{}{
       "remark":  err.Error(),

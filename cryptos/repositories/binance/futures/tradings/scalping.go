@@ -8,7 +8,6 @@ import (
   "strconv"
   "time"
 
-  apiCommon "github.com/adshao/go-binance/v2/common"
   "github.com/go-redis/redis/v8"
   "github.com/rs/xid"
   "github.com/shopspring/decimal"
@@ -95,7 +94,7 @@ func (r *ScalpingRepository) Listings(conditions map[string]interface{}, current
 
 func (r *ScalpingRepository) Flush(id string) (err error) {
   var scalping *models.Scalping
-  var result = r.Db.First(&scalping, "id=?", id)
+  var result = r.Db.Take(&scalping, "id", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     return errors.New("empty scalping to flush")
   }
@@ -510,8 +509,7 @@ func (r *ScalpingRepository) Place(planId string) (err error) {
 
   orderId, err := r.OrdersRepository.Create(scalping.Symbol, positionSide, side, buyPrice, buyQuantity)
   if err != nil {
-    _, ok := err.(apiCommon.APIError)
-    if ok {
+    if common.IsBinanceAPIError(err) {
       return
     }
     r.Db.Model(&scalping).Where("version", scalping.Version).Updates(map[string]interface{}{
@@ -658,8 +656,7 @@ func (r *ScalpingRepository) Take(scalping *models.Scalping, price float64) (err
 
   orderId, err := r.OrdersRepository.Create(trading.Symbol, positionSide, side, sellPrice, trading.SellQuantity)
   if err != nil {
-    _, ok := err.(apiCommon.APIError)
-    if ok {
+    if common.IsBinanceAPIError(err) {
       return
     }
     r.Db.Model(&scalping).Where("version", scalping.Version).Updates(map[string]interface{}{

@@ -87,7 +87,7 @@ func (r *TriggersRepository) Listings(conditions map[string]interface{}, current
 
 func (r *TriggersRepository) Place(id string) error {
   var trigger *dydxModels.Trigger
-  result := r.Db.First(&trigger, "id=?", id)
+  result := r.Db.Take(&trigger, "id", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     return errors.New("trigger empty")
   }
@@ -302,7 +302,7 @@ func (r *TriggersRepository) Place(id string) error {
 
 func (r *TriggersRepository) Flush(id string) error {
   var trigger *dydxModels.Trigger
-  result := r.Db.First(&trigger, "id=?", id)
+  result := r.Db.Take(&trigger, "id", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     return errors.New("trigger empty")
   }

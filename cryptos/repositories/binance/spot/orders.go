@@ -14,7 +14,6 @@ import (
   "encoding/pem"
   "errors"
   "fmt"
-  "log"
   "net"
   "net/http"
   "net/url"
@@ -23,11 +22,11 @@ import (
   "time"
 
   "github.com/adshao/go-binance/v2"
-  apiCommon "github.com/adshao/go-binance/v2/common"
   "github.com/go-redis/redis/v8"
   "github.com/rs/xid"
   "gorm.io/gorm"
 
+  "taoniu.local/cryptos/common"
   models "taoniu.local/cryptos/models/binance/spot"
 )
 
@@ -38,7 +37,7 @@ type OrdersRepository struct {
 }
 
 func (r *OrdersRepository) Find(id string) (order *models.Order, err error) {
-  err = r.Db.First(&order, "id=?", id).Error
+  err = r.Db.Take(&order, "id", id).Error
   return
 }
 
@@ -323,7 +322,7 @@ func (r *OrdersRepository) Create(
   defer resp.Body.Close()
 
   if resp.StatusCode >= http.StatusBadRequest {
-    apiErr := new(apiCommon.APIError)
+    var apiErr *common.BinanceAPIError
     err = json.NewDecoder(resp.Body).Decode(&apiErr)
     if err == nil {
       err = apiErr
@@ -342,17 +341,16 @@ func (r *OrdersRepository) Create(
     return
   }
 
-  var response binance.CreateOrderResponse
+  var response *binance.CreateOrderResponse
   err = json.NewDecoder(resp.Body).Decode(&response)
   if err != nil {
     return
   }
+  orderId = response.OrderID
 
-  log.Println("order place response", response)
+  r.Flush(symbol, orderId)
 
-  r.Flush(symbol, response.OrderID)
-
-  return response.OrderID, nil
+  return
 }
 
 func (r *OrdersRepository) Cancel(symbol string, orderId int64) (err error) {
@@ -403,10 +401,11 @@ func (r *OrdersRepository) Cancel(symbol string, orderId int64) (err error) {
   defer resp.Body.Close()
 
   if resp.StatusCode >= http.StatusBadRequest {
-    apiErr := new(apiCommon.APIError)
+    var apiErr *common.BinanceAPIError
     err = json.NewDecoder(resp.Body).Decode(&apiErr)
     if err == nil {
-      return apiErr
+      err = apiErr
+      return
     }
   }
 
@@ -421,7 +420,7 @@ func (r *OrdersRepository) Cancel(symbol string, orderId int64) (err error) {
     return
   }
 
-  var response binance.CancelOrderResponse
+  var response *binance.CancelOrderResponse
   err = json.NewDecoder(resp.Body).Decode(&response)
   if err != nil {
     return

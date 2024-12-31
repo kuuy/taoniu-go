@@ -23,11 +23,11 @@ import (
   "time"
 
   "github.com/adshao/go-binance/v2"
-  apiCommon "github.com/adshao/go-binance/v2/common"
   "github.com/go-redis/redis/v8"
   "github.com/rs/xid"
   "gorm.io/gorm"
 
+  "taoniu.local/cryptos/common"
   models "taoniu.local/cryptos/models/binance/margin/cross"
 )
 
@@ -39,7 +39,7 @@ type OrdersRepository struct {
 
 func (r *OrdersRepository) Find(id string) (*models.Order, error) {
   var entity *models.Order
-  result := r.Db.First(&entity, "id=?", id)
+  result := r.Db.Take(&entity, "id", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     return nil, result.Error
   }
@@ -235,7 +235,7 @@ func (r *OrdersRepository) Create(
   defer resp.Body.Close()
 
   if resp.StatusCode >= http.StatusBadRequest {
-    var apiErr *apiCommon.APIError
+    var apiErr *common.BinanceAPIError
     err = json.NewDecoder(resp.Body).Decode(&apiErr)
     if err == nil {
       err = apiErr
@@ -254,7 +254,7 @@ func (r *OrdersRepository) Create(
     return
   }
 
-  var response binance.CreateOrderResponse
+  var response *binance.CreateOrderResponse
   err = json.NewDecoder(resp.Body).Decode(&response)
   if err != nil {
     return
@@ -311,26 +311,24 @@ func (r *OrdersRepository) Cancel(symbol string, orderId int64) (err error) {
   defer resp.Body.Close()
 
   if resp.StatusCode >= http.StatusBadRequest {
-    var apiErr *apiCommon.APIError
+    var apiErr *common.BinanceAPIError
     err = json.NewDecoder(resp.Body).Decode(&apiErr)
     if err == nil {
-      err = apiErr
-      return
+      return apiErr
     }
   }
 
   if resp.StatusCode != http.StatusOK {
-    err = errors.New(
+    return errors.New(
       fmt.Sprintf(
         "request error: status[%s] code[%d]",
         resp.Status,
         resp.StatusCode,
       ),
     )
-    return
   }
 
-  var response binance.CancelMarginOrderResponse
+  var response *binance.CancelMarginOrderResponse
   err = json.NewDecoder(resp.Body).Decode(&response)
   if err != nil {
     return

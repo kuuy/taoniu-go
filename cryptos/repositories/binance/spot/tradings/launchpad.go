@@ -286,7 +286,7 @@ func (r *LaunchpadRepository) Sells(
 
 func (r *LaunchpadRepository) Flush(id string) error {
   var launchpad *models.Launchpad
-  var result = r.Db.First(&launchpad, "id=?", id)
+  var result = r.Db.Take(&launchpad, "id", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     return errors.New("launchpad empty")
   }

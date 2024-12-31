@@ -88,7 +88,7 @@ func (r *ScalpingRepository) Listings(conditions map[string]interface{}, current
 
 func (r *ScalpingRepository) Flush(id string) error {
   var scalping *dydxModels.Scalping
-  result := r.Db.First(&scalping, "id=?", id)
+  result := r.Db.Take(&scalping, "id", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     return errors.New("scalping empty")
   }
@@ -232,7 +232,7 @@ func (r *ScalpingRepository) Flush(id string) error {
 
 func (r *ScalpingRepository) Place(planID string) error {
   var plan *dydxModels.Plan
-  result := r.Db.First(&plan, "id=?", planID)
+  result := r.Db.Take(&plan, "id", planID)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     r.Db.Model(&dydxModels.ScalpingPlan{}).Where("plan_id", planID).Update("status", 10)
     return errors.New("plan empty")

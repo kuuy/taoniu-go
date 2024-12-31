@@ -23,7 +23,6 @@ import (
   "time"
 
   "github.com/adshao/go-binance/v2"
-  apiCommon "github.com/adshao/go-binance/v2/common"
   service "github.com/adshao/go-binance/v2/futures"
   "github.com/go-redis/redis/v8"
   "github.com/rs/xid"
@@ -41,7 +40,7 @@ type OrdersRepository struct {
 
 func (r *OrdersRepository) Find(id string) (*models.Order, error) {
   var entity *models.Order
-  result := r.Db.First(&entity, "id=?", id)
+  result := r.Db.Take(&entity, "id", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     return nil, result.Error
   }
@@ -376,10 +375,11 @@ func (r *OrdersRepository) Create(
   defer resp.Body.Close()
 
   if resp.StatusCode >= http.StatusBadRequest {
-    var apiErr apiCommon.APIError
+    var apiErr *common.BinanceAPIError
     err = json.NewDecoder(resp.Body).Decode(&apiErr)
     if err == nil {
-      return 0, apiErr
+      err = apiErr
+      return
     }
   }
 
@@ -394,15 +394,16 @@ func (r *OrdersRepository) Create(
     return
   }
 
-  var response binance.CreateOrderResponse
+  var response *binance.CreateOrderResponse
   err = json.NewDecoder(resp.Body).Decode(&response)
   if err != nil {
     return
   }
+  orderId = response.OrderID
 
-  r.Flush(symbol, response.OrderID)
+  r.Flush(symbol, orderId)
 
-  return response.OrderID, nil
+  return
 }
 
 func (r *OrdersRepository) Take(
@@ -497,10 +498,11 @@ func (r *OrdersRepository) Take(
   defer resp.Body.Close()
 
   if resp.StatusCode >= http.StatusBadRequest {
-    apiErr := new(apiCommon.APIError)
+    var apiErr *common.BinanceAPIError
     err = json.NewDecoder(resp.Body).Decode(&apiErr)
     if err == nil {
-      return 0, apiErr
+      err = apiErr
+      return
     }
   }
 
@@ -515,13 +517,14 @@ func (r *OrdersRepository) Take(
     return
   }
 
-  var response binance.CreateOrderResponse
+  var response *binance.CreateOrderResponse
   err = json.NewDecoder(resp.Body).Decode(&response)
   if err != nil {
     return
   }
+  orderId = response.OrderID
 
-  return response.OrderID, nil
+  return
 }
 
 func (r *OrdersRepository) Stop(
@@ -616,10 +619,11 @@ func (r *OrdersRepository) Stop(
   defer resp.Body.Close()
 
   if resp.StatusCode >= http.StatusBadRequest {
-    apiErr := new(apiCommon.APIError)
+    var apiErr *common.BinanceAPIError
     err = json.NewDecoder(resp.Body).Decode(&apiErr)
     if err == nil {
-      return 0, apiErr
+      err = apiErr
+      return
     }
   }
 
@@ -634,16 +638,17 @@ func (r *OrdersRepository) Stop(
     return
   }
 
-  var response binance.CreateOrderResponse
+  var response *binance.CreateOrderResponse
   err = json.NewDecoder(resp.Body).Decode(&response)
   if err != nil {
     return
   }
+  orderId = response.OrderID
 
-  return response.OrderID, nil
+  return
 }
 
-func (r *OrdersRepository) Cancel(symbol string, orderId int64) error {
+func (r *OrdersRepository) Cancel(symbol string, orderId int64) (err error) {
   tr := &http.Transport{
     DisableKeepAlives: true,
   }
@@ -712,37 +717,39 @@ func (r *OrdersRepository) Cancel(symbol string, orderId int64) error {
   req.Header.Set("X-MBX-APIKEY", apiKey)
   resp, err := httpClient.Do(req)
   if err != nil {
-    return err
+    return
   }
   defer resp.Body.Close()
 
   if resp.StatusCode >= http.StatusBadRequest {
-    apiErr := new(apiCommon.APIError)
+    var apiErr *common.BinanceAPIError
     err = json.NewDecoder(resp.Body).Decode(&apiErr)
     if err == nil {
-      return apiErr
+      err = apiErr
+      return
     }
   }
 
   if resp.StatusCode != http.StatusOK {
-    return errors.New(
+    err = errors.New(
       fmt.Sprintf(
         "request error: status[%s] code[%d]",
         resp.Status,
         resp.StatusCode,
       ),
     )
+    return
   }
 
-  var response binance.CancelOrderResponse
+  var response *binance.CancelOrderResponse
   err = json.NewDecoder(resp.Body).Decode(&response)
   if err != nil {
-    return err
+    return
   }
 
   r.Flush(symbol, orderId)
 
-  return nil
+  return
 }
 
 func (r *OrdersRepository) Flush(symbol string, orderId int64) (err error) {
@@ -817,7 +824,7 @@ func (r *OrdersRepository) Flush(symbol string, orderId int64) (err error) {
 
   r.Save(order)
 
-  return nil
+  return
 }
 
 func (r *OrdersRepository) Save(order *service.Order) error {

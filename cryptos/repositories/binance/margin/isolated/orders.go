@@ -23,11 +23,11 @@ import (
   "time"
 
   "github.com/adshao/go-binance/v2"
-  "github.com/adshao/go-binance/v2/common"
   "github.com/go-redis/redis/v8"
   "github.com/rs/xid"
   "gorm.io/gorm"
 
+  "taoniu.local/cryptos/common"
   models "taoniu.local/cryptos/models/binance/margin/isolated"
 )
 
@@ -37,13 +37,22 @@ type OrdersRepository struct {
   Ctx context.Context
 }
 
-func (r *OrdersRepository) Find(id string) (*models.Order, error) {
-  var entity *models.Order
-  result := r.Db.First(&entity, "id=?", id)
+func (r *OrdersRepository) Find(id string) (order *models.Order, err error) {
+  result := r.Db.Take(&order, "id", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    return nil, result.Error
+    err = result.Error
+    return
   }
-  return entity, nil
+  return
+}
+
+func (r *OrdersRepository) Get(symbol string, orderId int64) (order *models.Order, err error) {
+  result := r.Db.Take(&order, "symbol=? AND order_id=?", symbol, orderId)
+  if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+    err = result.Error
+    return
+  }
+  return
 }
 
 func (r *OrdersRepository) Gets(conditions map[string]interface{}) []*models.Order {
@@ -93,6 +102,16 @@ func (r *OrdersRepository) Listings(conditions map[string]interface{}, current i
   query.Order("created_at desc")
   query.Offset(offset).Limit(pageSize).Find(&orders)
   return orders
+}
+
+func (r *OrdersRepository) Update(order *models.Order, column string, value interface{}) (err error) {
+  r.Db.Model(&order).Update(column, value)
+  return nil
+}
+
+func (r *OrdersRepository) Updates(order *models.Order, values map[string]interface{}) (err error) {
+  err = r.Db.Model(&order).Updates(values).Error
+  return
 }
 
 func (r *OrdersRepository) Lost(symbol string, side string, quantity float64, timestamp int64) int64 {
@@ -230,10 +249,11 @@ func (r *OrdersRepository) Create(
   defer resp.Body.Close()
 
   if resp.StatusCode >= http.StatusBadRequest {
-    apiErr := new(common.APIError)
+    var apiErr *common.BinanceAPIError
     err = json.NewDecoder(resp.Body).Decode(&apiErr)
     if err == nil {
-      return 0, apiErr
+      err = apiErr
+      return
     }
   }
 
@@ -248,7 +268,7 @@ func (r *OrdersRepository) Create(
     return
   }
 
-  var response binance.CreateOrderResponse
+  var response *binance.CreateOrderResponse
   err = json.NewDecoder(resp.Body).Decode(&response)
   if err != nil {
     return
@@ -261,7 +281,7 @@ func (r *OrdersRepository) Create(
   return response.OrderID, nil
 }
 
-func (r *OrdersRepository) Cancel(symbol string, orderId int64) error {
+func (r *OrdersRepository) Cancel(symbol string, orderId int64) (err error) {
   tr := &http.Transport{
     DisableKeepAlives: true,
   }
@@ -284,7 +304,7 @@ func (r *OrdersRepository) Cancel(symbol string, orderId int64) error {
   block, _ := pem.Decode([]byte(os.Getenv("BINANCE_SPOT_TRADE_API_SECRET")))
   privateKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
   if err != nil {
-    return err
+    return
   }
   hashed := sha256.Sum256([]byte(payload))
   signature, _ := rsa.SignPKCS1v15(rand.Reader, privateKey.(*rsa.PrivateKey), crypto.SHA256, hashed[:])
@@ -300,12 +320,12 @@ func (r *OrdersRepository) Cancel(symbol string, orderId int64) error {
   req.Header.Set("X-MBX-APIKEY", os.Getenv("BINANCE_SPOT_TRADE_API_KEY"))
   resp, err := httpClient.Do(req)
   if err != nil {
-    return err
+    return
   }
   defer resp.Body.Close()
 
   if resp.StatusCode >= http.StatusBadRequest {
-    apiErr := new(common.APIError)
+    var apiErr *common.BinanceAPIError
     err = json.NewDecoder(resp.Body).Decode(&apiErr)
     if err == nil {
       return apiErr
@@ -322,15 +342,15 @@ func (r *OrdersRepository) Cancel(symbol string, orderId int64) error {
     )
   }
 
-  var response binance.CancelMarginOrderResponse
+  var response *binance.CancelMarginOrderResponse
   err = json.NewDecoder(resp.Body).Decode(&response)
   if err != nil {
-    return err
+    return
   }
 
   r.Flush(symbol, orderId)
 
-  return nil
+  return
 }
 
 func (r *OrdersRepository) Flush(symbol string, orderId int64) error {
@@ -436,7 +456,7 @@ func (r *OrdersRepository) Fix(time time.Time, limit int) error {
   return nil
 }
 
-func (r *OrdersRepository) Save(order *binance.Order) error {
+func (r *OrdersRepository) Save(order *binance.Order) (err error) {
   symbol := order.Symbol
   orderId := order.OrderID
 
@@ -445,14 +465,9 @@ func (r *OrdersRepository) Save(order *binance.Order) error {
   quantity, _ := strconv.ParseFloat(order.OrigQuantity, 64)
   executedQuantity, _ := strconv.ParseFloat(order.ExecutedQuantity, 64)
 
-  var entity models.Order
-  result := r.Db.Where(
-    "symbol=? AND order_id=?",
-    symbol,
-    orderId,
-  ).Take(&entity)
-  if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    entity = models.Order{
+  entity, _ := r.Get(symbol, orderId)
+  if entity == nil {
+    entity = &models.Order{
       ID:               xid.New().String(),
       Symbol:           symbol,
       OrderId:          orderId,
@@ -469,10 +484,11 @@ func (r *OrdersRepository) Save(order *binance.Order) error {
     }
     r.Db.Create(&entity)
   } else {
-    entity.ExecutedQuantity = executedQuantity
-    entity.UpdateTime = order.UpdateTime
-    entity.Status = string(order.Status)
-    r.Db.Model(&models.Order{ID: entity.ID}).Updates(entity)
+    r.Updates(entity, map[string]interface{}{
+      "executed_quantity": executedQuantity,
+      "update_time":       order.UpdateTime,
+      "status":            string(order.Status),
+    })
   }
 
   return nil

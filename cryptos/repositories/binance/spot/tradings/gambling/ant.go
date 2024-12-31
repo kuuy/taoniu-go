@@ -10,7 +10,6 @@ import (
   "strconv"
   "time"
 
-  apiCommon "github.com/adshao/go-binance/v2/common"
   "github.com/go-redis/redis/v8"
   "github.com/rs/xid"
   "github.com/shopspring/decimal"
@@ -84,7 +83,7 @@ func (r *AntRepository) Listings(conditions map[string]interface{}, current int,
 
 func (r *AntRepository) Flush(id string) (err error) {
   var ant *gamblingModels.Ant
-  var result = r.Db.First(&ant, "id=?", id)
+  var result = r.Db.Take(&ant, "id", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     return errors.New("empty gambling ant to flush")
   }
@@ -297,7 +296,7 @@ func (r *AntRepository) Flush(id string) (err error) {
 
 func (r *AntRepository) Place(id string) (err error) {
   var ant *gamblingModels.Ant
-  result := r.Db.First(&ant, "id=?", id)
+  result := r.Db.Take(&ant, "id", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     err = errors.New("gambling ant not found")
     return
@@ -468,8 +467,7 @@ func (r *AntRepository) Place(id string) (err error) {
 
   orderId, err := r.OrdersRepository.Create(ant.Symbol, side, buyPrice, buyQuantity)
   if err != nil {
-    _, ok := err.(apiCommon.APIError)
-    if ok {
+    if common.IsBinanceAPIError(err) {
       return
     }
     r.Db.Model(&ant).Where("version", ant.Version).Updates(map[string]interface{}{
@@ -639,9 +637,8 @@ func (r *AntRepository) Take(ant *gamblingModels.Ant, price float64) (err error)
 
   orderId, err := r.OrdersRepository.Create(ant.Symbol, side, sellPrice, sellQuantity)
   if err != nil {
-    _, ok := err.(apiCommon.APIError)
-    if ok {
-      return err
+    if common.IsBinanceAPIError(err) {
+      return
     }
     r.Db.Model(&ant).Where("version", ant.Version).Updates(map[string]interface{}{
       "remark":  err.Error(),

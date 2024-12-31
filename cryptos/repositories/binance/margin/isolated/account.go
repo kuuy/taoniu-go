@@ -188,7 +188,7 @@ func (r *AccountRepository) Transfer(
   from string,
   to string,
   quantity float64,
-) (int64, error) {
+) (transferId int64, err error) {
   tr := &http.Transport{
     DisableKeepAlives: true,
   }
@@ -230,7 +230,7 @@ func (r *AccountRepository) Transfer(
   req.Header.Set("X-MBX-APIKEY", os.Getenv("BINANCE_FUND_API_KEY"))
   resp, err := httpClient.Do(req)
   if err != nil {
-    return 0, err
+    return
   }
   defer resp.Body.Close()
 
@@ -238,7 +238,8 @@ func (r *AccountRepository) Transfer(
     apiErr := new(common.APIError)
     err = json.NewDecoder(resp.Body).Decode(&apiErr)
     if err == nil {
-      return 0, apiErr
+      err = apiErr
+      return
     }
   }
 
@@ -250,15 +251,17 @@ func (r *AccountRepository) Transfer(
         resp.StatusCode,
       ),
     )
-    return 0, err
+    return
   }
 
-  var response binance.TransactionResponse
+  var response *binance.TransactionResponse
   err = json.NewDecoder(resp.Body).Decode(&response)
   if err != nil {
-    return 0, err
+    return
   }
-  return response.TranID, nil
+  transferId = response.TranID
+
+  return
 }
 
 func (r *AccountRepository) Loan(
@@ -266,7 +269,7 @@ func (r *AccountRepository) Loan(
   symbol string,
   amount float64,
   isIsolated bool,
-) (int64, error) {
+) (transactionId int64, err error) {
   tr := &http.Transport{
     DisableKeepAlives: true,
   }
@@ -293,7 +296,7 @@ func (r *AccountRepository) Loan(
   block, _ := pem.Decode([]byte(os.Getenv("BINANCE_FUND_API_SECRET")))
   privateKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
   if err != nil {
-    return 0, err
+    return
   }
   hashed := sha256.Sum256([]byte(payload))
   signature, _ := rsa.SignPKCS1v15(rand.Reader, privateKey.(*rsa.PrivateKey), crypto.SHA256, hashed[:])
@@ -309,7 +312,7 @@ func (r *AccountRepository) Loan(
   req.Header.Set("X-MBX-APIKEY", os.Getenv("BINANCE_FUND_API_KEY"))
   resp, err := httpClient.Do(req)
   if err != nil {
-    return 0, err
+    return
   }
   defer resp.Body.Close()
 
@@ -317,7 +320,8 @@ func (r *AccountRepository) Loan(
     apiErr := new(common.APIError)
     err = json.NewDecoder(resp.Body).Decode(&apiErr)
     if err == nil {
-      return 0, apiErr
+      err = apiErr
+      return
     }
   }
 
@@ -329,15 +333,17 @@ func (r *AccountRepository) Loan(
         resp.StatusCode,
       ),
     )
-    return 0, err
+    return
   }
 
-  var response binance.TransactionResponse
+  var response *binance.TransactionResponse
   err = json.NewDecoder(resp.Body).Decode(&response)
   if err != nil {
-    return 0, err
+    return
   }
-  return response.TranID, nil
+  transactionId = response.TranID
+
+  return
 }
 
 func (r *AccountRepository) Repay(
@@ -411,7 +417,7 @@ func (r *AccountRepository) Repay(
     return 0, err
   }
 
-  var response binance.TransactionResponse
+  var response *binance.TransactionResponse
   err = json.NewDecoder(resp.Body).Decode(&response)
   if err != nil {
     return 0, err

@@ -9,7 +9,6 @@ import (
   "strconv"
   "time"
 
-  apiCommon "github.com/adshao/go-binance/v2/common"
   "github.com/go-redis/redis/v8"
   "github.com/rs/xid"
   "github.com/shopspring/decimal"
@@ -95,7 +94,7 @@ func (r *TriggersRepository) Listings(conditions map[string]interface{}, current
 
 func (r *TriggersRepository) Place(id string) (err error) {
   var trigger *models.Trigger
-  result := r.Db.First(&trigger, "id=?", id)
+  result := r.Db.Take(&trigger, "id", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     err = errors.New("trigger not found")
     return
@@ -298,8 +297,7 @@ func (r *TriggersRepository) Place(id string) (err error) {
     var transferId int64
     transferId, err = r.AccountRepository.Borrow(entity.QuoteAsset, buyAmount)
     if err != nil {
-      if _, ok := err.(apiCommon.APIError); ok {
-        mutex.Unlock()
+      if common.IsBinanceAPIError(err) {
         return
       }
       log.Println("error", err)
@@ -320,7 +318,7 @@ func (r *TriggersRepository) Place(id string) (err error) {
 
   orderId, err := r.OrdersRepository.Create(trigger.Symbol, side, buyPrice, buyQuantity)
   if err != nil {
-    if _, ok := err.(apiCommon.APIError); ok {
+    if common.IsBinanceAPIError(err) {
       return
     }
     r.Db.Model(&trigger).Where("version", trigger.Version).Updates(map[string]interface{}{
@@ -349,7 +347,7 @@ func (r *TriggersRepository) Place(id string) (err error) {
 
 func (r *TriggersRepository) Flush(id string) (err error) {
   var trigger *models.Trigger
-  result := r.Db.First(&trigger, "id=?", id)
+  result := r.Db.Take(&trigger, "id", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     err = errors.New("trigger not found")
     return
@@ -532,7 +530,7 @@ func (r *TriggersRepository) Flush(id string) (err error) {
   return
 }
 
-func (r *TriggersRepository) Take(trigger *models.Trigger, price float64) error {
+func (r *TriggersRepository) Take(trigger *models.Trigger, price float64) (err error) {
   var positionSide string
   var side string
 
@@ -546,7 +544,7 @@ func (r *TriggersRepository) Take(trigger *models.Trigger, price float64) error 
 
   position, err := r.PositionRepository.Get(trigger.Symbol, trigger.Side)
   if err != nil {
-    return err
+    return
   }
 
   if position.EntryQuantity == 0 {
@@ -567,12 +565,12 @@ func (r *TriggersRepository) Take(trigger *models.Trigger, price float64) error 
 
   entity, err := r.SymbolsRepository.Get(trigger.Symbol)
   if err != nil {
-    return err
+    return
   }
 
   tickSize, _, _, err := r.SymbolsRepository.Filters(entity.Filters)
   if err != nil {
-    return nil
+    return
   }
 
   entryPrice := position.EntryPrice
@@ -642,9 +640,8 @@ func (r *TriggersRepository) Take(trigger *models.Trigger, price float64) error 
 
   orderId, err := r.OrdersRepository.Create(trading.Symbol, side, sellPrice, trading.SellQuantity)
   if err != nil {
-    _, ok := err.(apiCommon.APIError)
-    if ok {
-      return err
+    if common.IsBinanceAPIError(err) {
+      return
     }
     r.Db.Model(&trigger).Where("version", trigger.Version).Updates(map[string]interface{}{
       "remark":  err.Error(),
@@ -658,7 +655,7 @@ func (r *TriggersRepository) Take(trigger *models.Trigger, price float64) error 
     "version":       gorm.Expr("version + ?", 1),
   })
 
-  return nil
+  return
 }
 
 func (r *TriggersRepository) Close(trigger *models.Trigger) {

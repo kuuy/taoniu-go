@@ -1,6 +1,8 @@
 package spot
 
-import savingsModels "taoniu.local/cryptos/models/binance/savings"
+import (
+  savingsModels "taoniu.local/cryptos/models/binance/savings"
+)
 
 type Balance struct {
   Asset  string `json:"asset"`

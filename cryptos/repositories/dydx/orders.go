@@ -67,7 +67,7 @@ type CreateOrderParams struct {
 
 func (r *OrdersRepository) Find(id string) (*models.Order, error) {
   var entity *models.Order
-  result := r.Db.First(&entity, "id=?", id)
+  result := r.Db.Take(&entity, "id", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     return nil, result.Error
   }

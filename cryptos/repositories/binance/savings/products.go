@@ -21,10 +21,10 @@ import (
   "time"
 
   "github.com/adshao/go-binance/v2"
-  "github.com/adshao/go-binance/v2/common"
   "github.com/rs/xid"
   "gorm.io/gorm"
 
+  "taoniu.local/cryptos/common"
   models "taoniu.local/cryptos/models/binance/savings"
 )
 
@@ -67,7 +67,7 @@ func (r *ProductsRepository) Get(asset string) (models.FlexibleProduct, error) {
   return entity, nil
 }
 
-func (r *ProductsRepository) Purchase(productId string, amount float64) (int64, error) {
+func (r *ProductsRepository) Purchase(productId string, amount float64) (purchaseId int64, err error) {
   tr := &http.Transport{
     DisableKeepAlives: true,
   }
@@ -90,7 +90,7 @@ func (r *ProductsRepository) Purchase(productId string, amount float64) (int64, 
   block, _ := pem.Decode([]byte(os.Getenv("BINANCE_FUND_API_SECRET")))
   privateKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
   if err != nil {
-    return 0, err
+    return
   }
   hashed := sha256.Sum256([]byte(payload))
   signature, _ := rsa.SignPKCS1v15(rand.Reader, privateKey.(*rsa.PrivateKey), crypto.SHA256, hashed[:])
@@ -106,15 +106,16 @@ func (r *ProductsRepository) Purchase(productId string, amount float64) (int64, 
   req.Header.Set("X-MBX-APIKEY", os.Getenv("BINANCE_FUND_API_KEY"))
   resp, err := httpClient.Do(req)
   if err != nil {
-    return 0, err
+    return
   }
   defer resp.Body.Close()
 
   if resp.StatusCode >= http.StatusBadRequest {
-    apiErr := new(common.APIError)
+    var apiErr *common.BinanceAPIError
     err = json.NewDecoder(resp.Body).Decode(&apiErr)
     if err == nil {
-      return 0, apiErr
+      err = apiErr
+      return
     }
   }
 
@@ -126,15 +127,17 @@ func (r *ProductsRepository) Purchase(productId string, amount float64) (int64, 
         resp.StatusCode,
       ),
     )
-    return 0, err
+    return
   }
 
-  var response binance.PurchaseSavingsFlexibleProductResponse
+  var response *binance.PurchaseSavingsFlexibleProductResponse
   err = json.NewDecoder(resp.Body).Decode(&response)
   if err != nil {
-    return 0, err
+    return
   }
-  return int64(response.PurchaseId), nil
+  purchaseId = int64(response.PurchaseId)
+
+  return
 }
 
 func (r *ProductsRepository) Save(product *binance.SavingsFlexibleProduct) error {

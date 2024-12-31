@@ -25,10 +25,10 @@ import (
   "time"
 
   "github.com/adshao/go-binance/v2"
-  apiCommon "github.com/adshao/go-binance/v2/common"
   "github.com/go-redis/redis/v8"
   "github.com/nats-io/nats.go"
   "gorm.io/gorm"
+  "taoniu.local/cryptos/common"
 )
 
 type AccountRepository struct {
@@ -209,7 +209,7 @@ func (r *AccountRepository) Transfer(asset string, side int, quantity float64) (
   defer resp.Body.Close()
 
   if resp.StatusCode >= http.StatusBadRequest {
-    var apiErr *apiCommon.APIError
+    var apiErr *common.BinanceAPIError
     err = json.NewDecoder(resp.Body).Decode(&apiErr)
     if err == nil {
       err = apiErr
@@ -228,7 +228,7 @@ func (r *AccountRepository) Transfer(asset string, side int, quantity float64) (
     return
   }
 
-  var response binance.TransactionResponse
+  var response *binance.TransactionResponse
   err = json.NewDecoder(resp.Body).Decode(&response)
   if err != nil {
     return
@@ -283,7 +283,7 @@ func (r *AccountRepository) Borrow(asset string, amount float64) (transferId int
   defer resp.Body.Close()
 
   if resp.StatusCode >= http.StatusBadRequest {
-    var apiErr *apiCommon.APIError
+    var apiErr *common.BinanceAPIError
     err = json.NewDecoder(resp.Body).Decode(&apiErr)
     if err == nil {
       err = apiErr
@@ -302,7 +302,7 @@ func (r *AccountRepository) Borrow(asset string, amount float64) (transferId int
     return
   }
 
-  var response binance.TransactionResponse
+  var response *binance.TransactionResponse
   err = json.NewDecoder(resp.Body).Decode(&response)
   if err != nil {
     return

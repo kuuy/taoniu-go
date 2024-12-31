@@ -15,11 +15,11 @@ import (
   "strconv"
   "time"
 
-  apiCommon "github.com/adshao/go-binance/v2/common"
   "github.com/go-redis/redis/v8"
   "github.com/nats-io/nats.go"
   "gorm.io/gorm"
 
+  "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/spot"
 )
 
@@ -127,7 +127,7 @@ func (r *AccountRepository) Request() (result *AccountInfo, err error) {
   defer resp.Body.Close()
 
   if resp.StatusCode >= http.StatusBadRequest {
-    var apiErr *apiCommon.APIError
+    var apiErr *common.BinanceAPIError
     err = json.NewDecoder(resp.Body).Decode(&apiErr)
     if err == nil {
       err = apiErr

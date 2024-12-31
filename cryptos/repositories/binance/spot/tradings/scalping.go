@@ -8,7 +8,6 @@ import (
   "strconv"
   "time"
 
-  apiCommon "github.com/adshao/go-binance/v2/common"
   "github.com/go-redis/redis/v8"
   "github.com/rs/xid"
   "github.com/shopspring/decimal"
@@ -268,7 +267,7 @@ func (r *ScalpingRepository) Place(planId string) (err error) {
 
   orderId, err := r.OrdersRepository.Create(scalping.Symbol, side, buyPrice, buyQuantity)
   if err != nil {
-    if _, ok := err.(apiCommon.APIError); ok {
+    if common.IsBinanceAPIError(err) {
       return
     }
     r.Db.Model(&scalping).Where("version", scalping.Version).Updates(map[string]interface{}{
@@ -596,8 +595,7 @@ func (r *ScalpingRepository) Take(scalping *models.Scalping, price float64) (err
 
   orderId, err := r.OrdersRepository.Create(trading.Symbol, side, sellPrice, trading.SellQuantity)
   if err != nil {
-    _, ok := err.(apiCommon.APIError)
-    if ok {
+    if common.IsBinanceAPIError(err) {
       return
     }
     r.Db.Model(&scalping).Where("version", scalping.Version).Updates(map[string]interface{}{

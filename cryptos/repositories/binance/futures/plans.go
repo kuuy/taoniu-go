@@ -39,7 +39,7 @@ func (r *PlansRepository) Scan() []string {
 
 func (r *PlansRepository) Find(id string) (*models.Plan, error) {
   var entity *models.Plan
-  result := r.Db.First(&entity, "id=?", id)
+  result := r.Db.Take(&entity, "id", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     return nil, result.Error
   }
