@@ -502,8 +502,8 @@ func (r *OrdersRepository) Save(order *binance.Order) error {
   quantity, _ := strconv.ParseFloat(order.OrigQuantity, 64)
   executedQuantity, _ := strconv.ParseFloat(order.ExecutedQuantity, 64)
 
-  entity, _ := r.Get(symbol, orderId)
-  if entity == nil {
+  entity, err := r.Get(symbol, orderId)
+  if errors.Is(err, gorm.ErrRecordNotFound) {
     entity = &models.Order{
       ID:               xid.New().String(),
       Symbol:           symbol,
