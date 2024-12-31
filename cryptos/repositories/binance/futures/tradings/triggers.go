@@ -357,7 +357,7 @@ func (r *TriggersRepository) Flush(id string) (err error) {
   r.Db.Where("trigger_id=? AND status IN ?", trigger.ID, []int{0, 2}).Find(&tradings)
 
   timestamp := time.Now().Add(-15 * time.Minute).Unix()
-
+  redisKey := fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, trigger.Symbol)
   for _, trading := range tradings {
     if trading.Status == 0 {
       status := r.OrdersRepository.Status(trading.Symbol, trading.BuyOrderId)
@@ -387,7 +387,7 @@ func (r *TriggersRepository) Flush(id string) (err error) {
             if result.RowsAffected == 0 {
               return errors.New("order update failed")
             }
-            r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, trigger.Symbol))
+            r.Rdb.Del(r.Ctx, redisKey)
           }
         }
       } else {
@@ -416,7 +416,7 @@ func (r *TriggersRepository) Flush(id string) (err error) {
         if result.RowsAffected == 0 {
           return errors.New("order update failed")
         }
-        r.Rdb.Set(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, trigger.Symbol), trading.BuyPrice, -1)
+        r.Rdb.Set(r.Ctx, redisKey, trading.BuyPrice, time.Hour*24)
       } else if status == "CANCELED" {
         result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
           "status":  4,
@@ -428,7 +428,7 @@ func (r *TriggersRepository) Flush(id string) (err error) {
         if result.RowsAffected == 0 {
           return errors.New("order update failed")
         }
-        r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, trigger.Symbol))
+        r.Rdb.Del(r.Ctx, redisKey)
       }
     }
 
@@ -488,7 +488,7 @@ func (r *TriggersRepository) Flush(id string) (err error) {
         if result.RowsAffected == 0 {
           return errors.New("order update failed")
         }
-        r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, trigger.Symbol))
+        r.Rdb.Del(r.Ctx, redisKey)
       } else if status == "CANCELED" {
         result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
           "sell_order_id": 0,
@@ -525,6 +525,7 @@ func (r *TriggersRepository) Take(trigger *models.Trigger, price float64) (err e
     return err
   }
 
+  redisKey := fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, trigger.Symbol)
   if position.EntryQuantity == 0 {
     timestamp := time.Now().Add(-15 * time.Minute).UnixMicro()
     if position.Timestamp > timestamp {
@@ -532,7 +533,7 @@ func (r *TriggersRepository) Take(trigger *models.Trigger, price float64) (err e
     }
     if position.Timestamp > trigger.Timestamp {
       r.Close(trigger)
-      r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, trigger.Symbol))
+      r.Rdb.Del(r.Ctx, redisKey)
     }
     return errors.New(fmt.Sprintf("[%s] %s empty position", trigger.Symbol, positionSide))
   }
@@ -665,7 +666,9 @@ func (r *TriggersRepository) CanBuy(trigger *models.Trigger, price float64) bool
   } else if trigger.Side == 2 {
     positionSide = "SHORT"
   }
-  val, _ := r.Rdb.Get(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, trigger.Symbol)).Result()
+
+  redisKey := fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, trigger.Symbol)
+  val, _ := r.Rdb.Get(r.Ctx, redisKey).Result()
   if val != "" {
     buyPrice, _ = strconv.ParseFloat(val, 64)
     if trigger.Side == 1 && price >= buyPrice*0.9615 {
@@ -706,7 +709,7 @@ func (r *TriggersRepository) CanBuy(trigger *models.Trigger, price float64) bool
   }
 
   if isChange {
-    r.Rdb.Set(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, trigger.Symbol), buyPrice, -1)
+    r.Rdb.Set(r.Ctx, redisKey, buyPrice, time.Hour*24)
   }
 
   return true
