@@ -521,7 +521,7 @@ func (r *OrdersRepository) Save(order *binance.Order) error {
     }
     r.Db.Create(&entity)
   } else {
-    var values map[string]interface{}
+    values := map[string]interface{}{}
     if entity.ExecutedQuantity != executedQuantity {
       values["executed_quantity"] = executedQuantity
     }

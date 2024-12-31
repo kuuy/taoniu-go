@@ -877,7 +877,7 @@ func (r *OrdersRepository) Save(order *service.Order) error {
     }
     r.Db.Create(&entity)
   } else {
-    var values map[string]interface{}
+    values := map[string]interface{}{}
     if entity.AvgPrice != avgPrice {
       values["avg_price"] = avgPrice
     }
