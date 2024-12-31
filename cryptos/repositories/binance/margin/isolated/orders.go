@@ -70,6 +70,16 @@ func (r *OrdersRepository) Gets(conditions map[string]interface{}) []*models.Ord
   return positions
 }
 
+func (r *OrdersRepository) Update(order *models.Order, column string, value interface{}) (err error) {
+  r.Db.Model(&order).Update(column, value)
+  return nil
+}
+
+func (r *OrdersRepository) Updates(order *models.Order, values map[string]interface{}) (err error) {
+  err = r.Db.Model(&order).Updates(values).Error
+  return
+}
+
 func (r *OrdersRepository) Count(conditions map[string]interface{}) int64 {
   var total int64
   query := r.Db.Model(&models.Order{})
@@ -102,16 +112,6 @@ func (r *OrdersRepository) Listings(conditions map[string]interface{}, current i
   query.Order("created_at desc")
   query.Offset(offset).Limit(pageSize).Find(&orders)
   return orders
-}
-
-func (r *OrdersRepository) Update(order *models.Order, column string, value interface{}) (err error) {
-  r.Db.Model(&order).Update(column, value)
-  return nil
-}
-
-func (r *OrdersRepository) Updates(order *models.Order, values map[string]interface{}) (err error) {
-  err = r.Db.Model(&order).Updates(values).Error
-  return
 }
 
 func (r *OrdersRepository) Lost(symbol string, side string, quantity float64, timestamp int64) int64 {
@@ -484,11 +484,19 @@ func (r *OrdersRepository) Save(order *binance.Order) (err error) {
     }
     r.Db.Create(&entity)
   } else {
-    r.Updates(entity, map[string]interface{}{
-      "executed_quantity": executedQuantity,
-      "update_time":       order.UpdateTime,
-      "status":            string(order.Status),
-    })
+    var values map[string]interface{}
+    if entity.ExecutedQuantity != executedQuantity {
+      values["executed_quantity"] = executedQuantity
+    }
+    if entity.UpdateTime != order.UpdateTime {
+      values["update_time"] = order.UpdateTime
+    }
+    if entity.Status != fmt.Sprintf("%v", order.Status) {
+      values["status"] = fmt.Sprintf("%v", order.Status)
+    }
+    if len(values) > 0 {
+      r.Updates(entity, values)
+    }
   }
 
   return nil

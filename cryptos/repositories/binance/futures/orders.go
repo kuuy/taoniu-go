@@ -38,13 +38,22 @@ type OrdersRepository struct {
   Ctx context.Context
 }
 
-func (r *OrdersRepository) Find(id string) (*models.Order, error) {
-  var entity *models.Order
-  result := r.Db.Take(&entity, "id", id)
+func (r *OrdersRepository) Find(id string) (order *models.Order, err error) {
+  result := r.Db.Take(&order, "id", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    return nil, result.Error
+    err = result.Error
+    return
   }
-  return entity, nil
+  return
+}
+
+func (r *OrdersRepository) Get(symbol string, orderId int64) (order *models.Order, err error) {
+  result := r.Db.Take(&order, "symbol=? AND order_id=?", symbol, orderId)
+  if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+    err = result.Error
+    return
+  }
+  return
 }
 
 func (r *OrdersRepository) Gets(conditions map[string]interface{}) []*models.Order {
@@ -60,6 +69,16 @@ func (r *OrdersRepository) Gets(conditions map[string]interface{}) []*models.Ord
   }
   query.Find(&positions)
   return positions
+}
+
+func (r *OrdersRepository) Update(order *models.Order, column string, value interface{}) (err error) {
+  r.Db.Model(&order).Update(column, value)
+  return nil
+}
+
+func (r *OrdersRepository) Updates(order *models.Order, values map[string]interface{}) (err error) {
+  err = r.Db.Model(&order).Updates(values).Error
+  return
 }
 
 func (r *OrdersRepository) Count(conditions map[string]interface{}) int64 {
@@ -837,14 +856,9 @@ func (r *OrdersRepository) Save(order *service.Order) error {
   quantity, _ := strconv.ParseFloat(order.OrigQuantity, 64)
   executedQuantity, _ := strconv.ParseFloat(order.ExecutedQuantity, 64)
 
-  var entity models.Order
-  result := r.Db.Where(
-    "symbol=? AND order_id=?",
-    symbol,
-    orderId,
-  ).Take(&entity)
-  if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    entity = models.Order{
+  entity, _ := r.Get(symbol, orderId)
+  if entity == nil {
+    entity = &models.Order{
       ID:               xid.New().String(),
       Symbol:           symbol,
       OrderId:          orderId,
@@ -863,12 +877,21 @@ func (r *OrdersRepository) Save(order *service.Order) error {
     }
     r.Db.Create(&entity)
   } else {
-    if entity.AvgPrice != avgPrice || entity.ExecutedQuantity != executedQuantity || entity.UpdateTime != order.UpdateTime || entity.Status != string(order.Status) {
-      entity.AvgPrice = avgPrice
-      entity.ExecutedQuantity = executedQuantity
-      entity.UpdateTime = order.UpdateTime
-      entity.Status = fmt.Sprintf("%v", order.Status)
-      r.Db.Model(&models.Order{ID: entity.ID}).Updates(entity)
+    var values map[string]interface{}
+    if entity.AvgPrice != avgPrice {
+      values["avg_price"] = avgPrice
+    }
+    if entity.ExecutedQuantity != executedQuantity {
+      values["executed_quantity"] = executedQuantity
+    }
+    if entity.UpdateTime != order.UpdateTime {
+      values["update_time"] = order.UpdateTime
+    }
+    if entity.Status != fmt.Sprintf("%v", order.Status) {
+      values["status"] = fmt.Sprintf("%v", order.Status)
+    }
+    if len(values) > 0 {
+      r.Updates(entity, values)
     }
   }
   return nil

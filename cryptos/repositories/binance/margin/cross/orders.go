@@ -66,6 +66,16 @@ func (r *OrdersRepository) Gets(conditions map[string]interface{}) []*models.Ord
   return positions
 }
 
+func (r *OrdersRepository) Update(order *models.Order, column string, value interface{}) (err error) {
+  r.Db.Model(&order).Update(column, value)
+  return nil
+}
+
+func (r *OrdersRepository) Updates(order *models.Order, values map[string]interface{}) (err error) {
+  err = r.Db.Model(&order).Updates(values).Error
+  return
+}
+
 func (r *OrdersRepository) Count(conditions map[string]interface{}) int64 {
   var total int64
   query := r.Db.Model(&models.Order{})
@@ -492,14 +502,9 @@ func (r *OrdersRepository) Save(order *binance.Order) error {
   quantity, _ := strconv.ParseFloat(order.OrigQuantity, 64)
   executedQuantity, _ := strconv.ParseFloat(order.ExecutedQuantity, 64)
 
-  var entity models.Order
-  result := r.Db.Where(
-    "symbol=? AND order_id=?",
-    symbol,
-    orderId,
-  ).Take(&entity)
-  if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    entity = models.Order{
+  entity, _ := r.Get(symbol, orderId)
+  if entity == nil {
+    entity = &models.Order{
       ID:               xid.New().String(),
       Symbol:           symbol,
       OrderId:          orderId,
@@ -516,11 +521,18 @@ func (r *OrdersRepository) Save(order *binance.Order) error {
     }
     r.Db.Create(&entity)
   } else {
-    if entity.ExecutedQuantity != executedQuantity || entity.UpdateTime != order.UpdateTime || entity.Status != string(order.Status) {
-      entity.ExecutedQuantity = executedQuantity
-      entity.UpdateTime = order.UpdateTime
-      entity.Status = string(order.Status)
-      r.Db.Model(&models.Order{ID: entity.ID}).Updates(entity)
+    var values map[string]interface{}
+    if entity.ExecutedQuantity != executedQuantity {
+      values["executed_quantity"] = executedQuantity
+    }
+    if entity.UpdateTime != order.UpdateTime {
+      values["update_time"] = order.UpdateTime
+    }
+    if entity.Status != fmt.Sprintf("%v", order.Status) {
+      values["status"] = fmt.Sprintf("%v", order.Status)
+    }
+    if len(values) > 0 {
+      r.Updates(entity, values)
     }
   }
 
