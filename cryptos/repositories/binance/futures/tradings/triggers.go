@@ -17,8 +17,8 @@ import (
 
   "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/futures"
-  futuresModels "taoniu.local/cryptos/models/binance/futures"
-  models "taoniu.local/cryptos/models/binance/futures/tradings"
+  models "taoniu.local/cryptos/models/binance/futures"
+  tradingsModels "taoniu.local/cryptos/models/binance/futures/tradings"
 )
 
 type TriggersRepository struct {
@@ -33,25 +33,25 @@ type TriggersRepository struct {
 
 func (r *TriggersRepository) Scan() []string {
   var symbols []string
-  r.Db.Model(&futuresModels.Trigger{}).Where("status", 1).Pluck("symbol", &symbols)
+  r.Db.Model(&models.Trigger{}).Where("status", 1).Pluck("symbol", &symbols)
   return symbols
 }
 
 func (r *TriggersRepository) Ids() []string {
   var ids []string
-  r.Db.Model(&futuresModels.Trigger{}).Where("status", 1).Pluck("id", &ids)
+  r.Db.Model(&models.Trigger{}).Where("status", 1).Pluck("id", &ids)
   return ids
 }
 
 func (r *TriggersRepository) TriggerIds() []string {
   var ids []string
-  r.Db.Model(&models.Trigger{}).Select("trigger_id").Where("status", []int{0, 1, 2}).Distinct("trigger_id").Find(&ids)
+  r.Db.Model(&tradingsModels.Trigger{}).Select("trigger_id").Where("status", []int{0, 1, 2}).Distinct("trigger_id").Find(&ids)
   return ids
 }
 
 func (r *TriggersRepository) Count(conditions map[string]interface{}) int64 {
   var total int64
-  query := r.Db.Model(&models.Trigger{})
+  query := r.Db.Model(&tradingsModels.Trigger{})
   if _, ok := conditions["symbol"]; ok {
     query.Where("symbol", conditions["symbol"].(string))
   }
@@ -64,8 +64,8 @@ func (r *TriggersRepository) Count(conditions map[string]interface{}) int64 {
   return total
 }
 
-func (r *TriggersRepository) Listings(conditions map[string]interface{}, current int, pageSize int) []*models.Trigger {
-  var tradings []*models.Trigger
+func (r *TriggersRepository) Listings(conditions map[string]interface{}, current int, pageSize int) []*tradingsModels.Trigger {
+  var tradings []*tradingsModels.Trigger
   query := r.Db.Select([]string{
     "id",
     "symbol",
@@ -94,7 +94,7 @@ func (r *TriggersRepository) Listings(conditions map[string]interface{}, current
 }
 
 func (r *TriggersRepository) Place(id string) (err error) {
-  var trigger *futuresModels.Trigger
+  var trigger *models.Trigger
   result := r.Db.First(&trigger, "id=?", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     err = errors.New("trigger not found")
@@ -309,7 +309,7 @@ func (r *TriggersRepository) Place(id string) (err error) {
     })
   }
 
-  trading := models.Trigger{
+  trading := tradingsModels.Trigger{
     ID:           xid.New().String(),
     Symbol:       trigger.Symbol,
     TriggerID:    trigger.ID,
@@ -326,7 +326,7 @@ func (r *TriggersRepository) Place(id string) (err error) {
 }
 
 func (r *TriggersRepository) Flush(id string) (err error) {
-  var trigger *futuresModels.Trigger
+  var trigger *models.Trigger
   result := r.Db.First(&trigger, "id=?", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     err = errors.New("trigger not found")
@@ -355,7 +355,7 @@ func (r *TriggersRepository) Flush(id string) (err error) {
     takeSide = "SELL"
   }
 
-  var tradings []*models.Trigger
+  var tradings []*tradingsModels.Trigger
   r.Db.Where("trigger_id=? AND status IN ?", trigger.ID, []int{0, 2}).Find(&tradings)
 
   timestamp := time.Now().Add(-15 * time.Minute).Unix()
@@ -510,7 +510,7 @@ func (r *TriggersRepository) Flush(id string) (err error) {
   return
 }
 
-func (r *TriggersRepository) Take(trigger *futuresModels.Trigger, price float64) (err error) {
+func (r *TriggersRepository) Take(trigger *models.Trigger, price float64) (err error) {
   var positionSide string
   var side string
 
@@ -556,7 +556,7 @@ func (r *TriggersRepository) Take(trigger *futuresModels.Trigger, price float64)
   entryPrice := position.EntryPrice
 
   var sellPrice float64
-  var trading *models.Trigger
+  var trading *tradingsModels.Trigger
 
   if trigger.Side == 1 {
     result := r.Db.Where("trigger_id=? AND status=?", trigger.ID, 1).Take(&trading)
@@ -638,14 +638,14 @@ func (r *TriggersRepository) Take(trigger *futuresModels.Trigger, price float64)
   return
 }
 
-func (r *TriggersRepository) Close(trigger *futuresModels.Trigger) {
+func (r *TriggersRepository) Close(trigger *models.Trigger) {
   var total int64
-  r.Db.Model(&models.Trigger{}).Where("trigger_id = ? AND status IN ?", trigger.ID, []int{0, 1}).Count(&total)
+  r.Db.Model(&tradingsModels.Trigger{}).Where("trigger_id = ? AND status IN ?", trigger.ID, []int{0, 1}).Count(&total)
   if total == 0 {
     return
   }
 
-  var tradings []*models.Trigger
+  var tradings []*tradingsModels.Trigger
   r.Db.Select([]string{"id", "version", "updated_at"}).Where("trigger_id=? AND status=?", trigger.ID, 1).Find(&tradings)
   timestamp := time.Now().Add(-30 * time.Minute).UnixMicro()
   for _, trading := range tradings {
@@ -658,7 +658,7 @@ func (r *TriggersRepository) Close(trigger *futuresModels.Trigger) {
   }
 }
 
-func (r *TriggersRepository) CanBuy(trigger *futuresModels.Trigger, price float64) bool {
+func (r *TriggersRepository) CanBuy(trigger *models.Trigger, price float64) bool {
   var buyPrice float64
 
   var positionSide string
@@ -680,7 +680,7 @@ func (r *TriggersRepository) CanBuy(trigger *futuresModels.Trigger, price float6
 
   isChange := false
 
-  var tradings []*models.Trigger
+  var tradings []*tradingsModels.Trigger
   r.Db.Select([]string{"status", "buy_price"}).Where("trigger_id=? AND status IN ?", trigger.ID, []int{0, 1, 2}).Find(&tradings)
   for _, trading := range tradings {
     if trading.Status == 0 {

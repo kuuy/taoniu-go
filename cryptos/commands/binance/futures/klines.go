@@ -19,7 +19,7 @@ type KlinesHandler struct {
   Rdb               *redis.Client
   Ctx               context.Context
   Nats              *nats.Conn
-  Repository        *repositories.KlinesRepository
+  KlinesRepository  *repositories.KlinesRepository
   SymbolsRepository *repositories.SymbolsRepository
 }
 
@@ -35,7 +35,7 @@ func NewKlinesCommand() *cli.Command {
         Ctx:  context.Background(),
         Nats: common.NewNats(),
       }
-      h.Repository = &repositories.KlinesRepository{
+      h.KlinesRepository = &repositories.KlinesRepository{
         Db:   h.Db,
         Rdb:  h.Rdb,
         Ctx:  h.Ctx,
@@ -128,7 +128,7 @@ func (h *KlinesHandler) Flush(symbol string, interval string, limit int) error {
     symbols = append(symbols, symbol)
   }
   for _, symbol := range symbols {
-    err := h.Repository.Flush(symbol, interval, 0, limit)
+    err := h.KlinesRepository.Flush(symbol, interval, 0, limit)
     if err != nil {
       log.Println("kline flush error", err)
     }
@@ -145,7 +145,7 @@ func (h *KlinesHandler) Fix(symbol string, interval string, limit int) error {
     symbols = append(symbols, symbol)
   }
   for _, symbol := range symbols {
-    err := h.Repository.Fix(symbol, interval, limit)
+    err := h.KlinesRepository.Fix(symbol, interval, limit)
     if err != nil {
       log.Println("kline fix error", err)
     }
@@ -157,7 +157,7 @@ func (h *KlinesHandler) Clean() error {
   log.Println("binance futures klines clean...")
   symbols := h.SymbolsRepository.Symbols()
   for _, symbol := range symbols {
-    h.Repository.Clean(symbol)
+    h.KlinesRepository.Clean(symbol)
   }
   return nil
 }

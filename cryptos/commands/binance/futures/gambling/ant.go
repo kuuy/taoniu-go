@@ -3,24 +3,23 @@ package gambling
 import (
   "errors"
   "fmt"
-  "github.com/shopspring/decimal"
-  "github.com/urfave/cli/v2"
-  "gorm.io/gorm"
   "log"
   "strconv"
   "time"
 
+  "github.com/shopspring/decimal"
+  "github.com/urfave/cli/v2"
+  "gorm.io/gorm"
+
   "taoniu.local/cryptos/common"
   repositories "taoniu.local/cryptos/repositories/binance/futures"
   gamblingRepositories "taoniu.local/cryptos/repositories/binance/futures/gambling"
-  tradingsRepositories "taoniu.local/cryptos/repositories/binance/futures/tradings/gambling"
 )
 
 type AntHandler struct {
   Db                 *gorm.DB
-  Repository         *repositories.GamblingRepository
+  GamblingRepository *repositories.GamblingRepository
   AntRepository      *gamblingRepositories.AntRepository
-  TradingsRepository *tradingsRepositories.AntRepository
   SymbolsRepository  *repositories.SymbolsRepository
 }
 
@@ -33,16 +32,13 @@ func NewAntCommand() *cli.Command {
       h = AntHandler{
         Db: common.NewDB(2),
       }
-      h.Repository = &repositories.GamblingRepository{
+      h.GamblingRepository = &repositories.GamblingRepository{
         Db: h.Db,
       }
       h.SymbolsRepository = &repositories.SymbolsRepository{
         Db: h.Db,
       }
       h.AntRepository = &gamblingRepositories.AntRepository{
-        Db: h.Db,
-      }
-      h.TradingsRepository = &tradingsRepositories.AntRepository{
         Db: h.Db,
       }
       return nil
@@ -113,7 +109,7 @@ func (h *AntHandler) Apply(symbol string, side int, entryPrice float64, entryQua
     antSide = 1
   }
 
-  takePrice := h.Repository.TakePrice(entryPrice, antSide, tickSize)
+  takePrice := h.GamblingRepository.TakePrice(entryPrice, antSide, tickSize)
 
   planPrice := entryPrice
   planQuantity := entryQuantity
@@ -123,7 +119,7 @@ func (h *AntHandler) Apply(symbol string, side int, entryPrice float64, entryQua
   var planPrices, planQuantities []float64
   var quantities []float64
   for {
-    plans := h.Repository.Calc(planPrice, planQuantity, antSide, tickSize, stepSize)
+    plans := h.GamblingRepository.Calc(planPrice, planQuantity, antSide, tickSize, stepSize)
     for _, plan := range plans {
       if plan.TakeQuantity < stepSize {
         if antSide == 1 {
@@ -158,10 +154,10 @@ func (h *AntHandler) Apply(symbol string, side int, entryPrice float64, entryQua
     planPrice = takePrice
     planQuantity = lastQuantity
     lastPrice = takePrice
-    takePrice = h.Repository.TakePrice(lastPrice, antSide, tickSize)
+    takePrice = h.GamblingRepository.TakePrice(lastPrice, antSide, tickSize)
     lastProfit = 0.0
     for {
-      plans := h.Repository.Calc(planPrice, planQuantity, antSide, tickSize, stepSize)
+      plans := h.GamblingRepository.Calc(planPrice, planQuantity, antSide, tickSize, stepSize)
       for _, plan := range plans {
         if plan.TakeQuantity < stepSize {
           if antSide == 1 {
@@ -236,7 +232,7 @@ func (h *AntHandler) Calc(
   entryQuantity, _ = decimal.NewFromFloat(entryAmount).Div(decimal.NewFromFloat(entryPrice)).Float64()
   log.Println("entry", entryPrice, strconv.FormatFloat(entryQuantity, 'f', -1, 64), entryAmount)
 
-  takePrice := h.Repository.TakePrice(entryPrice, side, tickSize)
+  takePrice := h.GamblingRepository.TakePrice(entryPrice, side, tickSize)
 
   planPrice := entryPrice
   planQuantity := entryQuantity
@@ -248,7 +244,7 @@ func (h *AntHandler) Calc(
 
   var quantities []float64
   for {
-    plans := h.Repository.Calc(planPrice, planQuantity, side, tickSize, stepSize)
+    plans := h.GamblingRepository.Calc(planPrice, planQuantity, side, tickSize, stepSize)
     for _, plan := range plans {
       if plan.TakeQuantity < stepSize {
         if side == 1 {
@@ -284,10 +280,10 @@ func (h *AntHandler) Calc(
     planPrice = takePrice
     planQuantity = lastQuantity
     lastPrice = takePrice
-    takePrice = h.Repository.TakePrice(lastPrice, side, tickSize)
+    takePrice = h.GamblingRepository.TakePrice(lastPrice, side, tickSize)
     lastProfit = 0.0
     for {
-      plans := h.Repository.Calc(planPrice, planQuantity, side, tickSize, stepSize)
+      plans := h.GamblingRepository.Calc(planPrice, planQuantity, side, tickSize, stepSize)
       for _, plan := range plans {
         if plan.TakeQuantity < stepSize {
           if side == 1 {

@@ -16,11 +16,11 @@ import (
 )
 
 type StrategiesHandler struct {
-  Db                 *gorm.DB
-  Rdb                *redis.Client
-  Ctx                context.Context
-  Repository         *repositories.StrategiesRepository
-  ScalpingRepository *repositories.ScalpingRepository
+  Db                   *gorm.DB
+  Rdb                  *redis.Client
+  Ctx                  context.Context
+  StrategiesRepository *repositories.StrategiesRepository
+  ScalpingRepository   *repositories.ScalpingRepository
 }
 
 func NewStrategiesCommand() *cli.Command {
@@ -34,7 +34,7 @@ func NewStrategiesCommand() *cli.Command {
         Rdb: common.NewRedis(2),
         Ctx: context.Background(),
       }
-      h.Repository = &repositories.StrategiesRepository{
+      h.StrategiesRepository = &repositories.StrategiesRepository{
         Db: h.Db,
       }
       h.ScalpingRepository = &repositories.ScalpingRepository{
@@ -69,7 +69,7 @@ func (h *StrategiesHandler) Clean() error {
     if !mutex.Lock(5 * time.Second) {
       continue
     }
-    h.Repository.Clean(symbol)
+    h.StrategiesRepository.Clean(symbol)
   }
   return nil
 }

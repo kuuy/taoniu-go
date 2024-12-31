@@ -8,14 +8,14 @@ import (
   "gorm.io/gorm"
 
   "taoniu.local/cryptos/common"
-  futuresRepositories "taoniu.local/cryptos/repositories/binance/futures"
-  repositories "taoniu.local/cryptos/repositories/binance/futures/patterns"
+  repositories "taoniu.local/cryptos/repositories/binance/futures"
+  patternsRepositories "taoniu.local/cryptos/repositories/binance/futures/patterns"
 )
 
 type CandlesticksHandler struct {
-  Db                *gorm.DB
-  Repository        *repositories.CandlesticksRepository
-  SymbolsRepository *futuresRepositories.SymbolsRepository
+  Db                 *gorm.DB
+  PatternsRepository *patternsRepositories.CandlesticksRepository
+  SymbolsRepository  *repositories.SymbolsRepository
 }
 
 func NewCandlesticksCommand() *cli.Command {
@@ -27,10 +27,10 @@ func NewCandlesticksCommand() *cli.Command {
       h = CandlesticksHandler{
         Db: common.NewDB(2),
       }
-      h.Repository = &repositories.CandlesticksRepository{
+      h.PatternsRepository = &patternsRepositories.CandlesticksRepository{
         Db: h.Db,
       }
-      h.SymbolsRepository = &futuresRepositories.SymbolsRepository{
+      h.SymbolsRepository = &repositories.SymbolsRepository{
         Db: h.Db,
       }
       return nil
@@ -88,7 +88,7 @@ func (h *CandlesticksHandler) Flush(symbol string, interval string, limit int) e
     symbols = append(symbols, symbol)
   }
   for _, symbol := range symbols {
-    err := h.Repository.Flush(symbol, interval, limit)
+    err := h.PatternsRepository.Flush(symbol, interval, limit)
     if err != nil {
       log.Println("candlesticks patterns flush error", err)
     }
@@ -100,7 +100,7 @@ func (h *CandlesticksHandler) Clean() error {
   log.Println("binance futures patterns candlesticks clean...")
   symbols := h.SymbolsRepository.Symbols()
   for _, symbol := range symbols {
-    h.Repository.Clean(symbol)
+    h.PatternsRepository.Clean(symbol)
   }
   return nil
 }

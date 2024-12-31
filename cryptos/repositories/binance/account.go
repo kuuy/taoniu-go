@@ -3,10 +3,11 @@ package binance
 import (
   "context"
   "fmt"
-  "github.com/go-redis/redis/v8"
-  "gorm.io/gorm"
   "log"
   "strconv"
+
+  "github.com/go-redis/redis/v8"
+  "gorm.io/gorm"
 )
 
 type AccountRepository struct {

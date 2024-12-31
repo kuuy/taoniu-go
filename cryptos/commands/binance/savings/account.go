@@ -7,11 +7,11 @@ import (
   "github.com/urfave/cli/v2"
 
   "taoniu.local/cryptos/common"
-  repositories "taoniu.local/cryptos/repositories/binance/savings"
+  savingsRepositories "taoniu.local/cryptos/repositories/binance/savings"
 )
 
 type AccountHandler struct {
-  Repository *repositories.AccountRepository
+  SavingsRepository *savingsRepositories.AccountRepository
 }
 
 func NewAccountCommand() *cli.Command {
@@ -21,7 +21,7 @@ func NewAccountCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = AccountHandler{}
-      h.Repository = &repositories.AccountRepository{
+      h.SavingsRepository = &savingsRepositories.AccountRepository{
         Rdb: common.NewRedis(1),
         Ctx: context.Background(),
       }
@@ -44,5 +44,5 @@ func NewAccountCommand() *cli.Command {
 
 func (h *AccountHandler) Flush() error {
   log.Println("savings account flush...")
-  return h.Repository.Flush()
+  return h.SavingsRepository.Flush()
 }

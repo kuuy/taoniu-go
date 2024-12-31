@@ -14,10 +14,10 @@ import (
 )
 
 type OrdersHandler struct {
-  Db         *gorm.DB
-  Rdb        *redis.Client
-  Ctx        context.Context
-  Repository *repositories.OrdersRepository
+  Db               *gorm.DB
+  Rdb              *redis.Client
+  Ctx              context.Context
+  OrdersRepository *repositories.OrdersRepository
 }
 
 func NewOrdersCommand() *cli.Command {
@@ -31,7 +31,7 @@ func NewOrdersCommand() *cli.Command {
         Rdb: common.NewRedis(1),
         Ctx: context.Background(),
       }
-      h.Repository = &repositories.OrdersRepository{
+      h.OrdersRepository = &repositories.OrdersRepository{
         Db:  h.Db,
         Rdb: h.Rdb,
         Ctx: h.Ctx,
@@ -113,7 +113,7 @@ func (h *OrdersHandler) Create() error {
   symbol := "MATICUSDT"
   price := 0.99
   quantity := 10.10
-  orderId, err := h.Repository.Create(symbol, "BUY", price, quantity)
+  orderId, err := h.OrdersRepository.Create(symbol, "BUY", price, quantity)
   if err != nil {
     return err
   }
@@ -125,7 +125,7 @@ func (h *OrdersHandler) Cancel() error {
   log.Println("orders cancel...")
   symbol := "BTCUSDT"
   orderId := 3394265812
-  err := h.Repository.Cancel(symbol, int64(orderId))
+  err := h.OrdersRepository.Cancel(symbol, int64(orderId))
   if err != nil {
     return err
   }
@@ -135,23 +135,23 @@ func (h *OrdersHandler) Cancel() error {
 
 func (h *OrdersHandler) Open(symbol string) error {
   log.Println("spot orders open...")
-  return h.Repository.Open(symbol)
+  return h.OrdersRepository.Open(symbol)
 }
 
 func (h *OrdersHandler) Flush() error {
   log.Println("margin orders flush...")
   symbol := "DUSKUSDT"
   orderId := int64(779479093)
-  h.Repository.Flush(symbol, orderId)
-  //orders := h.Repository.Gets(map[string]interface{}{})
+  h.OrdersRepository.Flush(symbol, orderId)
+  //orders := h.OrdersRepository.Gets(map[string]interface{}{})
   //for _, order := range orders {
   //  log.Println("order flush", order.Symbol, order.OrderId)
-  //  h.Repository.Flush(order.Symbol, order.OrderId)
+  //  h.OrdersRepository.Flush(order.Symbol, order.OrderId)
   //}
   return nil
 }
 
 func (h *OrdersHandler) Sync(symbol string, limit int) error {
   log.Println("spot orders sync...")
-  return h.Repository.Sync(symbol, 0, limit)
+  return h.OrdersRepository.Sync(symbol, 0, limit)
 }

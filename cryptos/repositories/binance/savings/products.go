@@ -13,7 +13,6 @@ import (
   "encoding/pem"
   "errors"
   "fmt"
-  "github.com/adshao/go-binance/v2/common"
   "net"
   "net/http"
   "net/url"
@@ -22,6 +21,7 @@ import (
   "time"
 
   "github.com/adshao/go-binance/v2"
+  "github.com/adshao/go-binance/v2/common"
   "github.com/rs/xid"
   "gorm.io/gorm"
 

@@ -20,7 +20,7 @@ type TickersHandler struct {
   Rdb               *redis.Client
   Ctx               context.Context
   Task              *tasks.Tickers
-  Repository        *repositories.TickersRepository
+  TickersRepository *repositories.TickersRepository
   SymbolsRepository *repositories.SymbolsRepository
 }
 
@@ -36,7 +36,7 @@ func NewTickersCommand() *cli.Command {
         Ctx: context.Background(),
       }
       h.Task = &tasks.Tickers{}
-      h.Repository = &repositories.TickersRepository{
+      h.TickersRepository = &repositories.TickersRepository{
         Rdb: h.Rdb,
         Ctx: h.Ctx,
       }
@@ -82,12 +82,12 @@ func (h *TickersHandler) Flush(symbol string) error {
       j = len(symbols)
     }
     log.Println("symbols", symbols[i:j])
-    err := h.Repository.Flush(symbols[i:j])
+    err := h.TickersRepository.Flush(symbols[i:j])
     if err != nil {
       log.Println("error", err.Error())
     }
     break
-    //	h.Repository.Place(symbols[i:j])
+    //	h.TickersRepository.Place(symbols[i:j])
   }
 
   return nil
@@ -109,9 +109,9 @@ func (h *TickersHandler) fix() error {
       j = len(symbols)
     }
     log.Println("symbols", symbols[i:j])
-    h.Repository.Flush(symbols[i:j])
+    h.TickersRepository.Flush(symbols[i:j])
     break
-    //	h.Repository.Place(symbols[i:j])
+    //	h.TickersRepository.Place(symbols[i:j])
   }
   return nil
 }

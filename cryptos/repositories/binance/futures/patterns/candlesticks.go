@@ -11,8 +11,8 @@ import (
   "github.com/shopspring/decimal"
   "gorm.io/gorm"
 
-  futuresModels "taoniu.local/cryptos/models/binance/futures"
-  models "taoniu.local/cryptos/models/binance/futures/patterns"
+  models "taoniu.local/cryptos/models/binance/futures"
+  patternsModels "taoniu.local/cryptos/models/binance/futures/patterns"
 )
 
 type CandleSeries struct {
@@ -858,7 +858,7 @@ func (r *CandlesticksRepository) Trend(i int) int {
 }
 
 func (r *CandlesticksRepository) Save(symbol string, interval string, pattern string, score int, timestamp int64) error {
-  var entity models.Candlesticks
+  var entity patternsModels.Candlesticks
   result := r.Db.Where(
     "symbol=? AND interval=? AND pattern=? AND timestamp=?",
     symbol,
@@ -867,7 +867,7 @@ func (r *CandlesticksRepository) Save(symbol string, interval string, pattern st
     timestamp,
   ).Take(&entity)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    entity = models.Candlesticks{
+    entity = patternsModels.Candlesticks{
       ID:        xid.New().String(),
       Symbol:    symbol,
       Interval:  interval,
@@ -881,7 +881,7 @@ func (r *CandlesticksRepository) Save(symbol string, interval string, pattern st
 }
 
 func (r *CandlesticksRepository) Flush(symbol string, interval string, limit int) error {
-  var klines []*futuresModels.Kline
+  var klines []*models.Kline
   r.Db.Select(
     []string{"open", "close", "high", "low", "volume", "timestamp"},
   ).Where(
@@ -1002,16 +1002,16 @@ func (r *CandlesticksRepository) Clean(symbol string) error {
   var timestamp int64
 
   timestamp = r.Timestamp("1m") - r.Timestep("1m")*1440
-  r.Db.Where("symbol=? AND interval = ? AND timestamp < ?", symbol, "1m", timestamp).Delete(&models.Candlesticks{})
+  r.Db.Where("symbol=? AND interval = ? AND timestamp < ?", symbol, "1m", timestamp).Delete(&patternsModels.Candlesticks{})
 
   timestamp = r.Timestamp("15m") - r.Timestep("15m")*672
-  r.Db.Where("symbol=? AND interval = ? AND timestamp < ?", symbol, "15m", timestamp).Delete(&models.Candlesticks{})
+  r.Db.Where("symbol=? AND interval = ? AND timestamp < ?", symbol, "15m", timestamp).Delete(&patternsModels.Candlesticks{})
 
   timestamp = r.Timestamp("4h") - r.Timestep("15m")*126
-  r.Db.Where("symbol=? AND interval = ? AND timestamp < ?", symbol, "4h", timestamp).Delete(&models.Candlesticks{})
+  r.Db.Where("symbol=? AND interval = ? AND timestamp < ?", symbol, "4h", timestamp).Delete(&patternsModels.Candlesticks{})
 
   timestamp = r.Timestamp("1d") - r.Timestep("1d")*100
-  r.Db.Where("symbol=? AND interval = ? AND timestamp < ?", symbol, "1d", timestamp).Delete(&models.Candlesticks{})
+  r.Db.Where("symbol=? AND interval = ? AND timestamp < ?", symbol, "1d", timestamp).Delete(&patternsModels.Candlesticks{})
 
   return nil
 }

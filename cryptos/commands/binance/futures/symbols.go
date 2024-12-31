@@ -9,7 +9,7 @@ import (
 )
 
 type SymbolsHandler struct {
-  Repository *repositories.SymbolsRepository
+  SymbolsRepository *repositories.SymbolsRepository
 }
 
 func NewSymbolsCommand() *cli.Command {
@@ -19,7 +19,7 @@ func NewSymbolsCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = SymbolsHandler{}
-      h.Repository = &repositories.SymbolsRepository{
+      h.SymbolsRepository = &repositories.SymbolsRepository{
         Db:  common.NewDB(2),
         Rdb: common.NewRedis(2),
         Ctx: context.Background(),
@@ -74,12 +74,12 @@ func NewSymbolsCommand() *cli.Command {
 
 func (h *SymbolsHandler) Flush() error {
   log.Println("symbols flush...")
-  return h.Repository.Flush()
+  return h.SymbolsRepository.Flush()
 }
 
 func (h *SymbolsHandler) Price(symbol string) (err error) {
   log.Println("symbols price...")
-  price, err := h.Repository.Price(symbol)
+  price, err := h.SymbolsRepository.Price(symbol)
   if err != nil {
     return
   }
@@ -89,14 +89,14 @@ func (h *SymbolsHandler) Price(symbol string) (err error) {
 
 func (h *SymbolsHandler) Count() error {
   log.Println("symbols count...")
-  return h.Repository.Count()
+  return h.SymbolsRepository.Count()
 }
 
 func (h *SymbolsHandler) Slippage() error {
   log.Println("symbols depth...")
-  for _, symbol := range h.Repository.Symbols() {
+  for _, symbol := range h.SymbolsRepository.Symbols() {
     symbol = "XVGUSDT"
-    err := h.Repository.Slippage(symbol)
+    err := h.SymbolsRepository.Slippage(symbol)
     if err != nil {
       log.Println("error", err.Error())
     }

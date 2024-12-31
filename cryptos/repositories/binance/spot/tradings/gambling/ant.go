@@ -19,7 +19,6 @@ import (
   "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/spot"
   gamblingModels "taoniu.local/cryptos/models/binance/spot/gambling"
-  models "taoniu.local/cryptos/models/binance/spot/tradings/gambling"
   tradingsModels "taoniu.local/cryptos/models/binance/spot/tradings/gambling"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
 )
@@ -43,7 +42,7 @@ func (r *AntRepository) Ids() []string {
 
 func (r *AntRepository) Count(conditions map[string]interface{}) int64 {
   var total int64
-  query := r.Db.Model(&models.Ant{})
+  query := r.Db.Model(&tradingsModels.Ant{})
   if _, ok := conditions["symbol"]; ok {
     query.Where("symbol", conditions["symbol"].(string))
   }
@@ -56,8 +55,8 @@ func (r *AntRepository) Count(conditions map[string]interface{}) int64 {
   return total
 }
 
-func (r *AntRepository) Listings(conditions map[string]interface{}, current int, pageSize int) []*models.Ant {
-  var tradings []*models.Ant
+func (r *AntRepository) Listings(conditions map[string]interface{}, current int, pageSize int) []*tradingsModels.Ant {
+  var tradings []*tradingsModels.Ant
   query := r.Db.Select([]string{
     "id",
     "symbol",
@@ -102,7 +101,7 @@ func (r *AntRepository) Flush(id string) (err error) {
   placeSide := "BUY"
   takeSide := "SELL"
 
-  var tradings []*models.Ant
+  var tradings []*tradingsModels.Ant
   r.Db.Where("ant_id=? AND status IN ?", ant.ID, []int{0, 1}).Find(&tradings)
 
   timestamp := time.Now().Add(-15 * time.Minute).Unix()
@@ -479,7 +478,7 @@ func (r *AntRepository) Place(id string) (err error) {
     })
   }
 
-  r.Db.Create(&models.Ant{
+  r.Db.Create(&tradingsModels.Ant{
     ID:       xid.New().String(),
     Symbol:   ant.Symbol,
     AntId:    ant.ID,
@@ -650,7 +649,7 @@ func (r *AntRepository) Take(ant *gamblingModels.Ant, price float64) (err error)
     })
   }
 
-  r.Db.Create(&models.Ant{
+  r.Db.Create(&tradingsModels.Ant{
     ID:       xid.New().String(),
     Symbol:   ant.Symbol,
     AntId:    ant.ID,
@@ -666,12 +665,12 @@ func (r *AntRepository) Take(ant *gamblingModels.Ant, price float64) (err error)
 
 func (r *AntRepository) Close(ant *gamblingModels.Ant) {
   var total int64
-  r.Db.Model(&models.Ant{}).Where("ant_id = ? AND status = ?", ant.ID, 0).Count(&total)
+  r.Db.Model(&tradingsModels.Ant{}).Where("ant_id = ? AND status = ?", ant.ID, 0).Count(&total)
   if total == 0 {
     return
   }
 
-  var tradings []*models.Ant
+  var tradings []*tradingsModels.Ant
   r.Db.Select([]string{"id", "version", "updated_at"}).Where("ant_id=? AND status=?", ant.ID, 0).Find(&tradings)
   timestamp := time.Now().Add(-30 * time.Minute).Unix()
   for _, trading := range tradings {
@@ -695,7 +694,7 @@ func (r *AntRepository) Close(ant *gamblingModels.Ant) {
 
 func (r *AntRepository) Pending() map[string]float64 {
   var result []*PendingInfo
-  r.Db.Model(&models.Ant{}).Select(
+  r.Db.Model(&tradingsModels.Ant{}).Select(
     "symbol",
     "sum(sell_quantity) as quantity",
   ).Where("status", 1).Group("symbol").Find(&result)

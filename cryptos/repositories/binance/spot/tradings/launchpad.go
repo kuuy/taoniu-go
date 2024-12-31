@@ -16,8 +16,8 @@ import (
 
   "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/spot"
-  spotModels "taoniu.local/cryptos/models/binance/spot"
-  models "taoniu.local/cryptos/models/binance/spot/tradings"
+  models "taoniu.local/cryptos/models/binance/spot"
+  tradingsModels "taoniu.local/cryptos/models/binance/spot/tradings"
 )
 
 type LaunchpadRepository struct {
@@ -44,24 +44,24 @@ type LaunchpadSellInfo struct {
 
 func (r *LaunchpadRepository) Scan() []string {
   var symbols []string
-  r.Db.Model(&spotModels.Launchpad{}).Where("status", []int{1, 3}).Distinct().Pluck("symbol", &symbols)
+  r.Db.Model(&models.Launchpad{}).Where("status", []int{1, 3}).Distinct().Pluck("symbol", &symbols)
   return symbols
 }
 
 func (r *LaunchpadRepository) Ids() []string {
   var ids []string
-  r.Db.Model(&spotModels.Launchpad{}).Where("status", 1).Pluck("id", &ids)
+  r.Db.Model(&models.Launchpad{}).Where("status", 1).Pluck("id", &ids)
   return ids
 }
 
 func (r *LaunchpadRepository) LaunchpadIds() []string {
   var ids []string
-  r.Db.Model(&models.Launchpad{}).Select("launchpad_id").Where("status", []int{0, 1, 2}).Distinct().Pluck("launchpad_id", &ids)
+  r.Db.Model(&tradingsModels.Launchpad{}).Select("launchpad_id").Where("status", []int{0, 1, 2}).Distinct().Pluck("launchpad_id", &ids)
   return ids
 }
 
 func (r *LaunchpadRepository) Place(id string) (err error) {
-  var launchpad *spotModels.Launchpad
+  var launchpad *models.Launchpad
   result := r.Db.Take(&launchpad, "id", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     return errors.New("launchpad empty")
@@ -156,7 +156,7 @@ func (r *LaunchpadRepository) Place(id string) (err error) {
       })
     }
 
-    trading := models.Launchpad{
+    trading := tradingsModels.Launchpad{
       ID:           xid.New().String(),
       Symbol:       launchpad.Symbol,
       LaunchpadID:  launchpad.ID,
@@ -285,7 +285,7 @@ func (r *LaunchpadRepository) Sells(
 }
 
 func (r *LaunchpadRepository) Flush(id string) error {
-  var launchpad *spotModels.Launchpad
+  var launchpad *models.Launchpad
   var result = r.Db.First(&launchpad, "id=?", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     return errors.New("launchpad empty")
@@ -300,7 +300,7 @@ func (r *LaunchpadRepository) Flush(id string) error {
     log.Println("take error", err)
   }
 
-  var tradings []*models.Launchpad
+  var tradings []*tradingsModels.Launchpad
   r.Db.Where("launchpad_id=? AND status IN ?", launchpad.ID, []int{0, 2}).Find(&tradings)
 
   for _, trading := range tradings {
@@ -399,9 +399,9 @@ func (r *LaunchpadRepository) Flush(id string) error {
   return nil
 }
 
-func (r *LaunchpadRepository) Take(launchpad *spotModels.Launchpad, price float64) (err error) {
+func (r *LaunchpadRepository) Take(launchpad *models.Launchpad, price float64) (err error) {
   var sellPrice float64
-  var trading *models.Launchpad
+  var trading *tradingsModels.Launchpad
 
   entity, err := r.SymbolsRepository.Get(launchpad.Symbol)
   if err != nil {
@@ -452,7 +452,7 @@ func (r *LaunchpadRepository) Take(launchpad *spotModels.Launchpad, price float6
 
 func (r *LaunchpadRepository) Pending() map[string]float64 {
   var result []*PendingInfo
-  r.Db.Model(&models.Scalping{}).Select(
+  r.Db.Model(&tradingsModels.Scalping{}).Select(
     "symbol",
     "sum(sell_quantity) as quantity",
   ).Where("status", 1).Group("symbol").Find(&result)
@@ -464,11 +464,11 @@ func (r *LaunchpadRepository) Pending() map[string]float64 {
 }
 
 func (r *LaunchpadRepository) CanBuy(
-  launchpad *spotModels.Launchpad,
+  launchpad *models.Launchpad,
   buyPrice float64,
   basePrice float64,
 ) bool {
-  var trading models.Launchpad
+  var trading tradingsModels.Launchpad
   query := r.Db.Where("launchpad_id=? AND status IN ?", launchpad.ID, []int{0, 1, 2})
   if basePrice > 0 {
     query.Where("buy_price > ?", basePrice)

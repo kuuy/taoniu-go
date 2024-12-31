@@ -17,10 +17,10 @@ import (
 )
 
 type TriggersHandler struct {
-  Db         *gorm.DB
-  Rdb        *redis.Client
-  Ctx        context.Context
-  Repository *repositories.TriggersRepository
+  Db                 *gorm.DB
+  Rdb                *redis.Client
+  Ctx                context.Context
+  TriggersRepository *repositories.TriggersRepository
 }
 
 func NewTriggersCommand() *cli.Command {
@@ -34,7 +34,7 @@ func NewTriggersCommand() *cli.Command {
         Rdb: common.NewRedis(1),
         Ctx: context.Background(),
       }
-      h.Repository = &repositories.TriggersRepository{
+      h.TriggersRepository = &repositories.TriggersRepository{
         Db: h.Db,
       }
       return nil
@@ -93,7 +93,7 @@ func (h *TriggersHandler) apply(symbol string) error {
   //stopPrice, _ := strconv.ParseFloat(data[1].(string), 64)
   expiredAt := time.Now().Add(time.Hour * 24 * 14)
 
-  err := h.Repository.Apply(symbol, capital, placePrice, expiredAt)
+  err := h.TriggersRepository.Apply(symbol, capital, placePrice, expiredAt)
   if err != nil {
     return err
   }

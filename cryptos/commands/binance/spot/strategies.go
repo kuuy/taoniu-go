@@ -14,11 +14,11 @@ import (
 )
 
 type StrategiesHandler struct {
-  Db                *gorm.DB
-  Rdb               *redis.Client
-  Ctx               context.Context
-  Repository        *repositories.StrategiesRepository
-  SymbolsRepository *repositories.SymbolsRepository
+  Db                   *gorm.DB
+  Rdb                  *redis.Client
+  Ctx                  context.Context
+  StrategiesRepository *repositories.StrategiesRepository
+  SymbolsRepository    *repositories.SymbolsRepository
 }
 
 func NewStrategiesCommand() *cli.Command {
@@ -32,12 +32,12 @@ func NewStrategiesCommand() *cli.Command {
         Rdb: common.NewRedis(1),
         Ctx: context.Background(),
       }
-      h.Repository = &repositories.StrategiesRepository{
+      h.StrategiesRepository = &repositories.StrategiesRepository{
         Db:  h.Db,
         Rdb: h.Rdb,
         Ctx: h.Ctx,
       }
-      h.Repository.SymbolsRepository = &repositories.SymbolsRepository{
+      h.StrategiesRepository.SymbolsRepository = &repositories.SymbolsRepository{
         Db: h.Db,
       }
       h.SymbolsRepository = &repositories.SymbolsRepository{
@@ -165,7 +165,7 @@ func (h *StrategiesHandler) Atr(symbol string, interval string) error {
     symbols = append(symbols, symbol)
   }
   for _, symbol := range symbols {
-    h.Repository.Atr(symbol, interval)
+    h.StrategiesRepository.Atr(symbol, interval)
   }
   return nil
 }
@@ -179,7 +179,7 @@ func (h *StrategiesHandler) Zlema(symbol string, interval string) error {
     symbols = append(symbols, symbol)
   }
   for _, symbol := range symbols {
-    h.Repository.Zlema(symbol, interval)
+    h.StrategiesRepository.Zlema(symbol, interval)
   }
   return nil
 }
@@ -193,7 +193,7 @@ func (h *StrategiesHandler) HaZlema(symbol string, interval string) error {
     symbols = append(symbols, symbol)
   }
   for _, symbol := range symbols {
-    h.Repository.HaZlema(symbol, interval)
+    h.StrategiesRepository.HaZlema(symbol, interval)
   }
   return nil
 }
@@ -207,7 +207,7 @@ func (h *StrategiesHandler) Kdj(symbol string, interval string) error {
     symbols = append(symbols, symbol)
   }
   for _, symbol := range symbols {
-    h.Repository.Kdj(symbol, interval)
+    h.StrategiesRepository.Kdj(symbol, interval)
   }
   return nil
 }
@@ -221,7 +221,7 @@ func (h *StrategiesHandler) BBands(symbol string, interval string) error {
     symbols = append(symbols, symbol)
   }
   for _, symbol := range symbols {
-    h.Repository.BBands(symbol, interval)
+    h.StrategiesRepository.BBands(symbol, interval)
   }
   return nil
 }
@@ -235,7 +235,7 @@ func (h *StrategiesHandler) IchimokuCloud(symbol string, interval string) error 
     symbols = append(symbols, symbol)
   }
   for _, symbol := range symbols {
-    h.Repository.IchimokuCloud(symbol, interval)
+    h.StrategiesRepository.IchimokuCloud(symbol, interval)
   }
   return nil
 }
@@ -244,7 +244,7 @@ func (h *StrategiesHandler) Clean() error {
   log.Println("binance spot strategies clean...")
   symbols := h.SymbolsRepository.Symbols()
   for _, symbol := range symbols {
-    h.Repository.Clean(symbol)
+    h.StrategiesRepository.Clean(symbol)
   }
   return nil
 }

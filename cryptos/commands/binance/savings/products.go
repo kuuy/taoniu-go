@@ -8,11 +8,11 @@ import (
   "github.com/urfave/cli/v2"
 
   "taoniu.local/cryptos/common"
-  repositories "taoniu.local/cryptos/repositories/binance/savings"
+  savingsRepositories "taoniu.local/cryptos/repositories/binance/savings"
 )
 
 type ProductsHandler struct {
-  Repository *repositories.ProductsRepository
+  SavingsRepository *savingsRepositories.ProductsRepository
 }
 
 func NewProductsCommand() *cli.Command {
@@ -22,7 +22,7 @@ func NewProductsCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = ProductsHandler{}
-      h.Repository = &repositories.ProductsRepository{
+      h.SavingsRepository = &savingsRepositories.ProductsRepository{
         Db:  common.NewDB(1),
         Ctx: context.Background(),
       }
@@ -55,14 +55,14 @@ func NewProductsCommand() *cli.Command {
 
 func (h *ProductsHandler) Flush() error {
   log.Println("savings products flush...")
-  return h.Repository.Flush()
+  return h.SavingsRepository.Flush()
 }
 
 func (h *ProductsHandler) Purchase() error {
   log.Println("savings products purchase...")
   asset := "LAZIO"
   amount := 0.1
-  product, err := h.Repository.Get(asset)
+  product, err := h.SavingsRepository.Get(asset)
   if err != nil {
     return err
   }
@@ -72,7 +72,7 @@ func (h *ProductsHandler) Purchase() error {
   if product.MinPurchaseAmount > amount {
     return errors.New("amount a bit little")
   }
-  purchaseId, err := h.Repository.Purchase(product.ProductId, 0.1)
+  purchaseId, err := h.SavingsRepository.Purchase(product.ProductId, 0.1)
   if err != nil {
     return err
   }

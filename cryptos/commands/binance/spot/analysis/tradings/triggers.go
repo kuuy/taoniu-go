@@ -8,14 +8,14 @@ import (
   "log"
 
   "taoniu.local/cryptos/common"
-  repositories "taoniu.local/cryptos/repositories/binance/spot/analysis/tradings"
+  analysisRepositories "taoniu.local/cryptos/repositories/binance/spot/analysis/tradings"
 )
 
 type TriggersHandler struct {
-  Db         *gorm.DB
-  Rdb        *redis.Client
-  Ctx        context.Context
-  Repository *repositories.TriggersRepository
+  Db                 *gorm.DB
+  Rdb                *redis.Client
+  Ctx                context.Context
+  AnalysisRepository *analysisRepositories.TriggersRepository
 }
 
 func NewTriggersCommand() *cli.Command {
@@ -29,7 +29,7 @@ func NewTriggersCommand() *cli.Command {
         Rdb: common.NewRedis(1),
         Ctx: context.Background(),
       }
-      h.Repository = &repositories.TriggersRepository{
+      h.AnalysisRepository = &analysisRepositories.TriggersRepository{
         Db: h.Db,
       }
       return nil
@@ -51,6 +51,6 @@ func NewTriggersCommand() *cli.Command {
 
 func (h *TriggersHandler) Flush() (err error) {
   log.Println("binance spot analysis tradings triggers flush...")
-  h.Repository.Flush()
+  h.AnalysisRepository.Flush()
   return
 }

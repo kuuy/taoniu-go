@@ -19,7 +19,7 @@ type PlansHandler struct {
   Db                 *gorm.DB
   Rdb                *redis.Client
   Ctx                context.Context
-  Repository         *repositories.PlansRepository
+  PlansRepository    *repositories.PlansRepository
   ScalpingRepository *repositories.ScalpingRepository
 }
 
@@ -34,7 +34,7 @@ func NewPlansCommand() *cli.Command {
         Rdb: common.NewRedis(2),
         Ctx: context.Background(),
       }
-      h.Repository = &repositories.PlansRepository{
+      h.PlansRepository = &repositories.PlansRepository{
         Db: h.Db,
       }
       h.ScalpingRepository = &repositories.ScalpingRepository{
@@ -69,7 +69,7 @@ func (h *PlansHandler) Clean() error {
     if !mutex.Lock(5 * time.Second) {
       continue
     }
-    h.Repository.Clean(symbol)
+    h.PlansRepository.Clean(symbol)
   }
   return nil
 }

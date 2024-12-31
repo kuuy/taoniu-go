@@ -14,7 +14,7 @@ import (
   "gorm.io/datatypes"
   "gorm.io/gorm"
 
-  models "taoniu.local/cryptos/models/binance/spot"
+  spotModels "taoniu.local/cryptos/models/binance/spot"
 )
 
 type SymbolsRepository struct {
@@ -25,17 +25,17 @@ type SymbolsRepository struct {
 
 func (r *SymbolsRepository) Currencies() []string {
   var currencies []string
-  r.Db.Model(models.Symbol{}).Where("status=? AND is_margin=True", "TRADING").Distinct().Pluck("base_asset", &currencies)
+  r.Db.Model(spotModels.Symbol{}).Where("status=? AND is_margin=True", "TRADING").Distinct().Pluck("base_asset", &currencies)
   return currencies
 }
 
 func (r *SymbolsRepository) Symbols() []string {
   var symbols []string
-  r.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_margin=True", "TRADING").Find(&symbols)
+  r.Db.Model(spotModels.Symbol{}).Select("symbol").Where("status=? AND is_margin=True", "TRADING").Find(&symbols)
   return symbols
 }
 
-func (r *SymbolsRepository) Get(symbol string) (entity *models.Symbol, err error) {
+func (r *SymbolsRepository) Get(symbol string) (entity *spotModels.Symbol, err error) {
   err = r.Db.Where("symbol", symbol).Take(&entity).Error
   return
 }
@@ -56,7 +56,7 @@ func (r *SymbolsRepository) Filters(params datatypes.JSONMap) (tickSize float64,
 
 func (r *SymbolsRepository) Count() error {
   var count int64
-  r.Db.Model(models.Symbol{}).Select("symbol").Where("status=? AND is_margin=True", "TRADING").Count(&count)
+  r.Db.Model(spotModels.Symbol{}).Select("symbol").Where("status=? AND is_margin=True", "TRADING").Count(&count)
   r.Rdb.HMSet(
     r.Ctx,
     fmt.Sprintf("binance:symbols:count"),
@@ -135,7 +135,7 @@ func (r *SymbolsRepository) Slippage(symbol string) error {
 
 func (r *SymbolsRepository) Depth(symbol string) (map[string]interface{}, error) {
   var depth string
-  result := r.Db.Model(&models.Symbol{}).Select("depth").Where("symbol", symbol).Take(&depth)
+  result := r.Db.Model(&spotModels.Symbol{}).Select("depth").Where("symbol", symbol).Take(&depth)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     return nil, result.Error
   }
@@ -185,7 +185,7 @@ func (r *SymbolsRepository) Price(symbol string) (float64, error) {
 }
 
 func (r *SymbolsRepository) Adjust(symbol string, price float64, amount float64) (float64, float64, error) {
-  var entity models.Symbol
+  var entity spotModels.Symbol
   result := r.Db.Select("filters").Where("symbol", symbol).Take(&entity)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     return 0, 0, result.Error

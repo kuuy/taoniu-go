@@ -21,7 +21,7 @@ type KlinesHandler struct {
   Rdb                *redis.Client
   Ctx                context.Context
   Nats               *nats.Conn
-  Repository         *repositories.KlinesRepository
+  KlinesRepository   *repositories.KlinesRepository
   SymbolsRepository  *repositories.SymbolsRepository
   ScalpingRepository *repositories.ScalpingRepository
 }
@@ -38,7 +38,7 @@ func NewKlinesCommand() *cli.Command {
         Ctx:  context.Background(),
         Nats: common.NewNats(),
       }
-      h.Repository = &repositories.KlinesRepository{
+      h.KlinesRepository = &repositories.KlinesRepository{
         Db:   h.Db,
         Rdb:  h.Rdb,
         Ctx:  h.Ctx,
@@ -99,10 +99,10 @@ func (h *KlinesHandler) Flush() error {
     if !mutex.Lock(5 * time.Second) {
       continue
     }
-    h.Repository.Flush(symbol, "1m", 0, 5)
-    h.Repository.Flush(symbol, "15m", 0, 1)
-    h.Repository.Flush(symbol, "4h", 0, 1)
-    h.Repository.Flush(symbol, "1d", 0, 1)
+    h.KlinesRepository.Flush(symbol, "1m", 0, 5)
+    h.KlinesRepository.Flush(symbol, "15m", 0, 1)
+    h.KlinesRepository.Flush(symbol, "4h", 0, 1)
+    h.KlinesRepository.Flush(symbol, "1d", 0, 1)
   }
   return nil
 }
@@ -119,10 +119,10 @@ func (h *KlinesHandler) Fix() error {
     if !mutex.Lock(30 * time.Second) {
       continue
     }
-    h.Repository.Fix(symbol, "1m", 1440)
-    h.Repository.Fix(symbol, "15m", 672)
-    h.Repository.Fix(symbol, "4h", 126)
-    h.Repository.Fix(symbol, "1d", 100)
+    h.KlinesRepository.Fix(symbol, "1m", 1440)
+    h.KlinesRepository.Fix(symbol, "15m", 672)
+    h.KlinesRepository.Fix(symbol, "4h", 126)
+    h.KlinesRepository.Fix(symbol, "1d", 100)
   }
   return nil
 }
@@ -139,7 +139,7 @@ func (h *KlinesHandler) Clean() error {
     if !mutex.Lock(5 * time.Second) {
       continue
     }
-    h.Repository.Clean(symbol)
+    h.KlinesRepository.Clean(symbol)
   }
   return nil
 }

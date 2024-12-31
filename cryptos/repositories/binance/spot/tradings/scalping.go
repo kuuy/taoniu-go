@@ -16,8 +16,8 @@ import (
 
   "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/spot"
-  spotModels "taoniu.local/cryptos/models/binance/spot"
-  models "taoniu.local/cryptos/models/binance/spot/tradings"
+  models "taoniu.local/cryptos/models/binance/spot"
+  tradingsModels "taoniu.local/cryptos/models/binance/spot/tradings"
 )
 
 type ScalpingRepository struct {
@@ -32,25 +32,25 @@ type ScalpingRepository struct {
 
 func (r *ScalpingRepository) Scan() []string {
   var symbols []string
-  r.Db.Model(&spotModels.Scalping{}).Select("symbol").Where("status", 1).Find(&symbols)
+  r.Db.Model(&models.Scalping{}).Select("symbol").Where("status", 1).Find(&symbols)
   return symbols
 }
 
 func (r *ScalpingRepository) ScalpingIds() []string {
   var ids []string
-  r.Db.Model(&models.Scalping{}).Select("scalping_id").Where("status", []int{0, 1, 2}).Distinct("scalping_id").Find(&ids)
+  r.Db.Model(&tradingsModels.Scalping{}).Select("scalping_id").Where("status", []int{0, 1, 2}).Distinct("scalping_id").Find(&ids)
   return ids
 }
 
 func (r *ScalpingRepository) PlanIds() []string {
   var planIds []string
-  r.Db.Model(&models.Scalping{}).Where("status", []int{0, 1, 2}).Distinct().Pluck("plan_id", &planIds)
+  r.Db.Model(&tradingsModels.Scalping{}).Where("status", []int{0, 1, 2}).Distinct().Pluck("plan_id", &planIds)
   return planIds
 }
 
 func (r *ScalpingRepository) Count(conditions map[string]interface{}) int64 {
   var total int64
-  query := r.Db.Model(&models.Scalping{})
+  query := r.Db.Model(&tradingsModels.Scalping{})
   if _, ok := conditions["symbol"]; ok {
     query.Where("symbol", conditions["symbol"].(string))
   }
@@ -63,8 +63,8 @@ func (r *ScalpingRepository) Count(conditions map[string]interface{}) int64 {
   return total
 }
 
-func (r *ScalpingRepository) Listings(conditions map[string]interface{}, current int, pageSize int) []*models.Scalping {
-  var tradings []*models.Scalping
+func (r *ScalpingRepository) Listings(conditions map[string]interface{}, current int, pageSize int) []*tradingsModels.Scalping {
+  var tradings []*tradingsModels.Scalping
   query := r.Db.Select([]string{
     "id",
     "symbol",
@@ -94,13 +94,13 @@ func (r *ScalpingRepository) Listings(conditions map[string]interface{}, current
 }
 
 func (r *ScalpingRepository) Place(planId string) (err error) {
-  var scalpingPlan *spotModels.ScalpingPlan
+  var scalpingPlan *models.ScalpingPlan
   result := r.Db.Take(&scalpingPlan, "plan_id", planId)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     return errors.New("scalping plan empty")
   }
 
-  var plan *spotModels.Plan
+  var plan *models.Plan
   result = r.Db.Take(&plan, "id", planId)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     r.Db.Delete(&scalpingPlan, "plan_id", planId)
@@ -131,7 +131,7 @@ func (r *ScalpingRepository) Place(planId string) (err error) {
     return errors.New("plan has been expired")
   }
 
-  var scalping *spotModels.Scalping
+  var scalping *models.Scalping
   result = r.Db.Model(&scalping).Where("symbol = ? AND status = 1", plan.Symbol).Take(&scalping)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     r.Db.Delete(&scalpingPlan, "plan_id", planId)
@@ -281,7 +281,7 @@ func (r *ScalpingRepository) Place(planId string) (err error) {
 
   r.Db.Model(&scalpingPlan).Where("plan_id", planId).Update("status", 1)
 
-  trading := &models.Scalping{
+  trading := &tradingsModels.Scalping{
     ID:           xid.New().String(),
     Symbol:       plan.Symbol,
     ScalpingId:   scalping.ID,
@@ -299,7 +299,7 @@ func (r *ScalpingRepository) Place(planId string) (err error) {
 }
 
 func (r *ScalpingRepository) Flush(id string) (err error) {
-  var scalping *spotModels.Scalping
+  var scalping *models.Scalping
   var result = r.Db.Take(&scalping, "id", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     return errors.New("empty scalping to flush")
@@ -317,10 +317,10 @@ func (r *ScalpingRepository) Flush(id string) (err error) {
   placeSide := "BUY"
   takeSide := "SELL"
 
-  var closeTrading *models.Scalping
+  var closeTrading *tradingsModels.Scalping
   r.Db.Where("scalping_id=? AND status=?", scalping.ID, 1).Take(&closeTrading)
 
-  var tradings []*models.Scalping
+  var tradings []*tradingsModels.Scalping
   r.Db.Where("scalping_id=? AND status IN ?", scalping.ID, []int{0, 2}).Find(&tradings)
 
   timestamp := time.Now().Add(-15 * time.Minute).Unix()
@@ -507,11 +507,11 @@ func (r *ScalpingRepository) Flush(id string) (err error) {
   return
 }
 
-func (r *ScalpingRepository) Take(scalping *spotModels.Scalping, price float64) (err error) {
+func (r *ScalpingRepository) Take(scalping *models.Scalping, price float64) (err error) {
   var side = "SELL"
   var entryPrice float64
   var sellPrice float64
-  var trading *models.Scalping
+  var trading *tradingsModels.Scalping
 
   position, err := r.PositionRepository.Get(scalping.Symbol)
   if err != nil {
@@ -615,14 +615,14 @@ func (r *ScalpingRepository) Take(scalping *spotModels.Scalping, price float64) 
   return
 }
 
-func (r *ScalpingRepository) Close(scalping *spotModels.Scalping) {
+func (r *ScalpingRepository) Close(scalping *models.Scalping) {
   var total int64
-  r.Db.Model(&models.Scalping{}).Where("scalping_id = ? AND status IN ?", scalping.ID, []int{0, 1}).Count(&total)
+  r.Db.Model(&tradingsModels.Scalping{}).Where("scalping_id = ? AND status IN ?", scalping.ID, []int{0, 1}).Count(&total)
   if total == 0 {
     return
   }
 
-  var tradings []*models.Scalping
+  var tradings []*tradingsModels.Scalping
   r.Db.Select([]string{"id", "version", "updated_at"}).Where("scalping_id=? AND status=?", scalping.ID, 1).Find(&tradings)
   timestamp := time.Now().Add(-30 * time.Minute).UnixMicro()
   for _, trading := range tradings {
@@ -637,7 +637,7 @@ func (r *ScalpingRepository) Close(scalping *spotModels.Scalping) {
 
 func (r *ScalpingRepository) Pending() map[string]float64 {
   var result []*PendingInfo
-  r.Db.Model(&models.Scalping{}).Select(
+  r.Db.Model(&tradingsModels.Scalping{}).Select(
     "symbol",
     "sum(sell_quantity) as quantity",
   ).Where("status", 1).Group("symbol").Find(&result)
@@ -649,7 +649,7 @@ func (r *ScalpingRepository) Pending() map[string]float64 {
 }
 
 func (r *ScalpingRepository) CanBuy(
-  scalping *spotModels.Scalping,
+  scalping *models.Scalping,
   price float64,
 ) bool {
   var buyPrice float64
@@ -664,7 +664,7 @@ func (r *ScalpingRepository) CanBuy(
 
   isChange := false
 
-  var tradings []*models.Scalping
+  var tradings []*tradingsModels.Scalping
   r.Db.Select([]string{"status", "buy_price"}).Where("scalping_id=? AND status IN ?", scalping.ID, []int{0, 1, 2}).Find(&tradings)
   for _, trading := range tradings {
     if trading.Status == 0 {

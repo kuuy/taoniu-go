@@ -7,12 +7,12 @@ import (
   "gorm.io/gorm"
 
   "taoniu.local/cryptos/common"
-  repositories "taoniu.local/cryptos/repositories/binance/spot/analysis/tradings"
+  analysisRepositories "taoniu.local/cryptos/repositories/binance/spot/analysis/tradings"
 )
 
 type ScalpingHandler struct {
-  Db         *gorm.DB
-  Repository *repositories.ScalpingRepository
+  Db                 *gorm.DB
+  AnalysisRepository *analysisRepositories.ScalpingRepository
 }
 
 func NewScalpingCommand() *cli.Command {
@@ -24,7 +24,7 @@ func NewScalpingCommand() *cli.Command {
       h = ScalpingHandler{
         Db: common.NewDB(1),
       }
-      h.Repository = &repositories.ScalpingRepository{
+      h.AnalysisRepository = &analysisRepositories.ScalpingRepository{
         Db: h.Db,
       }
       return nil
@@ -46,7 +46,7 @@ func NewScalpingCommand() *cli.Command {
 
 func (h *ScalpingHandler) Flush() error {
   log.Println("binance spot analysis tradings scalping flush...")
-  err := h.Repository.Flush()
+  err := h.AnalysisRepository.Flush()
   if err != nil {
     log.Println("error", err)
   }

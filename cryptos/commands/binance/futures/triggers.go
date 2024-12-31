@@ -18,10 +18,10 @@ import (
 )
 
 type TriggersHandler struct {
-  Db         *gorm.DB
-  Rdb        *redis.Client
-  Ctx        context.Context
-  Repository *repositories.TriggersRepository
+  Db                 *gorm.DB
+  Rdb                *redis.Client
+  Ctx                context.Context
+  TriggersRepository *repositories.TriggersRepository
 }
 
 func NewTriggersCommand() *cli.Command {
@@ -35,7 +35,7 @@ func NewTriggersCommand() *cli.Command {
         Rdb: common.NewRedis(2),
         Ctx: context.Background(),
       }
-      h.Repository = &repositories.TriggersRepository{
+      h.TriggersRepository = &repositories.TriggersRepository{
         Db: h.Db,
       }
       return nil
@@ -141,7 +141,7 @@ func (h *TriggersHandler) Apply(symbol string, side int) error {
   }
 
   expiredAt := time.Now().Add(time.Hour * 24 * 14)
-  err := h.Repository.Apply(symbol, side, capital, price, expiredAt)
+  err := h.TriggersRepository.Apply(symbol, side, capital, price, expiredAt)
   if err != nil {
     return err
   }
@@ -190,7 +190,7 @@ func (h *TriggersHandler) Reverse(side int) error {
       price = stopPrice
     }
 
-    err := h.Repository.Apply(trigger.Symbol, side, capital, price, trigger.ExpiredAt)
+    err := h.TriggersRepository.Apply(trigger.Symbol, side, capital, price, trigger.ExpiredAt)
     if err != nil {
       log.Println("reverse error", err.Error())
     }

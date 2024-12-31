@@ -14,15 +14,15 @@ import (
   config "taoniu.local/cryptos/config/binance/futures"
   futuresRepositories "taoniu.local/cryptos/repositories/binance/futures"
   tradingsRepositories "taoniu.local/cryptos/repositories/binance/futures/tradings"
-  repositories "taoniu.local/cryptos/repositories/binance/futures/tradings/gambling"
+  gamblingTradingsRepositories "taoniu.local/cryptos/repositories/binance/futures/tradings/gambling"
 )
 
 type ScalpingHandler struct {
-  Db                 *gorm.DB
-  Rdb                *redis.Client
-  Ctx                context.Context
-  Repository         *repositories.ScalpingRepository
-  TradingsRepository *tradingsRepositories.ScalpingRepository
+  Db                         *gorm.DB
+  Rdb                        *redis.Client
+  Ctx                        context.Context
+  GamblingTradingsRepository *gamblingTradingsRepositories.ScalpingRepository
+  TradingsRepository         *tradingsRepositories.ScalpingRepository
 }
 
 func NewScalpingCommand() *cli.Command {
@@ -36,26 +36,26 @@ func NewScalpingCommand() *cli.Command {
         Rdb: common.NewRedis(2),
         Ctx: context.Background(),
       }
-      h.Repository = &repositories.ScalpingRepository{
+      h.GamblingTradingsRepository = &gamblingTradingsRepositories.ScalpingRepository{
         Db:  h.Db,
         Rdb: h.Rdb,
         Ctx: h.Ctx,
       }
-      h.Repository.SymbolsRepository = &futuresRepositories.SymbolsRepository{
+      h.GamblingTradingsRepository.SymbolsRepository = &futuresRepositories.SymbolsRepository{
         Db:  h.Db,
         Rdb: h.Rdb,
         Ctx: h.Ctx,
       }
-      h.Repository.AccountRepository = &futuresRepositories.AccountRepository{
+      h.GamblingTradingsRepository.AccountRepository = &futuresRepositories.AccountRepository{
         Rdb: h.Rdb,
         Ctx: h.Ctx,
       }
-      h.Repository.OrdersRepository = &futuresRepositories.OrdersRepository{
+      h.GamblingTradingsRepository.OrdersRepository = &futuresRepositories.OrdersRepository{
         Db:  h.Db,
         Rdb: h.Rdb,
         Ctx: h.Ctx,
       }
-      h.Repository.PositionRepository = &futuresRepositories.PositionsRepository{
+      h.GamblingTradingsRepository.PositionRepository = &futuresRepositories.PositionsRepository{
         Db: h.Db,
       }
       h.TradingsRepository = &tradingsRepositories.ScalpingRepository{
@@ -90,7 +90,7 @@ func (h *ScalpingHandler) Place() error {
       return nil
     }
 
-    err := h.Repository.Place(id)
+    err := h.GamblingTradingsRepository.Place(id)
     if err != nil {
       log.Println("gambling scalping place error", err)
     }

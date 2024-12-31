@@ -2,9 +2,11 @@ package tradings
 
 import (
   "context"
+  "gorm.io/gorm"
+
   "github.com/go-redis/redis/v8"
   "github.com/urfave/cli/v2"
-  "gorm.io/gorm"
+
   "taoniu.local/cryptos/commands/binance/spot/tradings/gambling"
 )
 

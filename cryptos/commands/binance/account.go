@@ -11,7 +11,7 @@ import (
 )
 
 type AccountHandler struct {
-  Repository *repositories.AccountRepository
+  AccountRepository *repositories.AccountRepository
 }
 
 func NewAccountCommand() *cli.Command {
@@ -21,7 +21,7 @@ func NewAccountCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = AccountHandler{}
-      h.Repository = &repositories.AccountRepository{
+      h.AccountRepository = &repositories.AccountRepository{
         Rdb: common.NewRedis(1),
         Ctx: context.Background(),
       }
@@ -44,7 +44,7 @@ func NewAccountCommand() *cli.Command {
 
 func (h *AccountHandler) balances() error {
   log.Println("account balances processing...")
-  balances, err := h.Repository.Balances()
+  balances, err := h.AccountRepository.Balances()
   if err != nil {
     return err
   }

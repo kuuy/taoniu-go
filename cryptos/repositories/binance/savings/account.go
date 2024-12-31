@@ -2,10 +2,11 @@ package savings
 
 import (
   "context"
-  "github.com/adshao/go-binance/v2"
-  "github.com/go-redis/redis/v8"
   "log"
   "os"
+
+  "github.com/adshao/go-binance/v2"
+  "github.com/go-redis/redis/v8"
 )
 
 type AccountRepository struct {

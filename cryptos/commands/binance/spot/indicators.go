@@ -14,10 +14,10 @@ import (
 )
 
 type IndicatorsHandler struct {
-  Db         *gorm.DB
-  Rdb        *redis.Client
-  Ctx        context.Context
-  Repository *repositories.IndicatorsRepository
+  Db                   *gorm.DB
+  Rdb                  *redis.Client
+  Ctx                  context.Context
+  IndicatorsRepository *repositories.IndicatorsRepository
 }
 
 func NewIndicatorsCommand() *cli.Command {
@@ -31,12 +31,12 @@ func NewIndicatorsCommand() *cli.Command {
         Rdb: common.NewRedis(1),
         Ctx: context.Background(),
       }
-      h.Repository = &repositories.IndicatorsRepository{
+      h.IndicatorsRepository = &repositories.IndicatorsRepository{
         Db:  h.Db,
         Rdb: h.Rdb,
         Ctx: h.Ctx,
       }
-      h.Repository.SymbolsRepository = &repositories.SymbolsRepository{
+      h.IndicatorsRepository.SymbolsRepository = &repositories.SymbolsRepository{
         Db: h.Db,
       }
       return nil
@@ -227,7 +227,7 @@ func (h *IndicatorsHandler) Ranking(interval string) error {
   sortType := -1
   current := 1
   pageSize := 10
-  result := h.Repository.Ranking(symbols, interval, fields, sortField, sortType, current, pageSize)
+  result := h.IndicatorsRepository.Ranking(symbols, interval, fields, sortField, sortType, current, pageSize)
   log.Println("result", result)
   return nil
 }
@@ -241,7 +241,7 @@ func (h *IndicatorsHandler) Pivot(symbol string, interval string) error {
     symbols = append(symbols, symbol)
   }
   for _, symbol := range symbols {
-    err := h.Repository.Pivot(symbol, interval)
+    err := h.IndicatorsRepository.Pivot(symbol, interval)
     if err != nil {
       log.Println("error", err.Error())
     }
@@ -258,7 +258,7 @@ func (h *IndicatorsHandler) Atr(symbol string, interval string) error {
     symbols = append(symbols, symbol)
   }
   for _, symbol := range symbols {
-    err := h.Repository.Atr(symbol, interval, 14, 100)
+    err := h.IndicatorsRepository.Atr(symbol, interval, 14, 100)
     if err != nil {
       log.Println("error", err.Error())
     }
@@ -275,7 +275,7 @@ func (h *IndicatorsHandler) Zlema(symbol string, interval string) error {
     symbols = append(symbols, symbol)
   }
   for _, symbol := range symbols {
-    err := h.Repository.Zlema(symbol, interval, 14, 100)
+    err := h.IndicatorsRepository.Zlema(symbol, interval, 14, 100)
     if err != nil {
       log.Println("error", err.Error())
     }
@@ -292,7 +292,7 @@ func (h *IndicatorsHandler) HaZlema(symbol string, interval string) error {
     symbols = append(symbols, symbol)
   }
   for _, symbol := range symbols {
-    err := h.Repository.HaZlema(symbol, interval, 14, 100)
+    err := h.IndicatorsRepository.HaZlema(symbol, interval, 14, 100)
     if err != nil {
       log.Println("error", err.Error())
     }
@@ -309,7 +309,7 @@ func (h *IndicatorsHandler) Kdj(symbol string, interval string) error {
     symbols = append(symbols, symbol)
   }
   for _, symbol := range symbols {
-    err := h.Repository.Kdj(symbol, interval, 9, 3, 100)
+    err := h.IndicatorsRepository.Kdj(symbol, interval, 9, 3, 100)
     if err != nil {
       log.Println("error", err.Error())
     }
@@ -326,7 +326,7 @@ func (h *IndicatorsHandler) BBands(symbol string, interval string) error {
     symbols = append(symbols, symbol)
   }
   for _, symbol := range symbols {
-    err := h.Repository.BBands(symbol, interval, 14, 100)
+    err := h.IndicatorsRepository.BBands(symbol, interval, 14, 100)
     if err != nil {
       log.Println("error", err.Error())
     }
@@ -345,13 +345,13 @@ func (h *IndicatorsHandler) IchimokuCloud(symbol string, interval string) error 
   for _, symbol := range symbols {
     var err error
     if interval == "1m" {
-      err = h.Repository.IchimokuCloud(symbol, interval, 129, 374, 748, 1440)
+      err = h.IndicatorsRepository.IchimokuCloud(symbol, interval, 129, 374, 748, 1440)
     } else if interval == "15m" {
-      err = h.Repository.IchimokuCloud(symbol, interval, 60, 174, 349, 672)
+      err = h.IndicatorsRepository.IchimokuCloud(symbol, interval, 60, 174, 349, 672)
     } else if interval == "4h" {
-      err = h.Repository.IchimokuCloud(symbol, interval, 11, 32, 65, 126)
+      err = h.IndicatorsRepository.IchimokuCloud(symbol, interval, 11, 32, 65, 126)
     } else {
-      err = h.Repository.IchimokuCloud(symbol, interval, 9, 26, 52, 100)
+      err = h.IndicatorsRepository.IchimokuCloud(symbol, interval, 9, 26, 52, 100)
     }
     if err != nil {
       log.Println("error", err.Error())
@@ -381,7 +381,7 @@ func (h *IndicatorsHandler) VolumeProfile(symbol string, interval string) error 
   }
 
   for _, symbol := range symbols {
-    err := h.Repository.VolumeProfile(symbol, interval, limit)
+    err := h.IndicatorsRepository.VolumeProfile(symbol, interval, limit)
     if err != nil {
       log.Println("error", symbol, err)
     }
@@ -410,7 +410,7 @@ func (h *IndicatorsHandler) AndeanOscillator(symbol string, interval string) err
   }
 
   for _, symbol := range symbols {
-    err := h.Repository.AndeanOscillator(symbol, interval, 50, 9, limit)
+    err := h.IndicatorsRepository.AndeanOscillator(symbol, interval, 50, 9, limit)
     if err != nil {
       log.Println("error", symbol, err)
     }

@@ -7,14 +7,14 @@ import (
   "gorm.io/gorm"
 
   "taoniu.local/cryptos/common"
-  repositories "taoniu.local/cryptos/repositories/binance/currencies/spiders"
-  spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
+  spidersRepositories "taoniu.local/cryptos/repositories/binance/currencies/spiders"
+  repositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
 type CrawlsHandler struct {
   Db                *gorm.DB
-  Repository        *repositories.CrawlsRepository
-  SymbolsRepository *spotRepositories.SymbolsRepository
+  CrawlsRepository  *spidersRepositories.CrawlsRepository
+  SymbolsRepository *repositories.SymbolsRepository
 }
 
 func NewCrawlsCommand() *cli.Command {
@@ -26,10 +26,10 @@ func NewCrawlsCommand() *cli.Command {
       h = CrawlsHandler{
         Db: common.NewDB(1),
       }
-      h.Repository = &repositories.CrawlsRepository{
+      h.CrawlsRepository = &spidersRepositories.CrawlsRepository{
         Db: h.Db,
       }
-      h.SymbolsRepository = &spotRepositories.SymbolsRepository{
+      h.SymbolsRepository = &repositories.SymbolsRepository{
         Db: h.Db,
       }
       return nil
@@ -52,7 +52,7 @@ func NewCrawlsCommand() *cli.Command {
 func (h *CrawlsHandler) Request() error {
   log.Println("crawl request processing...")
   for _, asset := range h.SymbolsRepository.Currencies() {
-    err := h.Repository.Request(asset)
+    err := h.CrawlsRepository.Request(asset)
     if err != nil {
       log.Println("error", err)
     }

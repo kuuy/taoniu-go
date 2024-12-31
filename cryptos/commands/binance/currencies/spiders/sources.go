@@ -7,12 +7,12 @@ import (
   "gorm.io/gorm"
 
   "taoniu.local/cryptos/common"
-  repositories "taoniu.local/cryptos/repositories/binance/currencies/spiders"
+  spidersRepositories "taoniu.local/cryptos/repositories/binance/currencies/spiders"
 )
 
 type SourcesHandler struct {
-  Db         *gorm.DB
-  Repository *repositories.SourcesRepository
+  Db                *gorm.DB
+  SourcesRepository *spidersRepositories.SourcesRepository
 }
 
 func NewSourcesCommand() *cli.Command {
@@ -24,7 +24,7 @@ func NewSourcesCommand() *cli.Command {
       h = SourcesHandler{
         Db: common.NewDB(1),
       }
-      h.Repository = &repositories.SourcesRepository{
+      h.SourcesRepository = &spidersRepositories.SourcesRepository{
         Db: h.Db,
       }
       return nil
@@ -46,5 +46,5 @@ func NewSourcesCommand() *cli.Command {
 
 func (h *SourcesHandler) Add() error {
   log.Println("sources add processing...")
-  return h.Repository.Add()
+  return h.SourcesRepository.Add()
 }

@@ -18,10 +18,10 @@ import (
 )
 
 type ScalpingHandler struct {
-  Db         *gorm.DB
-  Rdb        *redis.Client
-  Ctx        context.Context
-  Repository *repositories.ScalpingRepository
+  Db                 *gorm.DB
+  Rdb                *redis.Client
+  Ctx                context.Context
+  ScalpingRepository *repositories.ScalpingRepository
 }
 
 func NewScalpingCommand() *cli.Command {
@@ -35,7 +35,7 @@ func NewScalpingCommand() *cli.Command {
         Rdb: common.NewRedis(1),
         Ctx: context.Background(),
       }
-      h.Repository = &repositories.ScalpingRepository{
+      h.ScalpingRepository = &repositories.ScalpingRepository{
         Db: h.Db,
       }
       return nil
@@ -124,7 +124,7 @@ func (h *ScalpingHandler) Apply(symbol string) error {
   //stopPrice, _ := strconv.ParseFloat(data[1].(string), 64)
 
   expiredAt := time.Now().Add(time.Hour * 24 * 14)
-  err := h.Repository.Apply(symbol, capital, placePrice, expiredAt)
+  err := h.ScalpingRepository.Apply(symbol, capital, placePrice, expiredAt)
   if err != nil {
     return err
   }

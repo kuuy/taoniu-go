@@ -21,12 +21,12 @@ import (
 )
 
 type PositionsHandler struct {
-  Db                 *gorm.DB
-  Rdb                *redis.Client
-  Ctx                context.Context
-  Repository         *repositories.PositionsRepository
-  SymbolsRepository  *repositories.SymbolsRepository
-  TradingsRepository *repositories.TradingsRepository
+  Db                  *gorm.DB
+  Rdb                 *redis.Client
+  Ctx                 context.Context
+  PositionsRepository *repositories.PositionsRepository
+  SymbolsRepository   *repositories.SymbolsRepository
+  TradingsRepository  *repositories.TradingsRepository
 }
 
 func NewPositionsCommand() *cli.Command {
@@ -49,10 +49,10 @@ func NewPositionsCommand() *cli.Command {
       h.TradingsRepository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
         Db: h.Db,
       }
-      h.Repository = &repositories.PositionsRepository{
+      h.PositionsRepository = &repositories.PositionsRepository{
         Db: h.Db,
       }
-      h.Repository.OrdersRepository = &repositories.OrdersRepository{
+      h.PositionsRepository.OrdersRepository = &repositories.OrdersRepository{
         Db:  h.Db,
         Ctx: h.Ctx,
       }
@@ -153,11 +153,11 @@ func (h *PositionsHandler) Calc(
     buyAmount, _ = decimal.NewFromFloat(buyPrice).Mul(decimal.NewFromFloat(buyQuantity)).Float64()
     entryQuantity = buyQuantity
     entryAmount = buyAmount
-    sellPrice = h.Repository.SellPrice(entryPrice, entryAmount)
+    sellPrice = h.PositionsRepository.SellPrice(entryPrice, entryAmount)
     sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
-    takePrice = h.Repository.TakePrice(entryPrice, tickSize)
+    takePrice = h.PositionsRepository.TakePrice(entryPrice, tickSize)
   } else {
-    takePrice = h.Repository.TakePrice(entryPrice, tickSize)
+    takePrice = h.PositionsRepository.TakePrice(entryPrice, tickSize)
   }
 
   ipart, _ := math.Modf(maxCapital)
@@ -168,16 +168,16 @@ func (h *PositionsHandler) Calc(
 
   for {
     var err error
-    capital, err := h.Repository.Capital(maxCapital, entryAmount, places)
+    capital, err := h.PositionsRepository.Capital(maxCapital, entryAmount, places)
     if err != nil {
       break
     }
-    ratio := h.Repository.Ratio(capital, entryAmount)
+    ratio := h.PositionsRepository.Ratio(capital, entryAmount)
     buyAmount, _ = decimal.NewFromFloat(capital).Mul(decimal.NewFromFloat(ratio)).Float64()
     if buyAmount < 5 {
       buyAmount = 5
     }
-    buyQuantity = h.Repository.BuyQuantity(buyAmount, entryPrice, entryAmount)
+    buyQuantity = h.PositionsRepository.BuyQuantity(buyAmount, entryPrice, entryAmount)
     buyPrice, _ = decimal.NewFromFloat(buyAmount).Div(decimal.NewFromFloat(buyQuantity)).Float64()
     buyPrice, _ = decimal.NewFromFloat(buyPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
     buyQuantity, _ = decimal.NewFromFloat(buyQuantity).Div(decimal.NewFromFloat(stepSize)).Ceil().Mul(decimal.NewFromFloat(stepSize)).Float64()
@@ -185,7 +185,7 @@ func (h *PositionsHandler) Calc(
     entryQuantity, _ = decimal.NewFromFloat(entryQuantity).Add(decimal.NewFromFloat(buyQuantity)).Float64()
     entryAmount, _ = decimal.NewFromFloat(entryAmount).Add(decimal.NewFromFloat(buyAmount)).Float64()
     entryPrice, _ = decimal.NewFromFloat(entryAmount).Div(decimal.NewFromFloat(entryQuantity)).Float64()
-    sellPrice = h.Repository.SellPrice(entryPrice, entryAmount)
+    sellPrice = h.PositionsRepository.SellPrice(entryPrice, entryAmount)
     sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
     log.Println("buy", buyPrice, strconv.FormatFloat(buyQuantity, 'f', -1, 64), buyAmount, sellPrice, entryPrice)
   }
@@ -212,7 +212,7 @@ func (h *PositionsHandler) Apply(symbol string) error {
   }
   query.Where("status", 1).Find(&entities)
   for _, entity := range entities {
-    h.Repository.Apply(entity.Symbol)
+    h.PositionsRepository.Apply(entity.Symbol)
     break
   }
   return nil
@@ -236,10 +236,10 @@ func (h *PositionsHandler) Flush(symbol string) error {
     }
     defer mutex.Unlock()
     log.Println("symbol", symbol)
-    if position, err := h.Repository.Get(symbol); err == nil {
-      h.Repository.Flush(position)
+    if position, err := h.PositionsRepository.Get(symbol); err == nil {
+      h.PositionsRepository.Flush(position)
     } else {
-      h.Repository.Apply(symbol)
+      h.PositionsRepository.Apply(symbol)
       log.Println("position not exists", symbol)
     }
     continue
@@ -251,7 +251,7 @@ func (h *PositionsHandler) Check() (err error) {
   log.Println("binance spot positions check...")
   symbols := h.TradingsRepository.Scan()
   for _, symbol := range symbols {
-    position, _ := h.Repository.Get(symbol)
+    position, _ := h.PositionsRepository.Get(symbol)
     entity, _ := h.SymbolsRepository.Get(symbol)
     value, _ := h.Rdb.HGet(h.Ctx, fmt.Sprintf("binance:spot:balance:%s", entity.BaseAsset), "free").Result()
     free, _ := strconv.ParseFloat(value, 64)

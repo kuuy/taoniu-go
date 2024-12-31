@@ -11,14 +11,14 @@ import (
 
   "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/futures"
-  repositories "taoniu.local/cryptos/repositories/binance/futures/analysis/tradings"
+  analysisRepositories "taoniu.local/cryptos/repositories/binance/futures/analysis/tradings"
 )
 
 type TriggersHandler struct {
-  Db         *gorm.DB
-  Rdb        *redis.Client
-  Ctx        context.Context
-  Repository *repositories.TriggersRepository
+  Db                 *gorm.DB
+  Rdb                *redis.Client
+  Ctx                context.Context
+  AnalysisRepository *analysisRepositories.TriggersRepository
 }
 
 func NewTriggersCommand() *cli.Command {
@@ -32,7 +32,7 @@ func NewTriggersCommand() *cli.Command {
         Rdb: common.NewRedis(2),
         Ctx: context.Background(),
       }
-      h.Repository = &repositories.TriggersRepository{
+      h.AnalysisRepository = &analysisRepositories.TriggersRepository{
         Db: h.Db,
       }
       return nil
@@ -62,7 +62,7 @@ func (h *TriggersHandler) Flush() (err error) {
   if !mutex.Lock(50 * time.Second) {
     return
   }
-  h.Repository.Flush(1)
-  h.Repository.Flush(2)
+  h.AnalysisRepository.Flush(1)
+  h.AnalysisRepository.Flush(2)
   return
 }

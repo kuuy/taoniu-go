@@ -12,15 +12,15 @@ import (
 
   "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/futures"
-  futuresRepositories "taoniu.local/cryptos/repositories/binance/futures"
-  repositories "taoniu.local/cryptos/repositories/binance/futures/tradings"
+  repositories "taoniu.local/cryptos/repositories/binance/futures"
+  tradingsRepositories "taoniu.local/cryptos/repositories/binance/futures/tradings"
 )
 
 type TriggersHandler struct {
-  Db         *gorm.DB
-  Rdb        *redis.Client
-  Ctx        context.Context
-  Repository *repositories.TriggersRepository
+  Db                 *gorm.DB
+  Rdb                *redis.Client
+  Ctx                context.Context
+  TradingsRepository *tradingsRepositories.TriggersRepository
 }
 
 func NewTriggersCommand() *cli.Command {
@@ -34,26 +34,26 @@ func NewTriggersCommand() *cli.Command {
         Rdb: common.NewRedis(2),
         Ctx: context.Background(),
       }
-      h.Repository = &repositories.TriggersRepository{
+      h.TradingsRepository = &tradingsRepositories.TriggersRepository{
         Db:  h.Db,
         Rdb: h.Rdb,
         Ctx: h.Ctx,
       }
-      h.Repository.SymbolsRepository = &futuresRepositories.SymbolsRepository{
+      h.TradingsRepository.SymbolsRepository = &repositories.SymbolsRepository{
         Db:  h.Db,
         Rdb: h.Rdb,
         Ctx: h.Ctx,
       }
-      h.Repository.AccountRepository = &futuresRepositories.AccountRepository{
+      h.TradingsRepository.AccountRepository = &repositories.AccountRepository{
         Rdb: h.Rdb,
         Ctx: h.Ctx,
       }
-      h.Repository.OrdersRepository = &futuresRepositories.OrdersRepository{
+      h.TradingsRepository.OrdersRepository = &repositories.OrdersRepository{
         Db:  h.Db,
         Rdb: h.Rdb,
         Ctx: h.Ctx,
       }
-      h.Repository.PositionRepository = &futuresRepositories.PositionsRepository{
+      h.TradingsRepository.PositionRepository = &repositories.PositionsRepository{
         Db: h.Db,
       }
       return nil
@@ -85,7 +85,7 @@ func NewTriggersCommand() *cli.Command {
 
 func (h *TriggersHandler) Place() error {
   log.Println("futures tradings triggers place...")
-  ids := h.Repository.TriggerIds()
+  ids := h.TradingsRepository.TriggerIds()
   for _, id := range ids {
     mutex := common.NewMutex(
       h.Rdb,
@@ -95,7 +95,7 @@ func (h *TriggersHandler) Place() error {
     if !mutex.Lock(30 * time.Second) {
       return nil
     }
-    err := h.Repository.Place(id)
+    err := h.TradingsRepository.Place(id)
     if err != nil {
       log.Println("error", err)
     }
@@ -106,7 +106,7 @@ func (h *TriggersHandler) Place() error {
 
 func (h *TriggersHandler) Flush() error {
   log.Println("futures tradings triggers flush...")
-  ids := h.Repository.TriggerIds()
+  ids := h.TradingsRepository.TriggerIds()
   for _, id := range ids {
     mutex := common.NewMutex(
       h.Rdb,
@@ -116,7 +116,7 @@ func (h *TriggersHandler) Flush() error {
     if !mutex.Lock(30 * time.Second) {
       return nil
     }
-    err := h.Repository.Flush(id)
+    err := h.TradingsRepository.Flush(id)
     if err != nil {
       log.Println("error", err)
     }

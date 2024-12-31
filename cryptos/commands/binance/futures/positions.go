@@ -16,9 +16,9 @@ import (
 )
 
 type PositionsHandler struct {
-  Db                *gorm.DB
-  Repository        *repositories.PositionsRepository
-  SymbolsRepository *repositories.SymbolsRepository
+  Db                  *gorm.DB
+  PositionsRepository *repositories.PositionsRepository
+  SymbolsRepository   *repositories.SymbolsRepository
 }
 
 func NewPositionsCommand() *cli.Command {
@@ -30,7 +30,7 @@ func NewPositionsCommand() *cli.Command {
       h = PositionsHandler{
         Db: common.NewDB(2),
       }
-      h.Repository = &repositories.PositionsRepository{
+      h.PositionsRepository = &repositories.PositionsRepository{
         Db: h.Db,
       }
       h.SymbolsRepository = &repositories.SymbolsRepository{
@@ -115,15 +115,15 @@ func (h *PositionsHandler) Calc(
     buyAmount, _ = decimal.NewFromFloat(buyPrice).Mul(decimal.NewFromFloat(buyQuantity)).Float64()
     entryQuantity = buyQuantity
     entryAmount = buyAmount
-    sellPrice = h.Repository.SellPrice(side, entryPrice, entryAmount)
+    sellPrice = h.PositionsRepository.SellPrice(side, entryPrice, entryAmount)
     if side == 1 {
       sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
     } else {
       sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
     }
-    takePrice = h.Repository.TakePrice(entryPrice, side, tickSize)
+    takePrice = h.PositionsRepository.TakePrice(entryPrice, side, tickSize)
   } else {
-    takePrice = h.Repository.TakePrice(entryPrice, side, tickSize)
+    takePrice = h.PositionsRepository.TakePrice(entryPrice, side, tickSize)
   }
 
   ipart, _ := math.Modf(maxCapital)
@@ -134,16 +134,16 @@ func (h *PositionsHandler) Calc(
 
   for {
     var err error
-    capital, err := h.Repository.Capital(maxCapital, entryAmount, places)
+    capital, err := h.PositionsRepository.Capital(maxCapital, entryAmount, places)
     if err != nil {
       break
     }
-    ratio := h.Repository.Ratio(capital, entryAmount)
+    ratio := h.PositionsRepository.Ratio(capital, entryAmount)
     buyAmount, _ = decimal.NewFromFloat(capital).Mul(decimal.NewFromFloat(ratio)).Float64()
     if buyAmount < 5 {
       buyAmount = 5
     }
-    buyQuantity = h.Repository.BuyQuantity(side, buyAmount, entryPrice, entryAmount)
+    buyQuantity = h.PositionsRepository.BuyQuantity(side, buyAmount, entryPrice, entryAmount)
     buyPrice, _ = decimal.NewFromFloat(buyAmount).Div(decimal.NewFromFloat(buyQuantity)).Float64()
     if side == 1 {
       buyPrice, _ = decimal.NewFromFloat(buyPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
@@ -155,7 +155,7 @@ func (h *PositionsHandler) Calc(
     entryQuantity, _ = decimal.NewFromFloat(entryQuantity).Add(decimal.NewFromFloat(buyQuantity)).Float64()
     entryAmount, _ = decimal.NewFromFloat(entryAmount).Add(decimal.NewFromFloat(buyAmount)).Float64()
     entryPrice, _ = decimal.NewFromFloat(entryAmount).Div(decimal.NewFromFloat(entryQuantity)).Float64()
-    sellPrice = h.Repository.SellPrice(side, entryPrice, entryAmount)
+    sellPrice = h.PositionsRepository.SellPrice(side, entryPrice, entryAmount)
     if side == 1 {
       sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
     } else {
@@ -196,7 +196,7 @@ func (h *PositionsHandler) Flush(symbol string, side int) error {
   }
   query.Where("status", 1).Find(&triggers)
   for _, trigger := range triggers {
-    h.Repository.Flush(trigger.Symbol, trigger.Side)
+    h.PositionsRepository.Flush(trigger.Symbol, trigger.Side)
     break
   }
   return nil

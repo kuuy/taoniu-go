@@ -15,9 +15,9 @@ import (
 )
 
 type GamblingHandler struct {
-  Db                *gorm.DB
-  Repository        *repositories.GamblingRepository
-  SymbolsRepository *repositories.SymbolsRepository
+  Db                 *gorm.DB
+  GamblingRepository *repositories.GamblingRepository
+  SymbolsRepository  *repositories.SymbolsRepository
 }
 
 func NewGamblingCommand() *cli.Command {
@@ -29,7 +29,7 @@ func NewGamblingCommand() *cli.Command {
       h = GamblingHandler{
         Db: common.NewDB(2),
       }
-      h.Repository = &repositories.GamblingRepository{
+      h.GamblingRepository = &repositories.GamblingRepository{
         Db: h.Db,
       }
       h.SymbolsRepository = &repositories.SymbolsRepository{
@@ -84,8 +84,8 @@ func (h *GamblingHandler) Calc(
   entryQuantity, _ = decimal.NewFromFloat(entryAmount).Div(decimal.NewFromFloat(entryPrice)).Float64()
   log.Println("entry", entryPrice, strconv.FormatFloat(entryQuantity, 'f', -1, 64), entryAmount)
 
-  takePrice := h.Repository.TakePrice(entryPrice, side, tickSize)
-  stopPrice := h.Repository.StopPrice(entryPrice, side, tickSize)
+  takePrice := h.GamblingRepository.TakePrice(entryPrice, side, tickSize)
+  stopPrice := h.GamblingRepository.StopPrice(entryPrice, side, tickSize)
 
   planPrice := entryPrice
   planQuantity := entryQuantity
@@ -95,7 +95,7 @@ func (h *GamblingHandler) Calc(
   takeProfit := 0.0
 
   for {
-    plans := h.Repository.Calc(planPrice, planQuantity, side, tickSize, stepSize)
+    plans := h.GamblingRepository.Calc(planPrice, planQuantity, side, tickSize, stepSize)
     for _, plan := range plans {
       if plan.TakeQuantity < stepSize {
         if side == 1 {

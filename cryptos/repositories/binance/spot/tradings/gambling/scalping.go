@@ -17,8 +17,8 @@ import (
 
   "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/spot"
-  spotModels "taoniu.local/cryptos/models/binance/spot"
-  models "taoniu.local/cryptos/models/binance/spot/tradings"
+  models "taoniu.local/cryptos/models/binance/spot"
+  tradingsModels "taoniu.local/cryptos/models/binance/spot/tradings"
 )
 
 type ScalpingRepository struct {
@@ -32,7 +32,7 @@ type ScalpingRepository struct {
 }
 
 func (r *ScalpingRepository) Place(id string) (err error) {
-  var scalping *spotModels.Scalping
+  var scalping *models.Scalping
   result := r.Db.First(&scalping, "id=?", id)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
     err = errors.New("scalping not found")
@@ -196,7 +196,7 @@ func (r *ScalpingRepository) Place(id string) (err error) {
     })
   }
 
-  trading := &models.Scalping{
+  trading := &tradingsModels.Scalping{
     ID:           xid.New().String(),
     Symbol:       scalping.Symbol,
     ScalpingId:   scalping.ID,
@@ -214,7 +214,7 @@ func (r *ScalpingRepository) Place(id string) (err error) {
 }
 
 func (r *ScalpingRepository) CanBuy(
-  scalping *spotModels.Scalping,
+  scalping *models.Scalping,
   price float64,
 ) bool {
   var buyPrice float64
@@ -229,7 +229,7 @@ func (r *ScalpingRepository) CanBuy(
 
   isChange := false
 
-  var tradings []*models.Scalping
+  var tradings []*tradingsModels.Scalping
   r.Db.Select([]string{"status", "buy_price"}).Where("scalping_id=? AND status IN ?", scalping.ID, []int{0, 1, 2}).Find(&tradings)
   for _, trading := range tradings {
     if trading.Status == 0 {

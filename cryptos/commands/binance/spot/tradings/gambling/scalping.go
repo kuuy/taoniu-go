@@ -12,17 +12,17 @@ import (
 
   "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/spot"
-  spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
+  repositories "taoniu.local/cryptos/repositories/binance/spot"
   tradingsRepositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
-  repositories "taoniu.local/cryptos/repositories/binance/spot/tradings/gambling"
+  gamblingTradingsRepositories "taoniu.local/cryptos/repositories/binance/spot/tradings/gambling"
 )
 
 type ScalpingHandler struct {
-  Db                 *gorm.DB
-  Rdb                *redis.Client
-  Ctx                context.Context
-  Repository         *repositories.ScalpingRepository
-  TradingsRepository *tradingsRepositories.ScalpingRepository
+  Db                         *gorm.DB
+  Rdb                        *redis.Client
+  Ctx                        context.Context
+  GamblingTradingsRepository *gamblingTradingsRepositories.ScalpingRepository
+  TradingsRepository         *tradingsRepositories.ScalpingRepository
 }
 
 func NewScalpingCommand() *cli.Command {
@@ -36,26 +36,26 @@ func NewScalpingCommand() *cli.Command {
         Rdb: common.NewRedis(1),
         Ctx: context.Background(),
       }
-      h.Repository = &repositories.ScalpingRepository{
+      h.GamblingTradingsRepository = &gamblingTradingsRepositories.ScalpingRepository{
         Db:  h.Db,
         Rdb: h.Rdb,
         Ctx: h.Ctx,
       }
-      h.Repository.SymbolsRepository = &spotRepositories.SymbolsRepository{
+      h.GamblingTradingsRepository.SymbolsRepository = &repositories.SymbolsRepository{
         Db:  h.Db,
         Rdb: h.Rdb,
         Ctx: h.Ctx,
       }
-      h.Repository.AccountRepository = &spotRepositories.AccountRepository{
+      h.GamblingTradingsRepository.AccountRepository = &repositories.AccountRepository{
         Rdb: h.Rdb,
         Ctx: h.Ctx,
       }
-      h.Repository.OrdersRepository = &spotRepositories.OrdersRepository{
+      h.GamblingTradingsRepository.OrdersRepository = &repositories.OrdersRepository{
         Db:  h.Db,
         Rdb: h.Rdb,
         Ctx: h.Ctx,
       }
-      h.Repository.PositionRepository = &spotRepositories.PositionsRepository{
+      h.GamblingTradingsRepository.PositionRepository = &repositories.PositionsRepository{
         Db: h.Db,
       }
       h.TradingsRepository = &tradingsRepositories.ScalpingRepository{
@@ -90,7 +90,7 @@ func (h *ScalpingHandler) Place() error {
       return nil
     }
 
-    err := h.Repository.Place(id)
+    err := h.GamblingTradingsRepository.Place(id)
     if err != nil {
       log.Println("gambling scalping place error", err)
     }

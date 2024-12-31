@@ -11,8 +11,8 @@ import (
   "gorm.io/datatypes"
   "gorm.io/gorm"
 
-  futuresModels "taoniu.local/cryptos/models/binance/futures"
-  models "taoniu.local/cryptos/models/binance/futures/analysis/tradings"
+  models "taoniu.local/cryptos/models/binance/futures"
+  analysisModels "taoniu.local/cryptos/models/binance/futures/analysis/tradings"
   tradingsModels "taoniu.local/cryptos/models/binance/futures/tradings"
 )
 
@@ -27,10 +27,10 @@ func (r *ScalpingRepository) Flush(side int) error {
   duration := time.Hour*time.Duration(-now.Hour()) + time.Minute*time.Duration(-now.Minute()) + time.Second*time.Duration(-now.Second())
   datetime := now.Add(duration)
 
-  var analysis *models.Scalping
+  var analysis *analysisModels.Scalping
   result := r.Db.Where("side=? AND day=?", side, datatypes.Date(datetime)).Take(&analysis)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    analysis = &models.Scalping{
+    analysis = &analysisModels.Scalping{
       ID:   xid.New().String(),
       Side: side,
       Day:  datatypes.Date(datetime),
@@ -97,13 +97,13 @@ func (r *ScalpingRepository) Flush(side int) error {
 
 func (r *ScalpingRepository) Count(conditions map[string]interface{}) int64 {
   var total int64
-  query := r.Db.Model(&models.Scalping{})
+  query := r.Db.Model(&analysisModels.Scalping{})
   query.Count(&total)
   return total
 }
 
-func (r *ScalpingRepository) Listings(conditions map[string]interface{}, current int, pageSize int) []*models.Scalping {
-  var analysis []*models.Scalping
+func (r *ScalpingRepository) Listings(conditions map[string]interface{}, current int, pageSize int) []*analysisModels.Scalping {
+  var analysis []*analysisModels.Scalping
   query := r.Db.Select([]string{
     "id",
     "day",
@@ -121,7 +121,7 @@ func (r *ScalpingRepository) Listings(conditions map[string]interface{}, current
 }
 
 func (r *ScalpingRepository) Series(limit int) []interface{} {
-  var analysis []*models.Scalping
+  var analysis []*analysisModels.Scalping
   r.Db.Order("day desc").Limit(limit).Find(&analysis)
 
   series := make([]interface{}, len(analysis))
@@ -136,7 +136,7 @@ func (r *ScalpingRepository) Series(limit int) []interface{} {
 }
 
 func (r *ScalpingRepository) Amount(symbol string, orderId int64) float64 {
-  var order futuresModels.Order
+  var order models.Order
   r.Db.Where("symbol=? AND order_id=?", symbol, orderId).Find(&order)
   return order.AvgPrice * order.ExecutedQuantity
 }

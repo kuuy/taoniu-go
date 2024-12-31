@@ -7,7 +7,7 @@ import (
   "github.com/rs/xid"
   "gorm.io/gorm"
 
-  models "taoniu.local/cryptos/models/binance/futures/gambling"
+  gamblingModels "taoniu.local/cryptos/models/binance/futures/gambling"
 )
 
 type AntRepository struct {
@@ -16,7 +16,7 @@ type AntRepository struct {
 
 func (r *AntRepository) Count(conditions map[string]interface{}) int64 {
   var total int64
-  query := r.Db.Model(&models.Ant{})
+  query := r.Db.Model(&gamblingModels.Ant{})
   if _, ok := conditions["symbol"]; ok {
     query.Where("symbol", conditions["symbol"].(string))
   }
@@ -25,7 +25,7 @@ func (r *AntRepository) Count(conditions map[string]interface{}) int64 {
   return total
 }
 
-func (r *AntRepository) Listings(conditions map[string]interface{}, current int, pageSize int) (result []*models.Ant) {
+func (r *AntRepository) Listings(conditions map[string]interface{}, current int, pageSize int) (result []*gamblingModels.Ant) {
   query := r.Db.Select([]string{
     "id",
     "symbol",
@@ -61,10 +61,10 @@ func (r *AntRepository) Apply(
   placeQuantities []float64,
   expiredAt time.Time,
 ) error {
-  var scalping *models.Ant
+  var scalping *gamblingModels.Ant
   result := r.Db.Where("symbol = ? AND side = ? AND status = 1", symbol, side).Take(&scalping)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    entity := &models.Ant{
+    entity := &gamblingModels.Ant{
       ID:              xid.New().String(),
       Symbol:          symbol,
       Side:            side,

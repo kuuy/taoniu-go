@@ -8,12 +8,12 @@ import (
   "gorm.io/gorm"
 
   "taoniu.local/cryptos/common"
-  repositories "taoniu.local/cryptos/repositories/binance/futures/analysis/tradings"
+  analysisRepositories "taoniu.local/cryptos/repositories/binance/futures/analysis/tradings"
 )
 
 type TriggersHandler struct {
-  Db         *gorm.DB
-  Repository *repositories.TriggersRepository
+  Db                 *gorm.DB
+  AnalysisRepository *analysisRepositories.TriggersRepository
 }
 
 func NewTriggersCommand() *cli.Command {
@@ -25,7 +25,7 @@ func NewTriggersCommand() *cli.Command {
       h = TriggersHandler{
         Db: common.NewDB(2),
       }
-      h.Repository = &repositories.TriggersRepository{
+      h.AnalysisRepository = &analysisRepositories.TriggersRepository{
         Db: h.Db,
       }
       return nil
@@ -52,7 +52,7 @@ func NewTriggersCommand() *cli.Command {
 
 func (h *TriggersHandler) Flush(side int) error {
   log.Println("binance futures analysis tradings triggers flush...")
-  err := h.Repository.Flush(side)
+  err := h.AnalysisRepository.Flush(side)
   if err != nil {
     log.Println("error", err)
   }

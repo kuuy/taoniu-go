@@ -13,10 +13,10 @@ import (
 )
 
 type SymbolsHandler struct {
-  Db         *gorm.DB
-  Rdb        *redis.Client
-  Ctx        context.Context
-  Repository *repositories.SymbolsRepository
+  Db                *gorm.DB
+  Rdb               *redis.Client
+  Ctx               context.Context
+  SymbolsRepository *repositories.SymbolsRepository
 }
 
 func NewSymbolsCommand() *cli.Command {
@@ -30,7 +30,7 @@ func NewSymbolsCommand() *cli.Command {
         Rdb: common.NewRedis(1),
         Ctx: context.Background(),
       }
-      h.Repository = &repositories.SymbolsRepository{
+      h.SymbolsRepository = &repositories.SymbolsRepository{
         Db:  h.Db,
         Rdb: h.Rdb,
         Ctx: h.Ctx,
@@ -105,19 +105,19 @@ func NewSymbolsCommand() *cli.Command {
 
 func (h *SymbolsHandler) Currencies() error {
   log.Println("symbols currencies...")
-  currencies := h.Repository.Currencies()
+  currencies := h.SymbolsRepository.Currencies()
   log.Println("currencies", currencies)
   return nil
 }
 
 func (h *SymbolsHandler) Flush() error {
   log.Println("symbols flush...")
-  return h.Repository.Flush()
+  return h.SymbolsRepository.Flush()
 }
 
 func (h *SymbolsHandler) Price(symbol string) (err error) {
   log.Println("symbols price...")
-  price, err := h.Repository.Price(symbol)
+  price, err := h.SymbolsRepository.Price(symbol)
   if err != nil {
     return
   }
@@ -127,13 +127,13 @@ func (h *SymbolsHandler) Price(symbol string) (err error) {
 
 func (h *SymbolsHandler) Count() error {
   log.Println("symbols count...")
-  return h.Repository.Count()
+  return h.SymbolsRepository.Count()
 }
 
 func (h *SymbolsHandler) Slippage() error {
   log.Println("symbols depth...")
-  for _, symbol := range h.Repository.Symbols() {
-    h.Repository.Slippage(symbol)
+  for _, symbol := range h.SymbolsRepository.Symbols() {
+    h.SymbolsRepository.Slippage(symbol)
   }
   return nil
 }
@@ -142,7 +142,7 @@ func (h *SymbolsHandler) Adjust() error {
   log.Println("symbols adjust...")
   symbol := "AVAXUSDT"
   price := 11.81 * 1.02
-  price, quantity, err := h.Repository.Adjust(symbol, price, 20)
+  price, quantity, err := h.SymbolsRepository.Adjust(symbol, price, 20)
   log.Println("price", price, quantity, err)
   return nil
 }

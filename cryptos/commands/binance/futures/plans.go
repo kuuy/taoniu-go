@@ -12,7 +12,7 @@ import (
 
 type PlansHandler struct {
   Db                *gorm.DB
-  Repository        *repositories.PlansRepository
+  PlansRepository   *repositories.PlansRepository
   SymbolsRepository *repositories.SymbolsRepository
 }
 
@@ -25,10 +25,10 @@ func NewPlansCommand() *cli.Command {
       h = PlansHandler{
         Db: common.NewDB(2),
       }
-      h.Repository = &repositories.PlansRepository{
+      h.PlansRepository = &repositories.PlansRepository{
         Db: h.Db,
       }
-      h.Repository.SymbolsRepository = &repositories.SymbolsRepository{
+      h.PlansRepository.SymbolsRepository = &repositories.SymbolsRepository{
         Db: h.Db,
       }
       h.SymbolsRepository = &repositories.SymbolsRepository{
@@ -64,14 +64,14 @@ func NewPlansCommand() *cli.Command {
 
 func (h *PlansHandler) Flush(interval string) error {
   log.Println("futures plans flush...")
-  return h.Repository.Flush(interval)
+  return h.PlansRepository.Flush(interval)
 }
 
 func (h *PlansHandler) Clean() error {
   log.Println("binance futures plans clean...")
   symbols := h.SymbolsRepository.Symbols()
   for _, symbol := range symbols {
-    h.Repository.Clean(symbol)
+    h.PlansRepository.Clean(symbol)
   }
   return nil
 }

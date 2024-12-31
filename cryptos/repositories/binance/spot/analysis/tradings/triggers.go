@@ -11,8 +11,8 @@ import (
   "gorm.io/datatypes"
   "gorm.io/gorm"
 
-  spotModels "taoniu.local/cryptos/models/binance/spot"
-  models "taoniu.local/cryptos/models/binance/spot/analysis/tradings"
+  models "taoniu.local/cryptos/models/binance/spot"
+  analysisModels "taoniu.local/cryptos/models/binance/spot/analysis/tradings"
   tradingsModels "taoniu.local/cryptos/models/binance/spot/tradings"
 )
 
@@ -27,10 +27,10 @@ func (r *TriggersRepository) Flush() error {
   duration := time.Hour*time.Duration(-now.Hour()) + time.Minute*time.Duration(-now.Minute()) + time.Second*time.Duration(-now.Second())
   datetime := now.Add(duration)
 
-  var analysis *models.Trigger
+  var analysis *analysisModels.Trigger
   result := r.Db.Where("day=?", datatypes.Date(datetime)).Take(&analysis)
   if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    analysis = &models.Trigger{
+    analysis = &analysisModels.Trigger{
       ID:  xid.New().String(),
       Day: datatypes.Date(datetime),
     }
@@ -76,13 +76,13 @@ func (r *TriggersRepository) Flush() error {
 
 func (r *TriggersRepository) Count(conditions map[string]interface{}) int64 {
   var total int64
-  query := r.Db.Model(&models.Trigger{})
+  query := r.Db.Model(&analysisModels.Trigger{})
   query.Count(&total)
   return total
 }
 
-func (r *TriggersRepository) Listings(conditions map[string]interface{}, current int, pageSize int) []*models.Trigger {
-  var analysis []*models.Trigger
+func (r *TriggersRepository) Listings(conditions map[string]interface{}, current int, pageSize int) []*analysisModels.Trigger {
+  var analysis []*analysisModels.Trigger
   query := r.Db.Select([]string{
     "id",
     "day",
@@ -100,7 +100,7 @@ func (r *TriggersRepository) Listings(conditions map[string]interface{}, current
 }
 
 func (r *TriggersRepository) Series(limit int) []interface{} {
-  var analysis []*models.Trigger
+  var analysis []*analysisModels.Trigger
   r.Db.Order("day desc").Limit(limit).Find(&analysis)
 
   series := make([]interface{}, len(analysis))
@@ -115,7 +115,7 @@ func (r *TriggersRepository) Series(limit int) []interface{} {
 }
 
 func (r *TriggersRepository) Amount(symbol string, orderId int64) float64 {
-  var order spotModels.Order
+  var order models.Order
   r.Db.Where("symbol=? AND order_id=?", symbol, orderId).Find(&order)
   return order.Price * order.ExecutedQuantity
 }

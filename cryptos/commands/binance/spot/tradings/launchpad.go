@@ -8,15 +8,15 @@ import (
   "log"
 
   "taoniu.local/cryptos/common"
-  spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
-  repositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
+  repositories "taoniu.local/cryptos/repositories/binance/spot"
+  tradingsRepositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
 )
 
 type LaunchpadHandler struct {
-  Db         *gorm.DB
-  Rdb        *redis.Client
-  Ctx        context.Context
-  Repository *repositories.LaunchpadRepository
+  Db                 *gorm.DB
+  Rdb                *redis.Client
+  Ctx                context.Context
+  TradingsRepository *tradingsRepositories.LaunchpadRepository
 }
 
 func NewLaunchpadCommand() *cli.Command {
@@ -30,21 +30,21 @@ func NewLaunchpadCommand() *cli.Command {
         Rdb: common.NewRedis(1),
         Ctx: context.Background(),
       }
-      h.Repository = &repositories.LaunchpadRepository{
+      h.TradingsRepository = &tradingsRepositories.LaunchpadRepository{
         Db: h.Db,
       }
-      h.Repository.SymbolsRepository = &spotRepositories.SymbolsRepository{
+      h.TradingsRepository.SymbolsRepository = &repositories.SymbolsRepository{
         Db:  h.Db,
         Rdb: h.Rdb,
         Ctx: h.Ctx,
       }
-      h.Repository.AccountRepository = &spotRepositories.AccountRepository{
+      h.TradingsRepository.AccountRepository = &repositories.AccountRepository{
         Db:  h.Db,
         Rdb: h.Rdb,
         Ctx: h.Ctx,
       }
-      h.Repository.PositionRepository = &spotRepositories.PositionsRepository{}
-      h.Repository.OrdersRepository = &spotRepositories.OrdersRepository{
+      h.TradingsRepository.PositionRepository = &repositories.PositionsRepository{}
+      h.TradingsRepository.OrdersRepository = &repositories.OrdersRepository{
         Db:  h.Db,
         Rdb: h.Rdb,
         Ctx: h.Ctx,
@@ -88,9 +88,9 @@ func NewLaunchpadCommand() *cli.Command {
 
 func (h *LaunchpadHandler) Place() error {
   log.Println("spot tradings launchpad place...")
-  ids := h.Repository.Ids()
+  ids := h.TradingsRepository.Ids()
   for _, id := range ids {
-    err := h.Repository.Place(id)
+    err := h.TradingsRepository.Place(id)
     if err != nil {
       log.Println("error", err)
     }
@@ -100,9 +100,9 @@ func (h *LaunchpadHandler) Place() error {
 
 func (h *LaunchpadHandler) Flush() error {
   log.Println("spot tradings launchpad flush...")
-  ids := h.Repository.LaunchpadIds()
+  ids := h.TradingsRepository.LaunchpadIds()
   for _, id := range ids {
-    err := h.Repository.Flush(id)
+    err := h.TradingsRepository.Flush(id)
     if err != nil {
       log.Println("error", err)
     }
@@ -116,18 +116,18 @@ func (h *LaunchpadHandler) Calc() error {
   capital := 30000.0 * 100
   corePrice := 0.5149
 
-  entity, err := h.Repository.SymbolsRepository.Get(symbol)
+  entity, err := h.TradingsRepository.SymbolsRepository.Get(symbol)
   if err != nil {
     return err
   }
 
-  tickSize, stepSize, _, err := h.Repository.SymbolsRepository.Filters(entity.Filters)
+  tickSize, stepSize, _, err := h.TradingsRepository.SymbolsRepository.Filters(entity.Filters)
   if err != nil {
     return nil
   }
 
-  buys := h.Repository.Buys(capital, corePrice, tickSize, stepSize)
-  sells := h.Repository.Sells(capital, corePrice, tickSize, stepSize)
+  buys := h.TradingsRepository.Buys(capital, corePrice, tickSize, stepSize)
+  sells := h.TradingsRepository.Sells(capital, corePrice, tickSize, stepSize)
   for i := 0; i < len(buys); i++ {
     log.Println("buy", buys[i].BuyPrice, buys[i].BuyQuantity, sells[i].SellPrice, sells[i].SellQuantity)
   }

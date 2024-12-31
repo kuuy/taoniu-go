@@ -13,10 +13,10 @@ import (
 )
 
 type AccountHandler struct {
-  Rdb        *redis.Client
-  Ctx        context.Context
-  Nats       *nats.Conn
-  Repository *repositories.AccountRepository
+  Rdb               *redis.Client
+  Ctx               context.Context
+  Nats              *nats.Conn
+  AccountRepository *repositories.AccountRepository
 }
 
 func NewAccountCommand() *cli.Command {
@@ -30,7 +30,7 @@ func NewAccountCommand() *cli.Command {
         Ctx:  context.Background(),
         Nats: common.NewNats(),
       }
-      h.Repository = &repositories.AccountRepository{
+      h.AccountRepository = &repositories.AccountRepository{
         Rdb:  h.Rdb,
         Ctx:  h.Ctx,
         Nats: h.Nats,
@@ -54,5 +54,5 @@ func NewAccountCommand() *cli.Command {
 
 func (h *AccountHandler) Flush() error {
   log.Println("binance spot account flush processing...")
-  return h.Repository.Flush()
+  return h.AccountRepository.Flush()
 }

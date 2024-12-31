@@ -12,16 +12,16 @@ import (
 
   "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/spot"
-  spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
-  repositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
+  repositories "taoniu.local/cryptos/repositories/binance/spot"
+  tradingsRepositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
 )
 
 type ScalpingHandler struct {
-  Db               *gorm.DB
-  Rdb              *redis.Client
-  Ctx              context.Context
-  Repository       *repositories.ScalpingRepository
-  ParentRepository *spotRepositories.ScalpingRepository
+  Db                 *gorm.DB
+  Rdb                *redis.Client
+  Ctx                context.Context
+  TradingsRepository *tradingsRepositories.ScalpingRepository
+  ScalpingRepository *repositories.ScalpingRepository
 }
 
 func NewScalpingCommand() *cli.Command {
@@ -35,29 +35,29 @@ func NewScalpingCommand() *cli.Command {
         Rdb: common.NewRedis(1),
         Ctx: context.Background(),
       }
-      h.Repository = &repositories.ScalpingRepository{
+      h.TradingsRepository = &tradingsRepositories.ScalpingRepository{
         Db:  h.Db,
         Rdb: h.Rdb,
         Ctx: h.Ctx,
       }
-      h.Repository.SymbolsRepository = &spotRepositories.SymbolsRepository{
+      h.TradingsRepository.SymbolsRepository = &repositories.SymbolsRepository{
         Db:  h.Db,
         Rdb: h.Rdb,
         Ctx: h.Ctx,
       }
-      h.Repository.AccountRepository = &spotRepositories.AccountRepository{
+      h.TradingsRepository.AccountRepository = &repositories.AccountRepository{
         Rdb: h.Rdb,
         Ctx: h.Ctx,
       }
-      h.Repository.OrdersRepository = &spotRepositories.OrdersRepository{
+      h.TradingsRepository.OrdersRepository = &repositories.OrdersRepository{
         Db:  h.Db,
         Rdb: h.Rdb,
         Ctx: h.Ctx,
       }
-      h.Repository.PositionRepository = &spotRepositories.PositionsRepository{
+      h.TradingsRepository.PositionRepository = &repositories.PositionsRepository{
         Db: h.Db,
       }
-      h.ParentRepository = &spotRepositories.ScalpingRepository{
+      h.ScalpingRepository = &repositories.ScalpingRepository{
         Db: h.Db,
       }
       return nil
@@ -88,7 +88,7 @@ func NewScalpingCommand() *cli.Command {
 }
 
 func (h *ScalpingHandler) Place() error {
-  planIds := h.ParentRepository.PlanIds(0)
+  planIds := h.ScalpingRepository.PlanIds(0)
   for _, planId := range planIds {
     mutex := common.NewMutex(
       h.Rdb,
@@ -98,7 +98,7 @@ func (h *ScalpingHandler) Place() error {
     if !mutex.Lock(30 * time.Second) {
       return nil
     }
-    err := h.Repository.Place(planId)
+    err := h.TradingsRepository.Place(planId)
     if err != nil {
       log.Println("scalping place error", err)
     }
@@ -108,7 +108,7 @@ func (h *ScalpingHandler) Place() error {
 }
 
 func (h *ScalpingHandler) Flush() error {
-  ids := h.Repository.ScalpingIds()
+  ids := h.TradingsRepository.ScalpingIds()
   for _, id := range ids {
     mutex := common.NewMutex(
       h.Rdb,
@@ -118,7 +118,7 @@ func (h *ScalpingHandler) Flush() error {
     if !mutex.Lock(30 * time.Second) {
       return nil
     }
-    err := h.Repository.Flush(id)
+    err := h.TradingsRepository.Flush(id)
     if err != nil {
       log.Println("scalping flush error", err)
     }

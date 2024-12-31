@@ -12,8 +12,8 @@ import (
 )
 
 type LaunchpadHandler struct {
-  Db         *gorm.DB
-  Repository *repositories.LaunchpadRepository
+  Db                  *gorm.DB
+  LaunchpadRepository *repositories.LaunchpadRepository
 }
 
 func NewLaunchpadCommand() *cli.Command {
@@ -25,7 +25,7 @@ func NewLaunchpadCommand() *cli.Command {
       h = LaunchpadHandler{
         Db: common.NewDB(1),
       }
-      h.Repository = &repositories.LaunchpadRepository{
+      h.LaunchpadRepository = &repositories.LaunchpadRepository{
         Db: h.Db,
       }
       return nil
@@ -56,7 +56,7 @@ func (h *LaunchpadHandler) apply() error {
   issuedAt, _ := time.ParseInLocation("2006-01-02 15:04", "2023-08-15 20:00", now.Location())
   expiredAt := issuedAt.Add(time.Hour * 24 * 14)
 
-  err := h.Repository.Apply(symbol, capital, price, corePrice, issuedAt, expiredAt)
+  err := h.LaunchpadRepository.Apply(symbol, capital, price, corePrice, issuedAt, expiredAt)
   if err != nil {
     return err
   }

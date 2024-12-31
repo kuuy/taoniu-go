@@ -20,7 +20,7 @@ type SymbolsHandler struct {
   Rdb                *redis.Client
   Ctx                context.Context
   Nats               *nats.Conn
-  Repository         *repositories.SymbolsRepository
+  SymbolsRepository  *repositories.SymbolsRepository
   TradingsRepository *repositories.TradingsRepository
 }
 
@@ -36,7 +36,7 @@ func NewSymbolsCommand() *cli.Command {
         Ctx:  context.Background(),
         Nats: common.NewNats(),
       }
-      h.Repository = &repositories.SymbolsRepository{
+      h.SymbolsRepository = &repositories.SymbolsRepository{
         Db:  h.Db,
         Rdb: h.Rdb,
         Ctx: h.Ctx,
@@ -68,6 +68,6 @@ func (h *SymbolsHandler) Flush() (err error) {
   if !mutex.Lock(50 * time.Second) {
     return
   }
-  err = h.Repository.Flush()
+  err = h.SymbolsRepository.Flush()
   return
 }
