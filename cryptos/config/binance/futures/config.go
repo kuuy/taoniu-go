@@ -3,7 +3,6 @@ package futures
 const (
   REDIS_KEY_BALANCE                            = "binance:futures:balance:%v"
   REDIS_KEY_TRADINGS_LAST_PRICE                = "binance:futures:tradings:last:price:%v:%v"
-  REDIS_KEY_TRADINGS_GAMBLING_ANT_LAST_PRICE   = "binance:futures:tradings:gambling:ant:last:price:%v:%v:%v"
   REDIS_KEY_TRADINGS_TRIGGERS_PLACE            = "binance:futures:tradings:triggers:place:%v:%v"
   REDIS_KEY_TRADINGS_GAMBLING_SCALPING_PLACE   = "binance:futures:tradings:gambling:scalping:place:%v:%v"
   REDIS_KEY_TRADINGS_GAMBLING_ANT_PLACE        = "binance:futures:tradings:gambling:ant:place:%v:%v"

@@ -104,7 +104,7 @@ func (r *AntRepository) Flush(id string) (err error) {
   r.Db.Where("ant_id=? AND status IN ?", ant.ID, []int{0, 1}).Find(&tradings)
 
   timestamp := time.Now().Add(-15 * time.Minute).Unix()
-
+  redisKey := fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, ant.Symbol)
   for _, trading := range tradings {
     if trading.Mode == 1 && trading.Status == 0 {
       status := r.OrdersRepository.Status(trading.Symbol, trading.OrderId)
@@ -135,7 +135,7 @@ func (r *AntRepository) Flush(id string) (err error) {
             if result.RowsAffected == 0 {
               return errors.New("order update failed")
             }
-            r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_GAMBLING_ANT_LAST_PRICE, ant.Symbol, trading.Mode))
+            r.Rdb.Del(r.Ctx, redisKey)
           }
         }
       } else {
@@ -182,7 +182,7 @@ func (r *AntRepository) Flush(id string) (err error) {
         if err != nil {
           return
         }
-        r.Rdb.Set(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_GAMBLING_ANT_LAST_PRICE, ant.Symbol, trading.Mode), trading.Price, -1)
+        r.Rdb.Set(r.Ctx, redisKey, trading.Price, time.Hour*24)
       } else if status == "CANCELED" {
         result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
           "status":  4,
@@ -194,7 +194,7 @@ func (r *AntRepository) Flush(id string) (err error) {
         if result.RowsAffected == 0 {
           return errors.New("order update failed")
         }
-        r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_GAMBLING_ANT_LAST_PRICE, ant.Symbol, trading.Mode))
+        r.Rdb.Del(r.Ctx, redisKey)
       }
     }
 
@@ -274,7 +274,7 @@ func (r *AntRepository) Flush(id string) (err error) {
         if err != nil {
           return
         }
-        r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_GAMBLING_ANT_LAST_PRICE, ant.Symbol, trading.Mode))
+        r.Rdb.Del(r.Ctx, redisKey)
       } else if status == "CANCELED" {
         result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
           "status":  4,
@@ -286,7 +286,6 @@ func (r *AntRepository) Flush(id string) (err error) {
         if result.RowsAffected == 0 {
           return errors.New("order update failed")
         }
-        r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_GAMBLING_ANT_LAST_PRICE, ant.Symbol, trading.Mode))
       }
     }
   }
@@ -500,6 +499,7 @@ func (r *AntRepository) Take(ant *gamblingModels.Ant, price float64) (err error)
     return err
   }
 
+  redisKey := fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, ant.Symbol)
   if position.EntryQuantity == 0 {
     timestamp := time.Now().Add(-15 * time.Minute).UnixMicro()
     if position.Timestamp > timestamp {
@@ -507,8 +507,7 @@ func (r *AntRepository) Take(ant *gamblingModels.Ant, price float64) (err error)
     }
     if position.Timestamp > ant.Timestamp+9e8 {
       r.Close(ant)
-      r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_GAMBLING_ANT_LAST_PRICE, ant.Symbol, 1))
-      r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_GAMBLING_ANT_LAST_PRICE, ant.Symbol, 2))
+      r.Rdb.Del(r.Ctx, redisKey)
     }
     return errors.New(fmt.Sprintf("[%s] empty position", ant.Symbol))
   }
@@ -704,8 +703,8 @@ func (r *AntRepository) Pending() map[string]float64 {
 
 func (r *AntRepository) CanBuy(ant *gamblingModels.Ant, price float64) bool {
   var buyPrice float64
-
-  val, _ := r.Rdb.Get(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, ant.Symbol)).Result()
+  redisKey := fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, ant.Symbol)
+  val, _ := r.Rdb.Get(r.Ctx, redisKey).Result()
   if val != "" {
     buyPrice, _ = strconv.ParseFloat(val, 64)
     if price >= buyPrice*0.9615 {
@@ -736,7 +735,7 @@ func (r *AntRepository) CanBuy(ant *gamblingModels.Ant, price float64) bool {
   }
 
   if isChange {
-    r.Rdb.Set(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_GAMBLING_ANT_LAST_PRICE, ant.Symbol, 1), buyPrice, -1)
+    r.Rdb.Set(r.Ctx, redisKey, buyPrice, time.Hour*24)
   }
 
   return true

@@ -276,8 +276,6 @@ func (r *ScalpingRepository) Place(planId string) (err error) {
     })
   }
 
-  r.Rdb.Set(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, scalping.Symbol), buyPrice, -1)
-
   r.Db.Model(&scalpingPlan).Where("plan_id", planId).Update("status", 1)
 
   trading := &tradingsModels.Scalping{
@@ -323,7 +321,7 @@ func (r *ScalpingRepository) Flush(id string) (err error) {
   r.Db.Where("scalping_id=? AND status IN ?", scalping.ID, []int{0, 2}).Find(&tradings)
 
   timestamp := time.Now().Add(-15 * time.Minute).Unix()
-
+  redisKey := fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, scalping.Symbol)
   for _, trading := range tradings {
     if trading.Status == 0 {
       status := r.OrdersRepository.Status(trading.Symbol, trading.BuyOrderId)
@@ -354,7 +352,7 @@ func (r *ScalpingRepository) Flush(id string) (err error) {
           if result.RowsAffected == 0 {
             return errors.New("order update failed")
           }
-          r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, scalping.Symbol))
+          r.Rdb.Del(r.Ctx, redisKey)
         }
       } else {
         if trading.BuyOrderId > 0 && trading.UpdatedAt.Unix() < timestamp {
@@ -413,7 +411,7 @@ func (r *ScalpingRepository) Flush(id string) (err error) {
             return errors.New("order update failed")
           }
         }
-        r.Rdb.Set(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, scalping.Symbol), trading.BuyPrice, -1)
+        r.Rdb.Set(r.Ctx, redisKey, trading.BuyPrice, time.Hour*24)
       } else if status == "CANCELED" {
         result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
           "buy_order_id": 0,
@@ -426,7 +424,7 @@ func (r *ScalpingRepository) Flush(id string) (err error) {
         if result.RowsAffected == 0 {
           return errors.New("order update failed")
         }
-        r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, scalping.Symbol))
+        r.Rdb.Del(r.Ctx, redisKey)
       }
     }
 
@@ -486,7 +484,7 @@ func (r *ScalpingRepository) Flush(id string) (err error) {
         if result.RowsAffected == 0 {
           return errors.New("order update failed")
         }
-        r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, scalping.Symbol))
+        r.Rdb.Del(r.Ctx, redisKey)
       } else if status == "CANCELED" {
         result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
           "sell_order_id": 0,
@@ -517,6 +515,7 @@ func (r *ScalpingRepository) Take(scalping *models.Scalping, price float64) (err
     return
   }
 
+  redisKey := fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, scalping.Symbol)
   if position.EntryQuantity == 0 {
     timestamp := time.Now().Add(-15 * time.Minute).UnixMicro()
     if position.Timestamp > timestamp {
@@ -524,7 +523,7 @@ func (r *ScalpingRepository) Take(scalping *models.Scalping, price float64) (err
     }
     if position.Timestamp > scalping.Timestamp+9e8 {
       r.Close(scalping)
-      r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, scalping.Symbol))
+      r.Rdb.Del(r.Ctx, redisKey)
     }
     return errors.New(fmt.Sprintf("[%s] empty position", scalping.Symbol))
   }
@@ -651,8 +650,8 @@ func (r *ScalpingRepository) CanBuy(
   price float64,
 ) bool {
   var buyPrice float64
-
-  val, _ := r.Rdb.Get(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, scalping.Symbol)).Result()
+  redisKey := fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, scalping.Symbol)
+  val, _ := r.Rdb.Get(r.Ctx, redisKey).Result()
   if val != "" {
     buyPrice, _ = strconv.ParseFloat(val, 64)
     if price >= buyPrice*0.9615 {
@@ -678,7 +677,7 @@ func (r *ScalpingRepository) CanBuy(
   }
 
   if isChange {
-    r.Rdb.Set(r.Ctx, fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, scalping.Symbol), buyPrice, -1)
+    r.Rdb.Set(r.Ctx, redisKey, buyPrice, time.Hour*24)
   }
 
   return true
