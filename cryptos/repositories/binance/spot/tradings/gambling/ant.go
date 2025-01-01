@@ -168,8 +168,10 @@ func (r *AntRepository) Flush(id string) (err error) {
             return errors.New("trading update failed")
           }
           result = r.Db.Model(&ant).Where("version", ant.Version).Updates(map[string]interface{}{
-            "place_quantity": placeQuantity,
-            "version":        gorm.Expr("version + ?", 1),
+            "place_prices":     datatypes.NewJSONSlice(ant.PlacePrices[1:]),
+            "place_quantities": datatypes.NewJSONSlice(ant.PlaceQuantities[1:]),
+            "place_quantity":   placeQuantity,
+            "version":          gorm.Expr("version + ?", 1),
           })
           if result.Error != nil {
             return result.Error
@@ -332,13 +334,7 @@ func (r *AntRepository) Place(id string) (err error) {
     return
   }
 
-  tickSize, stepSize, _, err := r.SymbolsRepository.Filters(entity.Filters)
-  if err != nil {
-    return
-  }
-
   entryPrice := position.EntryPrice
-  entryQuantity := position.EntryQuantity
 
   price, err := r.SymbolsRepository.Price(ant.Symbol)
   if err != nil {
@@ -350,94 +346,9 @@ func (r *AntRepository) Place(id string) (err error) {
     return
   }
 
-  var buyPrice float64
-  var buyQuantity float64
-  var buyAmount float64
-
-  var cachedEntryPrice float64
-  var cachedEntryQuantity float64
-
-  redisKey := fmt.Sprintf(config.REDIS_KEY_TRADINGS_GAMBLING_ANT_PLACE, ant.Symbol)
-  values, _ := r.Rdb.HMGet(r.Ctx, redisKey, []string{
-    "entry_price",
-    "entry_quantity",
-    "buy_price",
-    "buy_quantity",
-  }...).Result()
-  if len(values) == 4 && values[0] != nil && values[1] != nil {
-    cachedEntryPrice, _ = strconv.ParseFloat(values[0].(string), 64)
-    cachedEntryQuantity, _ = strconv.ParseFloat(values[1].(string), 64)
-  }
-
-  if cachedEntryPrice == entryPrice && cachedEntryQuantity == entryQuantity {
-    buyPrice, _ = strconv.ParseFloat(values[2].(string), 64)
-    buyQuantity, _ = strconv.ParseFloat(values[3].(string), 64)
-    buyPrice, _ = decimal.NewFromFloat(buyPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
-    buyQuantity, _ = decimal.NewFromFloat(buyQuantity).Div(decimal.NewFromFloat(stepSize)).Ceil().Mul(decimal.NewFromFloat(stepSize)).Float64()
-    log.Println("load from cached price", buyPrice, buyQuantity)
-  } else {
-    cachedEntryPrice = entryPrice
-    cachedEntryQuantity = entryQuantity
-
-    var tradings []*tradingsModels.Ant
-    r.Db.Select("price").Where("ant_id=? AND mode=1 AND status IN ?", ant.ID, []int{0, 1}).Find(&tradings)
-
-    lastPrice := ant.PlacePrices[len(ant.PlacePrices)-1]
-    for _, trading := range tradings {
-      if buyPrice == 0.0 || buyPrice > trading.Price {
-        buyPrice = trading.Price
-      }
-      if trading.Status == 1 {
-        if trading.Price <= lastPrice {
-          r.Db.Model(&ant).Update("mode", 2)
-          return errors.New("gambling ant has been placed")
-        }
-      }
-    }
-
-    for i, planPrice := range ant.PlacePrices {
-      if buyPrice == 0.0 || buyPrice > planPrice {
-        buyPrice = planPrice
-        buyQuantity = ant.PlaceQuantities[i]
-        break
-      }
-    }
-
-    r.Rdb.HMSet(
-      r.Ctx,
-      redisKey,
-      map[string]interface{}{
-        "entry_price":    cachedEntryPrice,
-        "entry_quantity": cachedEntryQuantity,
-        "buy_price":      buyPrice,
-        "buy_quantity":   buyQuantity,
-      },
-    )
-  }
-
-  if buyPrice < 0 {
-    err = errors.New(fmt.Sprintf("gambling ant [%s] price %v is negative", ant.Symbol, buyPrice))
-    return
-  }
-
-  if buyQuantity < 0 {
-    err = errors.New(fmt.Sprintf("gambling ant [%s] quantity %v is negative", ant.Symbol, buyQuantity))
-    return
-  }
-
-  if price < buyPrice {
-    buyPrice = price
-  }
-
-  if price > buyPrice {
-    err = errors.New(fmt.Sprintf("gambling ant [%s] price must reach %v", ant.Symbol, buyPrice))
-    return
-  }
-
-  buyAmount, _ = decimal.NewFromFloat(buyQuantity).Mul(decimal.NewFromFloat(buyPrice)).Float64()
-  if buyAmount > config.GAMBLING_ANT_MAX_AMOUNT {
-    return errors.New(fmt.Sprintf("gambling ant [%s] amount can not exceed %v", ant.Symbol, config.GAMBLING_ANT_MAX_AMOUNT))
-  }
+  buyPrice := ant.PlacePrices[0]
+  buyQuantity := ant.PlaceQuantities[0]
+  buyAmount, _ := decimal.NewFromFloat(buyQuantity).Mul(decimal.NewFromFloat(buyPrice)).Float64()
 
   if !r.CanBuy(ant, buyPrice) {
     err = errors.New(fmt.Sprintf("gambling ant [%s] can not place now", ant.Symbol))
@@ -450,7 +361,7 @@ func (r *AntRepository) Place(id string) (err error) {
   }
 
   if balance["free"] < math.Max(buyAmount, config.GAMBLING_ANT_MIN_BINANCE) {
-    err = errors.New(fmt.Sprintf("[%s] free not enough", entity.Symbol))
+    err = errors.New(fmt.Sprintf("balance free must reach %v", math.Max(buyAmount, config.GAMBLING_ANT_MIN_BINANCE)))
     return
   }
 

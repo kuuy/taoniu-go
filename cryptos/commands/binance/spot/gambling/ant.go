@@ -13,6 +13,7 @@ import (
   "gorm.io/gorm"
 
   "taoniu.local/cryptos/common"
+  config "taoniu.local/cryptos/config/binance/spot"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
   gamblingRepositories "taoniu.local/cryptos/repositories/binance/spot/gambling"
 )
@@ -176,6 +177,9 @@ func (h *AntHandler) Apply(symbol string, entryPrice float64, entryQuantity floa
         if plan.TakeAmount < notional {
           return errors.New(fmt.Sprintf("plan amount less then %v", notional))
         }
+        if plan.TakeAmount > config.GAMBLING_ANT_MAX_AMOUNT {
+          return errors.New(fmt.Sprintf("plan amount can not exceed %v", config.GAMBLING_ANT_MAX_AMOUNT))
+        }
 
         planPrices = append(planPrices, plan.TakePrice)
         planQuantities = append(planQuantities, plan.TakeQuantity)
@@ -188,6 +192,9 @@ func (h *AntHandler) Apply(symbol string, entryPrice float64, entryQuantity floa
       takeAmount, _ := decimal.NewFromFloat(takePrice).Mul(decimal.NewFromFloat(planQuantity)).Float64()
       if takeAmount < notional {
         return errors.New(fmt.Sprintf("plan amount less then %v", notional))
+      }
+      if takeAmount > config.GAMBLING_ANT_MAX_AMOUNT {
+        return errors.New(fmt.Sprintf("plan amount can not exceed %v", config.GAMBLING_ANT_MAX_AMOUNT))
       }
 
       planPrices = append(planPrices, takePrice)
