@@ -5,7 +5,6 @@ const (
   REDIS_KEY_TRADINGS_LAST_PRICE                = "binance:futures:tradings:last:price:%v:%v"
   REDIS_KEY_TRADINGS_TRIGGERS_PLACE            = "binance:futures:tradings:triggers:place:%v:%v"
   REDIS_KEY_TRADINGS_GAMBLING_SCALPING_PLACE   = "binance:futures:tradings:gambling:scalping:place:%v:%v"
-  REDIS_KEY_TRADINGS_GAMBLING_ANT_PLACE        = "binance:futures:tradings:gambling:ant:place:%v:%v"
   SCALPING_MIN_BINANCE                         = 50
   TRIGGERS_MIN_BINANCE                         = 200
   GAMBLING_SCALPING_MIN_BINANCE                = 2121

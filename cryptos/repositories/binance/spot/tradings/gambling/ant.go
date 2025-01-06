@@ -599,19 +599,6 @@ func (r *AntRepository) Close(ant *gamblingModels.Ant) {
   }
 }
 
-func (r *AntRepository) Pending() map[string]float64 {
-  var result []*PendingInfo
-  r.Db.Model(&tradingsModels.Ant{}).Select(
-    "symbol",
-    "sum(sell_quantity) as quantity",
-  ).Where("status", 1).Group("symbol").Find(&result)
-  data := make(map[string]float64)
-  for _, item := range result {
-    data[item.Symbol] = item.Quantity
-  }
-  return data
-}
-
 func (r *AntRepository) CanBuy(ant *gamblingModels.Ant, price float64) bool {
   var buyPrice float64
   redisKey := fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, ant.Symbol)

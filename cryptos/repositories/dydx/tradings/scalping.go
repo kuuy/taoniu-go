@@ -569,19 +569,6 @@ func (r *ScalpingRepository) Close(scalping *dydxModels.Scalping) {
   r.Db.Model(&models.Scalping{}).Where("scalping_id=? AND status IN ?", scalping.ID, []int{0, 1, 2}).Update("status", 5)
 }
 
-func (r *ScalpingRepository) Pending() map[string]float64 {
-  var result []*PendingInfo
-  r.Db.Model(&models.Scalping{}).Select(
-    "symbol",
-    "sum(sell_quantity) as quantity",
-  ).Where("status", 1).Group("symbol").Find(&result)
-  data := make(map[string]float64)
-  for _, item := range result {
-    data[item.Symbol] = item.Quantity
-  }
-  return data
-}
-
 func (r *ScalpingRepository) CanBuy(
   scalping *dydxModels.Scalping,
   price float64,

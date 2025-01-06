@@ -150,7 +150,6 @@ func (r *TriggersRepository) Place(id string) (err error) {
 
   var cachedEntryPrice float64
   var cachedEntryQuantity float64
-
   redisKey := fmt.Sprintf(config.REDIS_KEY_TRADINGS_TRIGGERS_PLACE, trigger.Symbol)
   values, _ := r.Rdb.HMGet(r.Ctx, redisKey, []string{
     "entry_price",

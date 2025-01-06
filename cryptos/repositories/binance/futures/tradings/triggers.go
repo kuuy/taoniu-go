@@ -30,9 +30,9 @@ type TriggersRepository struct {
   PositionRepository PositionRepository
 }
 
-func (r *TriggersRepository) Scan() []string {
+func (r *TriggersRepository) Scan(side int) []string {
   var symbols []string
-  r.Db.Model(&models.Trigger{}).Where("status", 1).Pluck("symbol", &symbols)
+  r.Db.Model(&models.Trigger{}).Select("symbol").Where("side = ? AND status = ?", side, 1).Find(&symbols)
   return symbols
 }
 
@@ -161,7 +161,6 @@ func (r *TriggersRepository) Place(id string) (err error) {
 
   var cachedEntryPrice float64
   var cachedEntryQuantity float64
-
   redisKey := fmt.Sprintf(config.REDIS_KEY_TRADINGS_TRIGGERS_PLACE, positionSide, trigger.Symbol)
   values, _ := r.Rdb.HMGet(r.Ctx, redisKey, []string{
     "entry_price",

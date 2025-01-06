@@ -450,19 +450,6 @@ func (r *LaunchpadRepository) Take(launchpad *models.Launchpad, price float64) (
   return
 }
 
-func (r *LaunchpadRepository) Pending() map[string]float64 {
-  var result []*PendingInfo
-  r.Db.Model(&tradingsModels.Scalping{}).Select(
-    "symbol",
-    "sum(sell_quantity) as quantity",
-  ).Where("status", 1).Group("symbol").Find(&result)
-  data := make(map[string]float64)
-  for _, item := range result {
-    data[item.Symbol] = item.Quantity
-  }
-  return data
-}
-
 func (r *LaunchpadRepository) CanBuy(
   launchpad *models.Launchpad,
   buyPrice float64,

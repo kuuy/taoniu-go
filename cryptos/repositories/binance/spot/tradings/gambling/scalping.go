@@ -85,7 +85,6 @@ func (r *ScalpingRepository) Place(id string) (err error) {
 
   var cachedEntryPrice float64
   var cachedEntryQuantity float64
-
   redisKey := fmt.Sprintf(config.REDIS_KEY_TRADINGS_GAMBLING_SCALPING_PLACE, scalping.Symbol)
   values, _ := r.Rdb.HMGet(r.Ctx, redisKey, []string{
     "entry_price",

@@ -80,7 +80,7 @@ func (h *FuturesHandler) run() error {
     binance.Futures().Orders().Flush()
   })
   c.AddFunc("@every 3m", func() {
-    binance.Futures().Depth().Flush(1000)
+    //binance.Futures().Depth().Flush(1000)
     binance.Futures().Orders().Sync(time.Now().Add(-15*time.Minute).UnixMilli(), 20)
   })
   c.AddFunc("@every 5m", func() {

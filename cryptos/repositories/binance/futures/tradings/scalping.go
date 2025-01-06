@@ -70,8 +70,8 @@ func (r *ScalpingRepository) Listings(conditions map[string]interface{}, current
     "scalping_id",
     "plan_id",
     "buy_price",
-    "buy_quantity",
     "sell_price",
+    "buy_quantity",
     "sell_quantity",
     "buy_order_id",
     "sell_order_id",
@@ -407,7 +407,6 @@ func (r *ScalpingRepository) Place(planId string) (err error) {
   }
 
   var entryPrice float64
-
   position, err := r.PositionRepository.Get(plan.Symbol, plan.Side)
   if err == nil {
     if position.EntryQuantity > 0 {
@@ -505,7 +504,7 @@ func (r *ScalpingRepository) Place(planId string) (err error) {
     fmt.Sprintf(config.LOCKS_TRADINGS_PLACE, scalping.Symbol, scalping.Side),
   )
   if !mutex.Lock(5 * time.Second) {
-    return nil
+    return
   }
   defer mutex.Unlock()
 
@@ -653,7 +652,7 @@ func (r *ScalpingRepository) Take(scalping *models.Scalping, price float64) (err
     fmt.Sprintf(config.LOCKS_TRADINGS_TAKE, scalping.Symbol, scalping.Side),
   )
   if !mutex.Lock(5 * time.Second) {
-    return nil
+    return
   }
   defer mutex.Unlock()
 
@@ -695,19 +694,6 @@ func (r *ScalpingRepository) Close(scalping *models.Scalping) {
       })
     }
   }
-}
-
-func (r *ScalpingRepository) Pending() map[string]float64 {
-  var result []*PendingInfo
-  r.Db.Model(&tradingsModels.Scalping{}).Select(
-    "symbol",
-    "sum(sell_quantity) as quantity",
-  ).Where("status", 1).Group("symbol").Find(&result)
-  data := make(map[string]float64)
-  for _, item := range result {
-    data[item.Symbol] = item.Quantity
-  }
-  return data
 }
 
 func (r *ScalpingRepository) CanBuy(

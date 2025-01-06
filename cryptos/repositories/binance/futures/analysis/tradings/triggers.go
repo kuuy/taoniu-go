@@ -142,9 +142,8 @@ func (r *TriggersRepository) Amount(symbol string, orderId int64) float64 {
 }
 
 func (r *TriggersRepository) JSONMap(in interface{}) datatypes.JSONMap {
-  buf, _ := json.Marshal(in)
-
   var out datatypes.JSONMap
+  buf, _ := json.Marshal(in)
   json.Unmarshal(buf, &out)
   return out
 }
