@@ -127,7 +127,7 @@ func (h *GamblingHandler) Calc(
         return errors.New(fmt.Sprintf("plan amount less then %v", notional))
       }
 
-      log.Println("plan", plan.TakePrice, plan.TakeAmount, notional, strconv.FormatFloat(plan.TakeQuantity, 'f', -1, 64), takeProfit, planAmount, planProfit)
+      log.Println("plan", plan.TakePrice, strconv.FormatFloat(plan.TakeQuantity, 'f', -1, 64), takeProfit, planAmount, planProfit)
     }
     if len(plans) == 0 || lastProfit > 0 {
       break
@@ -150,7 +150,7 @@ func (h *GamblingHandler) Calc(
       return errors.New(fmt.Sprintf("plan amount less then %v", notional))
     }
 
-    log.Println("plan", takePrice, takeAmount, notional, planQuantity, takeProfit, planAmount, planProfit)
+    log.Println("plan", takePrice, planQuantity, takeProfit, planAmount, planProfit)
   }
 
   log.Println("planProfit", planProfit)
