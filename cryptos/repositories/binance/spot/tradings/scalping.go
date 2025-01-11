@@ -372,12 +372,12 @@ func (r *ScalpingRepository) Flush(id string) (err error) {
       if status == "FILLED" {
         if closeTrading.ID != "" && closeTrading.CreatedAt.Unix() < trading.CreatedAt.Unix() {
           err = r.Db.Transaction(func(tx *gorm.DB) (err error) {
-            sellQuantity, _ := decimal.NewFromFloat(trading.SellQuantity).Add(decimal.NewFromFloat(closeTrading.SellQuantity)).Float64()
+            buyQuantity, _ := decimal.NewFromFloat(trading.BuyQuantity).Add(decimal.NewFromFloat(closeTrading.BuyQuantity)).Float64()
             buyPrice, _ := decimal.NewFromFloat(trading.BuyPrice).Mul(decimal.NewFromFloat(trading.SellQuantity)).Add(
               decimal.NewFromFloat(closeTrading.BuyPrice).Mul(decimal.NewFromFloat(closeTrading.SellQuantity)),
-            ).Div(decimal.NewFromFloat(sellQuantity)).Float64()
+            ).Div(decimal.NewFromFloat(buyQuantity)).Float64()
             result = r.Db.Model(&closeTrading).Where("version", closeTrading.Version).Updates(map[string]interface{}{
-              "status":  9,
+              "status":  5,
               "version": gorm.Expr("version + ?", 1),
             })
             if result.Error != nil {
@@ -388,7 +388,8 @@ func (r *ScalpingRepository) Flush(id string) (err error) {
             }
             result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
               "buy_price":     buyPrice,
-              "sell_quantity": sellQuantity,
+              "buy_quantity":  buyQuantity,
+              "sell_quantity": buyQuantity,
               "status":        1,
               "version":       gorm.Expr("version + ?", 1),
             })
