@@ -45,7 +45,7 @@ func (r *ScalpingRepository) Flush(side int) error {
   analysis.AdditiveProfit = 0
 
   var tradings []*tradingsModels.Scalping
-  query := r.Db.Where("created_at>=? AND updated_at < ? AND status IN (1,2,3)", datetime, datetime.Add(24*time.Hour))
+  query := r.Db.Where("created_at>=? AND updated_at < ? AND status IN (1,2,3,5)", datetime, datetime.Add(24*time.Hour))
   if side == 1 {
     query.Where("buy_price < sell_price")
   } else {
@@ -53,6 +53,10 @@ func (r *ScalpingRepository) Flush(side int) error {
   }
   query.Find(&tradings)
   for _, trading := range tradings {
+    if trading.Status == 5 {
+      analysis.BuysCount += 1
+      continue
+    }
     if trading.Status == 1 || trading.Status == 2 || trading.Status == 3 {
       analysis.BuysCount += 1
       analysis.BuysAmount += trading.BuyPrice * trading.BuyQuantity
@@ -62,9 +66,9 @@ func (r *ScalpingRepository) Flush(side int) error {
       analysis.SellsAmount += trading.SellPrice * trading.SellQuantity
       var profit float64
       if side == 1 {
-        profit = r.Amount(trading.Symbol, trading.SellOrderId) - r.Amount(trading.Symbol, trading.BuyOrderId)
+        profit = r.Amount(trading.Symbol, trading.SellOrderId) - trading.BuyPrice*trading.BuyQuantity
       } else {
-        profit = r.Amount(trading.Symbol, trading.BuyOrderId) - r.Amount(trading.Symbol, trading.SellOrderId)
+        profit = trading.BuyPrice*trading.BuyQuantity - r.Amount(trading.Symbol, trading.SellOrderId)
       }
       analysis.Profit += profit
     }
@@ -82,9 +86,9 @@ func (r *ScalpingRepository) Flush(side int) error {
     analysis.SellsAmount += trading.SellPrice * trading.SellQuantity
     var profit float64
     if side == 1 {
-      profit = r.Amount(trading.Symbol, trading.SellOrderId) - r.Amount(trading.Symbol, trading.BuyOrderId)
+      profit = r.Amount(trading.Symbol, trading.SellOrderId) - trading.BuyPrice*trading.BuyQuantity
     } else {
-      profit = r.Amount(trading.Symbol, trading.BuyOrderId) - r.Amount(trading.Symbol, trading.SellOrderId)
+      profit = trading.BuyPrice*trading.BuyQuantity - r.Amount(trading.Symbol, trading.SellOrderId)
     }
     analysis.Profit += profit
     analysis.AdditiveProfit += profit

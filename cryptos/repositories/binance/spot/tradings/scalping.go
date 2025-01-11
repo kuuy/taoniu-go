@@ -376,6 +376,7 @@ func (r *ScalpingRepository) Flush(id string) (err error) {
             buyPrice, _ := decimal.NewFromFloat(trading.BuyPrice).Mul(decimal.NewFromFloat(trading.SellQuantity)).Add(
               decimal.NewFromFloat(closeTrading.BuyPrice).Mul(decimal.NewFromFloat(closeTrading.SellQuantity)),
             ).Div(decimal.NewFromFloat(buyQuantity)).Float64()
+            sellPrice := buyPrice * 1.0105
             result = r.Db.Model(&closeTrading).Where("version", closeTrading.Version).Updates(map[string]interface{}{
               "status":  5,
               "version": gorm.Expr("version + ?", 1),
@@ -389,6 +390,7 @@ func (r *ScalpingRepository) Flush(id string) (err error) {
             result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
               "buy_price":     buyPrice,
               "buy_quantity":  buyQuantity,
+              "sell_price":    sellPrice,
               "sell_quantity": buyQuantity,
               "status":        1,
               "version":       gorm.Expr("version + ?", 1),

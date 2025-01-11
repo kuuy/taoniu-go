@@ -44,9 +44,13 @@ func (r *ScalpingRepository) Flush() error {
   analysis.AdditiveProfit = 0
 
   var tradings []*tradingsModels.Scalping
-  query := r.Db.Where("created_at>=? AND updated_at < ? AND status IN (1,2,3)", datetime, datetime.Add(24*time.Hour))
+  query := r.Db.Where("created_at>=? AND updated_at < ? AND status IN (1,2,3,5)", datetime, datetime.Add(24*time.Hour))
   query.Find(&tradings)
   for _, trading := range tradings {
+    if trading.Status == 5 {
+      analysis.BuysCount += 1
+      continue
+    }
     if trading.Status == 1 || trading.Status == 2 || trading.Status == 3 {
       analysis.BuysCount += 1
       analysis.BuysAmount += trading.BuyPrice * trading.BuyQuantity
@@ -54,7 +58,7 @@ func (r *ScalpingRepository) Flush() error {
     if trading.Status == 3 {
       analysis.SellsCount += 1
       analysis.SellsAmount += trading.SellPrice * trading.SellQuantity
-      profit := r.Amount(trading.Symbol, trading.SellOrderId) - r.Amount(trading.Symbol, trading.BuyOrderId)
+      profit := r.Amount(trading.Symbol, trading.SellOrderId) - trading.BuyPrice*trading.BuyQuantity
       analysis.Profit += profit
     }
   }
@@ -64,7 +68,7 @@ func (r *ScalpingRepository) Flush() error {
   for _, trading := range tradings {
     analysis.SellsCount += 1
     analysis.SellsAmount += trading.SellPrice * trading.SellQuantity
-    profit := r.Amount(trading.Symbol, trading.SellOrderId) - r.Amount(trading.Symbol, trading.BuyOrderId)
+    profit := r.Amount(trading.Symbol, trading.SellOrderId) - trading.BuyPrice*trading.BuyQuantity
     analysis.Profit += profit
     analysis.AdditiveProfit += profit
   }
