@@ -377,7 +377,7 @@ func (r *ScalpingRepository) Flush(id string) (err error) {
               decimal.NewFromFloat(closeTrading.BuyPrice).Mul(decimal.NewFromFloat(closeTrading.SellQuantity)),
             ).Div(decimal.NewFromFloat(sellQuantity)).Float64()
             result = r.Db.Model(&closeTrading).Where("version", closeTrading.Version).Updates(map[string]interface{}{
-              "status":  5,
+              "status":  9,
               "version": gorm.Expr("version + ?", 1),
             })
             if result.Error != nil {

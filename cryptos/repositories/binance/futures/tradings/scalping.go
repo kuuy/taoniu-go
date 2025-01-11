@@ -191,7 +191,7 @@ func (r *ScalpingRepository) Flush(id string) (err error) {
           ).Div(decimal.NewFromFloat(sellQuantity)).Float64()
           err = r.Db.Transaction(func(tx *gorm.DB) (err error) {
             result = r.Db.Model(&closeTrading).Where("version", closeTrading.Version).Updates(map[string]interface{}{
-              "status":  5,
+              "status":  9,
               "version": gorm.Expr("version + ?", 1),
             })
             if result.Error != nil {
