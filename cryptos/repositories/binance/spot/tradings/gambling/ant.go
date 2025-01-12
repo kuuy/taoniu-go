@@ -605,7 +605,7 @@ func (r *AntRepository) CanBuy(ant *gamblingModels.Ant, price float64) bool {
   val, _ := r.Rdb.Get(r.Ctx, redisKey).Result()
   if val != "" {
     buyPrice, _ = strconv.ParseFloat(val, 64)
-    if price >= buyPrice*0.9615 {
+    if price >= buyPrice*0.9895 {
       return false
     }
   }
@@ -618,7 +618,7 @@ func (r *AntRepository) CanBuy(ant *gamblingModels.Ant, price float64) bool {
     if trading.Status == 0 {
       return false
     }
-    if price >= trading.Price*0.9615 {
+    if price >= trading.Price*0.9895 {
       return false
     }
     if buyPrice == 0 {
