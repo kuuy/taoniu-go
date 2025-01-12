@@ -677,10 +677,10 @@ func (r *AntRepository) CanBuy(ant *gamblingModels.Ant, price float64) bool {
     if trading.Status == 0 {
       return false
     }
-    if ant.Side == 1 && price >= trading.Price*0.9615 {
+    if ant.Side == 1 && price >= trading.Price*0.9895 {
       return false
     }
-    if ant.Side == 2 && price <= trading.Price*1.0385 {
+    if ant.Side == 2 && price <= trading.Price*1.0105 {
       return false
     }
     if buyPrice == 0 {
