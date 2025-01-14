@@ -78,7 +78,17 @@ func NewOrdersCommand() *cli.Command {
         Name:  "flush",
         Usage: "",
         Action: func(c *cli.Context) error {
-          if err := h.Flush(); err != nil {
+          symbol := c.Args().Get(0)
+          if symbol == "" {
+            log.Fatal("symbol is empty")
+            return nil
+          }
+          if c.Args().Get(1) == "" {
+            log.Fatal("order_id is empty")
+            return nil
+          }
+          orderId, _ := strconv.ParseInt(c.Args().Get(1), 10, 64)
+          if err := h.Flush(symbol, orderId); err != nil {
             return cli.Exit(err.Error(), 1)
           }
           return nil
@@ -138,17 +148,10 @@ func (h *OrdersHandler) Open(symbol string) error {
   return h.OrdersRepository.Open(symbol)
 }
 
-func (h *OrdersHandler) Flush() error {
-  log.Println("margin orders flush...")
-  symbol := "DUSKUSDT"
-  orderId := int64(779479093)
-  h.OrdersRepository.Flush(symbol, orderId)
-  //orders := h.OrdersRepository.Gets(map[string]interface{}{})
-  //for _, order := range orders {
-  //  log.Println("order flush", order.Symbol, order.OrderId)
-  //  h.OrdersRepository.Flush(order.Symbol, order.OrderId)
-  //}
-  return nil
+func (h *OrdersHandler) Flush(symbol string, orderId int64) (err error) {
+  log.Println("binance spot orders flush...")
+  err = h.OrdersRepository.Flush(symbol, orderId)
+  return
 }
 
 func (h *OrdersHandler) Sync(symbol string, limit int) error {
