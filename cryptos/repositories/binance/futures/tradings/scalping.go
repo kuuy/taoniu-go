@@ -122,19 +122,13 @@ func (r *ScalpingRepository) Flush(id string) (err error) {
   }
 
   var closeTrading *tradingsModels.Scalping
-  if scalping.Side == 1 {
-    r.Db.Where("scalping_id=? AND status=?", scalping.ID, 1).Take(&closeTrading)
-  } else {
-    r.Db.Where("scalping_id=? AND status=?", scalping.ID, 1).Take(&closeTrading)
-  }
+  r.Db.Where("scalping_id=? AND status=?", scalping.ID, 1).Take(&closeTrading)
 
   var tradings []*tradingsModels.Scalping
   r.Db.Where("scalping_id=? AND status IN ?", scalping.ID, []int{0, 2}).Find(&tradings)
 
   timestamp := time.Now().Add(-15 * time.Minute).Unix()
-
   redisKey := fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, scalping.Symbol)
-
   for _, trading := range tradings {
     if trading.Status == 0 {
       status := r.OrdersRepository.Status(trading.Symbol, trading.BuyOrderId)
@@ -697,9 +691,9 @@ func (r *ScalpingRepository) Close(scalping *models.Scalping) {
 
   var tradings []*tradingsModels.Scalping
   r.Db.Select([]string{"id", "version", "updated_at"}).Where("scalping_id=? AND status=?", scalping.ID, 1).Find(&tradings)
-  timestamp := time.Now().Add(-30 * time.Minute).Unix()
+  timestamp := time.Now().Add(-30 * time.Minute).UnixMicro()
   for _, trading := range tradings {
-    if trading.UpdatedAt.Unix() < timestamp {
+    if trading.UpdatedAt.UnixMicro() < timestamp {
       r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
         "status":  5,
         "version": gorm.Expr("version + ?", 1),

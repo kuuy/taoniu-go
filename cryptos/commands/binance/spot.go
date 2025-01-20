@@ -24,7 +24,6 @@ func NewSpotCommand() *cli.Command {
       spot.NewPlansCommand(),
       spot.NewLaunchpadCommand(),
       spot.NewScalpingCommand(),
-      spot.NewTriggersCommand(),
       spot.NewTradingsCommand(),
       spot.NewStreamCommand(),
       spot.NewTasksCommand(),

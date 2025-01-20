@@ -186,17 +186,17 @@ func (h *PositionsHandler) Calc(
 }
 
 func (h *PositionsHandler) Flush(symbol string, side int) error {
-  var triggers []*models.Trigger
-  query := h.Db.Model(models.Trigger{}).Select([]string{"symbol", "side"})
+  var scalping []*models.Scalping
+  query := h.Db.Model(models.Scalping{}).Select([]string{"symbol", "side"})
   if symbol != "" {
     query.Where("symbol", symbol)
   }
   if side == 1 || side == 2 {
     query.Where("side", side)
   }
-  query.Where("status", 1).Find(&triggers)
-  for _, trigger := range triggers {
-    h.PositionsRepository.Flush(trigger.Symbol, trigger.Side)
+  query.Where("status", 1).Find(&scalping)
+  for _, entity := range scalping {
+    h.PositionsRepository.Flush(entity.Symbol, entity.Side)
     break
   }
   return nil

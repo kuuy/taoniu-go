@@ -22,7 +22,6 @@ func (m *Spot) AutoMigrate(db *gorm.DB) error {
     &spot.Launchpad{},
     &spot.Scalping{},
     &spot.ScalpingPlan{},
-    &spot.Trigger{},
   )
 
   spot.NewPatterns().AutoMigrate(db)

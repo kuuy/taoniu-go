@@ -18,6 +18,5 @@ func NewTradings(db *gorm.DB) *Tradings {
 
 func (srv *Tradings) Register(s *grpc.Server) error {
   tradings.NewScalping(srv.Db).Register(s)
-  tradings.NewTriggers(srv.Db).Register(s)
   return nil
 }

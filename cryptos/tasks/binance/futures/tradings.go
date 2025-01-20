@@ -7,7 +7,6 @@ import (
 
 type TradingsTask struct {
   AnsqContext  *common.AnsqClientContext
-  TriggersTask *tasks.TriggersTask
   ScalpingTask *tasks.ScalpingTask
   GamblingTask *tasks.GamblingTask
 }
@@ -23,13 +22,6 @@ func (t *TradingsTask) Scalping() *tasks.ScalpingTask {
     t.ScalpingTask = tasks.NewScalpingTask(t.AnsqContext)
   }
   return t.ScalpingTask
-}
-
-func (t *TradingsTask) Triggers() *tasks.TriggersTask {
-  if t.TriggersTask == nil {
-    t.TriggersTask = tasks.NewTriggersTask(t.AnsqContext)
-  }
-  return t.TriggersTask
 }
 
 func (t *TradingsTask) Gambling() *tasks.GamblingTask {

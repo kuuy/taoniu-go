@@ -22,7 +22,6 @@ type DatafeedHandler struct {
   KlinesRepository   *spotRepositories.KlinesRepository
   TickersRepository  *spotRepositories.TickersRepository
   ScalpingRepository *spotRepositories.ScalpingRepository
-  TriggersRepository *spotRepositories.TriggersRepository
 }
 
 type SearchInfo struct {
@@ -85,9 +84,6 @@ func NewDatafeedRouter(apiContext *common.ApiContext) http.Handler {
     Ctx: h.ApiContext.Ctx,
   }
   h.ScalpingRepository = &spotRepositories.ScalpingRepository{
-    Db: h.ApiContext.Db,
-  }
-  h.TriggersRepository = &spotRepositories.TriggersRepository{
     Db: h.ApiContext.Db,
   }
 
@@ -187,9 +183,6 @@ func (h *DatafeedHandler) Search(
   }
   if t == "scalping" {
     symbols = h.ScalpingRepository.Scan()
-  }
-  if t == "triggers" {
-    symbols = h.TriggersRepository.Scan()
   }
 
   var result []*SearchInfo

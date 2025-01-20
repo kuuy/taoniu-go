@@ -3,7 +3,6 @@ package futures
 import (
   "google.golang.org/grpc"
   "gorm.io/gorm"
-  "taoniu.local/cryptos/grpc/services/binance/futures/tradings"
 )
 
 type Tradings struct {
@@ -17,6 +16,5 @@ func NewTradings(db *gorm.DB) *Tradings {
 }
 
 func (srv *Tradings) Register(s *grpc.Server) error {
-  tradings.NewTriggers(srv.Db).Register(s)
   return nil
 }

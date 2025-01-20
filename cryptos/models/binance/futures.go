@@ -21,7 +21,6 @@ func (m *Futures) AutoMigrate(db *gorm.DB) error {
     &futures.Position{},
     &futures.Scalping{},
     &futures.ScalpingPlan{},
-    &futures.Trigger{},
   )
 
   futures.NewPatterns().AutoMigrate(db)
