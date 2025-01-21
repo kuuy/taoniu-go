@@ -50,9 +50,6 @@ func NewTradesCommand() *cli.Command {
       h.TradingsRepository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
         Db: h.Db,
       }
-      h.TradingsRepository.TriggersRepository = &tradingsRepositories.TriggersRepository{
-        Db: h.Db,
-      }
       return nil
     },
     Action: func(c *cli.Context) error {

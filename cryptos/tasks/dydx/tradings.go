@@ -17,7 +17,6 @@ type TradingsTask struct {
   Rdb          *redis.Client
   Ctx          context.Context
   Asynq        *asynq.Client
-  TriggersTask *tasks.TriggersTask
   ScalpingTask *tasks.ScalpingTask
 }
 
@@ -34,16 +33,4 @@ func (t *TradingsTask) Scalping() *tasks.ScalpingTask {
     }
   }
   return t.ScalpingTask
-}
-
-func (t *TradingsTask) Triggers() *tasks.TriggersTask {
-  if t.TriggersTask == nil {
-    t.TriggersTask = &tasks.TriggersTask{
-      Asynq: t.Asynq,
-    }
-    t.TriggersTask.Repository = &tradingsRepositories.TriggersRepository{
-      Db: t.Db,
-    }
-  }
-  return t.TriggersTask
 }

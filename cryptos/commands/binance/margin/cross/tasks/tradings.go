@@ -11,7 +11,6 @@ func NewTradingsCommand() *cli.Command {
     Usage: "",
     Subcommands: []*cli.Command{
       tradings.NewScalpingCommand(),
-      tradings.NewTriggersCommand(),
     },
   }
 }

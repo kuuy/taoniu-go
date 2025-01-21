@@ -8,7 +8,6 @@ import (
 type TradingsTask struct {
   AnsqContext  *common.AnsqClientContext
   ScalpingTask *tasks.ScalpingTask
-  TriggersTask *tasks.TriggersTask
 }
 
 func NewTradingsTask(ansqContext *common.AnsqClientContext) *TradingsTask {
@@ -24,15 +23,7 @@ func (t *TradingsTask) Scalping() *tasks.ScalpingTask {
   return t.ScalpingTask
 }
 
-func (t *TradingsTask) Triggers() *tasks.TriggersTask {
-  if t.TriggersTask == nil {
-    t.TriggersTask = tasks.NewTriggersTask(t.AnsqContext)
-  }
-  return t.TriggersTask
-}
-
 func (t *TradingsTask) Flush() error {
   t.Scalping().Flush()
-  t.Triggers().Flush()
   return nil
 }

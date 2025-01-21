@@ -53,9 +53,6 @@ func NewKlinesCommand() *cli.Command {
       h.TradingsRepository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
         Db: h.Db,
       }
-      h.TradingsRepository.TriggersRepository = &tradingsRepositories.TriggersRepository{
-        Db: h.Db,
-      }
       return nil
     },
     Subcommands: []*cli.Command{

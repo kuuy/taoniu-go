@@ -13,7 +13,6 @@ func NewCrossCommand() *cli.Command {
       cross.NewAccountCommand(),
       cross.NewOrdersCommand(),
       cross.NewScalpingCommand(),
-      cross.NewTriggersCommand(),
       cross.NewTradingsCommand(),
       cross.NewAnalysisCommand(),
       cross.NewTasksCommand(),

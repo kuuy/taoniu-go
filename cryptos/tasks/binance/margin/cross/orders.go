@@ -37,9 +37,6 @@ func NewOrdersTask(ansqContext *common.AnsqClientContext) *OrdersTask {
       ScalpingRepository: &tradingsRepositories.ScalpingRepository{
         Db: ansqContext.Db,
       },
-      TriggersRepository: &tradingsRepositories.TriggersRepository{
-        Db: ansqContext.Db,
-      },
     },
   }
 }

@@ -17,6 +17,5 @@ func NewTradings(ansqContext *common.AnsqServerContext) *Tradings {
 
 func (h *Tradings) Register() error {
   tradings.NewScalping(h.AnsqContext).Register()
-  tradings.NewTriggers(h.AnsqContext).Register()
   return nil
 }

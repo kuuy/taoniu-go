@@ -63,11 +63,9 @@ func (h *DydxHandler) run() error {
     dydx.Account().Flush()
     dydx.Tickers().Flush()
     dydx.Orderbook().Flush()
-    dydx.Tradings().Triggers().Place()
     dydx.Tradings().Scalping().Place()
   })
   c.AddFunc("@every 15s", func() {
-    dydx.Tradings().Triggers().Flush()
     dydx.Tradings().Scalping().Flush()
   })
   c.AddFunc("@every 30s", func() {

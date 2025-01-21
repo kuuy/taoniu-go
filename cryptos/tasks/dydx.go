@@ -87,9 +87,6 @@ func (t *DydxTask) Orderbook() *tasks.OrderbookTask {
     t.OrderbookTask.TradingsRepository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
       Db: t.Db,
     }
-    t.OrderbookTask.TradingsRepository.TriggersRepository = &tradingsRepositories.TriggersRepository{
-      Db: t.Db,
-    }
   }
   return t.OrderbookTask
 }
@@ -111,9 +108,6 @@ func (t *DydxTask) Klines() *tasks.KlinesTask {
       Db: t.Db,
     }
     t.KlinesTask.TradingsRepository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
-      Db: t.Db,
-    }
-    t.KlinesTask.TradingsRepository.TriggersRepository = &tradingsRepositories.TriggersRepository{
       Db: t.Db,
     }
   }
@@ -147,9 +141,6 @@ func (t *DydxTask) Orders() *tasks.OrdersTask {
       Db: t.Db,
     }
     t.OrdersTask.TradingsRepository.ScalpingRepository = &tradingsRepositories.ScalpingRepository{
-      Db: t.Db,
-    }
-    t.OrdersTask.TradingsRepository.TriggersRepository = &tradingsRepositories.TriggersRepository{
       Db: t.Db,
     }
   }

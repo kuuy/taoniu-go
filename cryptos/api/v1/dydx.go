@@ -21,7 +21,6 @@ func NewDydxRouter(apiContext *common.ApiContext) http.Handler {
   r.Mount("/orders", dydx.NewOrdersRouter(apiContext))
   r.Mount("/positions", dydx.NewPositionsRouter(apiContext))
   r.Mount("/scalping", dydx.NewScalpingRouter(apiContext))
-  r.Mount("/triggers", dydx.NewTriggersRouter(apiContext))
   r.Mount("/tradings", dydx.NewTradingsouter(apiContext))
   r.Mount("/tradingview", dydx.NewTradingViewRouter(apiContext))
   return r

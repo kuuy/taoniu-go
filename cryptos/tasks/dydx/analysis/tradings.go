@@ -9,7 +9,6 @@ import (
 type TradingsTask struct {
   Db           *gorm.DB
   ScalpingTask *tasks.ScalpingTask
-  TriggersTask *tasks.TriggersTask
 }
 
 func (t *TradingsTask) Scalping() *tasks.ScalpingTask {
@@ -22,18 +21,7 @@ func (t *TradingsTask) Scalping() *tasks.ScalpingTask {
   return t.ScalpingTask
 }
 
-func (t *TradingsTask) Triggers() *tasks.TriggersTask {
-  if t.TriggersTask == nil {
-    t.TriggersTask = &tasks.TriggersTask{}
-    t.TriggersTask.Repository = &repositories.TriggersRepository{
-      Db: t.Db,
-    }
-  }
-  return t.TriggersTask
-}
-
 func (t *TradingsTask) Flush() error {
   t.Scalping().Flush()
-  t.Triggers().Flush()
   return nil
 }

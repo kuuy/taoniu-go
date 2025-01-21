@@ -68,11 +68,9 @@ func (h *CrossHandler) run() error {
   c := cron.New()
   c.AddFunc("@every 5s", func() {
     binance.Margin().Cross().Tradings().Scalping().Place()
-    binance.Margin().Cross().Tradings().Triggers().Place()
   })
   c.AddFunc("@every 15s", func() {
     binance.Margin().Cross().Tradings().Scalping().Flush()
-    binance.Margin().Cross().Tradings().Triggers().Flush()
   })
   c.AddFunc("@every 30s", func() {
     binance.Margin().Cross().Orders().Open()
