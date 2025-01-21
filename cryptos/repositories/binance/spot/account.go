@@ -30,22 +30,22 @@ type AccountRepository struct {
   Nats *nats.Conn
 }
 
-func (r *AccountRepository) Flush() error {
+func (r *AccountRepository) Flush() (err error) {
   account, err := r.Request()
   if err != nil {
-    return err
+    return
   }
-  oldCurrencies, _ := r.Rdb.SMembers(r.Ctx, "binance:spot:currencies").Result()
+  oldCurrencies, _ := r.Rdb.SMembers(r.Ctx, config.REDIS_KEY_CURRENCIES).Result()
   var currencies []string
   for _, coin := range account.Balances {
     free, _ := strconv.ParseFloat(coin.Free, 64)
     locked, _ := strconv.ParseFloat(coin.Locked, 64)
     if free <= 0.0 {
-      r.Rdb.SRem(r.Ctx, "binance:spot:currencies", coin.Asset)
+      r.Rdb.SRem(r.Ctx, config.REDIS_KEY_CURRENCIES, coin.Asset)
       r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_BALANCE, coin.Asset))
       continue
     }
-    r.Rdb.SAdd(r.Ctx, "binance:spot:currencies", coin.Asset)
+    r.Rdb.SAdd(r.Ctx, config.REDIS_KEY_CURRENCIES, coin.Asset)
     r.Rdb.HMSet(
       r.Ctx,
       fmt.Sprintf(config.REDIS_KEY_BALANCE, coin.Asset),
@@ -59,12 +59,12 @@ func (r *AccountRepository) Flush() error {
 
   for _, currency := range oldCurrencies {
     if !slices.Contains(currencies, currency) {
-      r.Rdb.SRem(r.Ctx, "binance:spot:currencies", currency)
+      r.Rdb.SRem(r.Ctx, config.REDIS_KEY_CURRENCIES, currency)
       r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_BALANCE, currency))
     }
   }
 
-  return nil
+  return
 }
 
 func (r *AccountRepository) Balance(asset string) (map[string]float64, error) {
@@ -75,7 +75,7 @@ func (r *AccountRepository) Balance(asset string) (map[string]float64, error) {
   data, _ := r.Rdb.HMGet(
     r.Ctx,
     fmt.Sprintf(
-      "binance:spot:balance:%s",
+      config.REDIS_KEY_BALANCE,
       asset,
     ),
     fields...,

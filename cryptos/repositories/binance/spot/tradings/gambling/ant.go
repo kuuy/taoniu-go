@@ -4,7 +4,6 @@ import (
   "context"
   "errors"
   "fmt"
-  "gorm.io/datatypes"
   "log"
   "math"
   "strconv"
@@ -13,6 +12,7 @@ import (
   "github.com/go-redis/redis/v8"
   "github.com/rs/xid"
   "github.com/shopspring/decimal"
+  "gorm.io/datatypes"
   "gorm.io/gorm"
 
   "taoniu.local/cryptos/common"

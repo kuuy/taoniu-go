@@ -57,10 +57,9 @@ func (r *KlinesRepository) Series(symbol string, interval string, timestamp int6
   return series
 }
 
-func (r *KlinesRepository) Count(symbol string, interval string) int64 {
-  var total int64
+func (r *KlinesRepository) Count(symbol string, interval string) (total int64) {
   r.Db.Model(&models.Kline{}).Where("symbol=? AND interval=?", symbol, interval).Count(&total)
-  return total
+  return
 }
 
 func (r *KlinesRepository) History(

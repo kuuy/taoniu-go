@@ -47,8 +47,7 @@ func (r *ScalpingRepository) PlanIds() []string {
   return planIds
 }
 
-func (r *ScalpingRepository) Count(conditions map[string]interface{}) int64 {
-  var total int64
+func (r *ScalpingRepository) Count(conditions map[string]interface{}) (total int64) {
   query := r.Db.Model(&tradingsModels.Scalping{})
   if _, ok := conditions["symbol"]; ok {
     query.Where("symbol", conditions["symbol"].(string))
@@ -59,7 +58,7 @@ func (r *ScalpingRepository) Count(conditions map[string]interface{}) int64 {
     query.Where("status IN ?", []int{0, 1, 2, 3})
   }
   query.Count(&total)
-  return total
+  return
 }
 
 func (r *ScalpingRepository) Listings(conditions map[string]interface{}, current int, pageSize int) []*tradingsModels.Scalping {
@@ -112,7 +111,6 @@ func (r *ScalpingRepository) Place(planId string) (err error) {
   }
 
   timestamp := time.Now().Unix()
-
   if plan.Interval == "1m" && plan.CreatedAt.Unix() < timestamp-900 {
     r.Db.Delete(&scalpingPlan, "plan_id", planId)
     return errors.New("plan has been expired")

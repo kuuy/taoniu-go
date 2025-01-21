@@ -4,7 +4,6 @@ import (
   "context"
   "errors"
   "fmt"
-  "gorm.io/datatypes"
   "log"
   "math"
   "strconv"
@@ -13,6 +12,7 @@ import (
   "github.com/go-redis/redis/v8"
   "github.com/rs/xid"
   "github.com/shopspring/decimal"
+  "gorm.io/datatypes"
   "gorm.io/gorm"
 
   "taoniu.local/cryptos/common"
@@ -114,7 +114,6 @@ func (r *AntRepository) Flush(id string) (err error) {
   r.Db.Where("ant_id=? AND status IN ?", ant.ID, []int{0, 1}).Find(&tradings)
 
   timestamp := time.Now().Add(-15 * time.Minute).Unix()
-
   redisKey := fmt.Sprintf(config.REDIS_KEY_TRADINGS_LAST_PRICE, positionSide, ant.Symbol)
   for _, trading := range tradings {
     if trading.Mode == 1 && trading.Status == 0 {

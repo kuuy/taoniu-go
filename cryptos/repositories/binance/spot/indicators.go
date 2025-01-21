@@ -15,6 +15,7 @@ import (
   "github.com/shopspring/decimal"
   "gorm.io/gorm"
 
+  config "taoniu.local/cryptos/config/binance/spot"
   models "taoniu.local/cryptos/models/binance/spot"
 )
 
@@ -241,7 +242,7 @@ func (r *IndicatorsRepository) Pivot(symbol string, interval string) error {
   }
 
   redisKey := fmt.Sprintf(
-    "binance:spot:indicators:%s:%s:%s",
+    config.REDIS_KEY_INDICATORS,
     interval,
     symbol,
     day,
@@ -314,7 +315,7 @@ func (r *IndicatorsRepository) Atr(symbol string, interval string, period int, l
   }
 
   redisKey := fmt.Sprintf(
-    "binance:spot:indicators:%s:%s:%s",
+    config.REDIS_KEY_INDICATORS,
     interval,
     symbol,
     day,
@@ -381,7 +382,7 @@ func (r *IndicatorsRepository) Zlema(symbol string, interval string, period int,
   }
 
   redisKey := fmt.Sprintf(
-    "binance:spot:indicators:%s:%s:%s",
+    config.REDIS_KEY_INDICATORS,
     interval,
     symbol,
     day,
@@ -460,7 +461,7 @@ func (r *IndicatorsRepository) HaZlema(symbol string, interval string, period in
   }
 
   redisKey := fmt.Sprintf(
-    "binance:spot:indicators:%s:%s:%s",
+    config.REDIS_KEY_INDICATORS,
     interval,
     symbol,
     day,
@@ -538,7 +539,7 @@ func (r *IndicatorsRepository) Kdj(symbol string, interval string, longPeriod in
   }
 
   redisKey := fmt.Sprintf(
-    "binance:spot:indicators:%s:%s:%s",
+    config.REDIS_KEY_INDICATORS,
     interval,
     symbol,
     day,
@@ -618,7 +619,7 @@ func (r *IndicatorsRepository) BBands(symbol string, interval string, period int
   }
 
   redisKey := fmt.Sprintf(
-    "binance:spot:indicators:%s:%s:%s",
+    config.REDIS_KEY_INDICATORS,
     interval,
     symbol,
     day,
@@ -723,7 +724,7 @@ func (r *IndicatorsRepository) IchimokuCloud(symbol string, interval string, ten
   }
 
   redisKey := fmt.Sprintf(
-    "binance:spot:indicators:%s:%s:%s",
+    config.REDIS_KEY_INDICATORS,
     interval,
     symbol,
     day,
@@ -938,7 +939,7 @@ func (r *IndicatorsRepository) VolumeProfile(symbol string, interval string, lim
   values["poc_ratio"], _ = decimal.NewFromFloat(values["vah"] - values["val"]).Div(decimal.NewFromFloat(values["poc"])).Round(4).Float64()
 
   redisKey := fmt.Sprintf(
-    "binance:spot:indicators:%s:%s:%s",
+    config.REDIS_KEY_INDICATORS,
     interval,
     symbol,
     day,
@@ -1049,7 +1050,7 @@ func (r *IndicatorsRepository) AndeanOscillator(symbol string, interval string, 
   }
 
   redisKey := fmt.Sprintf(
-    "binance:spot:indicators:%s:%s:%s",
+    config.REDIS_KEY_INDICATORS,
     interval,
     symbol,
     day,

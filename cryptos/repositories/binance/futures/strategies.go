@@ -13,6 +13,7 @@ import (
   "github.com/shopspring/decimal"
   "gorm.io/gorm"
 
+  config "taoniu.local/cryptos/config/binance/futures"
   models "taoniu.local/cryptos/models/binance/futures"
 )
 
@@ -77,7 +78,7 @@ func (r *StrategiesRepository) Atr(symbol string, interval string) error {
   atrVal, err := r.Rdb.HGet(
     r.Ctx,
     fmt.Sprintf(
-      "binance:futures:indicators:%s:%s:%s",
+      config.REDIS_KEY_INDICATORS,
       interval,
       symbol,
       day,
@@ -120,7 +121,7 @@ func (r *StrategiesRepository) Atr(symbol string, interval string) error {
   r.Rdb.HMSet(
     r.Ctx,
     fmt.Sprintf(
-      "binance:futures:indicators:%s:%s:%s",
+      config.REDIS_KEY_INDICATORS,
       interval,
       symbol,
       day,
@@ -142,7 +143,7 @@ func (r *StrategiesRepository) Zlema(symbol string, interval string) error {
   val, err := r.Rdb.HGet(
     r.Ctx,
     fmt.Sprintf(
-      "binance:futures:indicators:%s:%s:%s",
+      config.REDIS_KEY_INDICATORS,
       interval,
       symbol,
       time.Now().Format("0102"),
@@ -203,7 +204,7 @@ func (r *StrategiesRepository) HaZlema(symbol string, interval string) error {
   val, err := r.Rdb.HGet(
     r.Ctx,
     fmt.Sprintf(
-      "binance:futures:indicators:%s:%s:%s",
+      config.REDIS_KEY_INDICATORS,
       interval,
       symbol,
       time.Now().Format("0102"),
@@ -264,7 +265,7 @@ func (r *StrategiesRepository) Kdj(symbol string, interval string) error {
   val, err := r.Rdb.HGet(
     r.Ctx,
     fmt.Sprintf(
-      "binance:futures:indicators:%s:%s:%s",
+      config.REDIS_KEY_INDICATORS,
       interval,
       symbol,
       time.Now().Format("0102"),
@@ -327,7 +328,7 @@ func (r *StrategiesRepository) BBands(symbol string, interval string) error {
   val, err := r.Rdb.HGet(
     r.Ctx,
     fmt.Sprintf(
-      "binance:futures:indicators:%s:%s:%s",
+      config.REDIS_KEY_INDICATORS,
       interval,
       symbol,
       time.Now().Format("0102"),
@@ -403,7 +404,7 @@ func (r *StrategiesRepository) IchimokuCloud(symbol string, interval string) err
   val, err := r.Rdb.HGet(
     r.Ctx,
     fmt.Sprintf(
-      "binance:futures:indicators:%s:%s:%s",
+      config.REDIS_KEY_INDICATORS,
       interval,
       symbol,
       time.Now().Format("0102"),

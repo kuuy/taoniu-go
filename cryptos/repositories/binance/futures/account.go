@@ -70,7 +70,7 @@ func (r *AccountRepository) Flush() error {
     maintMargin, _ := strconv.ParseFloat(coin.MaintMargin, 64)
 
     if balance <= 0.0 {
-      r.Rdb.Del(r.Ctx, fmt.Sprintf("binance:futures:balance:%s", coin.Asset))
+      r.Rdb.Del(r.Ctx, fmt.Sprintf(config.REDIS_KEY_BALANCE, coin.Asset))
       continue
     }
 
