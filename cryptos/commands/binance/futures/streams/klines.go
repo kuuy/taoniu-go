@@ -5,6 +5,7 @@ import (
   "encoding/json"
   "errors"
   "fmt"
+  "github.com/shopspring/decimal"
   "log"
   "os"
   "slices"
@@ -95,7 +96,6 @@ func (h *KlinesHandler) handler(message map[string]interface{}) {
   kline := data["k"].(map[string]interface{})
   event := data["e"].(string)
 
-  log.Println("kline", data)
   if event == "kline" {
     symbol := data["s"].(string)
     interval := kline["i"].(string)
@@ -105,41 +105,39 @@ func (h *KlinesHandler) handler(message map[string]interface{}) {
     low, _ := strconv.ParseFloat(kline["l"].(string), 64)
     volume, _ := strconv.ParseFloat(kline["v"].(string), 64)
     quota, _ := strconv.ParseFloat(kline["q"].(string), 64)
+    change, _ := decimal.NewFromFloat(close).Sub(decimal.NewFromFloat(open)).Div(decimal.NewFromFloat(open)).Round(4).Float64()
     timestamp := int64(kline["t"].(float64))
 
-    mutex := common.NewMutex(
-      h.AnsqContext.Rdb,
-      h.AnsqContext.Ctx,
-      fmt.Sprintf(config.LOCKS_KLINES_STREAM, symbol, interval),
-    )
-    if !mutex.Lock(10 * time.Second) {
-      return
+    duration := time.Second * 0
+    if interval == "1m" {
+      duration = time.Second * (30 + 60)
+    } else if interval == "15m" {
+      duration = time.Second * (30 + 900)
+    } else if interval == "4h" {
+      duration = time.Second * (30 + 14400)
+    } else if interval == "1d" {
+      duration = time.Second * (30 + 86400)
     }
 
-    task, err := h.Job.Update(
-      symbol,
-      interval,
-      open,
-      close,
-      high,
-      low,
-      volume,
-      quota,
-      timestamp,
+    redisKey := fmt.Sprintf(config.REDIS_KEY_KLINES, interval, symbol, timestamp)
+    h.Rdb.HMSet(
+      h.Ctx,
+      redisKey,
+      map[string]interface{}{
+        "symbol":    symbol,
+        "open":      open,
+        "close":     close,
+        "change":    change,
+        "high":      high,
+        "low":       low,
+        "volume":    volume,
+        "quota":     quota,
+        "timestamp": timestamp,
+      },
     )
-    if err != nil {
-      log.Println("err", err)
-      return
-    }
-    _, err = h.AnsqContext.Conn.Enqueue(
-      task,
-      asynq.Queue(config.ASYNQ_QUEUE_KLINES),
-      asynq.MaxRetry(0),
-      asynq.Timeout(5*time.Minute),
-    )
-    if err != nil {
-      log.Println("err", err)
-      return
+    ttl, _ := h.Rdb.TTL(h.Ctx, redisKey).Result()
+    if -1 == ttl.Nanoseconds() {
+      h.Rdb.Expire(h.Ctx, redisKey, duration)
     }
   }
 }
@@ -149,14 +147,21 @@ func (h *KlinesHandler) Start(current int, interval string) (err error) {
 
   symbols := h.ScalpingRepository.Scan(2)
 
-  offset := (current - 1) * 33
+  pageSize := common.GetEnvInt("BINANCE_FUTURES_SYMBOLS_SIZE")
+  offset := (current - 1) * pageSize
   if offset >= len(symbols) {
     err = errors.New("symbols out of range")
     return
   }
-  endPos := offset + 33
+  endPos := offset + pageSize
   if endPos > len(symbols) {
     endPos = len(symbols)
+  }
+
+  log.Println("symbols", len(symbols[offset:endPos]), symbols[offset:endPos])
+
+  if 1 > 0 {
+    return
   }
 
   var streams []string

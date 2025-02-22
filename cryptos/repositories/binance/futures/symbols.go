@@ -20,6 +20,7 @@ import (
   "gorm.io/datatypes"
   "gorm.io/gorm"
 
+  config "taoniu.local/cryptos/config/binance/futures"
   models "taoniu.local/cryptos/models/binance/futures"
 )
 
@@ -275,7 +276,7 @@ func (r *SymbolsRepository) Slippage(symbol string) error {
 
   r.Rdb.HMSet(
     r.Ctx,
-    fmt.Sprintf("binance:futures:realtime:%s", symbol),
+    fmt.Sprintf(config.REDIS_KEY_TICKERS, symbol),
     map[string]interface{}{
       "slippage@1%":         data["slippage@1%"],
       "slippage@-1%":        data["slippage@-1%"],
@@ -311,7 +312,7 @@ func (r *SymbolsRepository) Price(symbol string) (float64, error) {
   data, _ := r.Rdb.HMGet(
     r.Ctx,
     fmt.Sprintf(
-      "binance:futures:realtime:%s",
+      config.REDIS_KEY_TICKERS,
       symbol,
     ),
     fields...,

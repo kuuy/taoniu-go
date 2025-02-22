@@ -17,6 +17,7 @@ import (
   "github.com/shopspring/decimal"
 
   "taoniu.local/cryptos/common"
+  config "taoniu.local/cryptos/config/binance/futures"
 )
 
 type TickersRepository struct {
@@ -45,7 +46,7 @@ func (r *TickersRepository) Flush() error {
   timestamp := time.Now().UnixMilli()
   pipe := r.Rdb.Pipeline()
   for _, ticker := range tickers {
-    redisKey := fmt.Sprintf("binance:futures:realtime:%s", ticker.Symbol)
+    redisKey := fmt.Sprintf(config.REDIS_KEY_TICKERS, ticker.Symbol)
     value, err := r.Rdb.HGet(r.Ctx, redisKey, "lasttime").Result()
     if err == nil {
       lasttime, _ := strconv.ParseInt(value, 10, 64)

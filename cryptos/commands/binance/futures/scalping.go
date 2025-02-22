@@ -4,16 +4,17 @@ import (
   "context"
   "errors"
   "fmt"
-  "github.com/shopspring/decimal"
   "log"
   "strconv"
   "time"
 
   "github.com/go-redis/redis/v8"
+  "github.com/shopspring/decimal"
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
 
   "taoniu.local/cryptos/common"
+  config "taoniu.local/cryptos/config/binance/futures"
   models "taoniu.local/cryptos/models/binance/futures"
   repositories "taoniu.local/cryptos/repositories/binance/futures"
 )
@@ -229,7 +230,21 @@ func (h *ScalpingHandler) Flush(side int) error {
 
 func (h *ScalpingHandler) Check(side int) error {
   var scalping []*models.Scalping
-  h.Db.Model(&models.Scalping{}).Where("side=? AND status=1", side).Find(&scalping)
+  h.Db.Model(&models.Scalping{}).Where("side=? AND status in (1,2)", side).Find(&scalping)
+
+  now := time.Now().UTC()
+  duration := -time.Second * time.Duration(now.Second())
+  duration = duration - time.Hour*time.Duration(now.Hour()) - time.Minute*time.Duration(now.Minute())
+  timestamp := now.Add(duration).Unix() * 1000
+
+  for _, entity := range scalping {
+    redisKey := fmt.Sprintf(config.REDIS_KEY_KLINES, "1d", entity.Symbol, timestamp)
+    exists, _ := h.Rdb.Exists(h.Ctx, redisKey).Result()
+    if exists != 1 {
+      log.Println("scalping klines not exists", entity.Symbol)
+    }
+  }
+
   for _, entity := range scalping {
     item, err := h.SymbolsRepository.Get(entity.Symbol)
     if err != nil {
@@ -249,6 +264,7 @@ func (h *ScalpingHandler) Check(side int) error {
       println("scalping", entity.Symbol, fmt.Sprintf("%v %v", notional, buyQuantity*price))
     }
   }
+
   return nil
 }
 

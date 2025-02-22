@@ -8,6 +8,8 @@ import (
 
   "github.com/go-redis/redis/v8"
   "gorm.io/gorm"
+
+  config "taoniu.local/cryptos/config/binance/spot"
 )
 
 type AccountRepository struct {
@@ -100,10 +102,7 @@ func (r *AccountRepository) IsolatedMarginBalance() (float64, error) {
     ).Result()
     priceVal, err := r.Rdb.HGet(
       r.Ctx,
-      fmt.Sprintf(
-        "binance:spot:realtime:%s",
-        symbol,
-      ),
+      fmt.Sprintf(config.REDIS_KEY_TICKERS, symbol),
       "price",
     ).Result()
     if err != nil {

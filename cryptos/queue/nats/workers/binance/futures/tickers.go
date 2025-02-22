@@ -43,7 +43,7 @@ func (h *Tickers) Update(m *nats.Msg) {
 
   h.NatsContext.Rdb.HMSet(
     h.NatsContext.Ctx,
-    fmt.Sprintf("binance:futures:realtime:%s", payload.Symbol),
+    fmt.Sprintf(config.REDIS_KEY_TICKERS, payload.Symbol),
     map[string]interface{}{
       "symbol":    payload.Symbol,
       "price":     payload.Price,

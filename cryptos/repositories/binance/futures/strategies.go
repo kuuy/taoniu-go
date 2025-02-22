@@ -91,10 +91,7 @@ func (r *StrategiesRepository) Atr(symbol string, interval string) error {
   atr, _ := strconv.ParseFloat(atrVal, 64)
   priceVal, err := r.Rdb.HGet(
     r.Ctx,
-    fmt.Sprintf(
-      "binance:futures:realtime:%s",
-      symbol,
-    ),
+    fmt.Sprintf(config.REDIS_KEY_TICKERS, symbol),
     "price",
   ).Result()
   if err != nil {
