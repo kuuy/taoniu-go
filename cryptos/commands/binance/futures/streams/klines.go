@@ -14,14 +14,12 @@ import (
   "time"
 
   "github.com/go-redis/redis/v8"
-  "github.com/hibiken/asynq"
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
   "nhooyr.io/websocket"
 
   "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/futures"
-  jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/futures/streams"
   repositories "taoniu.local/cryptos/repositories/binance/futures"
 )
 
@@ -29,10 +27,7 @@ type KlinesHandler struct {
   Db                 *gorm.DB
   Rdb                *redis.Client
   Socket             *websocket.Conn
-  Asynq              *asynq.Client
   Ctx                context.Context
-  AnsqContext        *common.AnsqClientContext
-  Job                *jobs.Klines
   ScalpingRepository *repositories.ScalpingRepository
 }
 
@@ -43,16 +38,9 @@ func NewKlinesCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = KlinesHandler{
-        Db:    common.NewDB(2),
-        Rdb:   common.NewRedis(2),
-        Asynq: common.NewAsynqClient("BINANCE_FUTURES"),
-        Ctx:   context.Background(),
-      }
-      h.AnsqContext = &common.AnsqClientContext{
-        Db:   h.Db,
-        Rdb:  h.Rdb,
-        Ctx:  h.Ctx,
-        Conn: h.Asynq,
+        Db:  common.NewDB(2),
+        Rdb: common.NewRedis(2),
+        Ctx: context.Background(),
       }
       h.ScalpingRepository = &repositories.ScalpingRepository{
         Db: h.Db,

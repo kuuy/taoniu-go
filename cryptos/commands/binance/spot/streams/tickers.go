@@ -15,7 +15,6 @@ import (
   "nhooyr.io/websocket"
 
   "github.com/go-redis/redis/v8"
-  "github.com/nats-io/nats.go"
   "github.com/shopspring/decimal"
   "github.com/urfave/cli/v2"
 
@@ -29,7 +28,6 @@ type TickersHandler struct {
   Rdb                *redis.Client
   Ctx                context.Context
   Socket             *websocket.Conn
-  Nats               *nats.Conn
   ScalpingRepository *repositories.ScalpingRepository
 }
 
@@ -40,10 +38,9 @@ func NewTickersCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = TickersHandler{
-        Db:   common.NewDB(1),
-        Rdb:  common.NewRedis(1),
-        Ctx:  context.Background(),
-        Nats: common.NewNats(),
+        Db:  common.NewDB(1),
+        Rdb: common.NewRedis(1),
+        Ctx: context.Background(),
       }
       h.ScalpingRepository = &repositories.ScalpingRepository{
         Db: h.Db,

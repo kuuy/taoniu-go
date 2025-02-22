@@ -14,12 +14,14 @@ import (
   "github.com/urfave/cli/v2"
   "nhooyr.io/websocket"
 
+  "github.com/go-redis/redis/v8"
   "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/futures"
   jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/futures/streams"
 )
 
 type AccountHandler struct {
+  Rdb        *redis.Client
   Ctx        context.Context
   Socket     *websocket.Conn
   Nats       *nats.Conn
@@ -34,6 +36,7 @@ func NewAccountCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = AccountHandler{
+        Rdb:        common.NewRedis(2),
         Ctx:        context.Background(),
         Nats:       common.NewNats(),
         AccountJob: &jobs.Account{},
@@ -70,16 +73,19 @@ func (h *AccountHandler) handler(message map[string]interface{}) {
     //info := message["a"].(map[string]interface{})
     //for _, item := range info["B"].([]interface{}) {
     //  account := item.(map[string]interface{})
-    //  if account["a"].(string) != "USDT" {
+    //  asset := account["a"].(string)
+    //  if asset != "USDT" {
     //    continue
     //  }
     //  balance, _ := strconv.ParseFloat(fmt.Sprintf("%v", account["wb"]), 64)
-    //  data, _ := json.Marshal(map[string]interface{}{
-    //    "asset":   account["a"].(string),
-    //    "balance": balance,
-    //  })
-    //  h.Nats.Publish(config.NATS_ACCOUNT_UPDATE, data)
-    //  h.Nats.Flush()
+    //
+    //  h.Rdb.HMSet(
+    //    h.Ctx,
+    //    fmt.Sprintf(config.REDIS_KEY_BALANCE, asset),
+    //    map[string]interface{}{
+    //      "balance": balance,
+    //    },
+    //  )
     //}
   }
 

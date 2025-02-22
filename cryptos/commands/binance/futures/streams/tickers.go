@@ -15,13 +15,11 @@ import (
   "nhooyr.io/websocket"
 
   "github.com/go-redis/redis/v8"
-  "github.com/nats-io/nats.go"
   "github.com/shopspring/decimal"
   "github.com/urfave/cli/v2"
 
   "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/futures"
-  jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/futures/streams"
   repositories "taoniu.local/cryptos/repositories/binance/futures"
 )
 
@@ -30,8 +28,6 @@ type TickersHandler struct {
   Rdb                *redis.Client
   Ctx                context.Context
   Socket             *websocket.Conn
-  Nats               *nats.Conn
-  TickersJob         *jobs.Tickers
   ScalpingRepository *repositories.ScalpingRepository
 }
 
@@ -42,11 +38,9 @@ func NewTickersCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = TickersHandler{
-        Db:         common.NewDB(2),
-        Rdb:        common.NewRedis(2),
-        Ctx:        context.Background(),
-        Nats:       common.NewNats(),
-        TickersJob: &jobs.Tickers{},
+        Db:  common.NewDB(2),
+        Rdb: common.NewRedis(2),
+        Ctx: context.Background(),
       }
       h.ScalpingRepository = &repositories.ScalpingRepository{
         Db: h.Db,

@@ -5,7 +5,6 @@ import (
   "encoding/json"
   "errors"
   "fmt"
-  "github.com/shopspring/decimal"
   "log"
   "os"
   "slices"
@@ -14,14 +13,13 @@ import (
   "time"
 
   "github.com/go-redis/redis/v8"
-  "github.com/hibiken/asynq"
+  "github.com/shopspring/decimal"
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
   "nhooyr.io/websocket"
 
   "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/spot"
-  jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/spot/streams"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
@@ -29,10 +27,7 @@ type KlinesHandler struct {
   Db                 *gorm.DB
   Rdb                *redis.Client
   Socket             *websocket.Conn
-  Asynq              *asynq.Client
   Ctx                context.Context
-  AnsqContext        *common.AnsqClientContext
-  Job                *jobs.Klines
   ScalpingRepository *repositories.ScalpingRepository
 }
 
@@ -43,16 +38,9 @@ func NewKlinesCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = KlinesHandler{
-        Db:    common.NewDB(1),
-        Rdb:   common.NewRedis(1),
-        Asynq: common.NewAsynqClient("BINANCE_SPOT"),
-        Ctx:   context.Background(),
-      }
-      h.AnsqContext = &common.AnsqClientContext{
-        Db:   h.Db,
-        Rdb:  h.Rdb,
-        Ctx:  h.Ctx,
-        Conn: h.Asynq,
+        Db:  common.NewDB(1),
+        Rdb: common.NewRedis(1),
+        Ctx: context.Background(),
       }
       h.ScalpingRepository = &repositories.ScalpingRepository{
         Db: h.Db,
