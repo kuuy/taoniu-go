@@ -123,6 +123,7 @@ func (h *KlinesHandler) handler(message map[string]interface{}) {
         "timestamp": timestamp,
       },
     )
+
     ttl, _ := h.Rdb.TTL(h.Ctx, redisKey).Result()
     if -1 == ttl.Nanoseconds() {
       h.Rdb.Expire(h.Ctx, redisKey, duration)
@@ -144,12 +145,6 @@ func (h *KlinesHandler) Start(current int, interval string) (err error) {
   endPos := offset + pageSize
   if endPos > len(symbols) {
     endPos = len(symbols)
-  }
-
-  log.Println("symbols", len(symbols[offset:endPos]), symbols[offset:endPos])
-
-  if 1 > 0 {
-    return
   }
 
   var streams []string

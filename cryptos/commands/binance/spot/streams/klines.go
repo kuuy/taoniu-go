@@ -123,6 +123,7 @@ func (h *KlinesHandler) handler(message map[string]interface{}) {
         "timestamp": timestamp,
       },
     )
+
     ttl, _ := h.Rdb.TTL(h.Ctx, redisKey).Result()
     if -1 == ttl.Nanoseconds() {
       h.Rdb.Expire(h.Ctx, redisKey, duration)
