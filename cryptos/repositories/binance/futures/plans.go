@@ -2,6 +2,7 @@ package futures
 
 import (
   "errors"
+  "fmt"
   "time"
 
   "github.com/rs/xid"
@@ -80,6 +81,31 @@ func (r *PlansRepository) Listings(conditions map[string]interface{}, current in
   query.Order("timestamp desc")
   query.Offset((current - 1) * pageSize).Limit(pageSize).Find(&plans)
   return plans
+}
+
+func (r *PlansRepository) Ranking(
+  fields []string,
+  conditions map[string]interface{},
+  sortField string,
+  sortType int,
+  limit int,
+) (plans []*models.Plan) {
+  query := r.Db.Select(fields)
+  if _, ok := conditions["interval"].(string); ok {
+    query.Where("interval", conditions["interval"].(string))
+  }
+  if _, ok := conditions["expired_at"].(time.Time); ok {
+    query.Where("created_at>?", conditions["expired_at"].(time.Time))
+  }
+  if sortField != "" {
+    if sortType == 1 {
+      query.Order(fmt.Sprintf("%v ASC", sortField))
+    } else if sortType == -1 {
+      query.Order(fmt.Sprintf("%v DESC", sortField))
+    }
+  }
+  query.Limit(limit).Find(&plans)
+  return
 }
 
 func (r *PlansRepository) Flush(interval string) error {
@@ -189,6 +215,7 @@ func (r *PlansRepository) Signals(interval string) (map[string]interface{}, map[
 
   return buys, sells
 }
+
 func (r *PlansRepository) Create(symbol string, interval string) (plan models.Plan, err error) {
   var strategy models.Strategy
   result := r.Db.Select([]string{"price", "signal", "timestamp"}).Where(

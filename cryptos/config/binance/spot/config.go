@@ -10,9 +10,6 @@ const (
   REDIS_KEY_TRADINGS_TRIGGERS_PLACE            = "binance:spot:tradings:triggers:place:%v"
   REDIS_KEY_TRADINGS_GAMBLING_SCALPING_PLACE   = "binance:spot:tradings:gambling:scalping:place:%v"
   SCALPING_MIN_BINANCE                         = 50
-  TRIGGERS_MIN_BINANCE                         = 200
-  LAUNCHPAD_MIN_BINANCE                        = 1000
-  LAUNCHPAD_DURATION                           = 30
   GAMBLING_SCALPING_MIN_BINANCE                = 2121
   GAMBLING_SCALPING_MIN_AMOUNT                 = 16
   GAMBLING_SCALPING_MAX_AMOUNT                 = 440

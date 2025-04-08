@@ -35,7 +35,10 @@ func (h *Scalping) AddPlan(m *nats.Msg) {
   var payload *PlansUpdatePayload
   json.Unmarshal(m.Data, &payload)
 
-  h.Repository.AddPlan(payload.ID)
+  if !h.Repository.IsPlanExists(payload.ID) {
+    h.Repository.AddPlan(payload.ID)
+  }
+
   message, _ := json.Marshal(&tradings.ScalpingPlacePayload{
     PlanId: payload.ID,
   })

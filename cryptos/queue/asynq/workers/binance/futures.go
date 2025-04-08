@@ -24,6 +24,7 @@ func (h *Futures) Register() error {
   futures.NewPlans(h.AnsqContext).Register()
   futures.NewAccount(h.AnsqContext).Register()
   futures.NewOrders(h.AnsqContext).Register()
+  futures.NewScalping(h.AnsqContext).Register()
   futures.NewTradings(h.AnsqContext).Register()
   return nil
 }

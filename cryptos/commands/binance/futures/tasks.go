@@ -15,6 +15,7 @@ func NewTasksCommand() *cli.Command {
       tasks.NewKlinesCommand(),
       tasks.NewStrategiesCommand(),
       tasks.NewPlansCommand(),
+      tasks.NewScalpingCommand(),
       tasks.NewTradingsCommand(),
       tasks.NewAnalysisCommand(),
     },

@@ -9,12 +9,11 @@ const (
   REDIS_KEY_TRADINGS_TRIGGERS_PLACE            = "binance:futures:tradings:triggers:place:%v:%v"
   REDIS_KEY_TRADINGS_GAMBLING_SCALPING_PLACE   = "binance:futures:tradings:gambling:scalping:place:%v:%v"
   SCALPING_MIN_BINANCE                         = 50
-  TRIGGERS_MIN_BINANCE                         = 200
   GAMBLING_SCALPING_MIN_BINANCE                = 2121
   GAMBLING_SCALPING_MIN_AMOUNT                 = 16
   GAMBLING_SCALPING_MAX_AMOUNT                 = 440
   GAMBLING_SCALPING_PRICE_LOSE_PERCENT         = 20
-  GAMBLING_ANT_MIN_BINANCE                     = 1200
+  GAMBLING_ANT_MIN_BINANCE                     = 3000
   GAMBLING_ANT_MAX_AMOUNT                      = 125
   ASYNQ_QUEUE_TICKERS                          = "binance.futures.tickers"
   ASYNQ_QUEUE_KLINES                           = "binance.futures.klines"
@@ -88,6 +87,7 @@ const (
   LOCKS_TASKS_KLINES_FIX                       = "locks:binance:futures:tasks:klines:fix:%v"
   LOCKS_TASKS_KLINES_CLEAN                     = "locks:binance:futures:tasks:klines:clean:%v"
   LOCKS_TASKS_STRATEGIES_CLEAN                 = "locks:binance:futures:tasks:strategies:clean:%v"
+  LOCKS_TASKS_STRATEGIES_FLUSH                 = "locks:binance:futures:tasks:strategies:flush:%v"
   LOCKS_TASKS_PLANS_CLEAN                      = "locks:binance:futures:tasks:plans:clean:%v"
   LOCKS_TASKS_ANALYSIS_TRADINGS_SCALPING_FLUSH = "locks:binance:futures:tasks:analysis:tradings:scalping:flush"
   LOCKS_TASKS_ANALYSIS_TRADINGS_TRIGGERS_FLUSH = "locks:binance:futures:tasks:analysis:tradings:triggers:flush"

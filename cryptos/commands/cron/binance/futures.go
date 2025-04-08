@@ -67,6 +67,10 @@ func (h *FuturesHandler) run() error {
   c := cron.New()
   c.AddFunc("@every 5s", func() {
     binance.Futures().Tickers().Flush()
+    binance.Futures().Scalping().Plans().Flush("1m")
+    binance.Futures().Scalping().Plans().Flush("15m")
+    binance.Futures().Scalping().Plans().Flush("4h")
+    binance.Futures().Scalping().Plans().Flush("1d")
     binance.Futures().Tradings().Scalping().Place()
     //binance.Futures().Tradings().Gambling().Ant().Place()
     //binance.Futures().Tradings().Gambling().Scalping().Place()
