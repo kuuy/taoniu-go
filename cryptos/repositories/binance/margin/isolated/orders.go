@@ -298,7 +298,7 @@ func (r *OrdersRepository) Cancel(symbol string, orderId int64) (err error) {
   params.Add("orderId", fmt.Sprintf("%v", orderId))
   params.Add("recvWindow", "60000")
 
-  timestamp := time.Now().UnixMicro()
+  timestamp := time.Now().UnixMilli()
   payload := fmt.Sprintf("%s&timestamp=%v", params.Encode(), timestamp)
 
   block, _ := pem.Decode([]byte(os.Getenv("BINANCE_SPOT_TRADE_API_SECRET")))

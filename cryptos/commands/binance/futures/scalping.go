@@ -194,7 +194,7 @@ func (h *ScalpingHandler) Plans() error {
 
 func (h *ScalpingHandler) Flush(side int) error {
   var scalping []*models.Scalping
-  h.Db.Model(&models.Scalping{}).Where("side=? AND status=1", side).Find(&scalping)
+  h.Db.Model(&models.Scalping{}).Where("side=? AND status in (1,2)", side).Find(&scalping)
   for _, entity := range scalping {
     data, _ := h.Rdb.HMGet(
       h.Ctx,
