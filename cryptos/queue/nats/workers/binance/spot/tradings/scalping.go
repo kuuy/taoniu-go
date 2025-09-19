@@ -23,7 +23,9 @@ func NewScalping(natsContext *common.NatsContext) *Scalping {
     NatsContext: natsContext,
   }
   h.Repository = &repositories.ScalpingRepository{
-    Db: h.NatsContext.Db,
+    Db:  h.NatsContext.Db,
+    Rdb: h.NatsContext.Rdb,
+    Ctx: h.NatsContext.Ctx,
   }
   h.Repository.SymbolsRepository = &spotRepositories.SymbolsRepository{
     Db:  h.NatsContext.Db,
