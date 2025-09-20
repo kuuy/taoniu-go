@@ -20,6 +20,7 @@ import (
   "gorm.io/datatypes"
   "gorm.io/gorm"
 
+  "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/futures"
   models "taoniu.local/cryptos/models/binance/futures"
 )
@@ -71,13 +72,13 @@ func (r *SymbolsRepository) Get(symbol string) (entity *models.Symbol, err error
 }
 
 func (r *SymbolsRepository) Filters(params datatypes.JSONMap) (tickSize float64, stepSize float64, notional float64, err error) {
-  var filters []string
-  filters = strings.Split(params["price"].(string), ",")
-  tickSize, _ = strconv.ParseFloat(filters[2], 64)
-  filters = strings.Split(params["quote"].(string), ",")
-  stepSize, _ = strconv.ParseFloat(filters[2], 64)
+  var values []string
+  values = strings.Split(params["price"].(string), ",")
+  tickSize, _ = strconv.ParseFloat(values[2], 64)
+  values = strings.Split(params["quote"].(string), ",")
+  stepSize, _ = strconv.ParseFloat(values[2], 64)
   if _, ok := params["notional"]; !ok {
-    notional = 5
+    notional = common.GetEnvFloat64("BINANCE_FUTURES_SYMBOLS_NOTIONAL")
   } else {
     notional, _ = strconv.ParseFloat(params["notional"].(string), 64)
   }

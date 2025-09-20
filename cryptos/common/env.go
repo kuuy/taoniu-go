@@ -28,6 +28,15 @@ func GetEnvInt64(key string) int64 {
   return result
 }
 
+func GetEnvFloat64(key string) float64 {
+  value := os.Getenv(key)
+  result, err := strconv.ParseFloat(value, 64)
+  if err != nil {
+    panic(err.Error())
+  }
+  return result
+}
+
 func GetEnvArray(key string) []string {
   var result []string
   i := 1
