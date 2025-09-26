@@ -12,11 +12,11 @@ import (
   "strings"
   "time"
 
+  "github.com/coder/websocket"
   "github.com/go-redis/redis/v8"
   "github.com/shopspring/decimal"
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
-  "nhooyr.io/websocket"
 
   "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/spot"
@@ -69,7 +69,7 @@ func NewKlinesCommand() *cli.Command {
 func (h *KlinesHandler) read() (message map[string]interface{}, err error) {
   var data []byte
   _, data, err = h.Socket.Read(h.Ctx)
-  json.Unmarshal(data, &message)
+  err = json.Unmarshal(data, &message)
   return
 }
 
@@ -137,18 +137,18 @@ func (h *KlinesHandler) Start(current int, interval string) (err error) {
   symbols := h.ScalpingRepository.Scan()
 
   pageSize := common.GetEnvInt("BINANCE_SPOT_SYMBOLS_SIZE")
-  offset := (current - 1) * pageSize
-  if offset >= len(symbols) {
+  startPos := (current - 1) * pageSize
+  if startPos >= len(symbols) {
     err = errors.New("symbols out of range")
     return
   }
-  endPos := offset + pageSize
+  endPos := startPos + pageSize
   if endPos > len(symbols) {
     endPos = len(symbols)
   }
 
   var streams []string
-  for _, symbol := range symbols[offset:endPos] {
+  for _, symbol := range symbols[startPos:endPos] {
     streams = append(
       streams,
       fmt.Sprintf("%s@kline_%s", strings.ToLower(symbol), interval),
@@ -173,40 +173,35 @@ func (h *KlinesHandler) Start(current int, interval string) (err error) {
     return
   }
   defer h.Socket.Close(websocket.StatusInternalError, "the socket was closed abruptly")
-  h.Socket.SetReadLimit(655350)
 
-  quit := make(chan struct{})
   go func() {
-    defer close(quit)
+    ticker := time.NewTicker(10 * time.Second)
+    defer ticker.Stop()
+
     for {
       select {
-      case <-h.Ctx.Done():
-        return
-      default:
-        message, err := h.read()
+      case <-ticker.C:
+        err = h.ping()
         if err != nil {
+          h.Socket.Close(websocket.StatusNormalClosure, "")
           return
         }
-        h.handler(message)
+      case <-h.Ctx.Done():
+        return
       }
     }
   }()
 
-  ticker := time.NewTicker(time.Minute)
-  defer ticker.Stop()
-
   for {
     select {
-    case <-ticker.C:
-      err = h.ping()
-      if err != nil {
-        h.Socket.Close(websocket.StatusNormalClosure, "")
-        return
-      }
     case <-h.Ctx.Done():
       return
-    case <-quit:
-      return
+    default:
+      message, err := h.read()
+      if err != nil {
+        return err
+      }
+      h.handler(message)
     }
   }
 }

@@ -9,9 +9,9 @@ import (
 
   "github.com/adshao/go-binance/v2"
   "github.com/bitly/go-simplejson"
+  "github.com/coder/websocket"
   "github.com/go-redis/redis/v8"
   "github.com/urfave/cli/v2"
-  "nhooyr.io/websocket"
 
   "taoniu.local/cryptos/common"
 )

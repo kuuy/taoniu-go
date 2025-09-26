@@ -11,8 +11,8 @@ import (
   "strings"
   "time"
 
+  "github.com/coder/websocket"
   "gorm.io/gorm"
-  "nhooyr.io/websocket"
 
   "github.com/go-redis/redis/v8"
   "github.com/shopspring/decimal"
@@ -148,40 +148,35 @@ func (h *TickersHandler) Start(current int) (err error) {
     return
   }
   defer h.Socket.Close(websocket.StatusInternalError, "the socket was closed abruptly")
-  h.Socket.SetReadLimit(655350)
 
-  quit := make(chan struct{})
   go func() {
-    defer close(quit)
+    ticker := time.NewTicker(10 * time.Second)
+    defer ticker.Stop()
+
     for {
       select {
-      case <-h.Ctx.Done():
-        return
-      default:
-        message, err := h.read()
+      case <-ticker.C:
+        err = h.ping()
         if err != nil {
+          h.Socket.Close(websocket.StatusNormalClosure, "")
           return
         }
-        h.handler(message)
+      case <-h.Ctx.Done():
+        return
       }
     }
   }()
 
-  ticker := time.NewTicker(time.Minute)
-  defer ticker.Stop()
-
   for {
     select {
-    case <-ticker.C:
-      err = h.ping()
-      if err != nil {
-        h.Socket.Close(websocket.StatusNormalClosure, "")
-        return
-      }
     case <-h.Ctx.Done():
       return
-    case <-quit:
-      return
+    default:
+      message, err := h.read()
+      if err != nil {
+        return err
+      }
+      h.handler(message)
     }
   }
 }

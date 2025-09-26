@@ -71,6 +71,7 @@ const (
   LOCKS_KLINES_STREAM                          = "locks:binance:futures:klines:stream:%v:%v"
   LOCKS_INDICATORS_FLUSH                       = "locks:binance:futures:indicators:flush:%v:%v"
   LOCKS_STRATEGIES_FLUSH                       = "locks:binance:futures:strategies:flush:%v:%v"
+  LOCKS_PLANS_FLUSH                            = "locks:binance:futures:plans:%s:flush"
   LOCKS_ORDERS_OPEN                            = "locks:binance:futures:orders:open:%v"
   LOCKS_ORDERS_FLUSH                           = "locks:binance:futures:orders:flush:%v:%d"
   LOCKS_ORDERS_SYNC                            = "locks:binance:futures:orders:sync:%v"

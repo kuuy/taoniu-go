@@ -7,7 +7,9 @@ import (
   "time"
 
   "github.com/hibiken/asynq"
+
   "taoniu.local/cryptos/common"
+  config "taoniu.local/cryptos/config/binance/spot"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
@@ -36,7 +38,7 @@ func (h *Plans) Flush(ctx context.Context, t *asynq.Task) error {
   mutex := common.NewMutex(
     h.AnsqContext.Rdb,
     h.AnsqContext.Ctx,
-    fmt.Sprintf("locks:binance:spot:plans:%s:flush", payload.Interval),
+    fmt.Sprintf(config.LOCKS_PLANS_FLUSH, payload.Interval),
   )
   if !mutex.Lock(30 * time.Second) {
     return nil

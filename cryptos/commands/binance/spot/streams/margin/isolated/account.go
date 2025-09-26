@@ -8,9 +8,8 @@ import (
   "os"
   "time"
 
-  "nhooyr.io/websocket"
-
   "github.com/adshao/go-binance/v2"
+  "github.com/coder/websocket"
   "github.com/nats-io/nats.go"
   "github.com/urfave/cli/v2"
 
@@ -118,45 +117,35 @@ func (h *AccountHandler) start(symbol string) (err error) {
     return
   }
   defer h.Socket.Close(websocket.StatusInternalError, "the socket was closed abruptly")
-  h.Socket.SetReadLimit(655350)
 
-  quit := make(chan struct{})
   go func() {
-    defer close(quit)
+    ticker := time.NewTicker(10 * time.Second)
+    defer ticker.Stop()
+
     for {
       select {
-      case <-h.Ctx.Done():
-        return
-      default:
-        message, err := h.read()
+      case <-ticker.C:
+        err = h.ping()
         if err != nil {
+          h.Socket.Close(websocket.StatusNormalClosure, "")
           return
         }
-        h.handler(message)
+      case <-h.Ctx.Done():
+        return
       }
     }
   }()
 
-  ticker := time.NewTicker(time.Minute)
-  defer ticker.Stop()
-
   for {
     select {
-    case <-ticker.C:
-      err = client.NewKeepaliveIsolatedMarginUserStreamService().Symbol(symbol).ListenKey(listenKey).Do(h.Ctx)
-      if err != nil {
-        h.Socket.Close(websocket.StatusNormalClosure, "")
-        return
-      }
-      err = h.ping()
-      if err != nil {
-        h.Socket.Close(websocket.StatusNormalClosure, "")
-        return
-      }
     case <-h.Ctx.Done():
       return
-    case <-quit:
-      return
+    default:
+      message, err := h.read()
+      if err != nil {
+        return err
+      }
+      h.handler(message)
     }
   }
 }

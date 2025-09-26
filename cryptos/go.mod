@@ -1,13 +1,11 @@
 module taoniu.local/cryptos
 
-go 1.21.10
+go 1.24
 
 require (
-	github.com/PuerkitoBio/goquery v1.8.0
 	github.com/adshao/go-binance/v2 v2.3.10
-	github.com/alecthomas/participle/v2 v2.0.0-beta.5
-	github.com/alecthomas/repr v0.1.0
 	github.com/bitly/go-simplejson v0.5.0
+	github.com/coder/websocket v1.8.14
 	github.com/eclipse/paho.golang v0.12.0
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/go-jose/go-jose/v4 v4.0.4
@@ -23,7 +21,6 @@ require (
 	github.com/rs/xid v1.4.0
 	github.com/satori/go.uuid v1.2.0
 	github.com/shopspring/decimal v1.3.1
-	github.com/tidwall/gjson v1.14.4
 	github.com/urfave/cli/v2 v2.27.5
 	github.com/vchitai/go-socket.io/v4 v4.1.12
 	github.com/yanue/starkex v0.0.0-20230614033702-2d7a3a7e494e
@@ -34,12 +31,10 @@ require (
 	gorm.io/driver/postgres v1.5.11
 	gorm.io/gorm v1.25.12
 	h12.io/socks v1.0.3
-	nhooyr.io/websocket v1.8.7
 )
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
-	github.com/andybalholm/cascadia v1.3.1 // indirect
 	github.com/btcsuite/btcd v0.21.0-beta // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.6 // indirect
@@ -63,7 +58,6 @@ require (
 	github.com/miguelmota/go-solidity-sha3 v0.1.1 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/nats-io/nats-server/v2 v2.9.17 // indirect
 	github.com/nats-io/nkeys v0.4.9 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/redis/go-redis/v9 v9.0.2 // indirect
@@ -71,8 +65,6 @@ require (
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
-	github.com/tidwall/match v1.1.1 // indirect
-	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/umbracle/ethgo v0.1.0 // indirect
 	github.com/umbracle/fastrlp v0.0.0-20211229195328-c1416904ae17 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
