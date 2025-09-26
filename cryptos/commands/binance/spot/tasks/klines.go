@@ -2,8 +2,11 @@ package tasks
 
 import (
   "context"
+  "errors"
   "fmt"
   "log"
+  "slices"
+  "strconv"
   "time"
 
   "github.com/go-redis/redis/v8"
@@ -67,7 +70,17 @@ func NewKlinesCommand() *cli.Command {
         Name:  "fix",
         Usage: "",
         Action: func(c *cli.Context) error {
-          if err := h.Fix(); err != nil {
+          interval := c.Args().Get(0)
+          if !slices.Contains([]string{"1m", "15m", "4h", "1d"}, interval) {
+            log.Fatal("interval not valid")
+            return nil
+          }
+          current, _ := strconv.Atoi(c.Args().Get(1))
+          if current < 1 {
+            log.Fatal("current is less than 1")
+            return nil
+          }
+          if err := h.Fix(interval, current); err != nil {
             return cli.Exit(err.Error(), 1)
           }
           return nil
@@ -107,10 +120,33 @@ func (h *KlinesHandler) Flush() error {
   return nil
 }
 
-func (h *KlinesHandler) Fix() error {
-  log.Println("binance spot tasks klines fix...")
+func (h *KlinesHandler) Fix(interval string, current int) (err error) {
+  log.Println("binance spot tasks klines fix...", interval, current)
   symbols := h.ScalpingRepository.Scan()
-  for _, symbol := range symbols {
+
+  pageSize := common.GetEnvInt("BINANCE_SPOT_SYMBOLS_SIZE")
+  startPos := (current - 1) * pageSize
+  if startPos >= len(symbols) {
+    err = errors.New("symbols out of range")
+    return
+  }
+  endPos := startPos + pageSize
+  if endPos > len(symbols) {
+    endPos = len(symbols)
+  }
+
+  var limit int
+  if interval == "1m" {
+    limit = 1440
+  } else if interval == "15m" {
+    limit = 672
+  } else if interval == "4h" {
+    limit = 126
+  } else if interval == "1d" {
+    limit = 100
+  }
+
+  for _, symbol := range symbols[startPos:endPos] {
     mutex := common.NewMutex(
       h.Rdb,
       h.Ctx,
@@ -119,10 +155,7 @@ func (h *KlinesHandler) Fix() error {
     if !mutex.Lock(30 * time.Second) {
       continue
     }
-    h.KlinesRepository.Fix(symbol, "1m", 1440)
-    h.KlinesRepository.Fix(symbol, "15m", 672)
-    h.KlinesRepository.Fix(symbol, "4h", 126)
-    h.KlinesRepository.Fix(symbol, "1d", 100)
+    h.KlinesRepository.Fix(symbol, interval, limit)
   }
   return nil
 }

@@ -175,26 +175,31 @@ func (r *KlinesRepository) Flush(symbol string, interval string, endtime int64, 
 }
 
 func (r *KlinesRepository) Fix(symbol string, interval string, limit int) error {
-  var klines []*models.Kline
-  r.Db.Select(
-    []string{"close", "high", "low", "volume", "timestamp"},
+  timestamp := r.Timestamp(interval)
+  timestep := r.Timestep(interval)
+  lasttime := timestamp - int64(limit)*timestep
+
+  var values []int64
+  r.Db.Model(&models.Kline{}).Select(
+    "timestamp",
   ).Where(
-    "symbol=? AND interval=?", symbol, interval,
+    "symbol=? AND interval=? AND timestamp>?",
+    symbol,
+    interval,
+    lasttime,
   ).Order(
     "timestamp desc",
-  ).Limit(
-    limit,
   ).Find(
-    &klines,
+    &values,
   )
 
-  if len(klines) == 0 {
+  if len(values) == limit {
     return nil
   }
 
-  timestamp := r.Timestamp(interval)
-  timestep := r.Timestep(interval)
-  lasttime := klines[0].Timestamp
+  if len(values) > 0 {
+    lasttime = values[0]
+  }
 
   if timestamp < lasttime {
     timestamp = lasttime
@@ -206,41 +211,31 @@ func (r *KlinesRepository) Fix(symbol string, interval string, limit int) error 
     endtime = timestamp
     count = int((timestamp - lasttime) / timestep)
   }
+  log.Println("klines fix start", endtime, lasttime, count)
 
-  for i := 1; i < len(klines); i++ {
-    if lasttime-klines[i].Timestamp != timestep {
+  for i := 1; i < len(values); i++ {
+    if lasttime-values[i] != timestep {
       if endtime == 0 {
         endtime = lasttime
-        count = int((endtime - klines[i].Timestamp) / timestep)
       }
+      count = int((endtime - values[i] - timestep) / timestep)
     } else {
       if endtime > 0 && count > 0 {
-        err := r.Flush(symbol, interval, endtime, count)
+        log.Println("klines loop fix", symbol, interval, endtime-timestep, count)
+        err := r.Flush(symbol, interval, endtime-timestep, count)
         if err != nil {
           log.Println("klines fix error", err.Error())
         }
+        count = 0
         endtime = 0
       }
     }
-    count++
-    lasttime = klines[i].Timestamp
+    lasttime = values[i]
   }
 
-  if count > limit {
-    count = limit
-  }
-
-  log.Println("endtime", endtime, count)
-
-  if endtime > 0 && count > 0 {
-    log.Println("klines fix", symbol, interval, endtime, count)
+  if count > 0 {
+    log.Println("klines last fix", symbol, interval, endtime, count)
     err := r.Flush(symbol, interval, endtime, count)
-    if err != nil {
-      log.Println("klines fix error", err.Error())
-    }
-  } else if limit > count {
-    log.Println("klines fix", symbol, interval, lasttime, limit-count)
-    err := r.Flush(symbol, interval, lasttime, limit-count)
     if err != nil {
       log.Println("klines fix error", err.Error())
     }
@@ -341,5 +336,5 @@ func (r *KlinesRepository) Timestamp(interval string) int64 {
   } else if interval == "1d" {
     duration = duration - time.Hour*time.Duration(now.Hour()) - time.Minute*time.Duration(now.Minute())
   }
-  return now.Add(duration).UnixMilli()
+  return now.Add(duration).Unix() * 1000
 }

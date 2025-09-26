@@ -48,17 +48,17 @@ func NewKlinesCommand() *cli.Command {
       return nil
     },
     Action: func(c *cli.Context) error {
-      current, _ := strconv.Atoi(c.Args().Get(0))
-      if current < 1 {
-        log.Fatal("current is less than 1")
-        return nil
-      }
-      interval := c.Args().Get(1)
+      interval := c.Args().Get(0)
       if !slices.Contains([]string{"1m", "15m", "4h", "1d"}, interval) {
         log.Fatal("interval not valid")
         return nil
       }
-      if err := h.Start(current, interval); err != nil {
+      current, _ := strconv.Atoi(c.Args().Get(1))
+      if current < 1 {
+        log.Fatal("current is less than 1")
+        return nil
+      }
+      if err := h.Start(interval, current); err != nil {
         return cli.Exit(err.Error(), 1)
       }
       return nil
@@ -131,7 +131,7 @@ func (h *KlinesHandler) handler(message map[string]interface{}) {
   }
 }
 
-func (h *KlinesHandler) Start(current int, interval string) (err error) {
+func (h *KlinesHandler) Start(interval string, current int) (err error) {
   log.Println("stream start")
 
   symbols := h.ScalpingRepository.Scan(2)
