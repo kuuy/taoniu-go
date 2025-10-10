@@ -7,7 +7,7 @@ require (
 	github.com/bitly/go-simplejson v0.5.0
 	github.com/coder/websocket v1.8.14
 	github.com/eclipse/paho.golang v0.12.0
-	github.com/go-chi/chi/v5 v5.0.7
+	github.com/go-chi/chi/v5 v5.2.3
 	github.com/go-jose/go-jose/v4 v4.0.4
 	github.com/go-numb/go-dydx v0.0.0-20230714023630-3801998a7d89
 	github.com/go-redis/redis/v8 v8.11.5
@@ -64,7 +64,7 @@ require (
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
-	github.com/stretchr/objx v0.5.0 // indirect
+	github.com/stretchr/testify v1.10.0 // indirect
 	github.com/umbracle/ethgo v0.1.0 // indirect
 	github.com/umbracle/fastrlp v0.0.0-20211229195328-c1416904ae17 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect

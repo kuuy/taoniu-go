@@ -44,7 +44,7 @@ func NewApiCommand() *cli.Command {
   }
 }
 
-func (h *ApiHandler) run() error {
+func (h *ApiHandler) run() (err error) {
   log.Println("api running...")
 
   apiContext := &common.ApiContext{
@@ -60,13 +60,13 @@ func (h *ApiHandler) run() error {
     r.Mount("/tradingview", v1.NewTradingviewRouter(apiContext))
   })
 
-  err := http.ListenAndServe(
+  err = http.ListenAndServe(
     fmt.Sprintf("127.0.0.1:%v", os.Getenv("CRYPTOS_API_PORT")),
     r,
   )
   if err != nil {
-    return err
+    return
   }
 
-  return nil
+  return
 }

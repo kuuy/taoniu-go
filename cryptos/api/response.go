@@ -6,10 +6,6 @@ import (
   "taoniu.local/cryptos/repositories"
 )
 
-type jweResponse struct {
-  Payload string `json:"payload"`
-}
-
 type jsonResponse struct {
   Success bool        `json:"success"`
   Data    interface{} `json:"data"`
