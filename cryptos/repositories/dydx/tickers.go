@@ -231,7 +231,7 @@ func (r *TickersRepository) Request() ([]*TickerInfo, error) {
 
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   time.Duration(5) * time.Second,
+    Timeout:   5 * time.Second,
   }
 
   url := fmt.Sprintf("%s/v3/stats", os.Getenv("DYDX_API_ENDPOINT"))

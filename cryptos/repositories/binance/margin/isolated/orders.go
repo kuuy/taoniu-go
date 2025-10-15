@@ -147,7 +147,7 @@ func (r *OrdersRepository) Open(symbol string) (err error) {
 
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   time.Duration(5) * time.Second,
+    Timeout:   5 * time.Second,
   }
 
   params := url.Values{}
@@ -209,7 +209,7 @@ func (r *OrdersRepository) Create(
 
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   time.Duration(5) * time.Second,
+    Timeout:   5 * time.Second,
   }
 
   params := url.Values{}
@@ -290,7 +290,7 @@ func (r *OrdersRepository) Cancel(symbol string, orderId int64) (err error) {
 
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   time.Duration(5) * time.Second,
+    Timeout:   5 * time.Second,
   }
 
   params := url.Values{}
@@ -378,7 +378,7 @@ func (r *OrdersRepository) Sync(symbol string, startTime int64, limit int) (err 
 
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   time.Duration(5) * time.Second,
+    Timeout:   5 * time.Second,
   }
 
   params := url.Values{}

@@ -166,7 +166,7 @@ func (r *AccountRepository) Request() (account *AccountInfo, err error) {
 
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   time.Duration(3) * time.Second,
+    Timeout:   3 * time.Second,
   }
 
   var namespace uuid.UUID

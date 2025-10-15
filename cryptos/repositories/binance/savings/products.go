@@ -76,7 +76,7 @@ func (r *ProductsRepository) Purchase(productId string, amount float64) (purchas
 
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   time.Duration(5) * time.Second,
+    Timeout:   5 * time.Second,
   }
 
   params := url.Values{}

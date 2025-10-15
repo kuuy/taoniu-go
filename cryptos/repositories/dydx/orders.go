@@ -150,7 +150,7 @@ func (r *OrdersRepository) Open(symbol string) (err error) {
 
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   time.Duration(3) * time.Second,
+    Timeout:   3 * time.Second,
   }
 
   q := url.Values{}
@@ -230,7 +230,7 @@ func (r *OrdersRepository) Create(
 
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   time.Duration(3) * time.Second,
+    Timeout:   3 * time.Second,
   }
 
   path := "/v3/orders"
@@ -375,7 +375,7 @@ func (r *OrdersRepository) Cancel(orderId string) (err error) {
 
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   time.Duration(3) * time.Second,
+    Timeout:   3 * time.Second,
   }
 
   path := fmt.Sprintf("/v3/orders/%s", orderId)
@@ -435,7 +435,7 @@ func (r *OrdersRepository) Flush(orderId string) (err error) {
 
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   time.Duration(3) * time.Second,
+    Timeout:   3 * time.Second,
   }
 
   path := fmt.Sprintf("/v3/orders/%s", orderId)

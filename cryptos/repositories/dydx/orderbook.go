@@ -121,7 +121,7 @@ func (r *OrderbookRepository) Request(symbol string) (response *OrderbookRespons
 
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   time.Duration(3) * time.Second,
+    Timeout:   3 * time.Second,
   }
 
   url := fmt.Sprintf("%s/v3/orderbook/%s", os.Getenv("DYDX_API_ENDPOINT"), symbol)

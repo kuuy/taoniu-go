@@ -36,7 +36,7 @@ func (r *DepthRepository) Request(symbol string, limit int) (map[string]interfac
 
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   time.Duration(3) * time.Second,
+    Timeout:   3 * time.Second,
   }
 
   url := fmt.Sprintf("%s/api/v3/depth", os.Getenv("BINANCE_SPOT_API_ENDPOINT"))

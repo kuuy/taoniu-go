@@ -30,7 +30,7 @@ func (r *ServerRepository) Time() (int64, error) {
 
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   time.Duration(100) * time.Millisecond,
+    Timeout:   100 * time.Millisecond,
   }
 
   timestamp := time.Now().UnixMilli()

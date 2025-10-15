@@ -93,7 +93,7 @@ func (r *SymbolsRepository) Flush() (err error) {
 
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   time.Duration(30) * time.Second,
+    Timeout:   30 * time.Second,
   }
 
   url := fmt.Sprintf("%s/fapi/v1/exchangeInfo", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))

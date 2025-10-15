@@ -260,7 +260,7 @@ func (r *KlinesRepository) Request(symbol string, interval string, endtime int64
 
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   time.Duration(15) * time.Second,
+    Timeout:   15 * time.Second,
   }
 
   url := fmt.Sprintf("%s/fapi/v1/klines", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))

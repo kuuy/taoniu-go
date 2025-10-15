@@ -14,6 +14,7 @@ type SpotTask struct {
   IndicatorsTask *tasks.IndicatorsTask
   StrategiesTask *tasks.StrategiesTask
   PlansTask      *tasks.PlansTask
+  ScalpingTask   *tasks.ScalpingTask
   TradingsTask   *tasks.TradingsTask
   AccountTask    *tasks.AccountTask
   OrdersTask     *tasks.OrdersTask
@@ -95,6 +96,13 @@ func (t *SpotTask) Plans() *tasks.PlansTask {
     t.PlansTask = tasks.NewPlansTask(t.AnsqContext)
   }
   return t.PlansTask
+}
+
+func (t *SpotTask) Scalping() *tasks.ScalpingTask {
+  if t.ScalpingTask == nil {
+    t.ScalpingTask = tasks.NewScalpingTask(t.AnsqContext)
+  }
+  return t.ScalpingTask
 }
 
 func (t *SpotTask) Tradings() *tasks.TradingsTask {

@@ -197,7 +197,7 @@ func (r *AccountRepository) Transfer(
 
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   time.Duration(5) * time.Second,
+    Timeout:   5 * time.Second,
   }
 
   params := url.Values{}
@@ -278,7 +278,7 @@ func (r *AccountRepository) Loan(
 
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   time.Duration(5) * time.Second,
+    Timeout:   5 * time.Second,
   }
 
   params := url.Values{}
@@ -360,7 +360,7 @@ func (r *AccountRepository) Repay(
 
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   time.Duration(5) * time.Second,
+    Timeout:   5 * time.Second,
   }
 
   params := url.Values{}

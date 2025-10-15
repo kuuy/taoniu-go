@@ -239,7 +239,7 @@ func (r *KlinesRepository) Request(symbol string, interval string, endtime int64
 
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   time.Duration(3) * time.Second,
+    Timeout:   3 * time.Second,
   }
 
   var resolution string

@@ -29,7 +29,7 @@ func (r *ScannerRepository) Scan(exchange string, symbol string, interval string
 
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   time.Duration(3) * time.Second,
+    Timeout:   3 * time.Second,
   }
 
   s := scanner.NewWithCustomHttpClient(httpClient)

@@ -11,6 +11,7 @@ import (
 
   "github.com/adshao/go-binance/v2"
   "github.com/coder/websocket"
+  "github.com/coder/websocket/wsjson"
   "github.com/go-redis/redis/v8"
   "github.com/nats-io/nats.go"
   "github.com/urfave/cli/v2"
@@ -54,16 +55,18 @@ func NewAccountCommand() *cli.Command {
 }
 
 func (h *AccountHandler) read() (message map[string]interface{}, err error) {
-  var data []byte
-  _, data, err = h.Socket.Read(h.Ctx)
-  json.Unmarshal(data, &message)
+  err = wsjson.Read(h.Ctx, h.Socket, &message)
   return
 }
 
-func (h *AccountHandler) ping() error {
-  ctx, cancel := context.WithTimeout(h.Ctx, time.Second*1)
+func (h *AccountHandler) ping() (err error) {
+  ctx, cancel := context.WithTimeout(h.Ctx, 25*time.Second)
   defer cancel()
-  return h.Socket.Ping(ctx)
+  err = h.Socket.Ping(ctx)
+  if err != nil {
+    log.Println("ping error", err.Error())
+  }
+  return
 }
 
 func (h *AccountHandler) handler(message map[string]interface{}) {
@@ -132,7 +135,7 @@ func (h *AccountHandler) start() (err error) {
   defer h.Socket.Close(websocket.StatusInternalError, "the socket was closed abruptly")
 
   go func() {
-    ticker := time.NewTicker(10 * time.Second)
+    ticker := time.NewTicker(30 * time.Second)
     defer ticker.Stop()
 
     for {

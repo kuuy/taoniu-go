@@ -59,7 +59,7 @@ func (r *AccountRepository) Flush() (err error) {
 
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   time.Duration(3) * time.Second,
+    Timeout:   3 * time.Second,
   }
 
   params := url.Values{}
@@ -173,7 +173,7 @@ func (r *AccountRepository) Transfer(asset string, side int, quantity float64) (
 
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   time.Duration(5) * time.Second,
+    Timeout:   5 * time.Second,
   }
 
   params := url.Values{}
@@ -247,7 +247,7 @@ func (r *AccountRepository) Borrow(asset string, amount float64) (transferId int
 
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   time.Duration(5) * time.Second,
+    Timeout:   5 * time.Second,
   }
 
   params := url.Values{}

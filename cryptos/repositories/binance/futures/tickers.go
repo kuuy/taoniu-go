@@ -92,7 +92,7 @@ func (r *TickersRepository) Request() ([]*TickerInfo, error) {
 
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   time.Duration(3) * time.Second,
+    Timeout:   3 * time.Second,
   }
 
   url := fmt.Sprintf("%s/fapi/v1/ticker/24hr", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))

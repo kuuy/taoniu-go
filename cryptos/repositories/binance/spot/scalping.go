@@ -87,6 +87,15 @@ func (r *ScalpingRepository) PlanIds(status int) []string {
   return ids
 }
 
+func (r *ScalpingRepository) IsPlanExists(planId string) bool {
+  var scalpingPlan *models.ScalpingPlan
+  err := r.Db.Where("plan_id", planId).Take(&scalpingPlan).Error
+  if err != nil {
+    return false
+  }
+  return true
+}
+
 func (r *ScalpingRepository) AddPlan(planID string) error {
   var scalping *models.ScalpingPlan
   result := r.Db.Where("plan_id", planID).Take(&scalping)

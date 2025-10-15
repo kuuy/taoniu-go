@@ -2,7 +2,6 @@ package streams
 
 import (
   "context"
-  "encoding/json"
   "errors"
   "fmt"
   "log"
@@ -12,6 +11,7 @@ import (
   "time"
 
   "github.com/coder/websocket"
+  "github.com/coder/websocket/wsjson"
   "github.com/go-redis/redis/v8"
   "github.com/shopspring/decimal"
   "github.com/urfave/cli/v2"
@@ -61,16 +61,18 @@ func NewTickersCommand() *cli.Command {
 }
 
 func (h *TickersHandler) read() (message map[string]interface{}, err error) {
-  var data []byte
-  _, data, err = h.Socket.Read(h.Ctx)
-  json.Unmarshal(data, &message)
+  err = wsjson.Read(h.Ctx, h.Socket, &message)
   return
 }
 
-func (h *TickersHandler) ping() error {
-  ctx, cancel := context.WithTimeout(h.Ctx, time.Second*1)
+func (h *TickersHandler) ping() (err error) {
+  ctx, cancel := context.WithTimeout(h.Ctx, 25*time.Second)
   defer cancel()
-  return h.Socket.Ping(ctx)
+  err = h.Socket.Ping(ctx)
+  if err != nil {
+    log.Println("ping error", err.Error())
+  }
+  return
 }
 
 func (h *TickersHandler) handler(message map[string]interface{}) {
@@ -149,7 +151,7 @@ func (h *TickersHandler) Start(current int) (err error) {
   defer h.Socket.Close(websocket.StatusInternalError, "the socket was closed abruptly")
 
   go func() {
-    ticker := time.NewTicker(10 * time.Second)
+    ticker := time.NewTicker(30 * time.Second)
     defer ticker.Stop()
 
     for {

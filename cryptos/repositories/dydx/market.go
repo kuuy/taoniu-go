@@ -132,7 +132,7 @@ func (r *MarketsRepository) Request() ([]*MarketInfo, error) {
 
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   time.Duration(3) * time.Second,
+    Timeout:   3 * time.Second,
   }
 
   url := fmt.Sprintf("%s/v3/markets", os.Getenv("DYDX_API_ENDPOINT"))
