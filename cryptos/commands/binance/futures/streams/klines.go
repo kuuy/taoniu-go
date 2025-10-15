@@ -176,24 +176,6 @@ func (h *KlinesHandler) Start(interval string, current int) (err error) {
   }
   defer h.Socket.Close(websocket.StatusInternalError, "the socket was closed abruptly")
 
-  go func() {
-    ticker := time.NewTicker(30 * time.Second)
-    defer ticker.Stop()
-
-    for {
-      select {
-      case <-ticker.C:
-        err = h.ping()
-        if err != nil {
-          h.Socket.Close(websocket.StatusNormalClosure, "")
-          return
-        }
-      case <-h.Ctx.Done():
-        return
-      }
-    }
-  }()
-
   for {
     select {
     case <-h.Ctx.Done():
