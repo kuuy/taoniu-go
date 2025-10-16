@@ -17,7 +17,7 @@ func NewSpot(natsContext *common.NatsContext) *Spot {
 
 func (h *Spot) Subscribe() error {
   spot.NewTickers(h.NatsContext).Subscribe()
-  spot.NewKlines(h.NatsContext).Subscribe()
+  //spot.NewKlines(h.NatsContext).Subscribe()
   spot.NewIndicators(h.NatsContext).Subscribe()
   spot.NewStrategies(h.NatsContext).Subscribe()
   spot.NewPlans(h.NatsContext).Subscribe()

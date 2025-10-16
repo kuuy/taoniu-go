@@ -145,7 +145,7 @@ func (h *AccountHandler) start() (err error) {
       if err != nil {
         return err
       }
-      go h.handler(message)
+      h.handler(message)
     }
   }
 }

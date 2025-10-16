@@ -85,7 +85,7 @@ const (
   LOCKS_TRADINGS_GAMBLING_ANT_PLACE            = "locks:binance:futures:tradings:gambling:ant:place:%v"
   LOCKS_TRADINGS_GAMBLING_ANT_FLUSH            = "locks:binance:futures:tradings:gambling:ant:flush:%v"
   LOCKS_TASKS_SYMBOLS_FLUSH                    = "locks:binance:futures:tasks:symbols:flush"
-  LOCKS_TASKS_KLINES_FLUSH                     = "locks:binance:futures:tasks:klines:flush:%v"
+  LOCKS_TASKS_KLINES_FLUSH                     = "locks:binance:futures:tasks:klines:flush:%v:%v"
   LOCKS_TASKS_KLINES_FIX                       = "locks:binance:futures:tasks:klines:fix:%v"
   LOCKS_TASKS_KLINES_CLEAN                     = "locks:binance:futures:tasks:klines:clean:%v"
   LOCKS_TASKS_STRATEGIES_CLEAN                 = "locks:binance:futures:tasks:strategies:clean:%v"
