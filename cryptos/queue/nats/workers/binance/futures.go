@@ -17,6 +17,7 @@ func NewFutures(natsContext *common.NatsContext) *Futures {
 
 func (h *Futures) Subscribe() error {
   futures.NewTickers(h.NatsContext).Subscribe()
+  futures.NewKlines(h.NatsContext).Subscribe()
   //futures.NewPatterns(h.NatsContext).Subscribe()
   futures.NewIndicators(h.NatsContext).Subscribe()
   futures.NewStrategies(h.NatsContext).Subscribe()

@@ -68,6 +68,7 @@ const (
   NATS_ACCOUNT_UPDATE                          = "binance.spot.account.update"
   NATS_ORDERS_UPDATE                           = "binance.spot.orders.update"
   NATS_TICKERS_UPDATE                          = "binance.spot.tickers.update"
+  NATS_KLINES_FLUSH                            = "binance.spot.klines.flush"
   NATS_KLINES_UPDATE                           = "binance.spot.klines.update"
   NATS_TRADINGS_SCALPING_PLACE                 = "binance.spot.tradings.scalping.place"
   MQTT_TOPICS_ACCOUNT                          = "binance/spot/account/%v"

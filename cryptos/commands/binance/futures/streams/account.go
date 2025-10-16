@@ -55,7 +55,9 @@ func NewAccountCommand() *cli.Command {
 }
 
 func (h *AccountHandler) read() (message map[string]interface{}, err error) {
-  err = wsjson.Read(h.Ctx, h.Socket, &message)
+  ctx, cancel := context.WithTimeout(h.Ctx, 3*time.Second)
+  defer cancel()
+  err = wsjson.Read(ctx, h.Socket, &message)
   return
 }
 
@@ -168,7 +170,7 @@ func (h *AccountHandler) start() (err error) {
       if err != nil {
         return err
       }
-      h.handler(message)
+      go h.handler(message)
     }
   }
 }

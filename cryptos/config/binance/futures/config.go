@@ -54,6 +54,7 @@ const (
   NATS_ACCOUNT_UPDATE                          = "binance.futures.account.update"
   NATS_ORDERS_UPDATE                           = "binance.futures.orders.update"
   NATS_TICKERS_UPDATE                          = "binance.futures.tickers.update"
+  NATS_KLINES_FLUSH                            = "binance.futures.klines.flush"
   NATS_KLINES_UPDATE                           = "binance.futures.klines.update"
   NATS_INDICATORS_UPDATE                       = "binance.futures.indicators.update"
   NATS_STRATEGIES_UPDATE                       = "binance.futures.strategies.update"

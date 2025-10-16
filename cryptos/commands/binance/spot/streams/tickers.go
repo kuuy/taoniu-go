@@ -61,7 +61,9 @@ func NewTickersCommand() *cli.Command {
 }
 
 func (h *TickersHandler) read() (message map[string]interface{}, err error) {
-  err = wsjson.Read(h.Ctx, h.Socket, &message)
+  ctx, cancel := context.WithTimeout(h.Ctx, 3*time.Second)
+  defer cancel()
+  err = wsjson.Read(ctx, h.Socket, &message)
   return
 }
 
@@ -159,7 +161,7 @@ func (h *TickersHandler) Start(current int) (err error) {
       if err != nil {
         return err
       }
-      h.handler(message)
+      go h.handler(message)
     }
   }
 }

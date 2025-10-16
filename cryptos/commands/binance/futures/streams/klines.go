@@ -2,6 +2,7 @@ package streams
 
 import (
   "context"
+  "encoding/json"
   "errors"
   "fmt"
   "log"
@@ -14,6 +15,7 @@ import (
   "github.com/coder/websocket"
   "github.com/coder/websocket/wsjson"
   "github.com/go-redis/redis/v8"
+  "github.com/nats-io/nats.go"
   "github.com/shopspring/decimal"
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
@@ -28,6 +30,7 @@ type KlinesHandler struct {
   Rdb                *redis.Client
   Socket             *websocket.Conn
   Ctx                context.Context
+  Nats               *nats.Conn
   ScalpingRepository *repositories.ScalpingRepository
 }
 
@@ -38,9 +41,10 @@ func NewKlinesCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = KlinesHandler{
-        Db:  common.NewDB(2),
-        Rdb: common.NewRedis(2),
-        Ctx: context.Background(),
+        Db:   common.NewDB(2),
+        Rdb:  common.NewRedis(2),
+        Ctx:  context.Background(),
+        Nats: common.NewNats(),
       }
       h.ScalpingRepository = &repositories.ScalpingRepository{
         Db: h.Db,
@@ -67,7 +71,9 @@ func NewKlinesCommand() *cli.Command {
 }
 
 func (h *KlinesHandler) read() (message map[string]interface{}, err error) {
-  err = wsjson.Read(h.Ctx, h.Socket, &message)
+  ctx, cancel := context.WithTimeout(h.Ctx, 3*time.Second)
+  defer cancel()
+  err = wsjson.Read(ctx, h.Socket, &message)
   return
 }
 
@@ -130,6 +136,14 @@ func (h *KlinesHandler) handler(message map[string]interface{}) {
     if -1 == ttl.Nanoseconds() {
       h.Rdb.Expire(h.Ctx, redisKey, duration)
     }
+
+    payload, _ := json.Marshal(&KlinesFlushPayload{
+      Symbol:    symbol,
+      Interval:  interval,
+      Timestamp: timestamp,
+    })
+    h.Nats.Publish(config.NATS_KLINES_FLUSH, payload)
+    h.Nats.Flush()
   }
 }
 
@@ -185,7 +199,7 @@ func (h *KlinesHandler) Start(interval string, current int) (err error) {
       if err != nil {
         return err
       }
-      h.handler(message)
+      go h.handler(message)
     }
   }
 }
