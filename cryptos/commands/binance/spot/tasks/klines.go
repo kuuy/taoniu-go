@@ -199,13 +199,15 @@ func (h *KlinesHandler) Flush(interval string, current int) (err error) {
         })
       } else {
         diff := time.Now().UnixMilli() - entity.UpdatedAt.UnixMilli()
-        log.Println("diff from now", symbol, interval, diff)
+        if diff > 30000 {
+          log.Println("flush klines", symbol, interval, diff)
+          h.KlinesRepository.Flush(symbol, interval, 0, 1)
+        }
       }
       ttl, _ := h.Rdb.TTL(h.Ctx, redisKey).Result()
       if -1 == ttl.Nanoseconds() {
         h.Rdb.Expire(h.Ctx, redisKey, duration)
       }
-      continue
     }
     //h.KlinesRepository.Flush(symbol, "1m", 0, 5)
     //h.KlinesRepository.Flush(symbol, "15m", 0, 1)
