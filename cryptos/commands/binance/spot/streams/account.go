@@ -55,7 +55,7 @@ func NewAccountCommand() *cli.Command {
 }
 
 func (h *AccountHandler) read() (message map[string]interface{}, err error) {
-  ctx, cancel := context.WithTimeout(h.Ctx, 3*time.Second)
+  ctx, cancel := context.WithTimeout(h.Ctx, 10*time.Second)
   defer cancel()
   err = wsjson.Read(ctx, h.Socket, &message)
   return

@@ -36,10 +36,6 @@ func (h *Klines) Flush(ctx context.Context, t *asynq.Task) error {
   var payload KlinesFlushPayload
   json.Unmarshal(t.Payload(), &payload)
 
-  if payload.UseProxy {
-    h.Repository.UseProxy = true
-  }
-
   mutex := common.NewMutex(
     h.AnsqContext.Rdb,
     h.AnsqContext.Ctx,

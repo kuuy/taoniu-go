@@ -26,7 +26,9 @@ func NewCronCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = CronHandler{
-        Db: common.NewDB(),
+        Db:  common.NewDB(),
+        Rdb: common.NewRedis(),
+        Ctx: context.Background(),
       }
       return nil
     },
@@ -46,7 +48,9 @@ func (h *CronHandler) run() error {
   wg.Add(1)
 
   gfw := tasks.GfwTask{
-    Db: h.Db,
+    Db:  h.Db,
+    Rdb: h.Rdb,
+    Ctx: h.Ctx,
   }
   //tor := tasks.TorTask{
   //  Db: h.Db,

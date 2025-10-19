@@ -3,30 +3,39 @@ package gfw
 import (
   "bufio"
   "bytes"
+  "context"
   "crypto/sha1"
   "encoding/hex"
   "encoding/json"
   "errors"
   "fmt"
   "io"
+  "log"
   "net"
   "net/http"
   "net/url"
   "os"
   "os/exec"
+  "regexp"
   "strings"
   "time"
 
+  "github.com/go-redis/redis/v8"
   "github.com/rs/xid"
   "gorm.io/gorm"
 
   "taoniu.local/security/common"
+  "taoniu.local/security/config"
+  "taoniu.local/security/grpc/services"
   models "taoniu.local/security/models/gfw"
 )
 
 type DnsRepository struct {
   Db              *gorm.DB
+  Rdb             *redis.Client
+  Ctx             context.Context
   CrawlRepository *CrawlRepository
+  Service         *services.Aes
 }
 
 func (r *DnsRepository) Crawl() *CrawlRepository {
@@ -64,10 +73,12 @@ func (r *DnsRepository) Query(domains []string) ([]string, error) {
     Timeout:   3 * time.Second,
   }
 
+  cookie, _ := r.Rdb.Get(r.Ctx, config.REDIS_KEY_GFW_DNS_API_COOKIE).Result()
+
   headers := map[string]string{
     "Content-Type": "application/json",
     "User-Agent":   common.GetEnvString("GFW_DNS_API_AGENT"),
-    "Cookie":       common.GetEnvString("GFW_DNS_API_COOKIE"),
+    "Cookie":       fmt.Sprintf("__test=%v", cookie),
   }
 
   url := "https://gfw.infinityfree.me/dns.php"
@@ -88,10 +99,31 @@ func (r *DnsRepository) Query(domains []string) ([]string, error) {
     return nil, errors.New(fmt.Sprintf("request error: status[%s] code[%d]", resp.Status, resp.StatusCode))
   }
 
+  body, _ := io.ReadAll(resp.Body)
+
   var data map[string]interface{}
-  json.NewDecoder(resp.Body).Decode(&data)
+  json.Unmarshal(body, &data)
 
   if _, ok := data["success"]; !ok {
+    re := regexp.MustCompile(`[abc]=toNumbers\("([^"]+)"`)
+    var a, b, c string
+    for _, matches := range re.FindAllStringSubmatch(string(body), -1) {
+      if strings.HasPrefix(matches[0], "a=") {
+        a = matches[1]
+      } else if strings.HasPrefix(matches[0], "b=") {
+        b = matches[1]
+      } else if strings.HasPrefix(matches[0], "c=") {
+        c = matches[1]
+      }
+    }
+    if a != "" && b != "" && c != "" {
+      reply, err := r.Service.Decrypt(a, b, c)
+      if err != nil {
+        return nil, err
+      }
+      r.Rdb.Set(r.Ctx, config.REDIS_KEY_GFW_DNS_API_COOKIE, reply.Result, -1)
+      log.Println("result", reply)
+    }
     return nil, errors.New("api request failed")
   }
   if !data["success"].(bool) {

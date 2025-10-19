@@ -131,7 +131,7 @@ func (h *KlinesHandler) Flush(interval string, current int) (err error) {
     mutex := common.NewMutex(
       h.Rdb,
       h.Ctx,
-      fmt.Sprintf(config.LOCKS_TASKS_KLINES_FLUSH, symbol, interval),
+      fmt.Sprintf(config.LOCKS_TASKS_KLINES_FLUSH, interval, symbol),
     )
     if !mutex.Lock(5 * time.Second) {
       continue
@@ -249,7 +249,7 @@ func (h *KlinesHandler) Fix(interval string, current int) (err error) {
     mutex := common.NewMutex(
       h.Rdb,
       h.Ctx,
-      fmt.Sprintf(config.LOCKS_TASKS_KLINES_FIX, symbol),
+      fmt.Sprintf(config.LOCKS_TASKS_KLINES_FIX, interval, symbol),
     )
     if !mutex.Lock(30 * time.Second) {
       continue

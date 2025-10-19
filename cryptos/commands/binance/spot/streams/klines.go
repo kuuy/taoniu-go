@@ -5,6 +5,7 @@ import (
   "errors"
   "fmt"
   "log"
+  "net/http"
   "os"
   "slices"
   "strconv"
@@ -67,7 +68,7 @@ func NewKlinesCommand() *cli.Command {
 }
 
 func (h *KlinesHandler) read() (message map[string]interface{}, err error) {
-  ctx, cancel := context.WithTimeout(h.Ctx, 3*time.Second)
+  ctx, cancel := context.WithTimeout(h.Ctx, 10*time.Second)
   defer cancel()
   err = wsjson.Read(ctx, h.Socket, &message)
   return
@@ -171,7 +172,21 @@ func (h *KlinesHandler) Start(interval string, current int) (err error) {
   )
   log.Println("endpoint", endpoint)
 
+  var httpClient *http.Client
+
+  proxy := common.GetEnvString(fmt.Sprintf("BINANCE_PROXY_%v", current))
+  if proxy != "" {
+    tr := &http.Transport{}
+    tr.DialContext = (&common.ProxySession{
+      Proxy: proxy,
+    }).DialContext
+    httpClient = &http.Client{
+      Transport: tr,
+    }
+  }
+
   h.Socket, _, err = websocket.Dial(h.Ctx, endpoint, &websocket.DialOptions{
+    HTTPClient:      httpClient,
     CompressionMode: websocket.CompressionDisabled,
   })
   if err != nil {

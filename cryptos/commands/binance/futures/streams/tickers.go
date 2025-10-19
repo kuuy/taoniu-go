@@ -5,6 +5,7 @@ import (
   "errors"
   "fmt"
   "log"
+  "net/http"
   "os"
   "strconv"
   "strings"
@@ -61,7 +62,7 @@ func NewTickersCommand() *cli.Command {
 }
 
 func (h *TickersHandler) read() (message map[string]interface{}, err error) {
-  ctx, cancel := context.WithTimeout(h.Ctx, 3*time.Second)
+  ctx, cancel := context.WithTimeout(h.Ctx, 10*time.Second)
   defer cancel()
   err = wsjson.Read(ctx, h.Socket, &message)
   return
@@ -144,7 +145,21 @@ func (h *TickersHandler) Start(current int) (err error) {
   )
   log.Println("endpoint", endpoint)
 
+  var httpClient *http.Client
+
+  proxy := common.GetEnvString(fmt.Sprintf("BINANCE_PROXY_%v", current))
+  if proxy != "" {
+    tr := &http.Transport{}
+    tr.DialContext = (&common.ProxySession{
+      Proxy: proxy,
+    }).DialContext
+    httpClient = &http.Client{
+      Transport: tr,
+    }
+  }
+
   h.Socket, _, err = websocket.Dial(h.Ctx, endpoint, &websocket.DialOptions{
+    HTTPClient:      httpClient,
     CompressionMode: websocket.CompressionDisabled,
   })
   if err != nil {

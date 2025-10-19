@@ -6,15 +6,14 @@ import (
   "log"
   "strings"
 
-  "github.com/go-redis/redis/v8"
   "github.com/urfave/cli/v2"
 
   "taoniu.local/security/common"
+  "taoniu.local/security/grpc/services"
   repositories "taoniu.local/security/repositories/gfw"
 )
 
 type DnsHandler struct {
-  Rdb        *redis.Client
   Ctx        context.Context
   Repository *repositories.DnsRepository
 }
@@ -25,9 +24,16 @@ func NewDnsCommand() *cli.Command {
     Name:  "dns",
     Usage: "",
     Before: func(c *cli.Context) error {
-      h = DnsHandler{}
+      h = DnsHandler{
+        Ctx: context.Background(),
+      }
       h.Repository = &repositories.DnsRepository{
-        Db: common.NewDB(),
+        Db:  common.NewDB(),
+        Rdb: common.NewRedis(),
+        Ctx: h.Ctx,
+      }
+      h.Repository.Service = &services.Aes{
+        Ctx: h.Ctx,
       }
       return nil
     },

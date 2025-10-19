@@ -20,7 +20,6 @@ type KlinesFlushPayload struct {
   Symbol   string
   Interval string
   Limit    int
-  UseProxy bool
 }
 
 type KlinesUpdatePayload struct {

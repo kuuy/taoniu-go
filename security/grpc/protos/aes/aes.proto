@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package security.local.grpc.aes;
+option go_package = "taoniu.local/security/grpc/aes";
+
+service Aes {
+  rpc Decrypt(DecryptRequest) returns (DecryptReply) {}
+}
+
+message DecryptRequest {
+  string a = 1;
+  string b = 2;
+  string c = 3;
+}
+
+message DecryptReply {
+  string result = 1;
+}

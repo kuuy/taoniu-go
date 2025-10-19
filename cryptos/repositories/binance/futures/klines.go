@@ -24,11 +24,10 @@ import (
 )
 
 type KlinesRepository struct {
-  Db       *gorm.DB
-  Rdb      *redis.Client
-  Ctx      context.Context
-  Nats     *nats.Conn
-  UseProxy bool
+  Db   *gorm.DB
+  Rdb  *redis.Client
+  Ctx  context.Context
+  Nats *nats.Conn
 }
 
 func (r *KlinesRepository) Get(symbol string, interval string, timestamp int64) (kline *models.Kline, err error) {
@@ -248,14 +247,14 @@ func (r *KlinesRepository) Request(symbol string, interval string, endtime int64
   tr := &http.Transport{
     DisableKeepAlives: true,
   }
-  if r.UseProxy {
-    session := &common.ProxySession{
-      Proxy: "socks5://127.0.0.1:1088?timeout=5s",
-    }
-    tr.DialContext = session.DialContext
+
+  proxy := common.GetEnvString("BINANCE_PROXY")
+  if proxy != "" {
+    tr.DialContext = (&common.ProxySession{
+      Proxy: fmt.Sprintf("%v?timeout=15s", proxy),
+    }).DialContext
   } else {
-    session := &net.Dialer{}
-    tr.DialContext = session.DialContext
+    tr.DialContext = (&net.Dialer{}).DialContext
   }
 
   httpClient := &http.Client{
