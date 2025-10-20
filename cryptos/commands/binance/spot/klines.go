@@ -101,9 +101,6 @@ func NewKlinesCommand() *cli.Command {
             log.Fatal("limit not in 1~100")
             return nil
           }
-          if err := h.Flush(symbol, interval, limit); err != nil {
-            return cli.Exit(err.Error(), 1)
-          }
           if err := h.Fix(symbol, interval, limit); err != nil {
             return cli.Exit(err.Error(), 1)
           }

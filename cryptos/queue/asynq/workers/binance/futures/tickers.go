@@ -2,8 +2,6 @@ package futures
 
 import (
   "context"
-  "time"
-
   "github.com/hibiken/asynq"
 
   "taoniu.local/cryptos/common"
@@ -27,18 +25,7 @@ func NewTickers(ansqContext *common.AnsqServerContext) *Tickers {
 }
 
 func (h *Tickers) Flush(ctx context.Context, t *asynq.Task) error {
-  mutex := common.NewMutex(
-    h.AnsqContext.Rdb,
-    h.AnsqContext.Ctx,
-    "locks:binance:futures:tickers:flush",
-  )
-  if !mutex.Lock(30 * time.Second) {
-    return nil
-  }
-  defer mutex.Unlock()
-
   h.Repository.Flush()
-
   return nil
 }
 

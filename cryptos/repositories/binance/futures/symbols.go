@@ -88,7 +88,15 @@ func (r *SymbolsRepository) Filters(params datatypes.JSONMap) (tickSize float64,
 func (r *SymbolsRepository) Flush() (err error) {
   tr := &http.Transport{
     DisableKeepAlives: true,
-    DialContext:       (&net.Dialer{}).DialContext,
+  }
+
+  proxy := common.GetEnvString("BINANCE_PROXY")
+  if proxy != "" {
+    tr.DialContext = (&common.ProxySession{
+      Proxy: fmt.Sprintf("%v?timeout=30s", proxy),
+    }).DialContext
+  } else {
+    tr.DialContext = (&net.Dialer{}).DialContext
   }
 
   httpClient := &http.Client{

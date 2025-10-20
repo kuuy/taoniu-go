@@ -17,10 +17,8 @@ type TickersUpdatePayload struct {
 }
 
 type KlinesFlushPayload struct {
-  Symbol   string
-  Interval string
-  Limit    int
-  UseProxy bool
+  Symbol   string `json:"symbol"`
+  Interval string `json:"interval"`
 }
 
 type KlinesUpdatePayload struct {

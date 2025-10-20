@@ -19,7 +19,6 @@ type TickersUpdatePayload struct {
 type KlinesFlushPayload struct {
   Symbol   string
   Interval string
-  Limit    int
 }
 
 type KlinesUpdatePayload struct {

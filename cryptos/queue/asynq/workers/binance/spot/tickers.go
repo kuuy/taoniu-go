@@ -29,12 +29,7 @@ func (h *Tickers) Flush(ctx context.Context, t *asynq.Task) error {
   var payload TickersFlushPayload
   json.Unmarshal(t.Payload(), &payload)
 
-  if payload.UseProxy {
-    h.Repository.UseProxy = true
-  }
-
   h.Repository.Flush(payload.Symbols)
-
   return nil
 }
 

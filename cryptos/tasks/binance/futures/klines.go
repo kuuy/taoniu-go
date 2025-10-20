@@ -30,6 +30,22 @@ func NewKlinesTask(ansqContext *common.AnsqClientContext) *KlinesTask {
   }
 }
 
+func (t *KlinesTask) Flush(interval string) error {
+  for _, symbol := range t.ScalpingRepository.Scan(2) {
+    task, err := t.Job.Flush(symbol, interval)
+    if err != nil {
+      return err
+    }
+    t.AnsqContext.Conn.Enqueue(
+      task,
+      asynq.Queue(config.ASYNQ_QUEUE_KLINES),
+      asynq.MaxRetry(0),
+      asynq.Timeout(5*time.Minute),
+    )
+  }
+  return nil
+}
+
 func (t *KlinesTask) Clean() error {
   for _, symbol := range t.ScalpingRepository.Scan(2) {
     task, err := t.Job.Clean(symbol)

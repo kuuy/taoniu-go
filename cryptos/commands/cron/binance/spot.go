@@ -84,6 +84,10 @@ func (h *SpotHandler) run() error {
     //binance.Spot().Tradings().Gambling().Scalping().Place()
   })
   c.AddFunc("@every 15s", func() {
+    binance.Spot().Klines().Flush("1m")
+    binance.Spot().Klines().Flush("15m")
+    binance.Spot().Klines().Flush("4h")
+    binance.Spot().Klines().Flush("1d")
     binance.Spot().Tradings().Scalping().Flush()
     binance.Spot().Tradings().Gambling().Ant().Flush()
   })

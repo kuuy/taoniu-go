@@ -232,9 +232,14 @@ func (r *KlinesRepository) Fix(symbol string, interval string, limit int) error 
     lasttime = values[i]
   }
 
+  if count == 0 && len(values) > 0 {
+    endtime = lasttime
+    count = limit - len(values)
+  }
+
   if count > 0 {
     log.Println("klines last fix", symbol, interval, endtime, count)
-    err := r.Flush(symbol, interval, endtime, count)
+    err := r.Flush(symbol, interval, endtime-timestep, count)
     if err != nil {
       log.Println("klines fix error", err.Error())
     }

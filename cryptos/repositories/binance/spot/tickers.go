@@ -20,9 +20,8 @@ import (
 )
 
 type TickersRepository struct {
-  Rdb      *redis.Client
-  Ctx      context.Context
-  UseProxy bool
+  Rdb *redis.Client
+  Ctx context.Context
 }
 
 type TickerInfo struct {
@@ -79,14 +78,14 @@ func (r *TickersRepository) Request(symbols []string) ([]*TickerInfo, error) {
   tr := &http.Transport{
     DisableKeepAlives: true,
   }
-  if r.UseProxy {
-    session := &common.ProxySession{
-      Proxy: "socks5://127.0.0.1:1088?timeout=5s",
-    }
-    tr.DialContext = session.DialContext
+
+  proxy := common.GetEnvString("BINANCE_PROXY")
+  if proxy != "" {
+    tr.DialContext = (&common.ProxySession{
+      Proxy: fmt.Sprintf("%v?timeout=5s", proxy),
+    }).DialContext
   } else {
-    session := &net.Dialer{}
-    tr.DialContext = session.DialContext
+    tr.DialContext = (&net.Dialer{}).DialContext
   }
 
   httpClient := &http.Client{

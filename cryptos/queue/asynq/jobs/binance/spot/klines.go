@@ -8,8 +8,8 @@ import (
 
 type Klines struct{}
 
-func (h *Klines) Flush(symbol string, interval string, limit int, useProxy bool) (*asynq.Task, error) {
-  payload, err := json.Marshal(KlinesFlushPayload{symbol, interval, limit, useProxy})
+func (h *Klines) Flush(symbol string, interval string) (*asynq.Task, error) {
+  payload, err := json.Marshal(KlinesFlushPayload{symbol, interval})
   if err != nil {
     return nil, err
   }
