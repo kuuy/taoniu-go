@@ -93,7 +93,15 @@ func (r *AccountRepository) Balance(asset string) (map[string]float64, error) {
 func (r *AccountRepository) Request() (result *AccountInfo, err error) {
   tr := &http.Transport{
     DisableKeepAlives: true,
-    DialContext:       (&net.Dialer{}).DialContext,
+  }
+
+  proxy := common.GetEnvString("BINANCE_PROXY")
+  if proxy != "" {
+    tr.DialContext = (&common.ProxySession{
+      Proxy: fmt.Sprintf("%v?timeout=3s", proxy),
+    }).DialContext
+  } else {
+    tr.DialContext = (&net.Dialer{}).DialContext
   }
 
   httpClient := &http.Client{

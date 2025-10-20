@@ -175,8 +175,15 @@ func (r *AccountRepository) Request() (result *AccountInfo, err error) {
   tr := &http.Transport{
     DisableKeepAlives: true,
   }
-  session := &net.Dialer{}
-  tr.DialContext = session.DialContext
+
+  proxy := common.GetEnvString("BINANCE_PROXY")
+  if proxy != "" {
+    tr.DialContext = (&common.ProxySession{
+      Proxy: fmt.Sprintf("%v?timeout=3s", proxy),
+    }).DialContext
+  } else {
+    tr.DialContext = (&net.Dialer{}).DialContext
+  }
 
   httpClient := &http.Client{
     Transport: tr,

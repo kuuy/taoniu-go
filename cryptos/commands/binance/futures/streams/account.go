@@ -5,6 +5,7 @@ import (
   "encoding/json"
   "fmt"
   "log"
+  "net/http"
   "os"
   "strconv"
   "time"
@@ -153,7 +154,21 @@ func (h *AccountHandler) start() (err error) {
 
   log.Println("endpoint", endpoint, client.BaseURL, isTestNet, listenKey)
 
+  var httpClient *http.Client
+
+  proxy := common.GetEnvString("BINANCE_PROXY")
+  if proxy != "" {
+    tr := &http.Transport{}
+    tr.DialContext = (&common.ProxySession{
+      Proxy: proxy,
+    }).DialContext
+    httpClient = &http.Client{
+      Transport: tr,
+    }
+  }
+
   h.Socket, _, err = websocket.Dial(h.Ctx, endpoint, &websocket.DialOptions{
+    HTTPClient:      httpClient,
     CompressionMode: websocket.CompressionDisabled,
   })
   if err != nil {

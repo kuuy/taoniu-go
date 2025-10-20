@@ -155,8 +155,15 @@ func (r *OrdersRepository) Open(symbol string) (err error) {
   tr := &http.Transport{
     DisableKeepAlives: true,
   }
-  session := &net.Dialer{}
-  tr.DialContext = session.DialContext
+
+  proxy := common.GetEnvString("BINANCE_PROXY")
+  if proxy != "" {
+    tr.DialContext = (&common.ProxySession{
+      Proxy: fmt.Sprintf("%v?timeout=5s", proxy),
+    }).DialContext
+  } else {
+    tr.DialContext = (&net.Dialer{}).DialContext
+  }
 
   httpClient := &http.Client{
     Transport: tr,
@@ -230,8 +237,15 @@ func (r *OrdersRepository) Sync(symbol string, startTime int64, limit int) (err 
   tr := &http.Transport{
     DisableKeepAlives: true,
   }
-  session := &net.Dialer{}
-  tr.DialContext = session.DialContext
+
+  proxy := common.GetEnvString("BINANCE_PROXY")
+  if proxy != "" {
+    tr.DialContext = (&common.ProxySession{
+      Proxy: fmt.Sprintf("%v?timeout=5s", proxy),
+    }).DialContext
+  } else {
+    tr.DialContext = (&net.Dialer{}).DialContext
+  }
 
   httpClient := &http.Client{
     Transport: tr,
@@ -315,8 +329,15 @@ func (r *OrdersRepository) Create(
   tr := &http.Transport{
     DisableKeepAlives: true,
   }
-  session := &net.Dialer{}
-  tr.DialContext = session.DialContext
+
+  proxy := common.GetEnvString("BINANCE_PROXY")
+  if proxy != "" {
+    tr.DialContext = (&common.ProxySession{
+      Proxy: fmt.Sprintf("%v?timeout=5s", proxy),
+    }).DialContext
+  } else {
+    tr.DialContext = (&net.Dialer{}).DialContext
+  }
 
   httpClient := &http.Client{
     Transport: tr,
@@ -433,8 +454,15 @@ func (r *OrdersRepository) Take(
   tr := &http.Transport{
     DisableKeepAlives: true,
   }
-  session := &net.Dialer{}
-  tr.DialContext = session.DialContext
+
+  proxy := common.GetEnvString("BINANCE_PROXY")
+  if proxy != "" {
+    tr.DialContext = (&common.ProxySession{
+      Proxy: fmt.Sprintf("%v?timeout=5s", proxy),
+    }).DialContext
+  } else {
+    tr.DialContext = (&net.Dialer{}).DialContext
+  }
 
   httpClient := &http.Client{
     Transport: tr,
@@ -554,8 +582,15 @@ func (r *OrdersRepository) Stop(
   tr := &http.Transport{
     DisableKeepAlives: true,
   }
-  session := &net.Dialer{}
-  tr.DialContext = session.DialContext
+
+  proxy := common.GetEnvString("BINANCE_PROXY")
+  if proxy != "" {
+    tr.DialContext = (&common.ProxySession{
+      Proxy: fmt.Sprintf("%v?timeout=5s", proxy),
+    }).DialContext
+  } else {
+    tr.DialContext = (&net.Dialer{}).DialContext
+  }
 
   httpClient := &http.Client{
     Transport: tr,
@@ -671,8 +706,15 @@ func (r *OrdersRepository) Cancel(symbol string, orderId int64) (err error) {
   tr := &http.Transport{
     DisableKeepAlives: true,
   }
-  session := &net.Dialer{}
-  tr.DialContext = session.DialContext
+
+  proxy := common.GetEnvString("BINANCE_PROXY")
+  if proxy != "" {
+    tr.DialContext = (&common.ProxySession{
+      Proxy: fmt.Sprintf("%v?timeout=5s", proxy),
+    }).DialContext
+  } else {
+    tr.DialContext = (&net.Dialer{}).DialContext
+  }
 
   httpClient := &http.Client{
     Transport: tr,
@@ -775,8 +817,15 @@ func (r *OrdersRepository) Flush(symbol string, orderId int64) (err error) {
   tr := &http.Transport{
     DisableKeepAlives: true,
   }
-  session := &net.Dialer{}
-  tr.DialContext = session.DialContext
+
+  proxy := common.GetEnvString("BINANCE_PROXY")
+  if proxy != "" {
+    tr.DialContext = (&common.ProxySession{
+      Proxy: fmt.Sprintf("%v?timeout=5s", proxy),
+    }).DialContext
+  } else {
+    tr.DialContext = (&net.Dialer{}).DialContext
+  }
 
   httpClient := &http.Client{
     Transport: tr,
