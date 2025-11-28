@@ -1,8 +1,6 @@
 module taoniu.local/security
 
-go 1.24.0
-
-toolchain go1.24.9
+go 1.25
 
 require (
 	github.com/bluele/adblock v0.0.0-20150928111208-97547036a6ec

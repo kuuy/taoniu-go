@@ -7,6 +7,7 @@ import (
   "net"
   "net/http"
   "os"
+  "taoniu.local/cryptos/common"
   "time"
 
   "gorm.io/gorm"
@@ -31,7 +32,15 @@ func (r *DepthRepository) Flush(symbol string, limit int) error {
 func (r *DepthRepository) Request(symbol string, limit int) (map[string]interface{}, error) {
   tr := &http.Transport{
     DisableKeepAlives: true,
-    DialContext:       (&net.Dialer{}).DialContext,
+  }
+
+  proxy := common.GetEnvString("BINANCE_PROXY")
+  if proxy != "" {
+    tr.DialContext = (&common.ProxySession{
+      Proxy: fmt.Sprintf("%v?timeout=3s", proxy),
+    }).DialContext
+  } else {
+    tr.DialContext = (&net.Dialer{}).DialContext
   }
 
   httpClient := &http.Client{
