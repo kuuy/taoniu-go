@@ -106,13 +106,7 @@ func (r *TickersRepository) Request(symbols []string) ([]*TickerInfo, error) {
   defer resp.Body.Close()
 
   if resp.StatusCode != http.StatusOK {
-    return nil, errors.New(
-      fmt.Sprintf(
-        "request error: status[%s] code[%d]",
-        resp.Status,
-        resp.StatusCode,
-      ),
-    )
+    return nil, fmt.Errorf("request error: status[%s] code[%d]", resp.Status, resp.StatusCode)
   }
 
   var result []*TickerInfo

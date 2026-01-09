@@ -113,13 +113,7 @@ func (r *SymbolsRepository) Flush() (err error) {
   defer resp.Body.Close()
 
   if resp.StatusCode != http.StatusOK {
-    err = errors.New(
-      fmt.Sprintf(
-        "request error: status[%s] code[%d]",
-        resp.Status,
-        resp.StatusCode,
-      ),
-    )
+    err = fmt.Errorf("request error: status[%s] code[%d]", resp.Status, resp.StatusCode)
     return
   }
 
@@ -217,7 +211,7 @@ func (r *SymbolsRepository) Count() error {
   r.Db.Model(models.Symbol{}).Select("symbol").Where("status", "TRADING").Count(&count)
   r.Rdb.HMSet(
     r.Ctx,
-    fmt.Sprintf("binance:symbols:count"),
+    "binance:symbols:count",
     map[string]interface{}{
       "futures": count,
     },
@@ -327,11 +321,11 @@ func (r *SymbolsRepository) Price(symbol string) (float64, error) {
     fields...,
   ).Result()
   if len(data) != len(fields) {
-    return 0, errors.New(fmt.Sprintf("[%s] price not exists", symbol))
+    return 0, fmt.Errorf("[%s] price not exists", symbol)
   }
   for i := 0; i < len(fields); i++ {
     if data[i] == nil {
-      return 0, errors.New(fmt.Sprintf("[%s] price not exists", symbol))
+      return 0, fmt.Errorf("[%s] price not exists", symbol)
     }
   }
 
@@ -340,10 +334,10 @@ func (r *SymbolsRepository) Price(symbol string) (float64, error) {
   lasttime, _ := strconv.ParseInt(data[1].(string), 10, 64)
   if timestamp-lasttime > 30000 {
     r.Rdb.ZAdd(r.Ctx, "binance:futures:tickers:flush", &redis.Z{
-      float64(timestamp),
-      symbol,
+      Score: float64(timestamp),
+      Member: symbol,
     })
-    return 0, errors.New(fmt.Sprintf("[%s] price long time not freshed", symbol))
+    return 0, fmt.Errorf("[%s] price long time not freshed", symbol)
   }
 
   return price, nil

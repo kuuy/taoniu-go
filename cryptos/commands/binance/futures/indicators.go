@@ -328,13 +328,14 @@ func (h *IndicatorsHandler) IchimokuCloud(symbol string, interval string) error 
   }
   for _, symbol := range symbols {
     var err error
-    if interval == "1m" {
+    switch interval {
+    case "1m":
       err = h.Repository.IchimokuCloud(symbol, interval, 129, 374, 748, 1440)
-    } else if interval == "15m" {
+    case "15m":
       err = h.Repository.IchimokuCloud(symbol, interval, 60, 174, 349, 672)
-    } else if interval == "4h" {
+    case "4h":
       err = h.Repository.IchimokuCloud(symbol, interval, 11, 32, 65, 126)
-    } else {
+    default:
       err = h.Repository.IchimokuCloud(symbol, interval, 9, 26, 52, 100)
     }
     if err != nil {
@@ -354,13 +355,14 @@ func (h *IndicatorsHandler) VolumeProfile(symbol string, interval string) error 
   }
 
   var limit int
-  if interval == "1m" {
+  switch interval {
+  case "1m":
     limit = 1440
-  } else if interval == "15m" {
+  case "15m":
     limit = 672
-  } else if interval == "4h" {
+  case "4h":
     limit = 126
-  } else {
+  default:
     limit = 100
   }
 

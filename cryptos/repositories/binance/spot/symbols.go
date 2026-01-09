@@ -113,13 +113,7 @@ func (r *SymbolsRepository) Flush() (err error) {
   defer resp.Body.Close()
 
   if resp.StatusCode != http.StatusOK {
-    err = errors.New(
-      fmt.Sprintf(
-        "request error: status[%s] code[%d]",
-        resp.Status,
-        resp.StatusCode,
-      ),
-    )
+    err = fmt.Errorf("request error: status[%s] code[%d]", resp.Status, resp.StatusCode)
     return
   }
 
@@ -313,11 +307,11 @@ func (r *SymbolsRepository) Price(symbol string) (float64, error) {
     fields...,
   ).Result()
   if len(data) != len(fields) {
-    return 0, errors.New(fmt.Sprintf("[%s] price not exists", symbol))
+    return 0, fmt.Errorf("[%s] price not exists", symbol)
   }
   for i := 0; i < len(fields); i++ {
     if data[i] == nil {
-      return 0, errors.New(fmt.Sprintf("[%s] price not exists", symbol))
+      return 0, fmt.Errorf("[%s] price not exists", symbol)
     }
   }
 
@@ -327,10 +321,10 @@ func (r *SymbolsRepository) Price(symbol string) (float64, error) {
 
   if timestamp-lasttime > 30000 {
     r.Rdb.ZAdd(r.Ctx, "binance:spot:tickers:flush", &redis.Z{
-      float64(timestamp),
-      symbol,
+      Score:  float64(timestamp),
+      Member: symbol,
     })
-    return 0, errors.New(fmt.Sprintf("[%s] price long time not freshed", symbol))
+    return 0, fmt.Errorf("[%s] price long time not freshed", symbol)
   }
 
   return price, nil
@@ -401,13 +395,4 @@ func (r *SymbolsRepository) Context(symbol string) map[string]interface{} {
   }
 
   return context
-}
-
-func (r *SymbolsRepository) contains(s []string, str string) bool {
-  for _, v := range s {
-    if v == str {
-      return true
-    }
-  }
-  return false
 }

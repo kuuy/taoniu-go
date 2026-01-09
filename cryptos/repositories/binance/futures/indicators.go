@@ -213,7 +213,7 @@ func (r *IndicatorsRepository) Pivot(symbol string, interval string) error {
   }
 
   if kline.Timestamp < r.Timestamp(interval)-60000 {
-    return errors.New(fmt.Sprintf("[%s] waiting for %s klines flush", symbol, interval))
+    return fmt.Errorf("[%s] waiting for %s klines flush", symbol, interval)
   }
 
   p := decimal.Avg(
@@ -287,7 +287,7 @@ func (r *IndicatorsRepository) Atr(symbol string, interval string, period int, l
   var timestamp int64
   for _, item := range klines {
     if timestamp > 0 && (timestamp-item.Timestamp) != r.Timestep(interval) {
-      return errors.New(fmt.Sprintf("[%s] %s klines lost", symbol, interval))
+      return fmt.Errorf("[%s] %s klines lost", symbol, interval)
     }
     prices = append([]float64{item.Close}, prices...)
     highs = append([]float64{item.High}, highs...)
@@ -295,11 +295,11 @@ func (r *IndicatorsRepository) Atr(symbol string, interval string, period int, l
     timestamp = item.Timestamp
   }
   if len(klines) < limit {
-    return errors.New(fmt.Sprintf("[%s] %s klines not enough", symbol, interval))
+    return fmt.Errorf("[%s] %s klines not enough", symbol, interval)
   }
 
   if klines[0].Timestamp < r.Timestamp(interval)-60000 {
-    return errors.New(fmt.Sprintf("[%s] waiting for %s klines flush", symbol, interval))
+    return fmt.Errorf("[%s] waiting for %s klines flush", symbol, interval)
   }
 
   result := talib.Atr(
@@ -355,7 +355,7 @@ func (r *IndicatorsRepository) Zlema(symbol string, interval string, period int,
   var timestamp int64
   for _, item := range klines {
     if timestamp > 0 && (timestamp-item.Timestamp) != r.Timestep(interval) {
-      return errors.New(fmt.Sprintf("[%s] %s klines lost", symbol, interval))
+      return fmt.Errorf("[%s] %s klines lost", symbol, interval)
     }
     if len(temp) < lag {
       temp = append([]float64{item.Close}, temp...)
@@ -367,11 +367,11 @@ func (r *IndicatorsRepository) Zlema(symbol string, interval string, period int,
   }
 
   if len(klines) < limit {
-    return errors.New(fmt.Sprintf("[%s] %s klines not enough", symbol, interval))
+    return fmt.Errorf("[%s] %s klines not enough", symbol, interval)
   }
 
   if klines[0].Timestamp < r.Timestamp(interval)-60000 {
-    return errors.New(fmt.Sprintf("[%s] waiting for %s klines flush", symbol, interval))
+    return fmt.Errorf("[%s] waiting for %s klines flush", symbol, interval)
   }
 
   result := talib.Ema(data, period)
@@ -428,7 +428,7 @@ func (r *IndicatorsRepository) HaZlema(symbol string, interval string, period in
   var timestamp int64
   for _, item := range klines {
     if timestamp > 0 && (timestamp-item.Timestamp) != r.Timestep(interval) {
-      return errors.New(fmt.Sprintf("[%s] %s klines lost", symbol, interval))
+      return fmt.Errorf("[%s] %s klines lost", symbol, interval)
     }
     avgPrice, _ := decimal.Avg(
       decimal.NewFromFloat(item.Open),
@@ -446,11 +446,11 @@ func (r *IndicatorsRepository) HaZlema(symbol string, interval string, period in
   }
 
   if len(klines) < limit {
-    return errors.New(fmt.Sprintf("[%s] %s klines not enough", symbol, interval))
+    return fmt.Errorf("[%s] %s klines not enough", symbol, interval)
   }
 
   if klines[0].Timestamp < r.Timestamp(interval)-60000 {
-    return errors.New(fmt.Sprintf("[%s] waiting for %s klines flush", symbol, interval))
+    return fmt.Errorf("[%s] waiting for %s klines flush", symbol, interval)
   }
 
   result := talib.Ema(data, period)
@@ -506,7 +506,7 @@ func (r *IndicatorsRepository) Kdj(symbol string, interval string, longPeriod in
   var timestamp int64
   for _, item := range klines {
     if timestamp > 0 && (timestamp-item.Timestamp) != r.Timestep(interval) {
-      return errors.New(fmt.Sprintf("[%s] %s klines lost", symbol, interval))
+      return fmt.Errorf("[%s] %s klines lost", symbol, interval)
     }
     avgPrice, _ := decimal.Avg(
       decimal.NewFromFloat(item.Close),
@@ -520,11 +520,11 @@ func (r *IndicatorsRepository) Kdj(symbol string, interval string, longPeriod in
   }
 
   if len(prices) < limit {
-    return errors.New(fmt.Sprintf("[%s] %s klines not enough", symbol, interval))
+    return fmt.Errorf("[%s] %s klines not enough", symbol, interval)
   }
 
   if klines[0].Timestamp < r.Timestamp(interval)-60000 {
-    return errors.New(fmt.Sprintf("[%s] waiting for %s klines flush", symbol, interval))
+    return fmt.Errorf("[%s] waiting for %s klines flush", symbol, interval)
   }
 
   slowk, slowd := talib.Stoch(highs, lows, prices, longPeriod, shortPeriod, 0, shortPeriod, 0)
@@ -583,7 +583,7 @@ func (r *IndicatorsRepository) BBands(symbol string, interval string, period int
   var timestamp int64
   for _, item := range klines {
     if timestamp > 0 && (timestamp-item.Timestamp) != r.Timestep(interval) {
-      return errors.New(fmt.Sprintf("[%s] %s klines lost", symbol, interval))
+      return fmt.Errorf("[%s] %s klines lost", symbol, interval)
     }
     avgPrice, _ := decimal.Avg(
       decimal.NewFromFloat(item.Close),
@@ -595,11 +595,11 @@ func (r *IndicatorsRepository) BBands(symbol string, interval string, period int
   }
 
   if len(klines) < limit {
-    return errors.New(fmt.Sprintf("[%s] %s klines not enough", symbol, interval))
+    return fmt.Errorf("[%s] %s klines not enough", symbol, interval)
   }
 
   if klines[0].Timestamp < r.Timestamp(interval)-60000 {
-    return errors.New(fmt.Sprintf("[%s] waiting for %s klines flush", symbol, interval))
+    return fmt.Errorf("[%s] waiting for %s klines flush", symbol, interval)
   }
 
   uBands, mBands, lBands := talib.BBands(prices, period, 2, 2, 0)
@@ -665,7 +665,7 @@ func (r *IndicatorsRepository) IchimokuCloud(symbol string, interval string, ten
   var timestamp int64
   for _, item := range klines {
     if timestamp > 0 && (timestamp-item.Timestamp) != r.Timestep(interval) {
-      return errors.New(fmt.Sprintf("[%s] %s klines lost", symbol, interval))
+      return fmt.Errorf("[%s] %s klines lost", symbol, interval)
     }
     avgPrice, _ := decimal.Avg(
       decimal.NewFromFloat(item.Close),
@@ -677,11 +677,11 @@ func (r *IndicatorsRepository) IchimokuCloud(symbol string, interval string, ten
   }
 
   if len(klines) < limit {
-    return errors.New(fmt.Sprintf("[%s] %s klines not enough", symbol, interval))
+    return fmt.Errorf("[%s] %s klines not enough", symbol, interval)
   }
 
   if klines[0].Timestamp < r.Timestamp(interval)-60000 {
-    return errors.New(fmt.Sprintf("[%s] waiting for %s klines flush", symbol, interval))
+    return fmt.Errorf("[%s] waiting for %s klines flush", symbol, interval)
   }
 
   lastConversionLine, _ := decimal.Avg(
@@ -802,7 +802,7 @@ func (r *IndicatorsRepository) VolumeProfile(symbol string, interval string, lim
   var timestamp int64
   for _, item := range klines {
     if timestamp > 0 && (timestamp-item.Timestamp) != r.Timestep(interval) {
-      return errors.New(fmt.Sprintf("[%s] %s klines lost", symbol, interval))
+      return fmt.Errorf("[%s] %s klines lost", symbol, interval)
     }
     avgPrice, _ := decimal.Avg(
       decimal.NewFromFloat(item.Close),
@@ -830,11 +830,11 @@ func (r *IndicatorsRepository) VolumeProfile(symbol string, interval string, lim
   }
 
   if len(prices) < limit {
-    return errors.New(fmt.Sprintf("[%s] %s klines not enough", symbol, interval))
+    return fmt.Errorf("[%s] %s klines not enough", symbol, interval)
   }
 
   if minPrice == maxPrice {
-    return errors.New(fmt.Sprintf("[%s] %s klines not valid", symbol, interval))
+    return fmt.Errorf("[%s] %s klines not valid", symbol, interval)
   }
 
   targetVolume, _ = decimal.NewFromFloat(totalVolume).Mul(decimal.NewFromFloat(0.7)).Float64()
@@ -868,11 +868,7 @@ func (r *IndicatorsRepository) VolumeProfile(symbol string, interval string, lim
     item["prices"] = items
 
     values := item["offsets"].(map[int]float64)
-    if _, ok := values[offsets[i]]; ok {
-      values[offsets[i]] += volumes[i]
-    } else {
-      values[offsets[i]] = volumes[i]
-    }
+    values[offsets[i]] += volumes[i]
     item["offsets"] = values
     item["volume"] = item["volume"].(float64) + volumes[i]
 
@@ -981,7 +977,7 @@ func (r *IndicatorsRepository) AndeanOscillator(symbol string, interval string, 
   var timestamp int64
   for _, item := range klines {
     if timestamp > 0 && (timestamp-item.Timestamp) != r.Timestep(interval) {
-      return errors.New(fmt.Sprintf("[%s] %s klines lost", symbol, interval))
+      return fmt.Errorf("[%s] %s klines lost", symbol, interval)
     }
     opens = append([]float64{item.Open}, opens...)
     closes = append([]float64{item.Close}, closes...)
@@ -989,7 +985,7 @@ func (r *IndicatorsRepository) AndeanOscillator(symbol string, interval string, 
   }
 
   if len(opens) < limit {
-    return errors.New(fmt.Sprintf("[%s] %s klines not enough", symbol, interval))
+    return fmt.Errorf("[%s] %s klines not enough", symbol, interval)
   }
 
   up1 := make([]float64, limit)
@@ -1084,26 +1080,28 @@ func (r *IndicatorsRepository) Day(timestamp int64) (day string, err error) {
 }
 
 func (r *IndicatorsRepository) Timestep(interval string) int64 {
-  if interval == "1m" {
-    return 60000
-  } else if interval == "15m" {
-    return 900000
-  } else if interval == "4h" {
-    return 14400000
-  }
-  return 86400000
+	switch interval {
+	case "1m":
+		return 60000
+	case "15m":
+		return 900000
+	case "4h":
+		return 14400000
+	}
+	return 86400000
 }
 
 func (r *IndicatorsRepository) Timestamp(interval string) int64 {
   now := time.Now().UTC()
   duration := -time.Second * time.Duration(now.Second())
-  if interval == "15m" {
+  switch interval {
+  case "15m":
     minute, _ := decimal.NewFromInt(int64(now.Minute())).Div(decimal.NewFromInt(15)).Floor().Mul(decimal.NewFromInt(15)).Float64()
     duration = duration - time.Minute*time.Duration(now.Minute()-int(minute))
-  } else if interval == "4h" {
+  case "4h":
     hour, _ := decimal.NewFromInt(int64(now.Hour())).Div(decimal.NewFromInt(4)).Floor().Mul(decimal.NewFromInt(4)).Float64()
     duration = duration - time.Hour*time.Duration(now.Hour()-int(hour)) - time.Minute*time.Duration(now.Minute())
-  } else if interval == "1d" {
+  case "1d":
     duration = duration - time.Hour*time.Duration(now.Hour()) - time.Minute*time.Duration(now.Minute())
   }
   return now.Add(duration).Unix() * 1000

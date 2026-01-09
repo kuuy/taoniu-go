@@ -2,7 +2,6 @@ package spot
 
 import (
   "encoding/json"
-  "errors"
   "fmt"
   "net"
   "net/http"
@@ -61,13 +60,7 @@ func (r *DepthRepository) Request(symbol string, limit int) (map[string]interfac
   defer resp.Body.Close()
 
   if resp.StatusCode != http.StatusOK {
-    return nil, errors.New(
-      fmt.Sprintf(
-        "request error: status[%s] code[%d]",
-        resp.Status,
-        resp.StatusCode,
-      ),
-    )
+    return nil, fmt.Errorf("request error: status[%s] code[%d]", resp.Status, resp.StatusCode)
   }
 
   var result map[string]interface{}

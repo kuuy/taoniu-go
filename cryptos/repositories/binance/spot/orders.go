@@ -191,13 +191,7 @@ func (r *OrdersRepository) Open(symbol string) (err error) {
   defer resp.Body.Close()
 
   if resp.StatusCode != http.StatusOK {
-    err = errors.New(
-      fmt.Sprintf(
-        "request error: status[%s] code[%d]",
-        resp.Status,
-        resp.StatusCode,
-      ),
-    )
+    err = fmt.Errorf("request error: status[%s] code[%d]", resp.Status, resp.StatusCode)
     return
   }
 
@@ -259,13 +253,7 @@ func (r *OrdersRepository) Sync(symbol string, startTime int64, limit int) (err 
   defer resp.Body.Close()
 
   if resp.StatusCode != http.StatusOK {
-    err = errors.New(
-      fmt.Sprintf(
-        "request error: status[%s] code[%d]",
-        resp.Status,
-        resp.StatusCode,
-      ),
-    )
+    err = fmt.Errorf("request error: status[%s] code[%d]", resp.Status, resp.StatusCode)
     return
   }
 
@@ -371,13 +359,7 @@ func (r *OrdersRepository) Create(
   }
 
   if resp.StatusCode != http.StatusOK {
-    err = errors.New(
-      fmt.Sprintf(
-        "request error: status[%s] code[%d]",
-        resp.Status,
-        resp.StatusCode,
-      ),
-    )
+    err = fmt.Errorf("request error: status[%s] code[%d]", resp.Status, resp.StatusCode)
     return
   }
 
@@ -457,13 +439,7 @@ func (r *OrdersRepository) Cancel(symbol string, orderId int64) (err error) {
   }
 
   if resp.StatusCode != http.StatusOK {
-    err = errors.New(
-      fmt.Sprintf(
-        "request error: status[%s] code[%d]",
-        resp.Status,
-        resp.StatusCode,
-      ),
-    )
+    err = fmt.Errorf("request error: status[%s] code[%d]", resp.Status, resp.StatusCode)
     return
   }
 
@@ -525,13 +501,7 @@ func (r *OrdersRepository) Flush(symbol string, orderId int64) (err error) {
   defer resp.Body.Close()
 
   if resp.StatusCode != http.StatusOK {
-    err = errors.New(
-      fmt.Sprintf(
-        "request error: status[%s] code[%d]",
-        resp.Status,
-        resp.StatusCode,
-      ),
-    )
+    err = fmt.Errorf("request error: status[%s] code[%d]", resp.Status, resp.StatusCode)
     return
   }
 

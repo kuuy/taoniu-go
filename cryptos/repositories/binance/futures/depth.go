@@ -2,16 +2,15 @@ package futures
 
 import (
   "encoding/json"
-  "errors"
   "fmt"
   "net"
   "net/http"
   "os"
-  "taoniu.local/cryptos/common"
   "time"
 
   "gorm.io/gorm"
 
+  "taoniu.local/cryptos/common"
   models "taoniu.local/cryptos/models/binance/futures"
 )
 
@@ -61,13 +60,7 @@ func (r *DepthRepository) Request(symbol string, limit int) (map[string]interfac
   defer resp.Body.Close()
 
   if resp.StatusCode != http.StatusOK {
-    return nil, errors.New(
-      fmt.Sprintf(
-        "request error: status[%s] code[%d]",
-        resp.Status,
-        resp.StatusCode,
-      ),
-    )
+    return nil, fmt.Errorf("request error: status[%s] code[%d]", resp.Status, resp.StatusCode)
   }
 
   var result map[string]interface{}

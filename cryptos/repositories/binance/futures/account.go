@@ -234,13 +234,7 @@ func (r *AccountRepository) Request() (result *AccountInfo, err error) {
   defer resp.Body.Close()
 
   if resp.StatusCode != http.StatusOK {
-    err = errors.New(
-      fmt.Sprintf(
-        "request error: status[%s] code[%d]",
-        resp.Status,
-        resp.StatusCode,
-      ),
-    )
+    err = fmt.Errorf("request error: status[%s] code[%d]", resp.Status, resp.StatusCode)
     return
   }
 

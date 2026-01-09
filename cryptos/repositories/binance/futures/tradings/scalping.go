@@ -422,11 +422,11 @@ func (r *ScalpingRepository) Place(planId string) (err error) {
   if entryPrice > 0 {
     if scalping.Side == 1 && price > entryPrice {
       r.Db.Delete(&scalpingPlan, "plan_id", planId)
-      return errors.New(fmt.Sprintf("scalping [%s] long price big than entry price", scalping.Symbol))
+      return fmt.Errorf("scalping [%s] long price big than entry price", scalping.Symbol)
     }
     if scalping.Side == 2 && price < entryPrice {
       r.Db.Delete(&scalpingPlan, "plan_id", planId)
-      return errors.New(fmt.Sprintf("scalping [%s] short price small than entry price", scalping.Symbol))
+      return fmt.Errorf("scalping [%s] short price small than entry price", scalping.Symbol)
     }
   }
 
@@ -483,15 +483,15 @@ func (r *ScalpingRepository) Place(planId string) (err error) {
   buyQuantity, _ = decimal.NewFromFloat(buyQuantity).Div(decimal.NewFromFloat(stepSize)).Ceil().Mul(decimal.NewFromFloat(stepSize)).Float64()
 
   if plan.Side == 1 && price > buyPrice {
-    return errors.New(fmt.Sprintf("scalping [%s] %s price must reach %v", scalping.Symbol, positionSide, buyPrice))
+    return fmt.Errorf("scalping [%s] %s price must reach %v", scalping.Symbol, positionSide, buyPrice)
   }
 
   if plan.Side == 2 && price < buyPrice {
-    return errors.New(fmt.Sprintf("scalping [%s] %s price must reach %v", scalping.Symbol, positionSide, buyPrice))
+    return fmt.Errorf("scalping [%s] %s price must reach %v", scalping.Symbol, positionSide, buyPrice)
   }
 
   if !r.CanBuy(scalping, buyPrice) {
-    return errors.New(fmt.Sprintf("scalping [%s] %s can not buy now", scalping.Symbol, positionSide))
+    return fmt.Errorf("scalping [%s] %s can not buy now", scalping.Symbol, positionSide)
   }
 
   balance, err := r.AccountRepository.Balance(entity.QuoteAsset)
@@ -500,7 +500,7 @@ func (r *ScalpingRepository) Place(planId string) (err error) {
   }
 
   if balance["free"] < config.SCALPING_MIN_BINANCE {
-    return errors.New(fmt.Sprintf("scalping free balance must reach %v", config.SCALPING_MIN_BINANCE))
+    return fmt.Errorf("scalping free balance must reach %v", config.SCALPING_MIN_BINANCE)
   }
 
   mutex := common.NewMutex(
@@ -573,7 +573,7 @@ func (r *ScalpingRepository) Take(scalping *models.Scalping, price float64) (err
       r.Close(scalping)
       r.Rdb.Del(r.Ctx, redisKey)
     }
-    return errors.New(fmt.Sprintf("[%s] %s empty position", scalping.Symbol, positionSide))
+    return fmt.Errorf("[%s] %s empty position", scalping.Symbol, positionSide)
   }
 
   entryPrice = position.EntryPrice

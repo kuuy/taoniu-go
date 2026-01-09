@@ -296,11 +296,12 @@ func (r *PlansRepository) Create(symbol string, interval string) (plan models.Pl
 }
 
 func (r *PlansRepository) Timestep(interval string) int64 {
-  if interval == "1m" {
+  switch interval {
+  case "1m":
     return 60000
-  } else if interval == "15m" {
+  case "15m":
     return 900000
-  } else if interval == "4h" {
+  case "4h":
     return 14400000
   }
   return 86400000
