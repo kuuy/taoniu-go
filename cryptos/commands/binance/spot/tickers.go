@@ -86,7 +86,6 @@ func (h *TickersHandler) Flush(symbol string) error {
     if err != nil {
       log.Println("error", err.Error())
     }
-    break
     //	h.TickersRepository.Place(symbols[i:j])
   }
 
@@ -110,7 +109,6 @@ func (h *TickersHandler) fix() error {
     }
     log.Println("symbols", symbols[i:j])
     h.TickersRepository.Flush(symbols[i:j])
-    break
     //	h.TickersRepository.Place(symbols[i:j])
   }
   return nil

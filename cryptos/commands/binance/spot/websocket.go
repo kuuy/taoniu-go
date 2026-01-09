@@ -63,7 +63,7 @@ func (h *WebsocketHandler) handler(message []byte) {
     orderId, _ := strconv.ParseInt(fmt.Sprint(order["i"]), 10, 64)
     status := order["X"]
 
-    if status != "NEW" || status != "PARTIALLY_FILLED" {
+    if status != "NEW" && status != "PARTIALLY_FILLED" {
       h.Rdb.SAdd(
         h.Ctx,
         "binance:spot:orders:flush",
@@ -104,5 +104,4 @@ func (h *WebsocketHandler) start() error {
     h.handler(message)
   }
 
-  return nil
 }

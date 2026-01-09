@@ -2,7 +2,6 @@ package spot
 
 import (
   "context"
-  "errors"
   "fmt"
   "log"
   "strconv"
@@ -117,7 +116,7 @@ func (h *ScalpingHandler) Apply(symbol string) error {
       "stop_loss_point",
     ).Result()
     if data[0] == nil || data[1] == nil {
-      return errors.New(fmt.Sprintf("[%s] indicators empty", symbol))
+      return fmt.Errorf("[%s] indicators empty", symbol)
     }
   }
   placePrice, _ := strconv.ParseFloat(data[0].(string), 64)
