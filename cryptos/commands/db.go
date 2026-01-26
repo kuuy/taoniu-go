@@ -51,5 +51,6 @@ func (h *DbHandler) migrate() error {
   models.NewDydx().AutoMigrate(h.Db)
   models.NewTradingView().AutoMigrate(h.Db)
   models.NewSpiders().AutoMigrate(h.Db)
+  models.NewRaydium().AutoMigrate(h.Db)
   return nil
 }

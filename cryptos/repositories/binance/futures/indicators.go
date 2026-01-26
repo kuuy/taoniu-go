@@ -169,9 +169,10 @@ func (r *IndicatorsRepository) Ranking(
   }
 
   sort.SliceStable(scores, func(i, j int) bool {
-    if sortType == -1 {
+    switch sortType {
+    case -1:
       return scores[i].Value > scores[j].Value
-    } else if sortType == 1 {
+    case 1:
       return scores[i].Value < scores[j].Value
     }
     return true

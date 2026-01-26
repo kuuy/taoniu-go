@@ -42,6 +42,7 @@ func main() {
       commands.NewDbCommand(),
       commands.NewQueueCommand(),
       commands.NewTradingviewCommand(),
+      commands.NewRaydiumCommand(),
     },
     Version: "0.0.0",
   }

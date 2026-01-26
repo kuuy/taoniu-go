@@ -121,17 +121,9 @@ func NewKlinesCommand() *cli.Command {
 
 func (h *KlinesHandler) Flush(symbol string, interval string, limit int) error {
   log.Println("binance futures klines flush...")
-  var symbols []string
-  if symbol == "" {
-    symbols = h.SymbolsRepository.Symbols()
-  } else {
-    symbols = append(symbols, symbol)
-  }
-  for _, symbol := range symbols {
-    err := h.KlinesRepository.Flush(symbol, interval, 0, limit)
-    if err != nil {
-      log.Println("kline flush error", err)
-    }
+  err := h.KlinesRepository.Flush(symbol, interval, 0, limit)
+  if err != nil {
+    log.Println("kline flush error", err)
   }
   return nil
 }

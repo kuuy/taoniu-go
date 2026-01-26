@@ -169,9 +169,10 @@ func (r *IndicatorsRepository) Ranking(
   }
 
   sort.SliceStable(scores, func(i, j int) bool {
-    if sortType == -1 {
+    switch sortType {
+    case -1:
       return scores[i].Value > scores[j].Value
-    } else if sortType == 1 {
+    case 1:
       return scores[i].Value < scores[j].Value
     }
     return true
@@ -213,7 +214,7 @@ func (r *IndicatorsRepository) Pivot(symbol string, interval string) error {
   }
 
   if kline.Timestamp < r.Timestamp(interval)-60000 {
-    return errors.New(fmt.Sprintf("[%s] waiting for %s klines flush", symbol, interval))
+    return fmt.Errorf("[%s] waiting for %s klines flush", symbol, interval)
   }
 
   p := decimal.Avg(
@@ -287,7 +288,7 @@ func (r *IndicatorsRepository) Atr(symbol string, interval string, period int, l
   var timestamp int64
   for _, item := range klines {
     if timestamp > 0 && (timestamp-item.Timestamp) != r.Timestep(interval) {
-      return errors.New(fmt.Sprintf("[%s] %s klines lost", symbol, interval))
+      return fmt.Errorf("[%s] %s klines lost", symbol, interval)
     }
     prices = append([]float64{item.Close}, prices...)
     highs = append([]float64{item.High}, highs...)
@@ -295,11 +296,11 @@ func (r *IndicatorsRepository) Atr(symbol string, interval string, period int, l
     timestamp = item.Timestamp
   }
   if len(klines) < limit {
-    return errors.New(fmt.Sprintf("[%s] %s klines not enough", symbol, interval))
+    return fmt.Errorf("[%s] %s klines not enough", symbol, interval)
   }
 
   if klines[0].Timestamp < r.Timestamp(interval)-60000 {
-    return errors.New(fmt.Sprintf("[%s] waiting for %s klines flush", symbol, interval))
+    return fmt.Errorf("[%s] waiting for %s klines flush", symbol, interval)
   }
 
   result := talib.Atr(
