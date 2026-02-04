@@ -205,22 +205,7 @@ func (h *KlinesHandler) processMessage(message map[string]interface{}) {
     change = float64(int(change*10000)) / 10000
   }
 
-  var expiration time.Duration
-  switch interval {
-  case "1m":
-    expiration = 1*time.Minute + 30*time.Second
-  case "15m":
-    expiration = 15*time.Minute + 30*time.Second
-  case "4h":
-    expiration = 4*time.Hour + 30*time.Second
-  case "1d":
-    expiration = 24*time.Hour + 30*time.Second
-  default:
-    expiration = 30 * time.Second
-  }
-
   redisKey := fmt.Sprintf(config.REDIS_KEY_KLINES, interval, symbol, timestamp)
-
   h.Rdb.HMSet(h.Ctx, redisKey, map[string]interface{}{
     "symbol":    symbol,
     "open":      open,
@@ -236,6 +221,19 @@ func (h *KlinesHandler) processMessage(message map[string]interface{}) {
 
   ttl, _ := h.Rdb.TTL(h.Ctx, redisKey).Result()
   if -1 == ttl.Nanoseconds() {
+    var expiration time.Duration
+    switch interval {
+    case "1m":
+      expiration = 1*time.Minute + 30*time.Second
+    case "15m":
+      expiration = 15*time.Minute + 30*time.Second
+    case "4h":
+      expiration = 4*time.Hour + 30*time.Second
+    case "1d":
+      expiration = 24*time.Hour + 30*time.Second
+    default:
+      expiration = 30 * time.Second
+    }
     h.Rdb.Expire(h.Ctx, redisKey, expiration)
   }
 }
