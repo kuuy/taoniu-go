@@ -1,7 +1,6 @@
 package futures
 
 import (
-  "errors"
   "fmt"
   "github.com/shopspring/decimal"
   "github.com/urfave/cli/v2"
@@ -124,7 +123,7 @@ func (h *GamblingHandler) Calc(
       planProfit, _ = decimal.NewFromFloat(planProfit).Add(decimal.NewFromFloat(takeProfit)).Float64()
 
       if plan.TakeAmount < notional {
-        return errors.New(fmt.Sprintf("plan amount less then %v", notional))
+        return fmt.Errorf("plan amount less then %v", notional)
       }
 
       log.Println("plan", plan.TakePrice, strconv.FormatFloat(plan.TakeQuantity, 'f', -1, 64), takeProfit, planAmount, planProfit)
@@ -145,7 +144,7 @@ func (h *GamblingHandler) Calc(
     planProfit, _ = decimal.NewFromFloat(planProfit).Add(decimal.NewFromFloat(takeProfit)).Float64()
 
     if takeAmount < notional {
-      return errors.New(fmt.Sprintf("plan amount less then %v", notional))
+      return fmt.Errorf("plan amount less then %v", notional)
     }
 
     log.Println("plan", takePrice, planQuantity, takeProfit, planAmount, planProfit)

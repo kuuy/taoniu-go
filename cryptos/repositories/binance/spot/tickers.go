@@ -67,7 +67,6 @@ func (r *TickersRepository) Flush(symbols []string) error {
         "timestamp": timestamp,
       },
     )
-    pipe.ZRem(r.Ctx, "binance:spot:tickers:flush", ticker.Symbol)
   }
   pipe.Exec(r.Ctx)
 

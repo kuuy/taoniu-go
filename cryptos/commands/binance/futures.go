@@ -21,6 +21,7 @@ func NewFutoresCommand() *cli.Command {
       futures.NewAccountCommand(),
       futures.NewOrdersCommand(),
       futures.NewPositionsCommand(),
+      futures.NewStopLossCommand(),
       futures.NewScalpingCommand(),
       futures.NewTradingsCommand(),
       futures.NewStreamCommand(),

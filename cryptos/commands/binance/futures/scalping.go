@@ -120,10 +120,46 @@ func NewScalpingCommand() *cli.Command {
         },
       },
       {
-        Name:  "init",
-        Usage: "",
+        Name:  "stoploss-calc",
+        Usage: "Calculate stop loss price",
+        Flags: []cli.Flag{
+          &cli.StringFlag{
+            Name:     "symbol",
+            Aliases:  []string{"s"},
+            Usage:    "trading symbol (e.g. BTCUSDT)",
+            Required: true,
+          },
+          &cli.IntFlag{
+            Name:     "side",
+            Usage:    "trading side (1 for Long, 2 for Short)",
+            Required: true,
+          },
+          &cli.Float64Flag{
+            Name:     "entry",
+            Aliases:  []string{"e"},
+            Usage:    "entry price",
+            Required: true,
+          },
+          &cli.IntFlag{
+            Name:     "leverage",
+            Aliases:  []string{"l"},
+            Usage:    "leverage",
+            Value:    10,
+          },
+          &cli.Float64Flag{
+            Name:     "risk",
+            Aliases:  []string{"r"},
+            Usage:    "risk ratio (e.g. 0.02 for 2%)",
+            Value:    0.02,
+          },
+        },
         Action: func(c *cli.Context) error {
-          if err := h.Init(); err != nil {
+          symbol := c.String("symbol")
+          side := c.Int("side")
+          entry := c.Float64("entry")
+          leverage := c.Int("leverage")
+          risk := c.Float64("risk")
+          if err := h.StopLossCalc(symbol, side, entry, leverage, risk); err != nil {
             return cli.Exit(err.Error(), 1)
           }
           return nil
@@ -160,7 +196,7 @@ func (h *ScalpingHandler) Apply(symbol string, side int) error {
       "stop_loss_point",
     ).Result()
     if data[0] == nil || data[1] == nil {
-      return errors.New(fmt.Sprintf("[%s] indicators empty", symbol))
+      return fmt.Errorf("[%s] indicators empty", symbol)
     }
   }
   takePrice, _ := strconv.ParseFloat(data[0].(string), 64)
@@ -283,5 +319,41 @@ func (h *ScalpingHandler) Init() error {
   for _, symbol := range symbols {
     h.Apply(symbol, 2)
   }
+  return nil
+}
+
+func (h *ScalpingHandler) StopLossCalc(symbol string, side int, entry float64, leverage int, risk float64) error {
+  if side != 1 && side != 2 {
+    return errors.New("side must be 1 (Long) or 2 (Short)")
+  }
+
+  entity, err := h.SymbolsRepository.Get(symbol)
+  if err != nil {
+    return err
+  }
+  tickSize, _, _, err := h.SymbolsRepository.Filters(entity.Filters)
+  if err != nil {
+    return err
+  }
+
+  var stopLoss float64
+  var sideStr string
+  if side == 1 {
+    sideStr = "LONG"
+    stopLoss = entry * (1 - risk/float64(leverage))
+    stopLoss, _ = decimal.NewFromFloat(stopLoss).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+  } else {
+    sideStr = "SHORT"
+    stopLoss = entry * (1 + risk/float64(leverage))
+    stopLoss, _ = decimal.NewFromFloat(stopLoss).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
+  }
+
+  fmt.Printf("Symbol:    %s\n", symbol)
+  fmt.Printf("Side:      %s\n", sideStr)
+  fmt.Printf("Entry:     %v\n", entry)
+  fmt.Printf("Leverage:  %dx\n", leverage)
+  fmt.Printf("Risk:      %.2f%%\n", risk*100)
+  fmt.Printf("Stop Loss: %v\n", stopLoss)
+
   return nil
 }

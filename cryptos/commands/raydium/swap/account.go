@@ -2,6 +2,7 @@ package swap
 
 import (
   "context"
+  "log"
 
   "github.com/go-redis/redis/v8"
   "github.com/urfave/cli/v2"
@@ -45,7 +46,7 @@ func NewAccountCommand() *cli.Command {
         Name:  "flush",
         Usage: "",
         Action: func(c *cli.Context) error {
-          if err := h.AccountRepository.Flush(); err != nil {
+          if err := h.Flush(); err != nil {
             return cli.Exit(err.Error(), 1)
           }
           return nil
@@ -53,4 +54,10 @@ func NewAccountCommand() *cli.Command {
       },
     },
   }
+}
+
+func (h *AccountHandler) Flush() (err error) {
+  log.Println("raydium swap account flush...")
+  err = h.AccountRepository.Flush()
+  return
 }

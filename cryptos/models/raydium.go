@@ -12,6 +12,7 @@ func NewRaydium() *Raydium {
 }
 
 func (m *Raydium) AutoMigrate(db *gorm.DB) error {
-  raydium.NewSwap().AutoMigrate(db)
-  return nil
+	raydium.NewSwap().AutoMigrate(db)
+	raydium.NewPerpetuals().AutoMigrate(db)
+	return nil
 }

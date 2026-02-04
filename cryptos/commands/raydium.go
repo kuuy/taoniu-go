@@ -11,6 +11,7 @@ func NewRaydiumCommand() *cli.Command {
     Usage: "",
     Subcommands: []*cli.Command{
       raydium.NewSwapCommand(),
+      raydium.NewPerpetualsCommand(),
     },
   }
 }

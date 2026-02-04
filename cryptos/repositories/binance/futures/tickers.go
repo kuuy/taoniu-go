@@ -24,16 +24,64 @@ type TickersRepository struct {
   Ctx context.Context
 }
 
-type TickerInfo struct {
-  Symbol    string  `json:"symbol"`
-  Open      float64 `json:"openPrice,string"`
-  Price     float64 `json:"lastPrice,string"`
-  Change    float64 `json:"-"`
-  High      float64 `json:"highPrice,string"`
-  Low       float64 `json:"lowPrice,string"`
-  Volume    float64 `json:"volume,string"`
-  Quota     float64 `json:"quoteVolume,string"`
-  CloseTime int64   `json:"closeTime"`
+func (r *TickersRepository) Gets(symbols []string, fields []string) []string {
+  var script = redis.NewScript(`
+	local hmget = function (key)
+		local hash = {}
+		local data = redis.call('HMGET', key, unpack(ARGV))
+		for i = 1, #ARGV do
+			hash[i] = data[i]
+		end
+		return hash
+	end
+	local data = {}
+	for i = 1, #KEYS do
+		local key = 'binance:futures:realtime:' .. KEYS[i]
+		if redis.call('EXISTS', key) == 0 then
+			data[i] = false
+		else
+			data[i] = hmget(key)
+		end
+	end
+	return data
+  `)
+  args := make([]interface{}, len(fields))
+  for i := 0; i < len(fields); i++ {
+    args[i] = fields[i]
+  }
+  result, _ := script.Run(r.Ctx, r.Rdb, symbols, args...).Result()
+
+  tickers := make([]string, len(symbols))
+  for i := 0; i < len(symbols); i++ {
+    item := result.([]interface{})[i]
+    if item == nil {
+      continue
+    }
+    data := make([]string, len(fields))
+    for j := 0; j < len(fields); j++ {
+      if item.([]interface{})[j] == nil {
+        continue
+      }
+      data[j] = fmt.Sprintf("%v", item.([]interface{})[j])
+    }
+    tickers[i] = strings.Join(data, ",")
+  }
+
+  return tickers
+}
+
+func (r *TickersRepository) Price(symbol string) (result float64, err error) {
+  redisKey := fmt.Sprintf(config.REDIS_KEY_TICKERS, symbol)
+  val, err := r.Rdb.HGet(
+    r.Ctx,
+    redisKey,
+    "price",
+  ).Result()
+  if err != nil {
+    return
+  }
+  result, err = strconv.ParseFloat(val, 64)
+  return
 }
 
 func (r *TickersRepository) Flush() error {
@@ -68,7 +116,6 @@ func (r *TickersRepository) Flush() error {
         "timestamp": timestamp,
       },
     )
-    pipe.ZRem(r.Ctx, "binance:spot:tickers:flush", ticker.Symbol)
   }
   pipe.Exec(r.Ctx)
   return nil
@@ -117,52 +164,6 @@ func (r *TickersRepository) Request() ([]*TickerInfo, error) {
   }
 
   return result, nil
-}
-
-func (r *TickersRepository) Gets(symbols []string, fields []string) []string {
-  var script = redis.NewScript(`
-	local hmget = function (key)
-		local hash = {}
-		local data = redis.call('HMGET', key, unpack(ARGV))
-		for i = 1, #ARGV do
-			hash[i] = data[i]
-		end
-		return hash
-	end
-	local data = {}
-	for i = 1, #KEYS do
-		local key = 'binance:futures:realtime:' .. KEYS[i]
-		if redis.call('EXISTS', key) == 0 then
-			data[i] = false
-		else
-			data[i] = hmget(key)
-		end
-	end
-	return data
-  `)
-  args := make([]interface{}, len(fields))
-  for i := 0; i < len(fields); i++ {
-    args[i] = fields[i]
-  }
-  result, _ := script.Run(r.Ctx, r.Rdb, symbols, args...).Result()
-
-  tickers := make([]string, len(symbols))
-  for i := 0; i < len(symbols); i++ {
-    item := result.([]interface{})[i]
-    if item == nil {
-      continue
-    }
-    data := make([]string, len(fields))
-    for j := 0; j < len(fields); j++ {
-      if item.([]interface{})[j] == nil {
-        continue
-      }
-      data[j] = fmt.Sprintf("%v", item.([]interface{})[j])
-    }
-    tickers[i] = strings.Join(data, ",")
-  }
-
-  return tickers
 }
 
 func (r *TickersRepository) Ranking(
