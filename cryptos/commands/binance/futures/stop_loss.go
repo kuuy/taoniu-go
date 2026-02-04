@@ -23,7 +23,7 @@ type StopLossHandler struct {
 func NewStopLossCommand() *cli.Command {
   var h StopLossHandler
   return &cli.Command{
-    Name:  "stop_loss",
+    Name:  "stop-loss",
     Usage: "",
     Before: func(c *cli.Context) error {
       h = StopLossHandler{
@@ -61,6 +61,6 @@ func NewStopLossCommand() *cli.Command {
 }
 
 func (h *StopLossHandler) Flush(interval string) (err error) {
-  log.Println("futures stoploss flush...")
+  log.Println("futures stop loss flush...")
   return
 }
