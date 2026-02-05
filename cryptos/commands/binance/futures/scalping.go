@@ -2,7 +2,6 @@ package futures
 
 import (
   "context"
-  "errors"
   "fmt"
   "log"
   "strconv"
@@ -17,6 +16,7 @@ import (
   config "taoniu.local/cryptos/config/binance/futures"
   models "taoniu.local/cryptos/models/binance/futures"
   repositories "taoniu.local/cryptos/repositories/binance/futures"
+  indicators "taoniu.local/cryptos/repositories/binance/futures/indicators"
 )
 
 type ScalpingHandler struct {
@@ -25,6 +25,7 @@ type ScalpingHandler struct {
   Ctx                context.Context
   ScalpingRepository *repositories.ScalpingRepository
   SymbolsRepository  *repositories.SymbolsRepository
+  StopLossRepository *repositories.StopLossRepository
 }
 
 func NewScalpingCommand() *cli.Command {
@@ -42,6 +43,26 @@ func NewScalpingCommand() *cli.Command {
         Db: h.Db,
       }
       h.SymbolsRepository = &repositories.SymbolsRepository{
+        Db:  h.Db,
+        Rdb: h.Rdb,
+        Ctx: h.Ctx,
+      }
+      h.StopLossRepository = &repositories.StopLossRepository{
+        Db:  h.Db,
+        Rdb: h.Rdb,
+        Ctx: h.Ctx,
+        SymbolsRepository: h.SymbolsRepository,
+      }
+      h.StopLossRepository.TickersRepository = &repositories.TickersRepository{
+        Rdb: h.Rdb,
+        Ctx: h.Ctx,
+      }
+      h.StopLossRepository.AtrRepository = &indicators.AtrRepository{
+        Db:  h.Db,
+        Rdb: h.Rdb,
+        Ctx: h.Ctx,
+      }
+      h.StopLossRepository.VolumeProfileRepository = &indicators.VolumeProfileRepository{
         Db:  h.Db,
         Rdb: h.Rdb,
         Ctx: h.Ctx,
@@ -323,37 +344,32 @@ func (h *ScalpingHandler) Init() error {
 }
 
 func (h *ScalpingHandler) StopLossCalc(symbol string, side int, entry float64, leverage int, risk float64) error {
-  if side != 1 && side != 2 {
-    return errors.New("side must be 1 (Long) or 2 (Short)")
-  }
-
-  entity, err := h.SymbolsRepository.Get(symbol)
-  if err != nil {
-    return err
-  }
-  tickSize, _, _, err := h.SymbolsRepository.Filters(entity.Filters)
+  result, err := h.StopLossRepository.Calc(symbol, side, entry, 0, leverage, risk)
   if err != nil {
     return err
   }
 
-  var stopLoss float64
   var sideStr string
-  if side == 1 {
+  if result.Side == 1 {
     sideStr = "LONG"
-    stopLoss = entry * (1 - risk/float64(leverage))
-    stopLoss, _ = decimal.NewFromFloat(stopLoss).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
   } else {
     sideStr = "SHORT"
-    stopLoss = entry * (1 + risk/float64(leverage))
-    stopLoss, _ = decimal.NewFromFloat(stopLoss).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
   }
 
-  fmt.Printf("Symbol:    %s\n", symbol)
-  fmt.Printf("Side:      %s\n", sideStr)
-  fmt.Printf("Entry:     %v\n", entry)
-  fmt.Printf("Leverage:  %dx\n", leverage)
-  fmt.Printf("Risk:      %.2f%%\n", risk*100)
-  fmt.Printf("Stop Loss: %v\n", stopLoss)
+  fmt.Printf("Symbol:         %s\n", result.Symbol)
+  fmt.Printf("Side:           %s\n", sideStr)
+  fmt.Printf("Entry:          %v\n", result.EntryPrice)
+  fmt.Printf("Leverage:       %dx\n", result.Leverage)
+  fmt.Printf("Risk:           %.2f%%\n", result.Risk*100)
+  fmt.Printf("ATR:            %v (Multiplier: %v)\n", result.ATR, result.ATRMultiplier)
+  fmt.Printf("Initial Stop:   %v\n", result.InitialStop)
+  fmt.Printf("Take Profit 1:  %v\n", result.TakeProfit1)
+  fmt.Printf("Take Profit 2:  %v\n", result.TakeProfit2)
+  fmt.Printf("Risk/Reward:    %v\n", result.RiskReward)
+  fmt.Printf("Should Trade:   %v\n", result.ShouldTrade)
+  if result.RejectReason != "" {
+    fmt.Printf("Reject Reason:  %s\n", result.RejectReason)
+  }
 
   return nil
 }

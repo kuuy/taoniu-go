@@ -93,14 +93,12 @@ func (h *SymbolsHandler) Count() error {
 }
 
 func (h *SymbolsHandler) Slippage() error {
-  log.Println("symbols depth...")
+  log.Println("symbols slippage...")
   for _, symbol := range h.SymbolsRepository.Symbols() {
-    symbol = "XVGUSDT"
     err := h.SymbolsRepository.Slippage(symbol)
     if err != nil {
       log.Println("error", err.Error())
     }
-    break
   }
   return nil
 }

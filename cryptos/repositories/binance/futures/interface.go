@@ -59,6 +59,8 @@ type StopLossInfo struct {
   ATR           float64 `json:"atr"`             // ATR值
   ATRMultiplier float64 `json:"atr_multiplier"`  // ATR倍数
   ProfitATR     float64 `json:"profit_atr"`      // 盈利ATR倍数
+  Leverage      int     `json:"leverage"`        // 杠杆
+  Risk          float64 `json:"risk"`            // 风险比例
   StopType      string  `json:"stop_type"`       // 止损类型
   ShouldTrade   bool    `json:"should_trade"`    // 是否应该交易
   RejectReason  string  `json:"reject_reason"`   // 拒绝原因

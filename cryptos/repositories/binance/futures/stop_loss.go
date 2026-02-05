@@ -50,11 +50,13 @@ func (r *StopLossRepository) Get(symbol string, side int) (result *StopLossInfo,
   return
 }
 
-func (r *StopLossRepository) Calc(symbol string, side int, entryPrice float64, currentStop float64) (result *StopLossInfo, err error) {
+func (r *StopLossRepository) Calc(symbol string, side int, entryPrice float64, currentStop float64, leverage int, risk float64) (result *StopLossInfo, err error) {
   result = &StopLossInfo{
     Symbol:      symbol,
     Side:        side,
     EntryPrice:  entryPrice,
+    Leverage:    leverage,
+    Risk:        risk,
     ShouldTrade: true,
   }
 
@@ -64,14 +66,18 @@ func (r *StopLossRepository) Calc(symbol string, side int, entryPrice float64, c
     var price float64
     price, err = r.TickersRepository.Price(symbol)
     if err != nil {
-      return
+      return nil, fmt.Errorf("tickers repository price error: %v", err)
     }
     result.CurrentPrice = price
   }
 
   atr, err := r.AtrRepository.Get(symbol, "15m")
   if err != nil {
-    return
+    if currentStop == 0 {
+      atr = 0
+    } else {
+      return nil, fmt.Errorf("atr repository get error: %v", err)
+    }
   }
   result.ATR = atr
   result.ATRMultiplier = r.AtrRepository.Multiplier(entryPrice, atr)
@@ -137,8 +143,10 @@ func (r *StopLossRepository) calculateLongStops(result *StopLossInfo, poc, vah, 
   ).Float64()
 
   limitStop := entryPrice * 0.998
+  riskStop := entryPrice * (1 - result.Risk/float64(result.Leverage))
+
   result.InitialStop = r.roundToTick(
-    math.Min(limitStop, math.Max(atrStop, math.Max(structureStop, percentStop))),
+    math.Min(limitStop, math.Max(riskStop, math.Max(atrStop, math.Max(structureStop, percentStop)))),
     tickSize,
     "floor",
   )
@@ -209,8 +217,10 @@ func (r *StopLossRepository) calculateShortStops(result *StopLossInfo, poc, vah,
   percentStop := entry * 1.05
 
   limitStop := entry * 1.002
+  riskStop := entry * (1 + result.Risk/float64(result.Leverage))
+
   result.InitialStop = r.roundToTick(
-    math.Max(limitStop, math.Min(atrStop, math.Min(structureStop, percentStop))),
+    math.Max(limitStop, math.Min(riskStop, math.Min(atrStop, math.Min(structureStop, percentStop)))),
     tickSize,
     "ceil",
   )
