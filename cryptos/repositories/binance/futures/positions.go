@@ -147,13 +147,23 @@ func (r *PositionsRepository) StopPrice(
   var buyQuantity float64
   var buyAmount float64
 
+  priceRatio := 1.0
+
   for {
+    if buyPrice > 0 && entryPrice > 0 {
+      if side == 1 {
+        priceRatio, _ = decimal.NewFromFloat(entryPrice).Div(decimal.NewFromFloat(buyPrice)).Float64()
+      } else if side == 2 {
+        priceRatio, _ = decimal.NewFromFloat(buyPrice).Div(decimal.NewFromFloat(entryPrice)).Float64()
+      }
+    }
+
     var err error
-    capital, err := r.Capital(maxCapital, entryAmount, places, 1.0)
+    capital, err := r.Capital(maxCapital, entryAmount, places, priceRatio)
     if err != nil {
       break
     }
-    ratio := r.Ratio(capital, entryAmount, 1.0)
+    ratio := r.Ratio(capital, entryAmount, priceRatio)
     buyAmount, _ = decimal.NewFromFloat(capital).Mul(decimal.NewFromFloat(ratio)).Float64()
     if buyAmount < 5 {
       buyAmount = 5

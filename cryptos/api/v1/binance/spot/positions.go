@@ -136,11 +136,11 @@ func (h *PositionsHandler) Calc(
 
   for {
     var err error
-    capital, err := h.Repository.Capital(position.Notional, entryAmount, places)
+    capital, err := h.Repository.Capital(position.Notional, entryAmount, places, 1.0)
     if err != nil {
       break
     }
-    ratio := h.Repository.Ratio(capital, entryAmount)
+    ratio := h.Repository.Ratio(capital, entryAmount, 1.0)
     buyAmount, _ = decimal.NewFromFloat(capital).Mul(decimal.NewFromFloat(ratio)).Float64()
     if buyAmount < 5 {
       buyAmount = 5

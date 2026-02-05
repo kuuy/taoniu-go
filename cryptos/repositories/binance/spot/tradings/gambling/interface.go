@@ -23,8 +23,8 @@ type AccountRepository interface {
 
 type PositionRepository interface {
   Get(symbol string) (*models.Position, error)
-  Capital(capital float64, entryAmount float64, place int) (float64, error)
-  Ratio(capital float64, entryAmount float64) float64
+  Capital(capital float64, entryAmount float64, place int, priceRatio float64) (float64, error)
+  Ratio(capital float64, entryAmount float64, priceRatio float64) float64
   BuyQuantity(buyAmount float64, entryPrice float64, entryAmount float64) float64
   SellQuantity(sellAmount float64, entryPrice float64, entryAmount float64) float64
   SellPrice(entryPrice float64, entryAmount float64) float64

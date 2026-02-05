@@ -166,13 +166,19 @@ func (h *PositionsHandler) Calc(
     places++
   }
 
+  priceRatio := 1.0
+
   for {
+    if buyPrice > 0 && entryPrice > 0 {
+      priceRatio, _ = decimal.NewFromFloat(entryPrice).Div(decimal.NewFromFloat(buyPrice)).Float64()
+    }
+
     var err error
-    capital, err := h.PositionsRepository.Capital(maxCapital, entryAmount, places)
+    capital, err := h.PositionsRepository.Capital(maxCapital, entryAmount, places, priceRatio)
     if err != nil {
       break
     }
-    ratio := h.PositionsRepository.Ratio(capital, entryAmount)
+    ratio := h.PositionsRepository.Ratio(capital, entryAmount, priceRatio)
     buyAmount, _ = decimal.NewFromFloat(capital).Mul(decimal.NewFromFloat(ratio)).Float64()
     if buyAmount < 5 {
       buyAmount = 5

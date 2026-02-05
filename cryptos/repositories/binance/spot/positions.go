@@ -41,7 +41,7 @@ func (r *PositionsRepository) Gets(conditions map[string]interface{}) []*models.
   return positions
 }
 
-func (r *PositionsRepository) Ratio(capital float64, entryAmount float64) float64 {
+func (r *PositionsRepository) Ratio(capital float64, entryAmount float64, priceRatio float64) float64 {
   totalAmount := 0.0
   lastAmount := 0.0
   ratios := []float64{0.0071, 0.0193, 0.0331, 0.0567, 0.0972, 0.1667}
@@ -50,6 +50,10 @@ func (r *PositionsRepository) Ratio(capital float64, entryAmount float64) float6
       return ratio
     }
     if totalAmount >= entryAmount-lastAmount {
+      if priceRatio > 1.01 {
+        factor := math.Min(1.5, priceRatio) // 最高增加 50% 额外权重
+        ratio, _ = decimal.NewFromFloat(ratio).Mul(decimal.NewFromFloat(factor)).Float64()
+      }
       return ratio
     }
     lastAmount, _ = decimal.NewFromFloat(capital).Mul(decimal.NewFromFloat(ratio)).Float64()
@@ -143,13 +147,19 @@ func (r *PositionsRepository) StopPrice(
   var buyQuantity float64
   var buyAmount float64
 
+  priceRatio := 1.0
+
   for {
+    if buyPrice > 0 && entryPrice > 0 {
+      priceRatio, _ = decimal.NewFromFloat(entryPrice).Div(decimal.NewFromFloat(buyPrice)).Float64()
+    }
+
     var err error
-    capital, err := r.Capital(maxCapital, entryAmount, places)
+    capital, err := r.Capital(maxCapital, entryAmount, places, priceRatio)
     if err != nil {
       break
     }
-    ratio := r.Ratio(capital, entryAmount)
+    ratio := r.Ratio(capital, entryAmount, priceRatio)
     buyAmount, _ = decimal.NewFromFloat(capital).Mul(decimal.NewFromFloat(ratio)).Float64()
     if buyAmount < 5 {
       buyAmount = 5
@@ -180,11 +190,11 @@ func (r *PositionsRepository) StopPrice(
   return
 }
 
-func (r *PositionsRepository) Capital(capital float64, entryAmount float64, place int) (result float64, err error) {
+func (r *PositionsRepository) Capital(capital float64, entryAmount float64, place int, priceRatio float64) (result float64, err error) {
   step := math.Pow10(place - 1)
 
   for {
-    ratio := r.Ratio(capital, entryAmount)
+    ratio := r.Ratio(capital, entryAmount, priceRatio)
     if ratio == 0.0 {
       break
     }
@@ -201,7 +211,7 @@ func (r *PositionsRepository) Capital(capital float64, entryAmount float64, plac
   }
 
   if place > 1 {
-    capital, err = r.Capital(result+step, entryAmount, place-1)
+    capital, err = r.Capital(result+step, entryAmount, place-1, priceRatio)
     if err != nil {
       return
     }

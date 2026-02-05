@@ -110,12 +110,12 @@ func (r *ScalpingRepository) Place(id string) (err error) {
       places++
     }
 
-    capital, err = r.PositionRepository.Capital(scalping.Capital, entryAmount, places)
+    capital, err = r.PositionRepository.Capital(scalping.Capital, entryAmount, places, 1.0)
     if err != nil {
       err = errors.New(fmt.Sprintf("scalping [%s] %s reach the max invest capital", scalping.Symbol, positionSide))
       return
     }
-    ratio := r.PositionRepository.Ratio(capital, entryAmount)
+    ratio := r.PositionRepository.Ratio(capital, entryAmount, 1.0)
     buyAmount, _ = decimal.NewFromFloat(capital).Mul(decimal.NewFromFloat(ratio)).Float64()
     if buyAmount < notional {
       buyAmount = notional
