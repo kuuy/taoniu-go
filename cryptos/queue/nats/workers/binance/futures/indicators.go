@@ -33,6 +33,8 @@ func NewIndicators(natsContext *common.NatsContext) *Indicators {
     Ctx: h.NatsContext.Ctx,
   }
   h.Repository.Atr = &indicatorsRepositories.AtrRepository{BaseRepository: baseRepository}
+  h.Repository.BBands = &indicatorsRepositories.BBandsRepository{BaseRepository: baseRepository}
+  h.Repository.Pivot = &indicatorsRepositories.PivotRepository{BaseRepository: baseRepository}
   h.Repository.SymbolsRepository = &repositories.SymbolsRepository{
     Db: h.NatsContext.Db,
   }
@@ -45,7 +47,7 @@ func (h *Indicators) Subscribe() error {
 }
 
 func (h *Indicators) Pivot(symbol string, interval string) error {
-  return h.Repository.Pivot(symbol, interval)
+  return h.Repository.Pivot.Flush(symbol, interval)
 }
 
 func (h *Indicators) Atr(symbol string, interval string) error {
@@ -65,7 +67,7 @@ func (h *Indicators) Kdj(symbol string, interval string) error {
 }
 
 func (h *Indicators) BBands(symbol string, interval string) error {
-  return h.Repository.BBands(symbol, interval, 14, 100)
+  return h.Repository.BBands.Flush(symbol, interval, 14, 100)
 }
 
 func (h *Indicators) IchimokuCloud(symbol string, interval string) error {

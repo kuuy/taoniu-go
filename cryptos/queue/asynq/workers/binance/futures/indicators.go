@@ -68,6 +68,8 @@ func NewIndicators(ansqContext *common.AnsqServerContext) *Indicators {
     Ctx: h.AnsqContext.Ctx,
   }
   h.Repository.Atr = &indicatorsRepositories.AtrRepository{BaseRepository: baseRepository}
+  h.Repository.BBands = &indicatorsRepositories.BBandsRepository{BaseRepository: baseRepository}
+  h.Repository.Pivot = &indicatorsRepositories.PivotRepository{BaseRepository: baseRepository}
   h.Repository.SymbolsRepository = &repositories.SymbolsRepository{
     Db: h.AnsqContext.Db,
   }
@@ -88,7 +90,7 @@ func (h *Indicators) Pivot(ctx context.Context, t *asynq.Task) error {
   }
   defer mutex.Unlock()
 
-  h.Repository.Pivot(payload.Symbol, payload.Interval)
+  h.Repository.Pivot.Flush(payload.Symbol, payload.Interval)
 
   return nil
 }
@@ -183,7 +185,7 @@ func (h *Indicators) BBands(ctx context.Context, t *asynq.Task) error {
   }
   defer mutex.Unlock()
 
-  h.Repository.BBands(payload.Symbol, payload.Interval, payload.Period, payload.Limit)
+  h.Repository.BBands.Flush(payload.Symbol, payload.Interval, payload.Period, payload.Limit)
 
   return nil
 }

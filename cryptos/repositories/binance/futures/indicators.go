@@ -25,6 +25,8 @@ type IndicatorsRepository struct {
   Rdb               *redis.Client
   Ctx               context.Context
   Atr               *indicatorsRepositories.AtrRepository
+  BBands            *indicatorsRepositories.BBandsRepository
+  Pivot             *indicatorsRepositories.PivotRepository
   SymbolsRepository *SymbolsRepository
 }
 
@@ -197,78 +199,145 @@ func (r *IndicatorsRepository) Ranking(
   return ranking
 }
 
-func (r *IndicatorsRepository) Pivot(symbol string, interval string) error {
-  tickSize, _, err := r.Filters(symbol)
-  if err != nil {
-    return err
-  }
+//func (r *IndicatorsRepository) Pivot(symbol string, interval string) error {
+//  tickSize, _, err := r.Filters(symbol)
+//  if err != nil {
+//    return err
+//  }
+//
+//  var kline models.Kline
+//  result := r.Db.Select(
+//    []string{"close", "high", "low", "timestamp"},
+//  ).Where(
+//    "symbol=? AND interval=?", symbol, interval,
+//  ).Order(
+//    "timestamp desc",
+//  ).Take(&kline)
+//  if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+//    return result.Error
+//  }
+//
+//  if kline.Timestamp < r.Timestamp(interval)-60000 {
+//    return fmt.Errorf("[%s] waiting for %s klines flush", symbol, interval)
+//  }
+//
+//  p := decimal.Avg(
+//    decimal.NewFromFloat(kline.Close),
+//    decimal.NewFromFloat(kline.High),
+//    decimal.NewFromFloat(kline.Low),
+//  )
+//
+//  s1, _ := p.Mul(decimal.NewFromInt(2)).Sub(decimal.NewFromFloat(kline.High)).Float64()
+//  r1, _ := p.Mul(decimal.NewFromInt(2)).Sub(decimal.NewFromFloat(kline.Low)).Float64()
+//  s2, _ := p.Sub(decimal.NewFromFloat(r1).Sub(decimal.NewFromFloat(s1))).Float64()
+//  r2, _ := p.Add(decimal.NewFromFloat(r1).Sub(decimal.NewFromFloat(s1))).Float64()
+//  s3, _ := decimal.NewFromFloat(kline.Low).Sub(decimal.NewFromFloat(kline.High).Sub(p).Mul(decimal.NewFromInt(2))).Float64()
+//  r3, _ := decimal.NewFromFloat(kline.High).Add(p.Sub(decimal.NewFromFloat(kline.Low)).Mul(decimal.NewFromInt(2))).Float64()
+//
+//  s1, _ = decimal.NewFromFloat(s1).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+//  s2, _ = decimal.NewFromFloat(s2).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+//  s3, _ = decimal.NewFromFloat(s3).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+//  r1, _ = decimal.NewFromFloat(r1).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
+//  r2, _ = decimal.NewFromFloat(r2).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
+//  r3, _ = decimal.NewFromFloat(r3).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
+//
+//  day, err := r.Day(kline.Timestamp / 1000)
+//  if err != nil {
+//    return err
+//  }
+//
+//  redisKey := fmt.Sprintf(
+//    config.REDIS_KEY_INDICATORS,
+//    interval,
+//    symbol,
+//    day,
+//  )
+//  ttl, _ := r.Rdb.TTL(r.Ctx, redisKey).Result()
+//  r.Rdb.HMSet(
+//    r.Ctx,
+//    redisKey,
+//    map[string]interface{}{
+//      "r3": r3,
+//      "r2": r2,
+//      "r1": r1,
+//      "s1": s1,
+//      "s2": s2,
+//      "s3": s3,
+//    },
+//  )
+//  if -1 == ttl.Nanoseconds() {
+//    r.Rdb.Expire(r.Ctx, redisKey, time.Hour*24)
+//  }
+//
+//  return nil
+//}
 
-  var kline models.Kline
-  result := r.Db.Select(
-    []string{"close", "high", "low", "timestamp"},
-  ).Where(
-    "symbol=? AND interval=?", symbol, interval,
-  ).Order(
-    "timestamp desc",
-  ).Take(&kline)
-  if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    return result.Error
-  }
-
-  if kline.Timestamp < r.Timestamp(interval)-60000 {
-    return fmt.Errorf("[%s] waiting for %s klines flush", symbol, interval)
-  }
-
-  p := decimal.Avg(
-    decimal.NewFromFloat(kline.Close),
-    decimal.NewFromFloat(kline.High),
-    decimal.NewFromFloat(kline.Low),
-  )
-
-  s1, _ := p.Mul(decimal.NewFromInt(2)).Sub(decimal.NewFromFloat(kline.High)).Float64()
-  r1, _ := p.Mul(decimal.NewFromInt(2)).Sub(decimal.NewFromFloat(kline.Low)).Float64()
-  s2, _ := p.Sub(decimal.NewFromFloat(r1).Sub(decimal.NewFromFloat(s1))).Float64()
-  r2, _ := p.Add(decimal.NewFromFloat(r1).Sub(decimal.NewFromFloat(s1))).Float64()
-  s3, _ := decimal.NewFromFloat(kline.Low).Sub(decimal.NewFromFloat(kline.High).Sub(p).Mul(decimal.NewFromInt(2))).Float64()
-  r3, _ := decimal.NewFromFloat(kline.High).Add(p.Sub(decimal.NewFromFloat(kline.Low)).Mul(decimal.NewFromInt(2))).Float64()
-
-  s1, _ = decimal.NewFromFloat(s1).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
-  s2, _ = decimal.NewFromFloat(s2).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
-  s3, _ = decimal.NewFromFloat(s3).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
-  r1, _ = decimal.NewFromFloat(r1).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
-  r2, _ = decimal.NewFromFloat(r2).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
-  r3, _ = decimal.NewFromFloat(r3).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
-
-  day, err := r.Day(kline.Timestamp / 1000)
-  if err != nil {
-    return err
-  }
-
-  redisKey := fmt.Sprintf(
-    config.REDIS_KEY_INDICATORS,
-    interval,
-    symbol,
-    day,
-  )
-  ttl, _ := r.Rdb.TTL(r.Ctx, redisKey).Result()
-  r.Rdb.HMSet(
-    r.Ctx,
-    redisKey,
-    map[string]interface{}{
-      "r3": r3,
-      "r2": r2,
-      "r1": r1,
-      "s1": s1,
-      "s2": s2,
-      "s3": s3,
-    },
-  )
-  if -1 == ttl.Nanoseconds() {
-    r.Rdb.Expire(r.Ctx, redisKey, time.Hour*24)
-  }
-
-  return nil
-}
+//func (r *IndicatorsRepository) Atr(symbol string, interval string, period int, limit int) error {
+//  var klines []*models.Kline
+//  r.Db.Select(
+//    []string{"close", "high", "low", "timestamp"},
+//  ).Where(
+//    "symbol=? AND interval=?", symbol, interval,
+//  ).Order(
+//    "timestamp desc",
+//  ).Limit(
+//    limit,
+//  ).Find(
+//    &klines,
+//  )
+//
+//  var highs []float64
+//  var lows []float64
+//  var prices []float64
+//  var timestamp int64
+//  for _, item := range klines {
+//    if timestamp > 0 && (timestamp-item.Timestamp) != r.Timestep(interval) {
+//      return fmt.Errorf("[%s] %s klines lost", symbol, interval)
+//    }
+//    prices = append([]float64{item.Close}, prices...)
+//    highs = append([]float64{item.High}, highs...)
+//    lows = append([]float64{item.Low}, lows...)
+//    timestamp = item.Timestamp
+//  }
+//  if len(klines) < limit {
+//    return fmt.Errorf("[%s] %s klines not enough", symbol, interval)
+//  }
+//
+//  if klines[0].Timestamp < r.Timestamp(interval)-60000 {
+//    return fmt.Errorf("[%s] waiting for %s klines flush", symbol, interval)
+//  }
+//
+//  result := talib.Atr(
+//    highs,
+//    lows,
+//    prices,
+//    period,
+//  )
+//
+//  day, err := r.Day(klines[0].Timestamp / 1000)
+//  if err != nil {
+//    return err
+//  }
+//
+//  redisKey := fmt.Sprintf(
+//    config.REDIS_KEY_INDICATORS,
+//    interval,
+//    symbol,
+//    day,
+//  )
+//  r.Rdb.HSet(
+//    r.Ctx,
+//    redisKey,
+//    "atr",
+//    strconv.FormatFloat(result[limit-1], 'f', -1, 64),
+//  )
+//  ttl, _ := r.Rdb.TTL(r.Ctx, redisKey).Result()
+//  if -1 == ttl.Nanoseconds() {
+//    r.Rdb.Expire(r.Ctx, redisKey, time.Hour*24)
+//  }
+//
+//  return nil
+//}
 
 func (r *IndicatorsRepository) Zlema(symbol string, interval string, period int, limit int) error {
   var klines []*models.Kline
@@ -501,87 +570,87 @@ func (r *IndicatorsRepository) Kdj(symbol string, interval string, longPeriod in
   return nil
 }
 
-func (r *IndicatorsRepository) BBands(symbol string, interval string, period int, limit int) error {
-  var klines []*models.Kline
-  r.Db.Select(
-    []string{"open", "close", "high", "low", "timestamp"},
-  ).Where(
-    "symbol=? AND interval=?", symbol, interval,
-  ).Order(
-    "timestamp desc",
-  ).Limit(
-    limit,
-  ).Find(
-    &klines,
-  )
-
-  var prices []float64
-  var timestamp int64
-  for _, item := range klines {
-    if timestamp > 0 && (timestamp-item.Timestamp) != r.Timestep(interval) {
-      return fmt.Errorf("[%s] %s klines lost", symbol, interval)
-    }
-    avgPrice, _ := decimal.Avg(
-      decimal.NewFromFloat(item.Close),
-      decimal.NewFromFloat(item.High),
-      decimal.NewFromFloat(item.Low),
-    ).Float64()
-    prices = append([]float64{avgPrice}, prices...)
-    timestamp = item.Timestamp
-  }
-
-  if len(klines) < limit {
-    return fmt.Errorf("[%s] %s klines not enough", symbol, interval)
-  }
-
-  if klines[0].Timestamp < r.Timestamp(interval)-60000 {
-    return fmt.Errorf("[%s] waiting for %s klines flush", symbol, interval)
-  }
-
-  uBands, mBands, lBands := talib.BBands(prices, period, 2, 2, 0)
-  p1 := (klines[2].Close + klines[2].High + klines[2].Low) / 3
-  p2 := (klines[1].Close + klines[1].High + klines[1].Low) / 3
-  p3 := (klines[0].Close + klines[0].High + klines[0].Low) / 3
-  b1 := (p1 - lBands[limit-3]) / (uBands[limit-3] - lBands[limit-3])
-  b2 := (p2 - lBands[limit-2]) / (uBands[limit-2] - lBands[limit-2])
-  b3 := (p3 - lBands[limit-1]) / (uBands[limit-1] - lBands[limit-1])
-  w1 := (uBands[limit-3] - lBands[limit-3]) / mBands[limit-3]
-  w2 := (uBands[limit-2] - lBands[limit-2]) / mBands[limit-2]
-  w3 := (uBands[limit-1] - lBands[limit-1]) / mBands[limit-1]
-
-  day, err := r.Day(klines[0].Timestamp / 1000)
-  if err != nil {
-    return err
-  }
-
-  redisKey := fmt.Sprintf(
-    config.REDIS_KEY_INDICATORS,
-    interval,
-    symbol,
-    day,
-  )
-  r.Rdb.HSet(
-    r.Ctx,
-    redisKey,
-    "bbands",
-    fmt.Sprintf(
-      "%s,%s,%s,%s,%s,%s,%s,%d",
-      strconv.FormatFloat(b1, 'f', -1, 64),
-      strconv.FormatFloat(b2, 'f', -1, 64),
-      strconv.FormatFloat(b3, 'f', -1, 64),
-      strconv.FormatFloat(w1, 'f', -1, 64),
-      strconv.FormatFloat(w2, 'f', -1, 64),
-      strconv.FormatFloat(w3, 'f', -1, 64),
-      strconv.FormatFloat(klines[0].Close, 'f', -1, 64),
-      klines[0].Timestamp,
-    ),
-  )
-  ttl, _ := r.Rdb.TTL(r.Ctx, redisKey).Result()
-  if -1 == ttl.Nanoseconds() {
-    r.Rdb.Expire(r.Ctx, redisKey, time.Hour*24)
-  }
-  return nil
-}
+//func (r *IndicatorsRepository) BBands(symbol string, interval string, period int, limit int) error {
+//  var klines []*models.Kline
+//  r.Db.Select(
+//    []string{"open", "close", "high", "low", "timestamp"},
+//  ).Where(
+//    "symbol=? AND interval=?", symbol, interval,
+//  ).Order(
+//    "timestamp desc",
+//  ).Limit(
+//    limit,
+//  ).Find(
+//    &klines,
+//  )
+//
+//  var prices []float64
+//  var timestamp int64
+//  for _, item := range klines {
+//    if timestamp > 0 && (timestamp-item.Timestamp) != r.Timestep(interval) {
+//      return fmt.Errorf("[%s] %s klines lost", symbol, interval)
+//    }
+//    avgPrice, _ := decimal.Avg(
+//      decimal.NewFromFloat(item.Close),
+//      decimal.NewFromFloat(item.High),
+//      decimal.NewFromFloat(item.Low),
+//    ).Float64()
+//    prices = append([]float64{avgPrice}, prices...)
+//    timestamp = item.Timestamp
+//  }
+//
+//  if len(klines) < limit {
+//    return fmt.Errorf("[%s] %s klines not enough", symbol, interval)
+//  }
+//
+//  if klines[0].Timestamp < r.Timestamp(interval)-60000 {
+//    return fmt.Errorf("[%s] waiting for %s klines flush", symbol, interval)
+//  }
+//
+//  uBands, mBands, lBands := talib.BBands(prices, period, 2, 2, 0)
+//  p1 := (klines[2].Close + klines[2].High + klines[2].Low) / 3
+//  p2 := (klines[1].Close + klines[1].High + klines[1].Low) / 3
+//  p3 := (klines[0].Close + klines[0].High + klines[0].Low) / 3
+//  b1 := (p1 - lBands[limit-3]) / (uBands[limit-3] - lBands[limit-3])
+//  b2 := (p2 - lBands[limit-2]) / (uBands[limit-2] - lBands[limit-2])
+//  b3 := (p3 - lBands[limit-1]) / (uBands[limit-1] - lBands[limit-1])
+//  w1 := (uBands[limit-3] - lBands[limit-3]) / mBands[limit-3]
+//  w2 := (uBands[limit-2] - lBands[limit-2]) / mBands[limit-2]
+//  w3 := (uBands[limit-1] - lBands[limit-1]) / mBands[limit-1]
+//
+//  day, err := r.Day(klines[0].Timestamp / 1000)
+//  if err != nil {
+//    return err
+//  }
+//
+//  redisKey := fmt.Sprintf(
+//    config.REDIS_KEY_INDICATORS,
+//    interval,
+//    symbol,
+//    day,
+//  )
+//  r.Rdb.HSet(
+//    r.Ctx,
+//    redisKey,
+//    "bbands",
+//    fmt.Sprintf(
+//      "%s,%s,%s,%s,%s,%s,%s,%d",
+//      strconv.FormatFloat(b1, 'f', -1, 64),
+//      strconv.FormatFloat(b2, 'f', -1, 64),
+//      strconv.FormatFloat(b3, 'f', -1, 64),
+//      strconv.FormatFloat(w1, 'f', -1, 64),
+//      strconv.FormatFloat(w2, 'f', -1, 64),
+//      strconv.FormatFloat(w3, 'f', -1, 64),
+//      strconv.FormatFloat(klines[0].Close, 'f', -1, 64),
+//      klines[0].Timestamp,
+//    ),
+//  )
+//  ttl, _ := r.Rdb.TTL(r.Ctx, redisKey).Result()
+//  if -1 == ttl.Nanoseconds() {
+//    r.Rdb.Expire(r.Ctx, redisKey, time.Hour*24)
+//  }
+//  return nil
+//}
 
 func (r *IndicatorsRepository) IchimokuCloud(symbol string, interval string, tenkanPeriod int, kijunPeriod int, senkouPeriod int, limit int) error {
   var klines []*models.Kline

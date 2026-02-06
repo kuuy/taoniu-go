@@ -4,6 +4,8 @@ import (
   "context"
   "errors"
   "fmt"
+  "strconv"
+  "strings"
   "time"
 
   "github.com/go-redis/redis/v8"
@@ -19,10 +21,32 @@ type AndeanOscillatorData struct {
   Timestamp int64
 }
 
+type VolumeSegment struct {
+  MinPrice float64
+  MaxPrice float64
+  Offsets  map[int]float64
+  Volume   float64
+}
+
 type BaseRepository struct {
   Db  *gorm.DB
   Rdb *redis.Client
   Ctx context.Context
+}
+
+func (r *BaseRepository) Filters(symbol string) (tickSize float64, stepSize float64, err error) {
+  var entity *models.Symbol
+  err = r.Db.Select("filters").Where("symbol", symbol).Take(&entity).Error
+  if err != nil {
+    return
+  }
+
+  var values []string
+  values = strings.Split(entity.Filters["price"].(string), ",")
+  tickSize, _ = strconv.ParseFloat(values[2], 64)
+  values = strings.Split(entity.Filters["quote"].(string), ",")
+  stepSize, _ = strconv.ParseFloat(values[2], 64)
+  return
 }
 
 func (r *BaseRepository) Day(timestamp int64) (day string, err error) {
@@ -64,7 +88,48 @@ func (r *BaseRepository) Timestamp(interval string) int64 {
   return now.Add(duration).Unix() * 1000
 }
 
-func (r *BaseRepository) Klines(symbol, interval string, limit int, fields ...string) (result [][]float64, timestamps []int64, err error) {
+func (r *BaseRepository) Kline(symbol, interval string, fields ...string) (data []float64, timestamp int64, err error) {
+  var kline *models.Kline
+  err = r.Db.Select(
+    append(fields, "timestamp"),
+  ).Where(
+    "symbol=? AND interval=?", symbol, interval,
+  ).Order(
+    "timestamp desc",
+  ).Take(
+    &kline,
+  ).Error
+  if err != nil {
+    return
+  }
+
+  if kline.Timestamp < r.Timestamp(interval)-60000 {
+    err = fmt.Errorf("[%s] waiting for %s klines flush", symbol, interval)
+    return
+  }
+
+  data = make([]float64, len(fields))
+  for i, field := range fields {
+    var val float64
+    switch field {
+    case "open":
+      val = kline.Open
+    case "high":
+      val = kline.High
+    case "low":
+      val = kline.Low
+    case "close":
+      val = kline.Close
+    case "volume":
+      val = kline.Volume
+    }
+    data[i] = val
+  }
+  timestamp = kline.Timestamp
+  return
+}
+
+func (r *BaseRepository) Klines(symbol, interval string, limit int, fields ...string) (data [][]float64, timestamps []int64, err error) {
   var klines []*models.Kline
   err = r.Db.Select(
     append(fields, "timestamp"),
@@ -85,9 +150,14 @@ func (r *BaseRepository) Klines(symbol, interval string, limit int, fields ...st
     return
   }
 
-  result = make([][]float64, len(fields))
+  if klines[0].Timestamp < r.Timestamp(interval)-60000 {
+    err = fmt.Errorf("[%s] waiting for %s klines flush", symbol, interval)
+    return
+  }
+
+  data = make([][]float64, len(fields))
   for i := range fields {
-    result[i] = make([]float64, limit)
+    data[i] = make([]float64, limit)
   }
   timestamps = make([]int64, limit)
 
@@ -113,7 +183,7 @@ func (r *BaseRepository) Klines(symbol, interval string, limit int, fields ...st
       case "volume":
         val = item.Volume
       }
-      result[j][pos] = val
+      data[j][pos] = val
     }
 
     timestamps[pos] = item.Timestamp

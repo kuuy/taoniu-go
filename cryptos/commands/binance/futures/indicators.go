@@ -44,6 +44,7 @@ func NewIndicatorsCommand() *cli.Command {
         Ctx: h.Ctx,
       }
       h.Repository.Atr = &indicatorsRepositories.AtrRepository{BaseRepository: baseRepository}
+      h.Repository.BBands = &indicatorsRepositories.BBandsRepository{BaseRepository: baseRepository}
       h.Repository.SymbolsRepository = &repositories.SymbolsRepository{
         Db: h.Db,
       }
@@ -51,6 +52,9 @@ func NewIndicatorsCommand() *cli.Command {
     },
     Subcommands: []*cli.Command{
       indicators.NewAtrCommand(),
+      indicators.NewBBandsCommand(),
+      indicators.NewPivotCommand(),
+      indicators.NewVolumeProfileCommand(),
       {
         Name:  "ranking",
         Usage: "",
@@ -61,22 +65,6 @@ func NewIndicatorsCommand() *cli.Command {
             return nil
           }
           if err := h.Ranking(interval); err != nil {
-            return cli.Exit(err.Error(), 1)
-          }
-          return nil
-        },
-      },
-      {
-        Name:  "pivot",
-        Usage: "",
-        Action: func(c *cli.Context) error {
-          symbol := c.Args().Get(1)
-          interval := c.Args().Get(0)
-          if interval == "" {
-            log.Fatal("interval can not be empty")
-            return nil
-          }
-          if err := h.Pivot(symbol, interval); err != nil {
             return cli.Exit(err.Error(), 1)
           }
           return nil
@@ -131,22 +119,6 @@ func NewIndicatorsCommand() *cli.Command {
         },
       },
       {
-        Name:  "bbands",
-        Usage: "",
-        Action: func(c *cli.Context) error {
-          symbol := c.Args().Get(1)
-          interval := c.Args().Get(0)
-          if interval == "" {
-            log.Fatal("interval can not be empty")
-            return nil
-          }
-          if err := h.BBands(symbol, interval); err != nil {
-            return cli.Exit(err.Error(), 1)
-          }
-          return nil
-        },
-      },
-      {
         Name:  "ichimoku-cloud",
         Usage: "",
         Action: func(c *cli.Context) error {
@@ -157,22 +129,6 @@ func NewIndicatorsCommand() *cli.Command {
             return nil
           }
           if err := h.IchimokuCloud(symbol, interval); err != nil {
-            return cli.Exit(err.Error(), 1)
-          }
-          return nil
-        },
-      },
-      {
-        Name:  "volume-profile",
-        Usage: "",
-        Action: func(c *cli.Context) error {
-          symbol := c.Args().Get(1)
-          interval := c.Args().Get(0)
-          if interval == "" {
-            log.Fatal("interval can not be empty")
-            return nil
-          }
-          if err := h.VolumeProfile(symbol, interval); err != nil {
             return cli.Exit(err.Error(), 1)
           }
           return nil
@@ -225,23 +181,6 @@ func (h *IndicatorsHandler) Ranking(interval string) error {
   return nil
 }
 
-func (h *IndicatorsHandler) Pivot(symbol string, interval string) error {
-  log.Println("indicators pivot calc...")
-  var symbols []string
-  if symbol == "" {
-    h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
-  } else {
-    symbols = append(symbols, symbol)
-  }
-  for _, symbol := range symbols {
-    err := h.Repository.Pivot(symbol, interval)
-    if err != nil {
-      log.Println("error", err.Error())
-    }
-  }
-  return nil
-}
-
 func (h *IndicatorsHandler) Zlema(symbol string, interval string) error {
   log.Println("indicators zlema processing...")
   var symbols []string
@@ -286,23 +225,6 @@ func (h *IndicatorsHandler) Kdj(symbol string, interval string) error {
   }
   for _, symbol := range symbols {
     err := h.Repository.Kdj(symbol, interval, 9, 3, 100)
-    if err != nil {
-      log.Println("error", err.Error())
-    }
-  }
-  return nil
-}
-
-func (h *IndicatorsHandler) BBands(symbol string, interval string) error {
-  log.Println("indicators boll bands calc...")
-  var symbols []string
-  if symbol == "" {
-    h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
-  } else {
-    symbols = append(symbols, symbol)
-  }
-  for _, symbol := range symbols {
-    err := h.Repository.BBands(symbol, interval, 14, 100)
     if err != nil {
       log.Println("error", err.Error())
     }
