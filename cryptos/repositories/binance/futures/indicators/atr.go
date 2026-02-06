@@ -34,19 +34,24 @@ func (r *AtrRepository) Get(symbol, interval string) (result float64, err error)
 }
 
 func (r *AtrRepository) Flush(symbol string, interval string, period int, limit int) (err error) {
-  data, timestamps, err := r.Klines(symbol, interval, limit, "high", "low", "close")
+  data, timestamps, err := r.Klines(symbol, interval, limit, "close", "high", "low")
   if err != nil {
     return
   }
 
+  prices := data[0]
+  highs := data[1]
+  lows := data[2]
+  lastIdx := len(timestamps) - 1
+
   result := talib.Atr(
-    data[0],
-    data[1],
-    data[2],
+    highs,
+    lows,
+    prices,
     period,
   )
 
-  day, err := r.Day(timestamps[len(timestamps)-1] / 1000)
+  day, err := r.Day(timestamps[lastIdx] / 1000)
   if err != nil {
     return err
   }

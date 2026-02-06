@@ -63,14 +63,10 @@ func (r *VolumeProfileRepository) Flush(symbol string, interval string, limit in
   volumes := data[1]
   lastIdx := len(timestamps) - 1
 
-  var offsets []int
   var minPrice float64
   var maxPrice float64
   var totalVolume float64
-  for i, timestamp := range timestamps {
-    offset := r.Offset(interval, timestamp)
-
-    offsets = append([]int{offset}, offsets...)
+  for i := 0; i <= lastIdx; i++ {
     if minPrice == 0 || minPrice > prices[i] {
       minPrice = prices[i]
     }
@@ -87,11 +83,17 @@ func (r *VolumeProfileRepository) Flush(symbol string, interval string, limit in
   targetVolume := totalVolume * 0.7
   step := (maxPrice - minPrice) / 100
 
-  pocSegment := &VolumeSegment{
-    Offsets: map[int]float64{},
-  }
+  pocSegment := &VolumeSegment{}
   segments := make([]*VolumeSegment, 100)
   for i, price := range prices {
+    if minPrice == 0 || minPrice > prices[i] {
+      minPrice = prices[i]
+    }
+    if maxPrice < prices[i] {
+      maxPrice = prices[i]
+    }
+    totalVolume += volumes[i]
+
     segIdx := int((maxPrice - price) / step)
     if segIdx > 99 {
       segIdx = 99
@@ -100,7 +102,6 @@ func (r *VolumeProfileRepository) Flush(symbol string, interval string, limit in
     if segments[segIdx] == nil {
       segments[segIdx] = &VolumeSegment{
         MinPrice: price,
-        Offsets:  map[int]float64{},
       }
     }
 
@@ -111,7 +112,6 @@ func (r *VolumeProfileRepository) Flush(symbol string, interval string, limit in
       segments[segIdx].MaxPrice = price
     }
 
-    segments[segIdx].Offsets[offsets[i]] += volumes[i]
     segments[segIdx].Volume += volumes[i]
 
     if pocSegment.Volume < segments[segIdx].Volume {
@@ -180,29 +180,6 @@ func (r *VolumeProfileRepository) Flush(symbol string, interval string, limit in
   }
 
   return
-}
-
-func (r *VolumeProfileRepository) Offset(interval string, timestamp int64) int {
-  t := time.Unix(timestamp/1000, 0).UTC()
-  hour := t.Hour()
-  minute := t.Minute()
-  switch interval {
-  case "1m":
-    return hour*60 + minute + 1
-  case "15m":
-    return hour*4 + minute/15 + 1
-  case "4h":
-    return hour/4 + 1
-  case "1d":
-    return 1
-  default:
-    // 基础逻辑: 30分钟切分
-    offset := hour*2 + 1
-    if minute > 30 {
-      offset += 1
-    }
-    return offset
-  }
 }
 
 func (r *VolumeProfileRepository) StructureSupport(entryPrice, poc, vah, val float64) float64 {

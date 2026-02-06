@@ -93,7 +93,7 @@ func (h *Indicators) VolumeProfile(symbol string, interval string) error {
   } else {
     limit = 100
   }
-  return h.Repository.VolumeProfile(symbol, interval, limit)
+  return h.Repository.VolumeProfile.Flush(symbol, interval, limit)
 }
 
 func (h *Indicators) AndeanOscillator(symbol string, interval string, period int, length int) error {

@@ -45,6 +45,7 @@ func NewIndicatorsCommand() *cli.Command {
       }
       h.Repository.Atr = &indicatorsRepositories.AtrRepository{BaseRepository: baseRepository}
       h.Repository.BBands = &indicatorsRepositories.BBandsRepository{BaseRepository: baseRepository}
+      h.Repository.StochRsi = &indicatorsRepositories.StochRsiRepository{BaseRepository: baseRepository}
       h.Repository.SymbolsRepository = &repositories.SymbolsRepository{
         Db: h.Db,
       }
@@ -52,8 +53,9 @@ func NewIndicatorsCommand() *cli.Command {
     },
     Subcommands: []*cli.Command{
       indicators.NewAtrCommand(),
-      indicators.NewBBandsCommand(),
       indicators.NewPivotCommand(),
+      indicators.NewBBandsCommand(),
+      indicators.NewRsiStochCommand(),
       indicators.NewVolumeProfileCommand(),
       {
         Name:  "ranking",
@@ -259,15 +261,8 @@ func (h *IndicatorsHandler) IchimokuCloud(symbol string, interval string) error 
   return nil
 }
 
-func (h *IndicatorsHandler) VolumeProfile(symbol string, interval string) error {
+func (h *IndicatorsHandler) VolumeProfile(symbol string, interval string) (err error) {
   log.Println("indicators volume profile calc...")
-  var symbols []string
-  if symbol == "" {
-    h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
-  } else {
-    symbols = append(symbols, symbol)
-  }
-
   var limit int
   switch interval {
   case "1m":
@@ -279,14 +274,8 @@ func (h *IndicatorsHandler) VolumeProfile(symbol string, interval string) error 
   default:
     limit = 100
   }
-
-  for _, symbol := range symbols {
-    err := h.Repository.VolumeProfile(symbol, interval, limit)
-    if err != nil {
-      log.Println("error", symbol, err)
-    }
-  }
-  return nil
+  err = h.Repository.VolumeProfile.Flush(symbol, interval, limit)
+  return
 }
 
 func (h *IndicatorsHandler) Flush(symbol string, interval string) (err error) {

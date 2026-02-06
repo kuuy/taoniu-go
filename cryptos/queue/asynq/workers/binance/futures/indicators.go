@@ -231,7 +231,7 @@ func (h *Indicators) VolumeProfile(ctx context.Context, t *asynq.Task) error {
   }
   defer mutex.Unlock()
 
-  h.Repository.VolumeProfile(payload.Symbol, payload.Interval, payload.Limit)
+  h.Repository.VolumeProfile.Flush(payload.Symbol, payload.Interval, payload.Limit)
 
   return nil
 }

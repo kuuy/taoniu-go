@@ -72,7 +72,7 @@ func (r *BBandsRepository) Flush(symbol string, interval string, period int, lim
   w2 := (upper[lastIdx-1] - middle[lastIdx-1]) / middle[lastIdx-1]
   w3 := (upper[lastIdx] - middle[lastIdx]) / middle[lastIdx]
 
-  day, err := r.Day(timestamps[len(timestamps)-1] / 1000)
+  day, err := r.Day(timestamps[lastIdx] / 1000)
   if err != nil {
     return err
   }
@@ -88,14 +88,14 @@ func (r *BBandsRepository) Flush(symbol string, interval string, period int, lim
     redisKey,
     "bbands",
     fmt.Sprintf(
-      "%s,%s,%s,%s,%s,%s,%s,%d",
-      strconv.FormatFloat(b1, 'f', -1, 64),
-      strconv.FormatFloat(b2, 'f', -1, 64),
-      strconv.FormatFloat(b3, 'f', -1, 64),
-      strconv.FormatFloat(w1, 'f', -1, 64),
-      strconv.FormatFloat(w2, 'f', -1, 64),
-      strconv.FormatFloat(w3, 'f', -1, 64),
-      strconv.FormatFloat(closes[lastIdx], 'f', -1, 64),
+      "%v,%v,%v,%v,%v,%v,%v,%d",
+      b1,
+      b2,
+      b3,
+      w1,
+      w2,
+      w3,
+      closes[lastIdx],
       timestamps[lastIdx],
     ),
   )

@@ -6,7 +6,6 @@ require (
 	github.com/adshao/go-binance/v2 v2.3.10
 	github.com/bitly/go-simplejson v0.5.0
 	github.com/coder/websocket v1.8.14
-	github.com/davecgh/go-spew v1.1.1
 	github.com/eclipse/paho.golang v0.12.0
 	github.com/gagliardetto/binary v0.8.0
 	github.com/gagliardetto/solana-go v1.14.0
@@ -20,6 +19,7 @@ require (
 	github.com/kuuy/go-tvscanner v0.0.1
 	github.com/markcheno/go-talib v0.0.0-20190307022042-cd53a9264d70
 	github.com/nats-io/nats.go v1.38.0
+	github.com/redis/go-redis/v9 v9.0.2
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/xid v1.4.0
 	github.com/satori/go.uuid v1.2.0
@@ -43,6 +43,7 @@ require (
 	github.com/btcsuite/btcd v0.21.0-beta // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.6 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/ethereum/go-ethereum v1.10.16 // indirect
 	github.com/fatih/color v1.9.0 // indirect
@@ -73,7 +74,6 @@ require (
 	github.com/mr-tron/base58 v1.2.0 // indirect
 	github.com/nats-io/nkeys v0.4.9 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
-	github.com/redis/go-redis/v9 v9.0.2 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/cast v1.5.0 // indirect

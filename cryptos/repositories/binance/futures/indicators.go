@@ -27,6 +27,8 @@ type IndicatorsRepository struct {
   Atr               *indicatorsRepositories.AtrRepository
   BBands            *indicatorsRepositories.BBandsRepository
   Pivot             *indicatorsRepositories.PivotRepository
+  StochRsi          *indicatorsRepositories.StochRsiRepository
+  VolumeProfile     *indicatorsRepositories.VolumeProfileRepository
   SymbolsRepository *SymbolsRepository
 }
 
@@ -778,190 +780,190 @@ func (r *IndicatorsRepository) IchimokuCloud(symbol string, interval string, ten
   return nil
 }
 
-func (r *IndicatorsRepository) VolumeProfile(symbol string, interval string, limit int) error {
-  tickSize, _, err := r.Filters(symbol)
-  if err != nil {
-    return err
-  }
-
-  var klines []*models.Kline
-  r.Db.Select(
-    []string{"close", "high", "low", "volume", "timestamp"},
-  ).Where(
-    "symbol=? AND interval=?", symbol, interval,
-  ).Order(
-    "timestamp desc",
-  ).Limit(
-    limit,
-  ).Find(
-    &klines,
-  )
-
-  var prices []float64
-  var volumes []float64
-  var offsets []int
-  var minPrice float64
-  var maxPrice float64
-  var totalVolume float64
-  var targetVolume float64
-  var timestamp int64
-  for _, item := range klines {
-    if timestamp > 0 && (timestamp-item.Timestamp) != r.Timestep(interval) {
-      return fmt.Errorf("[%s] %s klines lost", symbol, interval)
-    }
-    avgPrice, _ := decimal.Avg(
-      decimal.NewFromFloat(item.Close),
-      decimal.NewFromFloat(item.High),
-      decimal.NewFromFloat(item.Low),
-    ).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
-
-    datetime := time.Unix(0, item.Timestamp*int64(time.Millisecond)).UTC()
-    offset := datetime.Hour()*2 + 1
-    if datetime.Minute() > 30 {
-      offset += 1
-    }
-
-    prices = append([]float64{avgPrice}, prices...)
-    volumes = append([]float64{item.Volume}, volumes...)
-    offsets = append([]int{offset}, offsets...)
-    if minPrice == 0 || minPrice > avgPrice {
-      minPrice = avgPrice
-    }
-    if maxPrice < avgPrice {
-      maxPrice = avgPrice
-    }
-    totalVolume += item.Volume
-    timestamp = item.Timestamp
-  }
-
-  if len(prices) < limit {
-    return fmt.Errorf("[%s] %s klines not enough", symbol, interval)
-  }
-
-  if minPrice == maxPrice {
-    return fmt.Errorf("[%s] %s klines not valid", symbol, interval)
-  }
-
-  targetVolume, _ = decimal.NewFromFloat(totalVolume).Mul(decimal.NewFromFloat(0.7)).Float64()
-
-  value := decimal.NewFromFloat(maxPrice - minPrice).Div(decimal.NewFromInt(100))
-
-  poc := map[string]interface{}{}
-
-  data := make([]map[string]interface{}, 100)
-  for i, price := range prices {
-    index, _ := decimal.NewFromFloat(maxPrice - price).Div(value).Floor().Float64()
-    if index > 99.0 {
-      index = 99.0
-    }
-    item := data[int(index)]
-    if len(item) == 0 {
-      item = map[string]interface{}{
-        "prices":  []float64{0.0, 0.0},
-        "offsets": map[int]float64{},
-        "volume":  0.0,
-      }
-    }
-
-    items := item["prices"].([]float64)
-    if items[0] == 0.0 || items[0] > price {
-      items[0] = price
-    }
-    if items[1] < price {
-      items[1] = price
-    }
-    item["prices"] = items
-
-    values := item["offsets"].(map[int]float64)
-    values[offsets[i]] += volumes[i]
-    item["offsets"] = values
-    item["volume"] = item["volume"].(float64) + volumes[i]
-
-    if len(poc) == 0 || poc["volume"].(float64) < item["volume"].(float64) {
-      poc = item
-    }
-
-    data[int(index)] = item
-  }
-
-  startIndex := 0
-  endIndex := 0
-
-  bestVolume := 0.0
-  for i := 0; i < len(data); i++ {
-    if len(data[i]) == 0 {
-      continue
-    }
-    areaVolume := 0.0
-    for j := i; j < len(data); j++ {
-      if len(data[j]) == 0 {
-        continue
-      }
-      areaVolume += data[j]["volume"].(float64)
-      if areaVolume > targetVolume {
-        if bestVolume < areaVolume {
-          startIndex = i
-          endIndex = j
-          bestVolume = areaVolume
-        }
-        break
-      }
-    }
-  }
-
-  day, err := r.Day(klines[0].Timestamp / 1000)
-  if err != nil {
-    return err
-  }
-
-  if len(data[startIndex]) == 0 || len(data[endIndex]) == 0 {
-    return errors.New("invalid data")
-  }
-
-  values := map[string]float64{
-    "poc":       0.0,
-    "vah":       0.0,
-    "val":       0.0,
-    "poc_ratio": 0.0,
-  }
-  values["poc"], _ = decimal.Avg(
-    decimal.NewFromFloat(poc["prices"].([]float64)[0]),
-    decimal.NewFromFloat(poc["prices"].([]float64)[1]),
-  ).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
-  values["vah"], _ = decimal.Avg(
-    decimal.NewFromFloat(data[startIndex]["prices"].([]float64)[0]),
-    decimal.NewFromFloat(data[startIndex]["prices"].([]float64)[1]),
-  ).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
-  values["val"], _ = decimal.Avg(
-    decimal.NewFromFloat(data[endIndex]["prices"].([]float64)[0]),
-    decimal.NewFromFloat(data[endIndex]["prices"].([]float64)[1]),
-  ).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
-
-  values["poc_ratio"], _ = decimal.NewFromFloat(values["vah"] - values["val"]).Div(decimal.NewFromFloat(values["poc"])).Round(4).Float64()
-
-  redisKey := fmt.Sprintf(
-    config.REDIS_KEY_INDICATORS,
-    interval,
-    symbol,
-    day,
-  )
-  r.Rdb.HMSet(
-    r.Ctx,
-    redisKey,
-    map[string]interface{}{
-      "poc":       values["poc"],
-      "vah":       values["vah"],
-      "val":       values["val"],
-      "poc_ratio": values["poc_ratio"],
-    },
-  )
-  ttl, _ := r.Rdb.TTL(r.Ctx, redisKey).Result()
-  if -1 == ttl.Nanoseconds() {
-    r.Rdb.Expire(r.Ctx, redisKey, time.Hour*24)
-  }
-
-  return nil
-}
+//func (r *IndicatorsRepository) VolumeProfile(symbol string, interval string, limit int) error {
+//  tickSize, _, err := r.Filters(symbol)
+//  if err != nil {
+//    return err
+//  }
+//
+//  var klines []*models.Kline
+//  r.Db.Select(
+//    []string{"close", "high", "low", "volume", "timestamp"},
+//  ).Where(
+//    "symbol=? AND interval=?", symbol, interval,
+//  ).Order(
+//    "timestamp desc",
+//  ).Limit(
+//    limit,
+//  ).Find(
+//    &klines,
+//  )
+//
+//  var prices []float64
+//  var volumes []float64
+//  var offsets []int
+//  var minPrice float64
+//  var maxPrice float64
+//  var totalVolume float64
+//  var targetVolume float64
+//  var timestamp int64
+//  for _, item := range klines {
+//    if timestamp > 0 && (timestamp-item.Timestamp) != r.Timestep(interval) {
+//      return fmt.Errorf("[%s] %s klines lost", symbol, interval)
+//    }
+//    avgPrice, _ := decimal.Avg(
+//      decimal.NewFromFloat(item.Close),
+//      decimal.NewFromFloat(item.High),
+//      decimal.NewFromFloat(item.Low),
+//    ).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
+//
+//    datetime := time.Unix(0, item.Timestamp*int64(time.Millisecond)).UTC()
+//    offset := datetime.Hour()*2 + 1
+//    if datetime.Minute() > 30 {
+//      offset += 1
+//    }
+//
+//    prices = append([]float64{avgPrice}, prices...)
+//    volumes = append([]float64{item.Volume}, volumes...)
+//    offsets = append([]int{offset}, offsets...)
+//    if minPrice == 0 || minPrice > avgPrice {
+//      minPrice = avgPrice
+//    }
+//    if maxPrice < avgPrice {
+//      maxPrice = avgPrice
+//    }
+//    totalVolume += item.Volume
+//    timestamp = item.Timestamp
+//  }
+//
+//  if len(prices) < limit {
+//    return fmt.Errorf("[%s] %s klines not enough", symbol, interval)
+//  }
+//
+//  if minPrice == maxPrice {
+//    return fmt.Errorf("[%s] %s klines not valid", symbol, interval)
+//  }
+//
+//  targetVolume, _ = decimal.NewFromFloat(totalVolume).Mul(decimal.NewFromFloat(0.7)).Float64()
+//
+//  value := decimal.NewFromFloat(maxPrice - minPrice).Div(decimal.NewFromInt(100))
+//
+//  poc := map[string]interface{}{}
+//
+//  data := make([]map[string]interface{}, 100)
+//  for i, price := range prices {
+//    index, _ := decimal.NewFromFloat(maxPrice - price).Div(value).Floor().Float64()
+//    if index > 99.0 {
+//      index = 99.0
+//    }
+//    item := data[int(index)]
+//    if len(item) == 0 {
+//      item = map[string]interface{}{
+//        "prices":  []float64{0.0, 0.0},
+//        "offsets": map[int]float64{},
+//        "volume":  0.0,
+//      }
+//    }
+//
+//    items := item["prices"].([]float64)
+//    if items[0] == 0.0 || items[0] > price {
+//      items[0] = price
+//    }
+//    if items[1] < price {
+//      items[1] = price
+//    }
+//    item["prices"] = items
+//
+//    values := item["offsets"].(map[int]float64)
+//    values[offsets[i]] += volumes[i]
+//    item["offsets"] = values
+//    item["volume"] = item["volume"].(float64) + volumes[i]
+//
+//    if len(poc) == 0 || poc["volume"].(float64) < item["volume"].(float64) {
+//      poc = item
+//    }
+//
+//    data[int(index)] = item
+//  }
+//
+//  startIndex := 0
+//  endIndex := 0
+//
+//  bestVolume := 0.0
+//  for i := 0; i < len(data); i++ {
+//    if len(data[i]) == 0 {
+//      continue
+//    }
+//    areaVolume := 0.0
+//    for j := i; j < len(data); j++ {
+//      if len(data[j]) == 0 {
+//        continue
+//      }
+//      areaVolume += data[j]["volume"].(float64)
+//      if areaVolume > targetVolume {
+//        if bestVolume < areaVolume {
+//          startIndex = i
+//          endIndex = j
+//          bestVolume = areaVolume
+//        }
+//        break
+//      }
+//    }
+//  }
+//
+//  day, err := r.Day(klines[0].Timestamp / 1000)
+//  if err != nil {
+//    return err
+//  }
+//
+//  if len(data[startIndex]) == 0 || len(data[endIndex]) == 0 {
+//    return errors.New("invalid data")
+//  }
+//
+//  values := map[string]float64{
+//    "poc":       0.0,
+//    "vah":       0.0,
+//    "val":       0.0,
+//    "poc_ratio": 0.0,
+//  }
+//  values["poc"], _ = decimal.Avg(
+//    decimal.NewFromFloat(poc["prices"].([]float64)[0]),
+//    decimal.NewFromFloat(poc["prices"].([]float64)[1]),
+//  ).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
+//  values["vah"], _ = decimal.Avg(
+//    decimal.NewFromFloat(data[startIndex]["prices"].([]float64)[0]),
+//    decimal.NewFromFloat(data[startIndex]["prices"].([]float64)[1]),
+//  ).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
+//  values["val"], _ = decimal.Avg(
+//    decimal.NewFromFloat(data[endIndex]["prices"].([]float64)[0]),
+//    decimal.NewFromFloat(data[endIndex]["prices"].([]float64)[1]),
+//  ).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
+//
+//  values["poc_ratio"], _ = decimal.NewFromFloat(values["vah"] - values["val"]).Div(decimal.NewFromFloat(values["poc"])).Round(4).Float64()
+//
+//  redisKey := fmt.Sprintf(
+//    config.REDIS_KEY_INDICATORS,
+//    interval,
+//    symbol,
+//    day,
+//  )
+//  r.Rdb.HMSet(
+//    r.Ctx,
+//    redisKey,
+//    map[string]interface{}{
+//      "poc":       values["poc"],
+//      "vah":       values["vah"],
+//      "val":       values["val"],
+//      "poc_ratio": values["poc_ratio"],
+//    },
+//  )
+//  ttl, _ := r.Rdb.TTL(r.Ctx, redisKey).Result()
+//  if -1 == ttl.Nanoseconds() {
+//    r.Rdb.Expire(r.Ctx, redisKey, time.Hour*24)
+//  }
+//
+//  return nil
+//}
 
 func (r *IndicatorsRepository) AndeanOscillator(symbol string, interval string, period int, length int, limit int) (err error) {
   var klines []*models.Kline

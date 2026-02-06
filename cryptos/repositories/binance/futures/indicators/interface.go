@@ -24,7 +24,6 @@ type AndeanOscillatorData struct {
 type VolumeSegment struct {
   MinPrice float64
   MaxPrice float64
-  Offsets  map[int]float64
   Volume   float64
 }
 
