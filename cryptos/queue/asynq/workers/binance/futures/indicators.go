@@ -11,6 +11,7 @@ import (
   "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/futures"
   repositories "taoniu.local/cryptos/repositories/binance/futures"
+  indicatorsRepositories "taoniu.local/cryptos/repositories/binance/futures/indicators"
 )
 
 type Indicators struct {
@@ -61,6 +62,12 @@ func NewIndicators(ansqContext *common.AnsqServerContext) *Indicators {
     Rdb: h.AnsqContext.Rdb,
     Ctx: h.AnsqContext.Ctx,
   }
+  baseRepository := indicatorsRepositories.BaseRepository{
+    Db:  h.AnsqContext.Db,
+    Rdb: h.AnsqContext.Rdb,
+    Ctx: h.AnsqContext.Ctx,
+  }
+  h.Repository.Atr = &indicatorsRepositories.AtrRepository{BaseRepository: baseRepository}
   h.Repository.SymbolsRepository = &repositories.SymbolsRepository{
     Db: h.AnsqContext.Db,
   }
@@ -100,7 +107,7 @@ func (h *Indicators) Atr(ctx context.Context, t *asynq.Task) error {
   }
   defer mutex.Unlock()
 
-  h.Repository.Atr(payload.Symbol, payload.Interval, payload.Period, payload.Limit)
+  h.Repository.Atr.Flush(payload.Symbol, payload.Interval, payload.Period, payload.Limit)
 
   return nil
 }

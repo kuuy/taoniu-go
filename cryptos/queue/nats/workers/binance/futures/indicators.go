@@ -10,6 +10,7 @@ import (
   "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/futures"
   repositories "taoniu.local/cryptos/repositories/binance/futures"
+  indicatorsRepositories "taoniu.local/cryptos/repositories/binance/futures/indicators"
 )
 
 type Indicators struct {
@@ -26,6 +27,12 @@ func NewIndicators(natsContext *common.NatsContext) *Indicators {
     Rdb: h.NatsContext.Rdb,
     Ctx: h.NatsContext.Ctx,
   }
+  baseRepository := indicatorsRepositories.BaseRepository{
+    Db:  h.NatsContext.Db,
+    Rdb: h.NatsContext.Rdb,
+    Ctx: h.NatsContext.Ctx,
+  }
+  h.Repository.Atr = &indicatorsRepositories.AtrRepository{BaseRepository: baseRepository}
   h.Repository.SymbolsRepository = &repositories.SymbolsRepository{
     Db: h.NatsContext.Db,
   }
@@ -42,7 +49,7 @@ func (h *Indicators) Pivot(symbol string, interval string) error {
 }
 
 func (h *Indicators) Atr(symbol string, interval string) error {
-  return h.Repository.Atr(symbol, interval, 14, 100)
+  return h.Repository.Atr.Flush(symbol, interval, 14, 100)
 }
 
 func (h *Indicators) Zlema(symbol string, interval string) error {

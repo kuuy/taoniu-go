@@ -1,21 +1,15 @@
 package indicators
 
 import (
-  "context"
   "fmt"
   "strconv"
   "time"
-
-  "github.com/go-redis/redis/v8"
-  "gorm.io/gorm"
 
   config "taoniu.local/cryptos/config/binance/futures"
 )
 
 type VolumeProfileRepository struct {
-  Db  *gorm.DB
-  Rdb *redis.Client
-  Ctx context.Context
+  BaseRepository
 }
 
 func (r *VolumeProfileRepository) Get(symbol, interval string) (poc, vah, val float64, err error) {

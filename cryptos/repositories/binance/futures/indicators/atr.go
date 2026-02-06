@@ -1,21 +1,16 @@
 package indicators
 
 import (
-  "context"
   "fmt"
+  "github.com/markcheno/go-talib"
   "strconv"
   "time"
-
-  "github.com/go-redis/redis/v8"
-  "gorm.io/gorm"
 
   config "taoniu.local/cryptos/config/binance/futures"
 )
 
 type AtrRepository struct {
-  Db  *gorm.DB
-  Rdb *redis.Client
-  Ctx context.Context
+  BaseRepository
 }
 
 func (r *AtrRepository) Get(symbol, interval string) (result float64, err error) {
@@ -38,7 +33,41 @@ func (r *AtrRepository) Get(symbol, interval string) (result float64, err error)
   return
 }
 
-func (r *AtrRepository) Flush(symbol, interval string) (err error) {
+func (r *AtrRepository) Flush(symbol string, interval string, period int, limit int) (err error) {
+  data, timestamps, err := r.Klines(symbol, interval, limit, "high", "low", "close")
+  if err != nil {
+    return
+  }
+
+  result := talib.Atr(
+    data[0],
+    data[1],
+    data[2],
+    period,
+  )
+
+  day, err := r.Day(timestamps[len(timestamps)-1] / 1000)
+  if err != nil {
+    return err
+  }
+
+  redisKey := fmt.Sprintf(
+    config.REDIS_KEY_INDICATORS,
+    interval,
+    symbol,
+    day,
+  )
+  r.Rdb.HSet(
+    r.Ctx,
+    redisKey,
+    "atr",
+    strconv.FormatFloat(result[limit-1], 'f', -1, 64),
+  )
+  ttl, _ := r.Rdb.TTL(r.Ctx, redisKey).Result()
+  if -1 == ttl.Nanoseconds() {
+    r.Rdb.Expire(r.Ctx, redisKey, time.Hour*24)
+  }
+
   return
 }
 

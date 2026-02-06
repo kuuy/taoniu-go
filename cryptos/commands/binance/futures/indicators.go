@@ -8,9 +8,11 @@ import (
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
 
+  "taoniu.local/cryptos/commands/binance/futures/indicators"
   "taoniu.local/cryptos/common"
   models "taoniu.local/cryptos/models/binance/futures"
   repositories "taoniu.local/cryptos/repositories/binance/futures"
+  indicatorsRepositories "taoniu.local/cryptos/repositories/binance/futures/indicators"
 )
 
 type IndicatorsHandler struct {
@@ -36,12 +38,19 @@ func NewIndicatorsCommand() *cli.Command {
         Rdb: h.Rdb,
         Ctx: h.Ctx,
       }
+      baseRepository := indicatorsRepositories.BaseRepository{
+        Db:  h.Db,
+        Rdb: h.Rdb,
+        Ctx: h.Ctx,
+      }
+      h.Repository.Atr = &indicatorsRepositories.AtrRepository{BaseRepository: baseRepository}
       h.Repository.SymbolsRepository = &repositories.SymbolsRepository{
         Db: h.Db,
       }
       return nil
     },
     Subcommands: []*cli.Command{
+      indicators.NewAtrCommand(),
       {
         Name:  "ranking",
         Usage: "",
@@ -68,22 +77,6 @@ func NewIndicatorsCommand() *cli.Command {
             return nil
           }
           if err := h.Pivot(symbol, interval); err != nil {
-            return cli.Exit(err.Error(), 1)
-          }
-          return nil
-        },
-      },
-      {
-        Name:  "atr",
-        Usage: "",
-        Action: func(c *cli.Context) error {
-          symbol := c.Args().Get(1)
-          interval := c.Args().Get(0)
-          if interval == "" {
-            log.Fatal("interval can not be empty")
-            return nil
-          }
-          if err := h.Atr(symbol, interval); err != nil {
             return cli.Exit(err.Error(), 1)
           }
           return nil
@@ -185,6 +178,22 @@ func NewIndicatorsCommand() *cli.Command {
           return nil
         },
       },
+      {
+        Name:  "flush",
+        Usage: "",
+        Action: func(c *cli.Context) error {
+          symbol := c.Args().Get(1)
+          interval := c.Args().Get(0)
+          if interval == "" {
+            log.Fatal("interval can not be empty")
+            return nil
+          }
+          if err := h.Flush(symbol, interval); err != nil {
+            return cli.Exit(err.Error(), 1)
+          }
+          return nil
+        },
+      },
     },
   }
 }
@@ -226,23 +235,6 @@ func (h *IndicatorsHandler) Pivot(symbol string, interval string) error {
   }
   for _, symbol := range symbols {
     err := h.Repository.Pivot(symbol, interval)
-    if err != nil {
-      log.Println("error", err.Error())
-    }
-  }
-  return nil
-}
-
-func (h *IndicatorsHandler) Atr(symbol string, interval string) error {
-  log.Println("indicators atr processing...")
-  var symbols []string
-  if symbol == "" {
-    h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
-  } else {
-    symbols = append(symbols, symbol)
-  }
-  for _, symbol := range symbols {
-    err := h.Repository.Atr(symbol, interval, 14, 100)
     if err != nil {
       log.Println("error", err.Error())
     }
@@ -373,4 +365,10 @@ func (h *IndicatorsHandler) VolumeProfile(symbol string, interval string) error 
     }
   }
   return nil
+}
+
+func (h *IndicatorsHandler) Flush(symbol string, interval string) (err error) {
+  log.Println("indicators atr flush...")
+  err = h.Repository.Atr.Flush(symbol, interval, 14, 100)
+  return
 }

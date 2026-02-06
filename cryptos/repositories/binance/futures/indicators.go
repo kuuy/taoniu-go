@@ -17,12 +17,14 @@ import (
 
   config "taoniu.local/cryptos/config/binance/futures"
   models "taoniu.local/cryptos/models/binance/futures"
+  indicatorsRepositories "taoniu.local/cryptos/repositories/binance/futures/indicators"
 )
 
 type IndicatorsRepository struct {
   Db                *gorm.DB
   Rdb               *redis.Client
   Ctx               context.Context
+  Atr               *indicatorsRepositories.AtrRepository
   SymbolsRepository *SymbolsRepository
 }
 
@@ -261,73 +263,6 @@ func (r *IndicatorsRepository) Pivot(symbol string, interval string) error {
       "s3": s3,
     },
   )
-  if -1 == ttl.Nanoseconds() {
-    r.Rdb.Expire(r.Ctx, redisKey, time.Hour*24)
-  }
-
-  return nil
-}
-
-func (r *IndicatorsRepository) Atr(symbol string, interval string, period int, limit int) error {
-  var klines []*models.Kline
-  r.Db.Select(
-    []string{"close", "high", "low", "timestamp"},
-  ).Where(
-    "symbol=? AND interval=?", symbol, interval,
-  ).Order(
-    "timestamp desc",
-  ).Limit(
-    limit,
-  ).Find(
-    &klines,
-  )
-
-  var highs []float64
-  var lows []float64
-  var prices []float64
-  var timestamp int64
-  for _, item := range klines {
-    if timestamp > 0 && (timestamp-item.Timestamp) != r.Timestep(interval) {
-      return fmt.Errorf("[%s] %s klines lost", symbol, interval)
-    }
-    prices = append([]float64{item.Close}, prices...)
-    highs = append([]float64{item.High}, highs...)
-    lows = append([]float64{item.Low}, lows...)
-    timestamp = item.Timestamp
-  }
-  if len(klines) < limit {
-    return fmt.Errorf("[%s] %s klines not enough", symbol, interval)
-  }
-
-  if klines[0].Timestamp < r.Timestamp(interval)-60000 {
-    return fmt.Errorf("[%s] waiting for %s klines flush", symbol, interval)
-  }
-
-  result := talib.Atr(
-    highs,
-    lows,
-    prices,
-    period,
-  )
-
-  day, err := r.Day(klines[0].Timestamp / 1000)
-  if err != nil {
-    return err
-  }
-
-  redisKey := fmt.Sprintf(
-    config.REDIS_KEY_INDICATORS,
-    interval,
-    symbol,
-    day,
-  )
-  r.Rdb.HSet(
-    r.Ctx,
-    redisKey,
-    "atr",
-    strconv.FormatFloat(result[limit-1], 'f', -1, 64),
-  )
-  ttl, _ := r.Rdb.TTL(r.Ctx, redisKey).Result()
   if -1 == ttl.Nanoseconds() {
     r.Rdb.Expire(r.Ctx, redisKey, time.Hour*24)
   }
@@ -1081,15 +1016,15 @@ func (r *IndicatorsRepository) Day(timestamp int64) (day string, err error) {
 }
 
 func (r *IndicatorsRepository) Timestep(interval string) int64 {
-	switch interval {
-	case "1m":
-		return 60000
-	case "15m":
-		return 900000
-	case "4h":
-		return 14400000
-	}
-	return 86400000
+  switch interval {
+  case "1m":
+    return 60000
+  case "15m":
+    return 900000
+  case "4h":
+    return 14400000
+  }
+  return 86400000
 }
 
 func (r *IndicatorsRepository) Timestamp(interval string) int64 {

@@ -48,25 +48,23 @@ func NewScalpingCommand() *cli.Command {
         Ctx: h.Ctx,
       }
       h.StopLossRepository = &repositories.StopLossRepository{
-        Db:  h.Db,
-        Rdb: h.Rdb,
-        Ctx: h.Ctx,
+        Db:                h.Db,
+        Rdb:               h.Rdb,
+        Ctx:               h.Ctx,
         SymbolsRepository: h.SymbolsRepository,
       }
       h.StopLossRepository.TickersRepository = &repositories.TickersRepository{
         Rdb: h.Rdb,
         Ctx: h.Ctx,
       }
-      h.StopLossRepository.AtrRepository = &indicators.AtrRepository{
-        Db:  h.Db,
-        Rdb: h.Rdb,
-        Ctx: h.Ctx,
-      }
-      h.StopLossRepository.VolumeProfileRepository = &indicators.VolumeProfileRepository{
-        Db:  h.Db,
-        Rdb: h.Rdb,
-        Ctx: h.Ctx,
-      }
+      h.StopLossRepository.AtrRepository = &indicators.AtrRepository{}
+      h.StopLossRepository.AtrRepository.Db = h.Db
+      h.StopLossRepository.AtrRepository.Rdb = h.Rdb
+      h.StopLossRepository.AtrRepository.Ctx = h.Ctx
+      h.StopLossRepository.VolumeProfileRepository = &indicators.VolumeProfileRepository{}
+      h.StopLossRepository.VolumeProfileRepository.Db = h.Db
+      h.StopLossRepository.VolumeProfileRepository.Rdb = h.Rdb
+      h.StopLossRepository.VolumeProfileRepository.Ctx = h.Ctx
       return nil
     },
     Subcommands: []*cli.Command{
@@ -162,16 +160,16 @@ func NewScalpingCommand() *cli.Command {
             Required: true,
           },
           &cli.IntFlag{
-            Name:     "leverage",
-            Aliases:  []string{"l"},
-            Usage:    "leverage",
-            Value:    10,
+            Name:    "leverage",
+            Aliases: []string{"l"},
+            Usage:   "leverage",
+            Value:   10,
           },
           &cli.Float64Flag{
-            Name:     "risk",
-            Aliases:  []string{"r"},
-            Usage:    "risk ratio (e.g. 0.02 for 2%)",
-            Value:    0.02,
+            Name:    "risk",
+            Aliases: []string{"r"},
+            Usage:   "risk ratio (e.g. 0.02 for 2%)",
+            Value:   0.02,
           },
         },
         Action: func(c *cli.Context) error {
