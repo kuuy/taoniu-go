@@ -65,11 +65,7 @@ func (r *VolumeProfileRepository) Flush(symbol string, interval string, limit in
   var maxPrice float64
   var totalVolume float64
   for i, timestamp := range timestamps {
-    datetime := time.Unix(0, timestamp).UTC()
-    offset := datetime.Hour()*2 + 1
-    if datetime.Minute() > 30 {
-      offset += 1
-    }
+    offset := r.Offset(interval, timestamp)
 
     offsets = append([]int{offset}, offsets...)
     if minPrice == 0 || minPrice > prices[i] {
@@ -181,6 +177,29 @@ func (r *VolumeProfileRepository) Flush(symbol string, interval string, limit in
   }
 
   return
+}
+
+func (r *VolumeProfileRepository) Offset(interval string, timestamp int64) int {
+  t := time.Unix(timestamp/1000, 0).UTC()
+  hour := t.Hour()
+  minute := t.Minute()
+  switch interval {
+  case "1m":
+    return hour*60 + minute + 1
+  case "15m":
+    return hour*4 + minute/15 + 1
+  case "4h":
+    return hour/4 + 1
+  case "1d":
+    return 1
+  default:
+    // 基础逻辑: 30分钟切分
+    offset := hour*2 + 1
+    if minute > 30 {
+      offset += 1
+    }
+    return offset
+  }
 }
 
 func (r *VolumeProfileRepository) StructureSupport(entryPrice, poc, vah, val float64) float64 {
