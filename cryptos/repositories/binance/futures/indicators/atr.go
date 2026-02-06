@@ -38,6 +38,10 @@ func (r *AtrRepository) Get(symbol, interval string) (result float64, err error)
   return
 }
 
+func (r *AtrRepository) Flush(symbol, interval string) (err error) {
+  return
+}
+
 func (r *AtrRepository) Multiplier(price, atr float64) float64 {
   if price == 0 {
     return 2.0

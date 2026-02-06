@@ -6,12 +6,8 @@ import (
   "gorm.io/gorm"
 )
 
-type BBandsRepository struct {
+type RsiRepository struct {
   Db  *gorm.DB
   Rdb *redis.Client
   Ctx context.Context
-}
-
-func (r *BBandsRepository) Flush(symbol string, interval string, period int, limit int) (err error) {
-  return
 }
