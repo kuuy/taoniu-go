@@ -76,7 +76,7 @@ func NewAtrCommand() *cli.Command {
 }
 
 func (h *AtrHandler) Get(symbol string, interval string) (err error) {
-  log.Println("indicators atr flush...")
+  log.Println("indicators atr get...")
   result, err := h.Repository.Get(symbol, interval)
   if err != nil {
     return

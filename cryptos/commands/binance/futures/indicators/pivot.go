@@ -76,7 +76,7 @@ func NewPivotCommand() *cli.Command {
 }
 
 func (h *PivotHandler) Get(symbol string, interval string) (err error) {
-  log.Println("indicators pivot flush...")
+  log.Println("indicators pivot get...")
   r3, r2, r1, s1, s2, s3, err := h.Repository.Get(symbol, interval)
   if err != nil {
     return

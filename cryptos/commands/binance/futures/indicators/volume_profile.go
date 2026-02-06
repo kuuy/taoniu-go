@@ -76,7 +76,12 @@ func NewVolumeProfileCommand() *cli.Command {
 }
 
 func (h *VolumeProfileHandler) Get(symbol string, interval string) (err error) {
-  log.Println("indicators volume profile flush...")
+  log.Println("indicators volume profile get...")
+  poc, vah, val, pocRatio, err := h.Repository.Get(symbol, interval)
+  if err != nil {
+    return
+  }
+  log.Println("result", poc, vah, val, pocRatio)
   return
 }
 

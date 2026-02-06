@@ -13,7 +13,7 @@ type VolumeProfileRepository struct {
   BaseRepository
 }
 
-func (r *VolumeProfileRepository) Get(symbol, interval string) (poc, vah, val float64, err error) {
+func (r *VolumeProfileRepository) Get(symbol, interval string) (poc, vah, val, pocRatio float64, err error) {
   day := time.Now().Format("0102")
   redisKey := fmt.Sprintf(
     config.REDIS_KEY_INDICATORS,
@@ -26,6 +26,7 @@ func (r *VolumeProfileRepository) Get(symbol, interval string) (poc, vah, val fl
     "poc",
     "vah",
     "val",
+    "poc_ratio",
   }
   data, err := r.Rdb.HMGet(
     r.Ctx,
@@ -44,6 +45,8 @@ func (r *VolumeProfileRepository) Get(symbol, interval string) (poc, vah, val fl
       vah, _ = strconv.ParseFloat(data[i].(string), 64)
     case "val":
       val, _ = strconv.ParseFloat(data[i].(string), 64)
+    case "poc_ratio":
+      pocRatio, _ = strconv.ParseFloat(data[i].(string), 64)
     }
   }
 

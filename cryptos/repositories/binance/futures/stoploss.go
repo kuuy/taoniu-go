@@ -82,9 +82,9 @@ func (r *StopLossRepository) Calc(symbol string, side int, entryPrice float64, c
   result.ATR = atr
   result.ATRMultiplier = r.AtrRepository.Multiplier(entryPrice, atr)
 
-  poc, vah, val, err := r.VolumeProfileRepository.Get(symbol, "15m")
+  poc, vah, val, _, err := r.VolumeProfileRepository.Get(symbol, "15m")
   if err != nil {
-    poc, vah, val = 0, 0, 0
+    poc, vah, val, _ = 0, 0, 0, 0
   }
 
   tickSize, _, err := r.Filters(symbol)

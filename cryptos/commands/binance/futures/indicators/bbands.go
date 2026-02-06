@@ -76,7 +76,7 @@ func NewBBandsCommand() *cli.Command {
 }
 
 func (h *BBandsHandler) Get(symbol string, interval string) (err error) {
-  log.Println("indicators bbands flush...")
+  log.Println("indicators bbands get...")
   b1, b2, b3, w1, w2, w3, price, timestamp, err := h.Repository.Get(symbol, interval)
   if err != nil {
     return
