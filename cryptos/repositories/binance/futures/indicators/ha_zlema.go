@@ -16,8 +16,8 @@ type HaZlemaRepository struct {
 }
 
 func (r *HaZlemaRepository) Get(symbol, interval string) (
-  zlema1 float64,
-  zlema2 float64,
+  prev,
+  current,
   price float64,
   timestamp int64,
   err error,
@@ -42,8 +42,8 @@ func (r *HaZlemaRepository) Get(symbol, interval string) (
     err = fmt.Errorf("invalid data in redis")
     return
   }
-  zlema1, _ = strconv.ParseFloat(data[0], 64)
-  zlema2, _ = strconv.ParseFloat(data[1], 64)
+  prev, _ = strconv.ParseFloat(data[0], 64)
+  current, _ = strconv.ParseFloat(data[1], 64)
   price, _ = strconv.ParseFloat(data[2], 64)
   timestamp, _ = strconv.ParseInt(data[3], 10, 64)
   return

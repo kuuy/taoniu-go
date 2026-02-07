@@ -41,6 +41,7 @@ func NewIndicators(natsContext *common.NatsContext) *Indicators {
   h.Repository.BBands = &indicatorsRepositories.BBandsRepository{BaseRepository: baseRepository}
   h.Repository.AndeanOscillator = &indicatorsRepositories.AndeanOscillatorRepository{BaseRepository: baseRepository}
   h.Repository.IchimokuCloud = &indicatorsRepositories.IchimokuCloudRepository{BaseRepository: baseRepository}
+  h.Repository.VolumeMoving = &indicatorsRepositories.VolumeMovingRepository{BaseRepository: baseRepository}
   h.Repository.VolumeProfile = &indicatorsRepositories.VolumeProfileRepository{BaseRepository: baseRepository}
   h.Repository.SuperTrend = &indicatorsRepositories.SuperTrendRepository{BaseRepository: baseRepository}
   h.Repository.SymbolsRepository = &repositories.SymbolsRepository{
@@ -90,6 +91,14 @@ func (h *Indicators) IchimokuCloud(symbol string, interval string) error {
   }
 }
 
+func (h *Indicators) SuperTrend(symbol string, interval string) error {
+  return h.Repository.SuperTrend.Flush(symbol, interval, 10, 3.0, 100)
+}
+
+func (h *Indicators) VolumeMoving(symbol string, interval string) error {
+  return h.Repository.VolumeMoving.Flush(symbol, interval, 20, 100)
+}
+
 func (h *Indicators) VolumeProfile(symbol string, interval string) error {
   var limit int
   if interval == "1m" {
@@ -102,10 +111,6 @@ func (h *Indicators) VolumeProfile(symbol string, interval string) error {
     limit = 100
   }
   return h.Repository.VolumeProfile.Flush(symbol, interval, limit)
-}
-
-func (h *Indicators) SuperTrend(symbol string, interval string) error {
-  return h.Repository.SuperTrend.Flush(symbol, interval, 10, 3.0, 100)
 }
 
 func (h *Indicators) AndeanOscillator(symbol string, interval string, period int, length int) error {
@@ -143,6 +148,8 @@ func (h *Indicators) Flush(m *nats.Msg) {
   h.Kdj(payload.Symbol, payload.Interval)
   h.BBands(payload.Symbol, payload.Interval)
   h.IchimokuCloud(payload.Symbol, payload.Interval)
+  h.SuperTrend(payload.Symbol, payload.Interval)
+  h.VolumeMoving(payload.Symbol, payload.Interval)
   h.VolumeProfile(payload.Symbol, payload.Interval)
   h.AndeanOscillator(payload.Symbol, payload.Interval, 50, 9)
 

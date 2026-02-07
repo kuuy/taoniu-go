@@ -48,6 +48,7 @@ const (
   ASYNQ_JOBS_INDICATORS_ICHIMOKU_CLOUD         = "binance:futures:indicators:ichimoku_cloud"
   ASYNQ_JOBS_INDICATORS_PIVOT                  = "binance:futures:indicators:pivot"
   ASYNQ_JOBS_INDICATORS_VOLUME_PROFILE         = "binance:futures:indicators:volume_profile"
+	ASYNQ_JOBS_INDICATORS_VOLUME                 = "binance:futures:indicators:volume"
   ASYNQ_JOBS_INDICATORS_ANDEAN_OSCILLATOR      = "binance:futures:indicators:andean_oscillator"
   ASYNQ_JOBS_ORDERS_OPEN                       = "binance:futures:orders:open"
   ASYNQ_JOBS_ORDERS_FLUSH                      = "binance:futures:orders:flush"

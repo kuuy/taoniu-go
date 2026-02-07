@@ -55,15 +55,15 @@ type AndeanOscillatorPayload struct {
 }
 
 type SuperTrendPayload struct {
-	Symbol     string
-	Interval   string
-	Period     int
-	Multiplier float64
-	Limit      int
+  Symbol     string
+  Interval   string
+  Period     int
+  Multiplier float64
+  Limit      int
 }
 
 func NewIndicators(ansqContext *common.AnsqServerContext) *Indicators {
-	h := &Indicators{
+  h := &Indicators{
     AnsqContext: ansqContext,
   }
   h.Repository = &repositories.IndicatorsRepository{
@@ -86,6 +86,7 @@ func NewIndicators(ansqContext *common.AnsqServerContext) *Indicators {
   h.Repository.AndeanOscillator = &indicatorsRepositories.AndeanOscillatorRepository{BaseRepository: baseRepository}
   h.Repository.IchimokuCloud = &indicatorsRepositories.IchimokuCloudRepository{BaseRepository: baseRepository}
   h.Repository.SuperTrend = &indicatorsRepositories.SuperTrendRepository{BaseRepository: baseRepository}
+  h.Repository.VolumeMoving = &indicatorsRepositories.VolumeMovingRepository{BaseRepository: baseRepository}
   h.Repository.VolumeProfile = &indicatorsRepositories.VolumeProfileRepository{BaseRepository: baseRepository}
   h.Repository.SymbolsRepository = &repositories.SymbolsRepository{
     Db: h.AnsqContext.Db,
@@ -131,9 +132,47 @@ func (h *Indicators) Atr(ctx context.Context, t *asynq.Task) error {
   return nil
 }
 
+func (h *Indicators) Kdj(ctx context.Context, t *asynq.Task) error {
+  var payload KdjPayload
+  json.Unmarshal(t.Payload(), &payload)
+
+  mutex := common.NewMutex(
+    h.AnsqContext.Rdb,
+    h.AnsqContext.Ctx,
+    fmt.Sprintf("locks:binance:futures:indicators:kdj:%s:%s", payload.Symbol, payload.Interval),
+  )
+  if !mutex.Lock(30 * time.Second) {
+    return nil
+  }
+  defer mutex.Unlock()
+
+  h.Repository.Kdj.Flush(payload.Symbol, payload.Interval, payload.LongPeriod, payload.ShortPeriod, payload.Limit)
+
+  return nil
+}
+
+func (h *Indicators) Rsi(ctx context.Context, t *asynq.Task) error {
+  var payload IndicatorPayload
+  json.Unmarshal(t.Payload(), &payload)
+
+  mutex := common.NewMutex(
+    h.AnsqContext.Rdb,
+    h.AnsqContext.Ctx,
+    fmt.Sprintf("locks:binance:futures:indicators:rsi:%s:%s", payload.Symbol, payload.Interval),
+  )
+  if !mutex.Lock(30 * time.Second) {
+    return nil
+  }
+  defer mutex.Unlock()
+
+  h.Repository.Rsi.Flush(payload.Symbol, payload.Interval, payload.Period, payload.Limit)
+
+  return nil
+}
+
 func (h *Indicators) SuperTrend(ctx context.Context, t *asynq.Task) error {
-	var payload SuperTrendPayload
-	if err := json.Unmarshal(t.Payload(), &payload); err != nil {
+  var payload SuperTrendPayload
+  if err := json.Unmarshal(t.Payload(), &payload); err != nil {
     return fmt.Errorf("json.Unmarshal failed: %v: %w", err, asynq.SkipRetry)
   }
 
@@ -184,25 +223,6 @@ func (h *Indicators) HaZlema(ctx context.Context, t *asynq.Task) error {
   return nil
 }
 
-func (h *Indicators) Kdj(ctx context.Context, t *asynq.Task) error {
-  var payload KdjPayload
-  json.Unmarshal(t.Payload(), &payload)
-
-  mutex := common.NewMutex(
-    h.AnsqContext.Rdb,
-    h.AnsqContext.Ctx,
-    fmt.Sprintf("locks:binance:futures:indicators:kdj:%s:%s", payload.Symbol, payload.Interval),
-  )
-  if !mutex.Lock(30 * time.Second) {
-    return nil
-  }
-  defer mutex.Unlock()
-
-  h.Repository.Kdj.Flush(payload.Symbol, payload.Interval, payload.LongPeriod, payload.ShortPeriod, payload.Limit)
-
-  return nil
-}
-
 func (h *Indicators) BBands(ctx context.Context, t *asynq.Task) error {
   var payload IndicatorPayload
   json.Unmarshal(t.Payload(), &payload)
@@ -249,6 +269,25 @@ func (h *Indicators) IchimokuCloud(ctx context.Context, t *asynq.Task) error {
   return nil
 }
 
+func (h *Indicators) VolumeMoving(ctx context.Context, t *asynq.Task) error {
+  var payload VolumeProfilePayload
+  json.Unmarshal(t.Payload(), &payload)
+
+  mutex := common.NewMutex(
+    h.AnsqContext.Rdb,
+    h.AnsqContext.Ctx,
+    fmt.Sprintf("locks:binance:futures:indicators:volume_moving:%s:%s", payload.Symbol, payload.Interval),
+  )
+  if !mutex.Lock(30 * time.Second) {
+    return nil
+  }
+  defer mutex.Unlock()
+
+  h.Repository.VolumeMoving.Flush(payload.Symbol, payload.Interval, 20, payload.Limit)
+
+  return nil
+}
+
 func (h *Indicators) VolumeProfile(ctx context.Context, t *asynq.Task) error {
   var payload VolumeProfilePayload
   json.Unmarshal(t.Payload(), &payload)
@@ -288,13 +327,15 @@ func (h *Indicators) AndeanOscillator(ctx context.Context, t *asynq.Task) error 
 }
 
 func (h *Indicators) Register() error {
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_PIVOT, h.Pivot)
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_KDJ, h.Kdj)
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_KDJ, h.Rsi)
   h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_ATR, h.Atr)
   h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_ZLEMA, h.Zlema)
   h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_HA_ZLEMA, h.HaZlema)
-  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_KDJ, h.Kdj)
   h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_BBANDS, h.BBands)
   h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_ICHIMOKU_CLOUD, h.IchimokuCloud)
-  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_PIVOT, h.Pivot)
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_VOLUME, h.VolumeMoving)
   h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_VOLUME_PROFILE, h.VolumeProfile)
   h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_ANDEAN_OSCILLATOR, h.AndeanOscillator)
   return nil

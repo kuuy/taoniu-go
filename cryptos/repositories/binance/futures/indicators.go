@@ -31,6 +31,7 @@ type IndicatorsRepository struct {
   AndeanOscillator  *indicatorsRepositories.AndeanOscillatorRepository
   IchimokuCloud     *indicatorsRepositories.IchimokuCloudRepository
   SuperTrend        *indicatorsRepositories.SuperTrendRepository
+  VolumeMoving      *indicatorsRepositories.VolumeMovingRepository
   VolumeProfile     *indicatorsRepositories.VolumeProfileRepository
   SymbolsRepository *SymbolsRepository
 }

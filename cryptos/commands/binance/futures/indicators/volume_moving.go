@@ -2,35 +2,34 @@ package indicators
 
 import (
   "context"
-  "log"
-
   "github.com/go-redis/redis/v8"
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
+  "log"
 
   "taoniu.local/cryptos/common"
   repositories "taoniu.local/cryptos/repositories/binance/futures/indicators"
 )
 
-type HaZlemaHandler struct {
+type VolumeMivingHandler struct {
   Db         *gorm.DB
   Rdb        *redis.Client
   Ctx        context.Context
-  Repository *repositories.HaZlemaRepository
+  Repository *repositories.VolumeMovingRepository
 }
 
-func NewHaZlemaCommand() *cli.Command {
-  var h HaZlemaHandler
+func NewVolumeMovingCommand() *cli.Command {
+  var h VolumeMivingHandler
   return &cli.Command{
-    Name:  "ha-zlema",
+    Name:  "volume-moving",
     Usage: "",
     Before: func(c *cli.Context) error {
-      h = HaZlemaHandler{
+      h = VolumeMivingHandler{
         Db:  common.NewDB(2),
         Rdb: common.NewRedis(2),
         Ctx: context.Background(),
       }
-      h.Repository = &repositories.HaZlemaRepository{}
+      h.Repository = &repositories.VolumeMovingRepository{}
       h.Repository.BaseRepository = repositories.BaseRepository{
         Db:  h.Db,
         Rdb: h.Rdb,
@@ -75,18 +74,18 @@ func NewHaZlemaCommand() *cli.Command {
   }
 }
 
-func (h *HaZlemaHandler) Get(symbol string, interval string) (err error) {
-  log.Println("indicators ha zlema get...")
-  	prev,current, price, timestamp, err := h.Repository.Get(symbol, interval)
-	if err != nil {
-		return
-	}
-	log.Println("result", prev,current, price, timestamp)
+func (h *VolumeMivingHandler) Get(symbol string, interval string) (err error) {
+  log.Println("indicators volume moving get...")
+  volume, err := h.Repository.Get(symbol, interval)
+  if err != nil {
+    return
+  }
+  log.Println("result", volume)
   return
 }
 
-func (h *HaZlemaHandler) Flush(symbol string, interval string) (err error) {
-  log.Println("indicators ha zlema flush...")
+func (h *VolumeMivingHandler) Flush(symbol string, interval string) (err error) {
+  log.Println("indicators volume moving flush...")
   err = h.Repository.Flush(symbol, interval, 14, 100)
   return
 }
