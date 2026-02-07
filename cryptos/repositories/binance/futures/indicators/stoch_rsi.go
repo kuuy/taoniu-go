@@ -56,7 +56,7 @@ func (r *StochRsiRepository) Flush(symbol string, interval string, period int, l
   lastIdx := len(timestamps) - 1
 
   rsi := talib.Rsi(closes, period)
-  fastk, fastd := talib.StochF(rsi, rsi, rsi, 14, 3, talib.SMA)
+  fastk, fastd := talib.Stoch(rsi, rsi, rsi, 14, 3, talib.SMA, 3, talib.SMA)
 
   day, err := r.Day(timestamps[lastIdx] / 1000)
   if err != nil {

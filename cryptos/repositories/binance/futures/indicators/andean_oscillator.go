@@ -81,13 +81,18 @@ func (r *AndeanOscillatorRepository) Flush(symbol string, interval string, perio
   alphaSignal := 2 / (float64(length) + 1)
 
   for i := 1; i < len(opens); i++ {
-    up1[i] = math.Max(closes[i], math.Max(opens[i], up1[i-1])) - (alpha*up1[i-1] - closes[i])
-    up2[i] = math.Pow(math.Max(closes[i], math.Max(opens[i], up2[i-1]))-(alpha*up2[i-1]-closes[i]), 2)
-    dn1[i] = math.Min(closes[i], math.Max(opens[i], dn1[i-1])) + (alpha*closes[i] - dn1[i-1])
-    dn2[i] = math.Pow(math.Min(closes[i], math.Max(opens[i], dn2[i-1]))+(alpha*closes[i]-dn2[i-1]), 2)
-    bulls[i] = math.Max(dn1[i], dn2[i]) - math.Min(dn1[i], dn2[i])
-    bears[i] = math.Max(up1[i], up2[i]) - math.Min(up1[i], up2[i])
-    signals[i] = (signals[i-1] + alphaSignal) * (math.Max(bulls[i], bears[i]) - signals[i-1])
+    close2 := math.Pow(closes[i], 2)
+    open2 := math.Pow(opens[i], 2)
+
+    up1[i] = math.Max(math.Max(closes[i], opens[i]), up1[i-1]-alpha*(up1[i-1]-closes[i]))
+    up2[i] = math.Max(math.Max(close2, open2), up2[i-1]-alpha*(up2[i-1]-close2))
+    dn1[i] = math.Min(math.Min(closes[i], opens[i]), dn1[i-1]-alpha*(dn1[i-1]-closes[i]))
+    dn2[i] = math.Min(math.Min(close2, open2), dn2[i-1]-alpha*(dn2[i-1]-close2))
+
+    bulls[i] = math.Sqrt(math.Max(math.Pow(up1[i], 2)-up2[i], 0))
+    bears[i] = math.Sqrt(math.Max(dn2[i]-math.Pow(dn1[i], 2), 0))
+
+    signals[i] = signals[i-1] + alphaSignal*(math.Max(bulls[i], bears[i])-signals[i-1])
   }
 
   day, err := r.Day(timestamps[lastIdx] / 1000)

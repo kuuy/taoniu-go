@@ -2,6 +2,7 @@ package indicators
 
 import (
   "fmt"
+  "math"
   "strconv"
   "strings"
   "time"
@@ -64,12 +65,16 @@ func (r *BBandsRepository) Flush(symbol string, interval string, period int, lim
 
   upper, middle, lower := talib.BBands(closes, period, 2, 2, 0)
 
-  b1 := (closes[lastIdx-2] - lower[lastIdx-2]) / (upper[lastIdx-2] - lower[lastIdx-2])
-  b2 := (closes[lastIdx-1] - lower[lastIdx-1]) / (upper[lastIdx-1] - lower[lastIdx-1])
-  b3 := (closes[lastIdx] - lower[lastIdx]) / (upper[lastIdx] - lower[lastIdx])
-  w1 := (upper[lastIdx-2] - middle[lastIdx-2]) / middle[lastIdx-2]
-  w2 := (upper[lastIdx-1] - middle[lastIdx-1]) / middle[lastIdx-1]
-  w3 := (upper[lastIdx] - middle[lastIdx]) / middle[lastIdx]
+  if len(closes) < 3 {
+    return fmt.Errorf("klines not enough")
+  }
+
+  b1 := (closes[lastIdx-2] - lower[lastIdx-2]) / math.Max(upper[lastIdx-2]-lower[lastIdx-2], 1e-9)
+  b2 := (closes[lastIdx-1] - lower[lastIdx-1]) / math.Max(upper[lastIdx-1]-lower[lastIdx-1], 1e-9)
+  b3 := (closes[lastIdx] - lower[lastIdx]) / math.Max(upper[lastIdx]-lower[lastIdx], 1e-9)
+  w1 := (upper[lastIdx-2] - lower[lastIdx-2]) / math.Max(middle[lastIdx-2], 1e-9)
+  w2 := (upper[lastIdx-1] - lower[lastIdx-1]) / math.Max(middle[lastIdx-1], 1e-9)
+  w3 := (upper[lastIdx] - lower[lastIdx]) / math.Max(middle[lastIdx], 1e-9)
 
   day, err := r.Day(timestamps[lastIdx] / 1000)
   if err != nil {

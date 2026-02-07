@@ -358,8 +358,8 @@ func (r *StrategiesRepository) BBands(symbol string, interval string) error {
   if b1 > 0.8 && b2 > 0.8 && b3 < 0.8 {
     signal = 2
   }
-  if w1 < 0.1 && w2 < 0.1 && w3 < 0.1 {
-    if w1 < 0.03 || w2 < 0.03 || w3 > 0.03 {
+  if w1 < 0.2 && w2 < 0.2 && w3 < 0.2 {
+    if w1 < 0.06 || w2 < 0.06 || w3 > 0.06 {
       return nil
     }
   }

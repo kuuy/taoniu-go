@@ -62,38 +62,30 @@ func (r *VolumeProfileRepository) Flush(symbol string, interval string, limit in
   closes := data[0]
   volumes := data[1]
   lastIdx := len(timestamps) - 1
-
-  var minPrice float64
-  var maxPrice float64
-  var totalVolume float64
-  for i := 0; i <= lastIdx; i++ {
-    if minPrice == 0 || minPrice > closes[i] {
-      minPrice = closes[i]
+  var minPrice, maxPrice, totalVolume float64
+  for i, price := range closes {
+    if i == 0 || minPrice > price {
+      minPrice = price
     }
-    if maxPrice < closes[i] {
-      maxPrice = closes[i]
+    if i == 0 || maxPrice < price {
+      maxPrice = price
     }
     totalVolume += volumes[i]
   }
 
-  if minPrice == maxPrice {
-    return fmt.Errorf("[%s] %s klines not valid", symbol, interval)
+  if len(closes) < 2 || minPrice == maxPrice {
+    return fmt.Errorf("[%s] %s klines not enough or invalid", symbol, interval)
   }
 
   targetVolume := totalVolume * 0.7
   step := (maxPrice - minPrice) / 100
+  if step == 0 {
+    step = 1e-9
+  }
 
-  pocSegment := &VolumeSegment{}
+  var pocSegment *VolumeSegment
   segments := make([]*VolumeSegment, 100)
   for i, price := range closes {
-    if minPrice == 0 || minPrice > closes[i] {
-      minPrice = closes[i]
-    }
-    if maxPrice < closes[i] {
-      maxPrice = closes[i]
-    }
-    totalVolume += volumes[i]
-
     segIdx := int((maxPrice - price) / step)
     if segIdx > 99 {
       segIdx = 99
@@ -102,6 +94,7 @@ func (r *VolumeProfileRepository) Flush(symbol string, interval string, limit in
     if segments[segIdx] == nil {
       segments[segIdx] = &VolumeSegment{
         MinPrice: price,
+        MaxPrice: price,
       }
     }
 
@@ -114,14 +107,13 @@ func (r *VolumeProfileRepository) Flush(symbol string, interval string, limit in
 
     segments[segIdx].Volume += volumes[i]
 
-    if pocSegment.Volume < segments[segIdx].Volume {
+    if pocSegment == nil || pocSegment.Volume < segments[segIdx].Volume {
       pocSegment = segments[segIdx]
     }
   }
 
   startIndex := 0
   endIndex := 0
-
   bestVolume := 0.0
   for i := 0; i < len(segments); i++ {
     if segments[i] == nil {
@@ -133,8 +125,8 @@ func (r *VolumeProfileRepository) Flush(symbol string, interval string, limit in
         continue
       }
       areaVolume += segments[j].Volume
-      if areaVolume > targetVolume {
-        if bestVolume < areaVolume {
+      if areaVolume >= targetVolume {
+        if bestVolume == 0 || areaVolume < bestVolume {
           startIndex = i
           endIndex = j
           bestVolume = areaVolume

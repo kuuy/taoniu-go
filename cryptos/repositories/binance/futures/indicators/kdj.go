@@ -2,11 +2,13 @@ package indicators
 
 import (
   "fmt"
-  "github.com/markcheno/go-talib"
   "strconv"
   "strings"
-  config "taoniu.local/cryptos/config/binance/futures"
   "time"
+
+  "github.com/markcheno/go-talib"
+
+  config "taoniu.local/cryptos/config/binance/futures"
 )
 
 type KdjRepository struct {
@@ -57,6 +59,9 @@ func (r *KdjRepository) Flush(symbol string, interval string, longPeriod int, sh
   lastIdx := len(timestamps) - 1
 
   slowk, slowd := talib.Stoch(highs, lows, closes, longPeriod, shortPeriod, 0, shortPeriod, 0)
+  if len(slowk) <= lastIdx || len(slowd) <= lastIdx {
+    return fmt.Errorf("talib calculation failed to return enough data")
+  }
   slowj := 3*slowk[lastIdx] - 2*slowd[lastIdx]
 
   day, err := r.Day(timestamps[lastIdx] / 1000)

@@ -45,12 +45,18 @@ func (r *AtrRepository) Flush(symbol string, interval string, period int, limit 
   lows := data[2]
   lastIdx := len(timestamps) - 1
 
+  if len(closes) < 2 {
+    return fmt.Errorf("klines not enough")
+  }
   result := talib.Atr(
     highs,
     lows,
     closes,
     period,
   )
+  if len(result) <= lastIdx {
+    return fmt.Errorf("talib calculation failed to return enough data")
+  }
 
   day, err := r.Day(timestamps[lastIdx] / 1000)
   if err != nil {
