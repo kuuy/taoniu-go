@@ -2,9 +2,10 @@ package indicators
 
 import (
   "fmt"
-  "github.com/markcheno/go-talib"
   "strconv"
   "time"
+
+  "github.com/markcheno/go-talib"
 
   config "taoniu.local/cryptos/config/binance/futures"
 )
@@ -39,7 +40,7 @@ func (r *AtrRepository) Flush(symbol string, interval string, period int, limit 
     return
   }
 
-  prices := data[0]
+  closes := data[0]
   highs := data[1]
   lows := data[2]
   lastIdx := len(timestamps) - 1
@@ -47,7 +48,7 @@ func (r *AtrRepository) Flush(symbol string, interval string, period int, limit 
   result := talib.Atr(
     highs,
     lows,
-    prices,
+    closes,
     period,
   )
 
@@ -66,7 +67,7 @@ func (r *AtrRepository) Flush(symbol string, interval string, period int, limit 
     r.Ctx,
     redisKey,
     "atr",
-    strconv.FormatFloat(result[limit-1], 'f', -1, 64),
+    strconv.FormatFloat(result[lastIdx], 'f', -1, 64),
   )
   ttl, _ := r.Rdb.TTL(r.Ctx, redisKey).Result()
   if -1 == ttl.Nanoseconds() {

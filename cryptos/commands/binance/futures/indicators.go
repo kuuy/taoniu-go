@@ -54,8 +54,10 @@ func NewIndicatorsCommand() *cli.Command {
     Subcommands: []*cli.Command{
       indicators.NewAtrCommand(),
       indicators.NewPivotCommand(),
+      indicators.NewKdjCommand(),
       indicators.NewBBandsCommand(),
       indicators.NewRsiStochCommand(),
+      indicators.NewAndeanOscillatorCommand(),
       indicators.NewVolumeProfileCommand(),
       {
         Name:  "ranking",
@@ -99,22 +101,6 @@ func NewIndicatorsCommand() *cli.Command {
             return nil
           }
           if err := h.HaZlema(symbol, interval); err != nil {
-            return cli.Exit(err.Error(), 1)
-          }
-          return nil
-        },
-      },
-      {
-        Name:  "kdj",
-        Usage: "",
-        Action: func(c *cli.Context) error {
-          symbol := c.Args().Get(1)
-          interval := c.Args().Get(0)
-          if interval == "" {
-            log.Fatal("interval can not be empty")
-            return nil
-          }
-          if err := h.Kdj(symbol, interval); err != nil {
             return cli.Exit(err.Error(), 1)
           }
           return nil
@@ -210,23 +196,6 @@ func (h *IndicatorsHandler) HaZlema(symbol string, interval string) error {
   }
   for _, symbol := range symbols {
     err := h.Repository.HaZlema(symbol, interval, 14, 100)
-    if err != nil {
-      log.Println("error", err.Error())
-    }
-  }
-  return nil
-}
-
-func (h *IndicatorsHandler) Kdj(symbol string, interval string) error {
-  log.Println("indicators kdj calc...")
-  var symbols []string
-  if symbol == "" {
-    h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
-  } else {
-    symbols = append(symbols, symbol)
-  }
-  for _, symbol := range symbols {
-    err := h.Repository.Kdj(symbol, interval, 9, 3, 100)
     if err != nil {
       log.Println("error", err.Error())
     }

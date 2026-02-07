@@ -59,7 +59,7 @@ func (r *VolumeProfileRepository) Flush(symbol string, interval string, limit in
     return
   }
 
-  prices := data[0]
+  closes := data[0]
   volumes := data[1]
   lastIdx := len(timestamps) - 1
 
@@ -67,11 +67,11 @@ func (r *VolumeProfileRepository) Flush(symbol string, interval string, limit in
   var maxPrice float64
   var totalVolume float64
   for i := 0; i <= lastIdx; i++ {
-    if minPrice == 0 || minPrice > prices[i] {
-      minPrice = prices[i]
+    if minPrice == 0 || minPrice > closes[i] {
+      minPrice = closes[i]
     }
-    if maxPrice < prices[i] {
-      maxPrice = prices[i]
+    if maxPrice < closes[i] {
+      maxPrice = closes[i]
     }
     totalVolume += volumes[i]
   }
@@ -85,12 +85,12 @@ func (r *VolumeProfileRepository) Flush(symbol string, interval string, limit in
 
   pocSegment := &VolumeSegment{}
   segments := make([]*VolumeSegment, 100)
-  for i, price := range prices {
-    if minPrice == 0 || minPrice > prices[i] {
-      minPrice = prices[i]
+  for i, price := range closes {
+    if minPrice == 0 || minPrice > closes[i] {
+      minPrice = closes[i]
     }
-    if maxPrice < prices[i] {
-      maxPrice = prices[i]
+    if maxPrice < closes[i] {
+      maxPrice = closes[i]
     }
     totalVolume += volumes[i]
 

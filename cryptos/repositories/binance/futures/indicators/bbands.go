@@ -42,7 +42,6 @@ func (r *BBandsRepository) Get(symbol, interval string) (
     return
   }
   data := strings.Split(val, ",")
-
   b1, _ = strconv.ParseFloat(data[0], 64)
   b2, _ = strconv.ParseFloat(data[1], 64)
   b3, _ = strconv.ParseFloat(data[2], 64)

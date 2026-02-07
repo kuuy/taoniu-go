@@ -33,8 +33,12 @@ func NewIndicators(natsContext *common.NatsContext) *Indicators {
     Ctx: h.NatsContext.Ctx,
   }
   h.Repository.Atr = &indicatorsRepositories.AtrRepository{BaseRepository: baseRepository}
-  h.Repository.BBands = &indicatorsRepositories.BBandsRepository{BaseRepository: baseRepository}
   h.Repository.Pivot = &indicatorsRepositories.PivotRepository{BaseRepository: baseRepository}
+  h.Repository.Kdj = &indicatorsRepositories.KdjRepository{BaseRepository: baseRepository}
+  h.Repository.BBands = &indicatorsRepositories.BBandsRepository{BaseRepository: baseRepository}
+  h.Repository.StochRsi = &indicatorsRepositories.StochRsiRepository{BaseRepository: baseRepository}
+  h.Repository.AndeanOscillator = &indicatorsRepositories.AndeanOscillatorRepository{BaseRepository: baseRepository}
+  h.Repository.VolumeProfile = &indicatorsRepositories.VolumeProfileRepository{BaseRepository: baseRepository}
   h.Repository.SymbolsRepository = &repositories.SymbolsRepository{
     Db: h.NatsContext.Db,
   }
@@ -63,7 +67,7 @@ func (h *Indicators) HaZlema(symbol string, interval string) error {
 }
 
 func (h *Indicators) Kdj(symbol string, interval string) error {
-  return h.Repository.Kdj(symbol, interval, 9, 3, 100)
+  return h.Repository.Kdj.Flush(symbol, interval, 9, 3, 100)
 }
 
 func (h *Indicators) BBands(symbol string, interval string) error {
@@ -107,7 +111,7 @@ func (h *Indicators) AndeanOscillator(symbol string, interval string, period int
   } else {
     limit = 100
   }
-  return h.Repository.AndeanOscillator(symbol, interval, period, length, limit)
+  return h.Repository.AndeanOscillator.Flush(symbol, interval, period, length, limit)
 }
 
 func (h *Indicators) Flush(m *nats.Msg) {

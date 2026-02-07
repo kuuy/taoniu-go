@@ -68,8 +68,12 @@ func NewIndicators(ansqContext *common.AnsqServerContext) *Indicators {
     Ctx: h.AnsqContext.Ctx,
   }
   h.Repository.Atr = &indicatorsRepositories.AtrRepository{BaseRepository: baseRepository}
-  h.Repository.BBands = &indicatorsRepositories.BBandsRepository{BaseRepository: baseRepository}
   h.Repository.Pivot = &indicatorsRepositories.PivotRepository{BaseRepository: baseRepository}
+  h.Repository.Kdj = &indicatorsRepositories.KdjRepository{BaseRepository: baseRepository}
+  h.Repository.BBands = &indicatorsRepositories.BBandsRepository{BaseRepository: baseRepository}
+  h.Repository.StochRsi = &indicatorsRepositories.StochRsiRepository{BaseRepository: baseRepository}
+  h.Repository.AndeanOscillator = &indicatorsRepositories.AndeanOscillatorRepository{BaseRepository: baseRepository}
+  h.Repository.VolumeProfile = &indicatorsRepositories.VolumeProfileRepository{BaseRepository: baseRepository}
   h.Repository.SymbolsRepository = &repositories.SymbolsRepository{
     Db: h.AnsqContext.Db,
   }
@@ -166,7 +170,7 @@ func (h *Indicators) Kdj(ctx context.Context, t *asynq.Task) error {
   }
   defer mutex.Unlock()
 
-  h.Repository.Kdj(payload.Symbol, payload.Interval, payload.LongPeriod, payload.ShortPeriod, payload.Limit)
+  h.Repository.Kdj.Flush(payload.Symbol, payload.Interval, payload.LongPeriod, payload.ShortPeriod, payload.Limit)
 
   return nil
 }
@@ -250,7 +254,7 @@ func (h *Indicators) AndeanOscillator(ctx context.Context, t *asynq.Task) error 
   }
   defer mutex.Unlock()
 
-  h.Repository.AndeanOscillator(payload.Symbol, payload.Interval, payload.Period, payload.Length, payload.Limit)
+  h.Repository.AndeanOscillator.Flush(payload.Symbol, payload.Interval, payload.Period, payload.Length, payload.Limit)
 
   return nil
 }
