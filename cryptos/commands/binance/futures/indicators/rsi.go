@@ -12,25 +12,25 @@ import (
   repositories "taoniu.local/cryptos/repositories/binance/futures/indicators"
 )
 
-type StochRsiHandler struct {
+type RsiHandler struct {
   Db         *gorm.DB
   Rdb        *redis.Client
   Ctx        context.Context
-  Repository *repositories.StochRsiRepository
+  Repository *repositories.RsiRepository
 }
 
-func NewStochRsiCommand() *cli.Command {
-  var h StochRsiHandler
+func NewRsiCommand() *cli.Command {
+  var h RsiHandler
   return &cli.Command{
-    Name:  "stoch-rsi",
+    Name:  "rsi",
     Usage: "",
     Before: func(c *cli.Context) error {
-      h = StochRsiHandler{
+      h = RsiHandler{
         Db:  common.NewDB(2),
         Rdb: common.NewRedis(2),
         Ctx: context.Background(),
       }
-      h.Repository = &repositories.StochRsiRepository{}
+      h.Repository = &repositories.RsiRepository{}
       h.Repository.BaseRepository = repositories.BaseRepository{
         Db:  h.Db,
         Rdb: h.Rdb,
@@ -75,8 +75,8 @@ func NewStochRsiCommand() *cli.Command {
   }
 }
 
-func (h *StochRsiHandler) Get(symbol string, interval string) (err error) {
-  log.Println("indicators stoch rsi get...")
+func (h *RsiHandler) Get(symbol string, interval string) (err error) {
+  log.Println("indicators rsi get...")
   result, err := h.Repository.Get(symbol, interval)
   if err != nil {
     return
@@ -85,8 +85,8 @@ func (h *StochRsiHandler) Get(symbol string, interval string) (err error) {
   return
 }
 
-func (h *StochRsiHandler) Flush(symbol string, interval string) (err error) {
-  log.Println("indicators stoch rsi flush...")
+func (h *RsiHandler) Flush(symbol string, interval string) (err error) {
+  log.Println("indicators rsi flush...")
   err = h.Repository.Flush(symbol, interval, 14, 100)
   return
 }

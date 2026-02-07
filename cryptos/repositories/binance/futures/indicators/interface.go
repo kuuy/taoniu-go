@@ -4,12 +4,12 @@ import (
   "context"
   "errors"
   "fmt"
+  "log"
   "strconv"
   "strings"
   "time"
 
   "github.com/go-redis/redis/v8"
-  "github.com/shopspring/decimal"
   "gorm.io/gorm"
 
   models "taoniu.local/cryptos/models/binance/futures"
@@ -74,12 +74,12 @@ func (r *BaseRepository) Timestep(interval string) int64 {
 func (r *BaseRepository) Timestamp(interval string) int64 {
   now := time.Now().UTC()
   duration := -time.Second * time.Duration(now.Second())
-  switch interval {
-  case "15m":
-    minute, _ := decimal.NewFromInt(int64(now.Minute())).Div(decimal.NewFromInt(15)).Floor().Mul(decimal.NewFromInt(15)).Float64()
-    duration = duration - time.Minute*time.Duration(now.Minute()-int(minute))
-  case "4h":
-    hour, _ := decimal.NewFromInt(int64(now.Hour())).Div(decimal.NewFromInt(4)).Floor().Mul(decimal.NewFromInt(4)).Float64()
+  	switch interval {
+	case "15m":
+		minute := float64(now.Minute() / 15 * 15)
+		duration = duration - time.Minute*time.Duration(now.Minute()-int(minute))
+	case "4h":
+		hour := float64(now.Hour() / 4 * 4)
     duration = duration - time.Hour*time.Duration(now.Hour()-int(hour)) - time.Minute*time.Duration(now.Minute())
   case "1d":
     duration = duration - time.Hour*time.Duration(now.Hour()) - time.Minute*time.Duration(now.Minute())
@@ -145,6 +145,7 @@ func (r *BaseRepository) Klines(symbol, interval string, limit int, fields ...st
     return
   }
   if len(klines) < limit {
+    log.Println("klines", symbol, interval, len(klines), limit)
     err = fmt.Errorf("klines not enough")
     return
   }

@@ -1,7 +1,6 @@
 package indicators
 
 import (
-  "errors"
   "fmt"
   "strconv"
   "time"
@@ -73,8 +72,8 @@ func (r *VolumeProfileRepository) Flush(symbol string, interval string, limit in
     totalVolume += volumes[i]
   }
 
-  if len(closes) < 2 || minPrice == maxPrice {
-    return fmt.Errorf("[%s] %s klines not enough or invalid", symbol, interval)
+  if minPrice == maxPrice {
+    return fmt.Errorf("[%s] %s klines invalid", symbol, interval)
   }
 
   targetVolume := totalVolume * 0.7
@@ -139,10 +138,6 @@ func (r *VolumeProfileRepository) Flush(symbol string, interval string, limit in
   day, err := r.Day(timestamps[lastIdx] / 1000)
   if err != nil {
     return
-  }
-
-  if segments[startIndex] == nil || segments[endIndex] == nil {
-    return errors.New("invalid data")
   }
 
   poc := (pocSegment.MinPrice + pocSegment.MaxPrice) / 2

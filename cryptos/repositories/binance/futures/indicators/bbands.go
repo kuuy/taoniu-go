@@ -65,10 +65,6 @@ func (r *BBandsRepository) Flush(symbol string, interval string, period int, lim
 
   upper, middle, lower := talib.BBands(closes, period, 2, 2, 0)
 
-  if len(closes) < 3 {
-    return fmt.Errorf("klines not enough")
-  }
-
   b1 := (closes[lastIdx-2] - lower[lastIdx-2]) / math.Max(upper[lastIdx-2]-lower[lastIdx-2], 1e-9)
   b2 := (closes[lastIdx-1] - lower[lastIdx-1]) / math.Max(upper[lastIdx-1]-lower[lastIdx-1], 1e-9)
   b3 := (closes[lastIdx] - lower[lastIdx]) / math.Max(upper[lastIdx]-lower[lastIdx], 1e-9)

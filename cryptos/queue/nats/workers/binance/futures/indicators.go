@@ -35,10 +35,14 @@ func NewIndicators(natsContext *common.NatsContext) *Indicators {
   h.Repository.Atr = &indicatorsRepositories.AtrRepository{BaseRepository: baseRepository}
   h.Repository.Pivot = &indicatorsRepositories.PivotRepository{BaseRepository: baseRepository}
   h.Repository.Kdj = &indicatorsRepositories.KdjRepository{BaseRepository: baseRepository}
-  h.Repository.BBands = &indicatorsRepositories.BBandsRepository{BaseRepository: baseRepository}
   h.Repository.StochRsi = &indicatorsRepositories.StochRsiRepository{BaseRepository: baseRepository}
+  h.Repository.Zlema = &indicatorsRepositories.ZlemaRepository{BaseRepository: baseRepository}
+  h.Repository.HaZlema = &indicatorsRepositories.HaZlemaRepository{BaseRepository: baseRepository}
+  h.Repository.BBands = &indicatorsRepositories.BBandsRepository{BaseRepository: baseRepository}
   h.Repository.AndeanOscillator = &indicatorsRepositories.AndeanOscillatorRepository{BaseRepository: baseRepository}
+  h.Repository.IchimokuCloud = &indicatorsRepositories.IchimokuCloudRepository{BaseRepository: baseRepository}
   h.Repository.VolumeProfile = &indicatorsRepositories.VolumeProfileRepository{BaseRepository: baseRepository}
+  h.Repository.SuperTrend = &indicatorsRepositories.SuperTrendRepository{BaseRepository: baseRepository}
   h.Repository.SymbolsRepository = &repositories.SymbolsRepository{
     Db: h.NatsContext.Db,
   }
@@ -59,11 +63,11 @@ func (h *Indicators) Atr(symbol string, interval string) error {
 }
 
 func (h *Indicators) Zlema(symbol string, interval string) error {
-  return h.Repository.Zlema(symbol, interval, 14, 100)
+  return h.Repository.Zlema.Flush(symbol, interval, 14, 100)
 }
 
 func (h *Indicators) HaZlema(symbol string, interval string) error {
-  return h.Repository.HaZlema(symbol, interval, 14, 100)
+  return h.Repository.HaZlema.Flush(symbol, interval, 14, 100)
 }
 
 func (h *Indicators) Kdj(symbol string, interval string) error {
@@ -76,13 +80,13 @@ func (h *Indicators) BBands(symbol string, interval string) error {
 
 func (h *Indicators) IchimokuCloud(symbol string, interval string) error {
   if interval == "1m" {
-    return h.Repository.IchimokuCloud(symbol, interval, 129, 374, 748, 1440)
+    return h.Repository.IchimokuCloud.Flush(symbol, interval, 129, 374, 748, 1440)
   } else if interval == "15m" {
-    return h.Repository.IchimokuCloud(symbol, interval, 60, 174, 349, 672)
+    return h.Repository.IchimokuCloud.Flush(symbol, interval, 60, 174, 349, 672)
   } else if interval == "4h" {
-    return h.Repository.IchimokuCloud(symbol, interval, 11, 32, 65, 126)
+    return h.Repository.IchimokuCloud.Flush(symbol, interval, 11, 32, 65, 126)
   } else {
-    return h.Repository.IchimokuCloud(symbol, interval, 9, 26, 52, 100)
+    return h.Repository.IchimokuCloud.Flush(symbol, interval, 9, 26, 52, 100)
   }
 }
 
@@ -98,6 +102,10 @@ func (h *Indicators) VolumeProfile(symbol string, interval string) error {
     limit = 100
   }
   return h.Repository.VolumeProfile.Flush(symbol, interval, limit)
+}
+
+func (h *Indicators) SuperTrend(symbol string, interval string) error {
+  return h.Repository.SuperTrend.Flush(symbol, interval, 10, 3.0, 100)
 }
 
 func (h *Indicators) AndeanOscillator(symbol string, interval string, period int, length int) error {

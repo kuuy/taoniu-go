@@ -4,6 +4,7 @@ import (
   "context"
   "encoding/json"
   "fmt"
+  "sync"
   "time"
 
   "github.com/hibiken/asynq"
@@ -53,8 +54,16 @@ type AndeanOscillatorPayload struct {
   Limit    int
 }
 
+type SuperTrendPayload struct {
+	Symbol     string
+	Interval   string
+	Period     int
+	Multiplier float64
+	Limit      int
+}
+
 func NewIndicators(ansqContext *common.AnsqServerContext) *Indicators {
-  h := &Indicators{
+	h := &Indicators{
     AnsqContext: ansqContext,
   }
   h.Repository = &repositories.IndicatorsRepository{
@@ -70,9 +79,13 @@ func NewIndicators(ansqContext *common.AnsqServerContext) *Indicators {
   h.Repository.Atr = &indicatorsRepositories.AtrRepository{BaseRepository: baseRepository}
   h.Repository.Pivot = &indicatorsRepositories.PivotRepository{BaseRepository: baseRepository}
   h.Repository.Kdj = &indicatorsRepositories.KdjRepository{BaseRepository: baseRepository}
-  h.Repository.BBands = &indicatorsRepositories.BBandsRepository{BaseRepository: baseRepository}
   h.Repository.StochRsi = &indicatorsRepositories.StochRsiRepository{BaseRepository: baseRepository}
+  h.Repository.Zlema = &indicatorsRepositories.ZlemaRepository{BaseRepository: baseRepository}
+  h.Repository.HaZlema = &indicatorsRepositories.HaZlemaRepository{BaseRepository: baseRepository}
+  h.Repository.BBands = &indicatorsRepositories.BBandsRepository{BaseRepository: baseRepository}
   h.Repository.AndeanOscillator = &indicatorsRepositories.AndeanOscillatorRepository{BaseRepository: baseRepository}
+  h.Repository.IchimokuCloud = &indicatorsRepositories.IchimokuCloudRepository{BaseRepository: baseRepository}
+  h.Repository.SuperTrend = &indicatorsRepositories.SuperTrendRepository{BaseRepository: baseRepository}
   h.Repository.VolumeProfile = &indicatorsRepositories.VolumeProfileRepository{BaseRepository: baseRepository}
   h.Repository.SymbolsRepository = &repositories.SymbolsRepository{
     Db: h.AnsqContext.Db,
@@ -118,6 +131,21 @@ func (h *Indicators) Atr(ctx context.Context, t *asynq.Task) error {
   return nil
 }
 
+func (h *Indicators) SuperTrend(ctx context.Context, t *asynq.Task) error {
+	var payload SuperTrendPayload
+	if err := json.Unmarshal(t.Payload(), &payload); err != nil {
+    return fmt.Errorf("json.Unmarshal failed: %v: %w", err, asynq.SkipRetry)
+  }
+
+  var mutex sync.Mutex
+  mutex.Lock()
+  defer mutex.Unlock()
+
+  h.Repository.SuperTrend.Flush(payload.Symbol, payload.Interval, payload.Period, payload.Multiplier, payload.Limit)
+
+  return nil
+}
+
 func (h *Indicators) Zlema(ctx context.Context, t *asynq.Task) error {
   var payload IndicatorPayload
   json.Unmarshal(t.Payload(), &payload)
@@ -132,7 +160,7 @@ func (h *Indicators) Zlema(ctx context.Context, t *asynq.Task) error {
   }
   defer mutex.Unlock()
 
-  h.Repository.Zlema(payload.Symbol, payload.Interval, payload.Period, payload.Limit)
+  h.Repository.Zlema.Flush(payload.Symbol, payload.Interval, payload.Period, payload.Limit)
 
   return nil
 }
@@ -151,7 +179,7 @@ func (h *Indicators) HaZlema(ctx context.Context, t *asynq.Task) error {
   }
   defer mutex.Unlock()
 
-  h.Repository.HaZlema(payload.Symbol, payload.Interval, payload.Period, payload.Limit)
+  h.Repository.HaZlema.Flush(payload.Symbol, payload.Interval, payload.Period, payload.Limit)
 
   return nil
 }
@@ -209,13 +237,13 @@ func (h *Indicators) IchimokuCloud(ctx context.Context, t *asynq.Task) error {
   defer mutex.Unlock()
 
   if payload.Interval == "1m" {
-    h.Repository.IchimokuCloud(payload.Symbol, payload.Interval, 129, 374, 748, 1440)
+    h.Repository.IchimokuCloud.Flush(payload.Symbol, payload.Interval, 129, 374, 748, 1440)
   } else if payload.Interval == "15m" {
-    h.Repository.IchimokuCloud(payload.Symbol, payload.Interval, 60, 174, 349, 672)
+    h.Repository.IchimokuCloud.Flush(payload.Symbol, payload.Interval, 60, 174, 349, 672)
   } else if payload.Interval == "4h" {
-    h.Repository.IchimokuCloud(payload.Symbol, payload.Interval, 11, 32, 65, 126)
+    h.Repository.IchimokuCloud.Flush(payload.Symbol, payload.Interval, 11, 32, 65, 126)
   } else {
-    h.Repository.IchimokuCloud(payload.Symbol, payload.Interval, 9, 26, 52, 100)
+    h.Repository.IchimokuCloud.Flush(payload.Symbol, payload.Interval, 9, 26, 52, 100)
   }
 
   return nil

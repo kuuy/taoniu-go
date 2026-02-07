@@ -12,25 +12,25 @@ import (
   repositories "taoniu.local/cryptos/repositories/binance/futures/indicators"
 )
 
-type StochRsiHandler struct {
+type HaZlemaHandler struct {
   Db         *gorm.DB
   Rdb        *redis.Client
   Ctx        context.Context
-  Repository *repositories.StochRsiRepository
+  Repository *repositories.HaZlemaRepository
 }
 
-func NewStochRsiCommand() *cli.Command {
-  var h StochRsiHandler
+func NewHaZlemaCommand() *cli.Command {
+  var h HaZlemaHandler
   return &cli.Command{
-    Name:  "stoch-rsi",
+    Name:  "ha-zlema",
     Usage: "",
     Before: func(c *cli.Context) error {
-      h = StochRsiHandler{
+      h = HaZlemaHandler{
         Db:  common.NewDB(2),
         Rdb: common.NewRedis(2),
         Ctx: context.Background(),
       }
-      h.Repository = &repositories.StochRsiRepository{}
+      h.Repository = &repositories.HaZlemaRepository{}
       h.Repository.BaseRepository = repositories.BaseRepository{
         Db:  h.Db,
         Rdb: h.Rdb,
@@ -75,18 +75,18 @@ func NewStochRsiCommand() *cli.Command {
   }
 }
 
-func (h *StochRsiHandler) Get(symbol string, interval string) (err error) {
-  log.Println("indicators stoch rsi get...")
-  result, err := h.Repository.Get(symbol, interval)
-  if err != nil {
-    return
-  }
-  log.Println("result", result)
+func (h *HaZlemaHandler) Get(symbol string, interval string) (err error) {
+  log.Println("indicators ha zlema get...")
+  	signal, price, timestamp, err := h.Repository.Get(symbol, interval)
+	if err != nil {
+		return
+	}
+	log.Println("result", signal, price, timestamp)
   return
 }
 
-func (h *StochRsiHandler) Flush(symbol string, interval string) (err error) {
-  log.Println("indicators stoch rsi flush...")
+func (h *HaZlemaHandler) Flush(symbol string, interval string) (err error) {
+  log.Println("indicators ha zlema flush...")
   err = h.Repository.Flush(symbol, interval, 14, 100)
   return
 }
