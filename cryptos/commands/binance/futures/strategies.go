@@ -8,8 +8,8 @@ import (
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
 
+  "taoniu.local/cryptos/commands/binance/futures/strategies"
   "taoniu.local/cryptos/common"
-  models "taoniu.local/cryptos/models/binance/futures"
   repositories "taoniu.local/cryptos/repositories/binance/futures"
 )
 
@@ -46,102 +46,13 @@ func NewStrategiesCommand() *cli.Command {
       return nil
     },
     Subcommands: []*cli.Command{
-      {
-        Name:  "atr",
-        Usage: "",
-        Action: func(c *cli.Context) error {
-          symbol := c.Args().Get(1)
-          interval := c.Args().Get(0)
-          if interval == "" {
-            log.Fatal("interval can not be empty")
-            return nil
-          }
-          if err := h.Atr(symbol, interval); err != nil {
-            return cli.Exit(err.Error(), 1)
-          }
-          return nil
-        },
-      },
-      {
-        Name:  "zlema",
-        Usage: "",
-        Action: func(c *cli.Context) error {
-          symbol := c.Args().Get(1)
-          interval := c.Args().Get(0)
-          if interval == "" {
-            log.Fatal("interval can not be empty")
-            return nil
-          }
-          if err := h.Zlema(symbol, interval); err != nil {
-            return cli.Exit(err.Error(), 1)
-          }
-          return nil
-        },
-      },
-      {
-        Name:  "ha-zlema",
-        Usage: "",
-        Action: func(c *cli.Context) error {
-          symbol := c.Args().Get(1)
-          interval := c.Args().Get(0)
-          if interval == "" {
-            log.Fatal("interval can not be empty")
-            return nil
-          }
-          if err := h.HaZlema(symbol, interval); err != nil {
-            return cli.Exit(err.Error(), 1)
-          }
-          return nil
-        },
-      },
-      {
-        Name:  "kdj",
-        Usage: "",
-        Action: func(c *cli.Context) error {
-          symbol := c.Args().Get(1)
-          interval := c.Args().Get(0)
-          if interval == "" {
-            log.Fatal("interval can not be empty")
-            return nil
-          }
-          if err := h.Kdj(symbol, interval); err != nil {
-            return cli.Exit(err.Error(), 1)
-          }
-          return nil
-        },
-      },
-      {
-        Name:  "bbands",
-        Usage: "",
-        Action: func(c *cli.Context) error {
-          symbol := c.Args().Get(1)
-          interval := c.Args().Get(0)
-          if interval == "" {
-            log.Fatal("interval can not be empty")
-            return nil
-          }
-          if err := h.BBands(symbol, interval); err != nil {
-            return cli.Exit(err.Error(), 1)
-          }
-          return nil
-        },
-      },
-      {
-        Name:  "ichimoku-cloud",
-        Usage: "",
-        Action: func(c *cli.Context) error {
-          symbol := c.Args().Get(1)
-          interval := c.Args().Get(0)
-          if interval == "" {
-            log.Fatal("interval can not be empty")
-            return nil
-          }
-          if err := h.IchimokuCloud(symbol, interval); err != nil {
-            return cli.Exit(err.Error(), 1)
-          }
-          return nil
-        },
-      },
+      strategies.NewAtrCommand(),
+      strategies.NewKdjCommand(),
+      strategies.NewStochRsiCommand(),
+      strategies.NewZlemaCommand(),
+      strategies.NewHaZlemaCommand(),
+      strategies.NewBBandsCommand(),
+      strategies.NewIchimokuCloudCommand(),
       {
         Name:  "clean",
         Usage: "",
@@ -156,89 +67,89 @@ func NewStrategiesCommand() *cli.Command {
   }
 }
 
-func (h *StrategiesHandler) Atr(symbol string, interval string) error {
-  log.Println("strategies atr processing...")
-  var symbols []string
-  if symbol == "" {
-    h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
-  } else {
-    symbols = append(symbols, symbol)
-  }
-  for _, symbol := range symbols {
-    h.StrategiesRepository.Atr(symbol, interval)
-  }
-  return nil
-}
+//func (h *StrategiesHandler) Atr(symbol string, interval string) error {
+//  log.Println("strategies atr processing...")
+//  var symbols []string
+//  if symbol == "" {
+//    h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+//  } else {
+//    symbols = append(symbols, symbol)
+//  }
+//  for _, symbol := range symbols {
+//    h.StrategiesRepository.Atr(symbol, interval)
+//  }
+//  return nil
+//}
 
-func (h *StrategiesHandler) Zlema(symbol string, interval string) error {
-  log.Println("strategies zlema processing...")
-  var symbols []string
-  if symbol == "" {
-    h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
-  } else {
-    symbols = append(symbols, symbol)
-  }
-  for _, symbol := range symbols {
-    h.StrategiesRepository.Zlema(symbol, interval)
-  }
-  return nil
-}
+//func (h *StrategiesHandler) Zlema(symbol string, interval string) error {
+//  log.Println("strategies zlema processing...")
+//  var symbols []string
+//  if symbol == "" {
+//    h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+//  } else {
+//    symbols = append(symbols, symbol)
+//  }
+//  for _, symbol := range symbols {
+//    h.StrategiesRepository.Zlema(symbol, interval)
+//  }
+//  return nil
+//}
+//
+//func (h *StrategiesHandler) HaZlema(symbol string, interval string) error {
+//  log.Println("strategies haZlema calc...")
+//  var symbols []string
+//  if symbol == "" {
+//    h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+//  } else {
+//    symbols = append(symbols, symbol)
+//  }
+//  for _, symbol := range symbols {
+//    h.StrategiesRepository.HaZlema(symbol, interval)
+//  }
+//  return nil
+//}
 
-func (h *StrategiesHandler) HaZlema(symbol string, interval string) error {
-  log.Println("strategies haZlema calc...")
-  var symbols []string
-  if symbol == "" {
-    h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
-  } else {
-    symbols = append(symbols, symbol)
-  }
-  for _, symbol := range symbols {
-    h.StrategiesRepository.HaZlema(symbol, interval)
-  }
-  return nil
-}
+//func (h *StrategiesHandler) Kdj(symbol string, interval string) error {
+//  log.Println("strategies zlema calc...")
+//  var symbols []string
+//  if symbol == "" {
+//    h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+//  } else {
+//    symbols = append(symbols, symbol)
+//  }
+//  for _, symbol := range symbols {
+//    h.StrategiesRepository.Kdj(symbol, interval)
+//  }
+//  return nil
+//}
 
-func (h *StrategiesHandler) Kdj(symbol string, interval string) error {
-  log.Println("strategies zlema calc...")
-  var symbols []string
-  if symbol == "" {
-    h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
-  } else {
-    symbols = append(symbols, symbol)
-  }
-  for _, symbol := range symbols {
-    h.StrategiesRepository.Kdj(symbol, interval)
-  }
-  return nil
-}
+//func (h *StrategiesHandler) BBands(symbol string, interval string) error {
+//  log.Println("strategies bbands calc...")
+//  var symbols []string
+//  if symbol == "" {
+//    h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+//  } else {
+//    symbols = append(symbols, symbol)
+//  }
+//  for _, symbol := range symbols {
+//    h.StrategiesRepository.BBands(symbol, interval)
+//  }
+//  return nil
+//}
 
-func (h *StrategiesHandler) BBands(symbol string, interval string) error {
-  log.Println("strategies bbands calc...")
-  var symbols []string
-  if symbol == "" {
-    h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
-  } else {
-    symbols = append(symbols, symbol)
-  }
-  for _, symbol := range symbols {
-    h.StrategiesRepository.BBands(symbol, interval)
-  }
-  return nil
-}
-
-func (h *StrategiesHandler) IchimokuCloud(symbol string, interval string) error {
-  log.Println("strategies ichimoku cloud calc...")
-  var symbols []string
-  if symbol == "" {
-    h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
-  } else {
-    symbols = append(symbols, symbol)
-  }
-  for _, symbol := range symbols {
-    h.StrategiesRepository.IchimokuCloud(symbol, interval)
-  }
-  return nil
-}
+//func (h *StrategiesHandler) IchimokuCloud(symbol string, interval string) error {
+//  log.Println("strategies ichimoku cloud calc...")
+//  var symbols []string
+//  if symbol == "" {
+//    h.Db.Model(models.Symbol{}).Select("symbol").Where("status=?", "TRADING").Find(&symbols)
+//  } else {
+//    symbols = append(symbols, symbol)
+//  }
+//  for _, symbol := range symbols {
+//    h.StrategiesRepository.IchimokuCloud(symbol, interval)
+//  }
+//  return nil
+//}
 
 func (h *StrategiesHandler) Clean() error {
   log.Println("binance futures strategies clean...")

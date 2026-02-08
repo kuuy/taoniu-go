@@ -10,6 +10,7 @@ import (
   "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/futures"
   repositories "taoniu.local/cryptos/repositories/binance/futures"
+  strategiesRepositories "taoniu.local/cryptos/repositories/binance/futures/strategies"
 )
 
 type Strategies struct {
@@ -26,6 +27,18 @@ func NewStrategies(natsContext *common.NatsContext) *Strategies {
     Rdb: h.NatsContext.Rdb,
     Ctx: h.NatsContext.Ctx,
   }
+  baseRepository := strategiesRepositories.BaseRepository{
+    Db:  h.NatsContext.Db,
+    Rdb: h.NatsContext.Rdb,
+    Ctx: h.NatsContext.Ctx,
+  }
+  h.Repository.Atr = &strategiesRepositories.AtrRepository{BaseRepository: baseRepository}
+  h.Repository.Kdj = &strategiesRepositories.KdjRepository{BaseRepository: baseRepository}
+  h.Repository.StochRsi = &strategiesRepositories.StochRsiRepository{BaseRepository: baseRepository}
+  h.Repository.Zlema = &strategiesRepositories.ZlemaRepository{BaseRepository: baseRepository}
+  h.Repository.HaZlema = &strategiesRepositories.HaZlemaRepository{BaseRepository: baseRepository}
+  h.Repository.BBands = &strategiesRepositories.BBandsRepository{BaseRepository: baseRepository}
+  h.Repository.IchimokuCloud = &strategiesRepositories.IchimokuCloudRepository{BaseRepository: baseRepository}
   h.Repository.SymbolsRepository = &repositories.SymbolsRepository{
     Db: h.NatsContext.Db,
   }
@@ -38,27 +51,27 @@ func (h *Strategies) Subscribe() error {
 }
 
 func (h *Strategies) Atr(symbol string, interval string) error {
-  return h.Repository.Atr(symbol, interval)
+  return h.Repository.Atr.Flush(symbol, interval)
 }
 
 func (h *Strategies) Zlema(symbol string, interval string) error {
-  return h.Repository.Zlema(symbol, interval)
+  return h.Repository.Zlema.Flush(symbol, interval)
 }
 
 func (h *Strategies) HaZlema(symbol string, interval string) error {
-  return h.Repository.HaZlema(symbol, interval)
+  return h.Repository.HaZlema.Flush(symbol, interval)
 }
 
 func (h *Strategies) Kdj(symbol string, interval string) error {
-  return h.Repository.Kdj(symbol, interval)
+  return h.Repository.Kdj.Flush(symbol, interval)
 }
 
 func (h *Strategies) BBands(symbol string, interval string) error {
-  return h.Repository.BBands(symbol, interval)
+  return h.Repository.BBands.Flush(symbol, interval)
 }
 
 func (h *Strategies) IchimokuCloud(symbol string, interval string) error {
-  return h.Repository.IchimokuCloud(symbol, interval)
+  return h.Repository.IchimokuCloud.Flush(symbol, interval)
 }
 
 func (h *Strategies) Flush(m *nats.Msg) {

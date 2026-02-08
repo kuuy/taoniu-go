@@ -14,13 +14,7 @@ type StochRsiRepository struct {
   BaseRepository
 }
 
-type StochRsiData struct {
-  StochK    float64
-  StochD    float64
-  Timestamp int64
-}
-
-func (r *StochRsiRepository) Get(symbol, interval string) (result *StochRsiData, err error) {
+func (r *StochRsiRepository) Get(symbol, interval string) (fastk, fastd, price float64, timestamp int64, err error) {
   day := time.Now().Format("0102")
   redisKey := fmt.Sprintf(
     config.REDIS_KEY_INDICATORS,
@@ -30,20 +24,14 @@ func (r *StochRsiRepository) Get(symbol, interval string) (result *StochRsiData,
   )
   val, err := r.Rdb.HGet(r.Ctx, redisKey, "stoch_rsi").Result()
   if err != nil {
-    return nil, err
+    return
   }
-  parts := strings.Split(val, ",")
-  if len(parts) < 3 {
-    return nil, fmt.Errorf("invalid stoch_rsi data")
-  }
-  k, _ := strconv.ParseFloat(parts[0], 64)
-  d, _ := strconv.ParseFloat(parts[1], 64)
-  ts, _ := strconv.ParseInt(parts[2], 10, 64)
-  return &StochRsiData{
-    StochK:    k,
-    StochD:    d,
-    Timestamp: ts,
-  }, nil
+  data := strings.Split(val, ",")
+  fastk, _ = strconv.ParseFloat(data[0], 64)
+  fastd, _ = strconv.ParseFloat(data[1], 64)
+  price, _ = strconv.ParseFloat(data[2], 64)
+  timestamp, _ = strconv.ParseInt(data[2], 10, 64)
+  return
 }
 
 func (r *StochRsiRepository) Flush(symbol string, interval string, period int, limit int) (err error) {
@@ -74,9 +62,10 @@ func (r *StochRsiRepository) Flush(symbol string, interval string, period int, l
     redisKey,
     "stoch_rsi",
     fmt.Sprintf(
-      "%v,%v,%d",
+      "%v,%v,%v,%d",
       fastk[lastIdx],
       fastd[lastIdx],
+      strconv.FormatFloat(closes[lastIdx], 'f', -1, 64),
       timestamps[lastIdx],
     ),
   )

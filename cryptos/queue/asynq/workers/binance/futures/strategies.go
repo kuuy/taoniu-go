@@ -4,6 +4,7 @@ import (
   "context"
   "encoding/json"
   "fmt"
+  strategiesRepositories "taoniu.local/cryptos/repositories/binance/futures/strategies"
   "time"
 
   "github.com/hibiken/asynq"
@@ -30,6 +31,18 @@ func NewStrategies(ansqContext *common.AnsqServerContext) *Strategies {
     Rdb: h.AnsqContext.Rdb,
     Ctx: h.AnsqContext.Ctx,
   }
+  baseRepository := strategiesRepositories.BaseRepository{
+    Db:  h.AnsqContext.Db,
+    Rdb: h.AnsqContext.Rdb,
+    Ctx: h.AnsqContext.Ctx,
+  }
+  h.Repository.Atr = &strategiesRepositories.AtrRepository{BaseRepository: baseRepository}
+  h.Repository.Kdj = &strategiesRepositories.KdjRepository{BaseRepository: baseRepository}
+  h.Repository.StochRsi = &strategiesRepositories.StochRsiRepository{BaseRepository: baseRepository}
+  h.Repository.Zlema = &strategiesRepositories.ZlemaRepository{BaseRepository: baseRepository}
+  h.Repository.HaZlema = &strategiesRepositories.HaZlemaRepository{BaseRepository: baseRepository}
+  h.Repository.BBands = &strategiesRepositories.BBandsRepository{BaseRepository: baseRepository}
+  h.Repository.IchimokuCloud = &strategiesRepositories.IchimokuCloudRepository{BaseRepository: baseRepository}
   h.Repository.SymbolsRepository = &repositories.SymbolsRepository{
     Db: h.AnsqContext.Db,
   }
@@ -50,7 +63,7 @@ func (h *Strategies) Atr(ctx context.Context, t *asynq.Task) error {
   }
   defer mutex.Unlock()
 
-  h.Repository.Atr(payload.Symbol, payload.Interval)
+  h.Repository.Atr.Flush(payload.Symbol, payload.Interval)
 
   return nil
 }
@@ -69,7 +82,7 @@ func (h *Strategies) Zlema(ctx context.Context, t *asynq.Task) error {
   }
   defer mutex.Unlock()
 
-  h.Repository.Zlema(payload.Symbol, payload.Interval)
+  h.Repository.Zlema.Flush(payload.Symbol, payload.Interval)
 
   return nil
 }
@@ -88,7 +101,7 @@ func (h *Strategies) HaZlema(ctx context.Context, t *asynq.Task) error {
   }
   defer mutex.Unlock()
 
-  h.Repository.HaZlema(payload.Symbol, payload.Interval)
+  h.Repository.HaZlema.Flush(payload.Symbol, payload.Interval)
 
   return nil
 }
@@ -107,7 +120,7 @@ func (h *Strategies) Kdj(ctx context.Context, t *asynq.Task) error {
   }
   defer mutex.Unlock()
 
-  h.Repository.Kdj(payload.Symbol, payload.Interval)
+  h.Repository.Kdj.Flush(payload.Symbol, payload.Interval)
 
   return nil
 }
@@ -126,7 +139,7 @@ func (h *Strategies) BBands(ctx context.Context, t *asynq.Task) error {
   }
   defer mutex.Unlock()
 
-  h.Repository.BBands(payload.Symbol, payload.Interval)
+  h.Repository.BBands.Flush(payload.Symbol, payload.Interval)
 
   return nil
 }
@@ -145,7 +158,7 @@ func (h *Strategies) IchimokuCloud(ctx context.Context, t *asynq.Task) error {
   }
   defer mutex.Unlock()
 
-  h.Repository.IchimokuCloud(payload.Symbol, payload.Interval)
+  h.Repository.IchimokuCloud.Flush(payload.Symbol, payload.Interval)
 
   return nil
 }

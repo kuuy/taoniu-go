@@ -10,25 +10,22 @@ import (
   repositories "taoniu.local/cryptos/repositories/binance/futures/indicators"
 )
 
-type HaZlemaRepository struct {
+type StochRsiRepository struct {
   BaseRepository
-  Repository *repositories.HaZlemaRepository
+  Repository *repositories.StochRsiRepository
 }
 
-func (r *HaZlemaRepository) Flush(symbol string, interval string) (err error) {
-  prev, current, price, timestamp, err := r.Repository.Get(symbol, interval)
+func (r *StochRsiRepository) Flush(symbol string, interval string) (err error) {
+  fastk, fastd, price, timestamp, err := r.Repository.Get(symbol, interval)
   if err != nil {
     return
   }
 
-  if prev*current >= 0.0 {
-    return
-  }
-
   var signal int
-  if price > current {
+  if fastk < 20 && fastd < 30 {
     signal = 1
-  } else if price < current {
+  }
+  if fastk > 80 && fastd > 70 {
     signal = 2
   }
 
@@ -40,7 +37,7 @@ func (r *HaZlemaRepository) Flush(symbol string, interval string) (err error) {
   result := r.Db.Where(
     "symbol=? AND indicator=? AND interval=?",
     symbol,
-    "ha_zlema",
+    "rsi_stoch",
     interval,
   ).Order(
     "timestamp DESC",
@@ -58,7 +55,7 @@ func (r *HaZlemaRepository) Flush(symbol string, interval string) (err error) {
   entity = models.Strategy{
     ID:        xid.New().String(),
     Symbol:    symbol,
-    Indicator: "ha_zlema",
+    Indicator: "rsi_stoch",
     Interval:  interval,
     Price:     price,
     Signal:    signal,

@@ -79,6 +79,7 @@ func NewIndicators(ansqContext *common.AnsqServerContext) *Indicators {
   h.Repository.Atr = &indicatorsRepositories.AtrRepository{BaseRepository: baseRepository}
   h.Repository.Pivot = &indicatorsRepositories.PivotRepository{BaseRepository: baseRepository}
   h.Repository.Kdj = &indicatorsRepositories.KdjRepository{BaseRepository: baseRepository}
+  h.Repository.Rsi = &indicatorsRepositories.RsiRepository{BaseRepository: baseRepository}
   h.Repository.StochRsi = &indicatorsRepositories.StochRsiRepository{BaseRepository: baseRepository}
   h.Repository.Zlema = &indicatorsRepositories.ZlemaRepository{BaseRepository: baseRepository}
   h.Repository.HaZlema = &indicatorsRepositories.HaZlemaRepository{BaseRepository: baseRepository}

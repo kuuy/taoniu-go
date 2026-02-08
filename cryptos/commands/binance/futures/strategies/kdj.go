@@ -1,4 +1,4 @@
-package indicators
+package strategies
 
 import (
   "context"
@@ -9,7 +9,8 @@ import (
   "gorm.io/gorm"
 
   "taoniu.local/cryptos/common"
-  repositories "taoniu.local/cryptos/repositories/binance/futures/indicators"
+  "taoniu.local/cryptos/repositories/binance/futures/indicators"
+  repositories "taoniu.local/cryptos/repositories/binance/futures/strategies"
 )
 
 type KdjHandler struct {
@@ -36,25 +37,15 @@ func NewKdjCommand() *cli.Command {
         Rdb: h.Rdb,
         Ctx: h.Ctx,
       }
+      h.Repository.Repository = &indicators.KdjRepository{}
+      h.Repository.Repository.BaseRepository = indicators.BaseRepository{
+        Db:  h.Db,
+        Rdb: h.Rdb,
+        Ctx: h.Ctx,
+      }
       return nil
     },
     Subcommands: []*cli.Command{
-      {
-        Name:  "get",
-        Usage: "",
-        Action: func(c *cli.Context) error {
-          symbol := c.Args().Get(1)
-          interval := c.Args().Get(0)
-          if interval == "" {
-            log.Fatal("interval can not be empty")
-            return nil
-          }
-          if err := h.Get(symbol, interval); err != nil {
-            return cli.Exit(err.Error(), 1)
-          }
-          return nil
-        },
-      },
       {
         Name:  "flush",
         Usage: "",
@@ -75,18 +66,8 @@ func NewKdjCommand() *cli.Command {
   }
 }
 
-func (h *KdjHandler) Get(symbol string, interval string) (err error) {
-  log.Println("indicators kdj get...")
-  slowk, slowd, j, price, timestamp, err := h.Repository.Get(symbol, interval)
-  if err != nil {
-    return
-  }
-  log.Println("result", slowk, slowd, j, price, timestamp)
-  return
-}
-
 func (h *KdjHandler) Flush(symbol string, interval string) (err error) {
-  log.Println("indicators kdj flush...")
-  err = h.Repository.Flush(symbol, interval, 9, 3, 100)
+  log.Println("strategies kdj flush...")
+  err = h.Repository.Flush(symbol, interval)
   return
 }

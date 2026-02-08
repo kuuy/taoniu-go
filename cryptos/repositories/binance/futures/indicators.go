@@ -205,6 +205,38 @@ func (r *IndicatorsRepository) Ranking(
   return ranking
 }
 
+func (r *IndicatorsRepository) Flush(symbol string, interval string) (err error) {
+  r.Atr.Flush(symbol, interval, 14, 100)
+  r.Pivot.Flush(symbol, interval)
+  r.Kdj.Flush(symbol, interval, 9, 3, 100)
+  r.Rsi.Flush(symbol, interval, 14, 100)
+  r.StochRsi.Flush(symbol, interval, 14, 100)
+  r.Zlema.Flush(symbol, interval, 14, 100)
+  r.HaZlema.Flush(symbol, interval, 14, 100)
+  r.BBands.Flush(symbol, interval, 14, 100)
+  switch interval {
+  case "1m":
+    r.AndeanOscillator.Flush(symbol, interval, 50, 9, 1440)
+    r.IchimokuCloud.Flush(symbol, interval, 129, 374, 748, 1440)
+    r.VolumeProfile.Flush(symbol, interval, 1440)
+  case "15m":
+    r.AndeanOscillator.Flush(symbol, interval, 50, 9, 672)
+    r.IchimokuCloud.Flush(symbol, interval, 60, 174, 349, 672)
+    r.VolumeProfile.Flush(symbol, interval, 672)
+  case "4h":
+    r.AndeanOscillator.Flush(symbol, interval, 50, 9, 126)
+    r.IchimokuCloud.Flush(symbol, interval, 11, 32, 65, 126)
+    r.VolumeProfile.Flush(symbol, interval, 126)
+  default:
+    r.AndeanOscillator.Flush(symbol, interval, 50, 9, 100)
+    r.IchimokuCloud.Flush(symbol, interval, 9, 26, 52, 100)
+    r.VolumeProfile.Flush(symbol, interval, 100)
+  }
+  r.SuperTrend.Flush(symbol, interval, 10, 3.0, 100)
+  r.VolumeMoving.Flush(symbol, interval, 14, 100)
+  return
+}
+
 //func (r *IndicatorsRepository) Pivot(symbol string, interval string) error {
 //  tickSize, _, err := r.Filters(symbol)
 //  if err != nil {
