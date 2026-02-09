@@ -125,10 +125,10 @@ func (r *SuperTrendRepository) Flush(symbol string, interval string, period int,
     redisKey,
     "supertrend",
     fmt.Sprintf(
-      "%d,%s,%s,%d",
+      "%d,%v,%v,%d",
       signals[lastIdx],
-      strconv.FormatFloat(superTrend[lastIdx], 'f', -1, 64),
-      strconv.FormatFloat(closes[lastIdx], 'f', -1, 64),
+      superTrend[lastIdx],
+      closes[lastIdx],
       timestamps[lastIdx],
     ),
   )
@@ -137,5 +137,5 @@ func (r *SuperTrendRepository) Flush(symbol string, interval string, period int,
     r.Rdb.Expire(r.Ctx, redisKey, time.Hour*24)
   }
 
-  return nil
+  return
 }

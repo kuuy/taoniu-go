@@ -95,10 +95,10 @@ func (r *HaZlemaRepository) Flush(symbol string, interval string, period int, li
     redisKey,
     "ha_zlema",
     fmt.Sprintf(
-      "%s,%s,%s,%d",
-      strconv.FormatFloat(result[len(result)-2], 'f', -1, 64),
-      strconv.FormatFloat(result[len(result)-1], 'f', -1, 64),
-      strconv.FormatFloat(closes[lastIdx], 'f', -1, 64),
+      "%v,%v,%v,%d",
+      result[len(result)-2],
+      result[len(result)-1],
+      closes[lastIdx],
       timestamps[lastIdx],
     ),
   )
