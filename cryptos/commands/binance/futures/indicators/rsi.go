@@ -77,11 +77,11 @@ func NewRsiCommand() *cli.Command {
 
 func (h *RsiHandler) Get(symbol string, interval string) (err error) {
   log.Println("indicators rsi get...")
-  result, err := h.Repository.Get(symbol, interval)
+  value, price, timestamp, err := h.Repository.Get(symbol, interval)
   if err != nil {
     return
   }
-  log.Println("result", result)
+  log.Println("result", value, price, timestamp)
   return
 }
 

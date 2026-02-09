@@ -76,7 +76,7 @@ func NewAndeanOscillatorCommand() *cli.Command {
 }
 
 func (h *AndeanOscillatorHandler) Get(symbol string, interval string) (err error) {
-  log.Println("indicators andean-oscillator get...")
+  log.Println("indicators andean oscillator get...")
   bull, bear, signal, err := h.Repository.Get(symbol, interval)
   if err != nil {
     return
@@ -86,7 +86,7 @@ func (h *AndeanOscillatorHandler) Get(symbol string, interval string) (err error
 }
 
 func (h *AndeanOscillatorHandler) Flush(symbol string, interval string) (err error) {
-  log.Println("indicators andean-oscillator flush...")
+  log.Println("indicators andean oscillator flush...")
   var limit int
   if interval == "1m" {
     limit = 1440

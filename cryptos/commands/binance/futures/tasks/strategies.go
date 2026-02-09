@@ -63,6 +63,10 @@ func NewStrategiesCommand() *cli.Command {
         BaseRepository: baseStrategiesRepository,
         Repository:     &indicatorsRepositories.KdjRepository{BaseRepository: baseIndicatorsRepository},
       }
+      h.StrategiesRepository.Rsi = &strategiesRepositories.RsiRepository{
+        BaseRepository: baseStrategiesRepository,
+        Repository:     &indicatorsRepositories.RsiRepository{BaseRepository: baseIndicatorsRepository},
+      }
       h.StrategiesRepository.StochRsi = &strategiesRepositories.StochRsiRepository{
         BaseRepository: baseStrategiesRepository,
         Repository:     &indicatorsRepositories.StochRsiRepository{BaseRepository: baseIndicatorsRepository},

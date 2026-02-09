@@ -3,6 +3,7 @@ package indicators
 import (
   "fmt"
   "strconv"
+  "strings"
   "time"
 
   "github.com/markcheno/go-talib"
@@ -14,7 +15,7 @@ type RsiRepository struct {
   BaseRepository
 }
 
-func (r *RsiRepository) Get(symbol, interval string) (result float64, err error) {
+func (r *RsiRepository) Get(symbol, interval string) (value, price float64, timestamp int64, err error) {
   day := time.Now().Format("0102")
   redisKey := fmt.Sprintf(
     config.REDIS_KEY_INDICATORS,
@@ -30,7 +31,10 @@ func (r *RsiRepository) Get(symbol, interval string) (result float64, err error)
   if err != nil {
     return
   }
-  result, err = strconv.ParseFloat(val, 64)
+  data := strings.Split(val, ",")
+  value, _ = strconv.ParseFloat(data[0], 64)
+  price, _ = strconv.ParseFloat(data[1], 64)
+  timestamp, _ = strconv.ParseInt(data[2], 10, 64)
   return
 }
 
@@ -60,7 +64,12 @@ func (r *RsiRepository) Flush(symbol string, interval string, period int, limit 
     r.Ctx,
     redisKey,
     "rsi",
-    strconv.FormatFloat(result[lastIdx], 'f', -1, 64),
+    fmt.Sprintf(
+      "%v,%v,%d",
+      result[lastIdx],
+      strconv.FormatFloat(closes[lastIdx], 'f', -1, 64),
+      timestamps[lastIdx],
+    ),
   )
   ttl, _ := r.Rdb.TTL(r.Ctx, redisKey).Result()
   if -1 == ttl.Nanoseconds() {

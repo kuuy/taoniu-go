@@ -15,6 +15,7 @@ type StrategiesRepository struct {
   Ctx               context.Context
   Atr               *strategiesRepositories.AtrRepository
   Kdj               *strategiesRepositories.KdjRepository
+  Rsi               *strategiesRepositories.RsiRepository
   StochRsi          *strategiesRepositories.StochRsiRepository
   Zlema             *strategiesRepositories.ZlemaRepository
   HaZlema           *strategiesRepositories.HaZlemaRepository
@@ -455,6 +456,7 @@ func (r *StrategiesRepository) Listings(conditions map[string]interface{}, curre
 func (r *StrategiesRepository) Flush(symbol string, interval string) (err error) {
   r.Atr.Flush(symbol, interval)
   r.Kdj.Flush(symbol, interval)
+  r.Rsi.Flush(symbol, interval)
   r.StochRsi.Flush(symbol, interval)
   r.Zlema.Flush(symbol, interval)
   r.HaZlema.Flush(symbol, interval)
