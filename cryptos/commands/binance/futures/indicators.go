@@ -54,7 +54,6 @@ func NewIndicatorsCommand() *cli.Command {
       indicators.NewAndeanOscillatorCommand(),
       indicators.NewIchimokuCloudCommand(),
       indicators.NewSuperTrendCommand(),
-      indicators.NewVolumeMovingCommand(),
       indicators.NewVolumeProfileCommand(),
       {
         Name:  "ranking",

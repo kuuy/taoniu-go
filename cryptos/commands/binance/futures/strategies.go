@@ -48,11 +48,14 @@ func NewStrategiesCommand() *cli.Command {
     Subcommands: []*cli.Command{
       strategies.NewAtrCommand(),
       strategies.NewKdjCommand(),
+      strategies.NewRsiCommand(),
       strategies.NewStochRsiCommand(),
       strategies.NewZlemaCommand(),
       strategies.NewHaZlemaCommand(),
       strategies.NewBBandsCommand(),
+      strategies.NewAndeanOscillatorCommand(),
       strategies.NewIchimokuCloudCommand(),
+      strategies.NewSuperTrendCommand(),
       {
         Name:  "clean",
         Usage: "",

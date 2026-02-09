@@ -1,10 +1,8 @@
 package strategies
 
 import (
-  "context"
   "errors"
 
-  "github.com/go-redis/redis/v8"
   "github.com/rs/xid"
   "gorm.io/gorm"
 
@@ -13,13 +11,11 @@ import (
 )
 
 type SuperTrendRepository struct {
-  Db         *gorm.DB
-  Rdb        *redis.Client
-  Ctx        context.Context
+  BaseRepository
   Repository *repositories.SuperTrendRepository
 }
 
-func (r *SuperTrendRepository) Flush(symbol string, interval string) (err error) {
+func (r *SuperTrendRepository) Flush(symbol, interval string) (err error) {
   signal, _, price, timestamp, err := r.Repository.Get(symbol, interval)
   if err != nil {
     return

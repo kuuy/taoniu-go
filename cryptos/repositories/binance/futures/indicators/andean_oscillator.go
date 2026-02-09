@@ -16,7 +16,7 @@ type AndeanOscillatorRepository struct {
 
 func (r *AndeanOscillatorRepository) Get(symbol, interval string) (
   bull,
-  bear float64,
+  bear,
   price float64,
   timestamp int64,
   err error) {
@@ -43,8 +43,8 @@ func (r *AndeanOscillatorRepository) Get(symbol, interval string) (
   }
   bull, _ = strconv.ParseFloat(data[0], 64)
   bear, _ = strconv.ParseFloat(data[1], 64)
-  price, _ = strconv.ParseFloat(data[2], 64)
-  timestamp, _ = strconv.ParseInt(data[3], 10, 64)
+  price, _ = strconv.ParseFloat(data[3], 64)
+  timestamp, _ = strconv.ParseInt(data[4], 10, 64)
   return
 }
 

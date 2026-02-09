@@ -462,6 +462,7 @@ func (r *StrategiesRepository) Flush(symbol string, interval string) (err error)
   r.HaZlema.Flush(symbol, interval)
   r.BBands.Flush(symbol, interval)
   r.IchimokuCloud.Flush(symbol, interval)
+  r.SuperTrend.Flush(symbol, interval)
   return
 }
 

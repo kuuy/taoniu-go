@@ -91,6 +91,10 @@ func NewStrategiesCommand() *cli.Command {
         BaseRepository: baseStrategiesRepository,
         Repository:     &indicatorsRepositories.IchimokuCloudRepository{BaseRepository: baseIndicatorsRepository},
       }
+      h.StrategiesRepository.SuperTrend = &strategiesRepositories.SuperTrendRepository{
+        BaseRepository: baseStrategiesRepository,
+        Repository:     &indicatorsRepositories.SuperTrendRepository{BaseRepository: baseIndicatorsRepository},
+      }
       h.ScalpingRepository = &repositories.ScalpingRepository{
         Db: h.Db,
       }
