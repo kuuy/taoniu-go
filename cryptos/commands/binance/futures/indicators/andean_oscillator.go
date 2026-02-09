@@ -77,11 +77,11 @@ func NewAndeanOscillatorCommand() *cli.Command {
 
 func (h *AndeanOscillatorHandler) Get(symbol string, interval string) (err error) {
   log.Println("indicators andean oscillator get...")
-  bull, bear, err := h.Repository.Get(symbol, interval)
+  bull, bear, price, timestamp, err := h.Repository.Get(symbol, interval)
   if err != nil {
     return
   }
-  log.Println("result", bull, bear)
+  log.Println("result", bull, bear, price, timestamp)
   return
 }
 

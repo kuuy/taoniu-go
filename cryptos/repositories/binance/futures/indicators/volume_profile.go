@@ -2,6 +2,7 @@ package indicators
 
 import (
   "fmt"
+  "math"
   "strconv"
   "time"
 
@@ -135,9 +136,9 @@ func (r *VolumeProfileRepository) Flush(symbol string, interval string, limit in
     }
   }
 
-  day, err := r.Day(timestamps[lastIdx] / 1000)
+  tickSize, _, err := r.Filters(symbol)
   if err != nil {
-    return
+    return err
   }
 
   poc := (pocSegment.MinPrice + pocSegment.MaxPrice) / 2
@@ -145,6 +146,16 @@ func (r *VolumeProfileRepository) Flush(symbol string, interval string, limit in
   val := (segments[endIndex].MinPrice + segments[endIndex].MaxPrice) / 2
   pocRatio := (vah - val) / poc
 
+  if tickSize > 0 {
+    poc = math.Floor(poc/tickSize) * tickSize
+    vah = math.Ceil(vah/tickSize) * tickSize
+    val = math.Floor(val/tickSize) * tickSize
+  }
+
+  day, err := r.Day(timestamps[lastIdx] / 1000)
+  if err != nil {
+    return
+  }
   redisKey := fmt.Sprintf(
     config.REDIS_KEY_INDICATORS,
     interval,
@@ -155,10 +166,10 @@ func (r *VolumeProfileRepository) Flush(symbol string, interval string, limit in
     r.Ctx,
     redisKey,
     map[string]interface{}{
-      "poc":       poc,
-      "vah":       vah,
-      "val":       val,
-      "poc_ratio": pocRatio,
+      "poc":       strconv.FormatFloat(poc, 'f', -1, 64),
+      "vah":       strconv.FormatFloat(vah, 'f', -1, 64),
+      "val":       strconv.FormatFloat(val, 'f', -1, 64),
+      "poc_ratio": strconv.FormatFloat(pocRatio, 'f', -1, 64),
     },
   )
   ttl, _ := r.Rdb.TTL(r.Ctx, redisKey).Result()

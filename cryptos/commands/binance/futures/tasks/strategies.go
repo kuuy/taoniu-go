@@ -83,6 +83,10 @@ func NewStrategiesCommand() *cli.Command {
         BaseRepository: baseStrategiesRepository,
         Repository:     &indicatorsRepositories.BBandsRepository{BaseRepository: baseIndicatorsRepository},
       }
+      h.StrategiesRepository.AndeanOscillator = &strategiesRepositories.AndeanOscillatorRepository{
+        BaseRepository: baseStrategiesRepository,
+        Repository:     &indicatorsRepositories.AndeanOscillatorRepository{BaseRepository: baseIndicatorsRepository},
+      }
       h.StrategiesRepository.IchimokuCloud = &strategiesRepositories.IchimokuCloudRepository{
         BaseRepository: baseStrategiesRepository,
         Repository:     &indicatorsRepositories.IchimokuCloudRepository{BaseRepository: baseIndicatorsRepository},

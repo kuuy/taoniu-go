@@ -113,12 +113,12 @@ func (r *PivotRepository) Flush(symbol string, interval string) (err error) {
     r.Ctx,
     redisKey,
     map[string]interface{}{
-      "r3": r3,
-      "r2": r2,
-      "r1": r1,
-      "s1": s1,
-      "s2": s2,
-      "s3": s3,
+      "r3": strconv.FormatFloat(r3, 'f', -1, 64),
+      "r2": strconv.FormatFloat(r2, 'f', -1, 64),
+      "r1": strconv.FormatFloat(r1, 'f', -1, 64),
+      "s1": strconv.FormatFloat(s1, 'f', -1, 64),
+      "s2": strconv.FormatFloat(s2, 'f', -1, 64),
+      "s3": strconv.FormatFloat(s3, 'f', -1, 64),
     },
   )
   if -1 == ttl.Nanoseconds() {

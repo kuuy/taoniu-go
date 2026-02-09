@@ -20,6 +20,7 @@ type StrategiesRepository struct {
   Zlema             *strategiesRepositories.ZlemaRepository
   HaZlema           *strategiesRepositories.HaZlemaRepository
   BBands            *strategiesRepositories.BBandsRepository
+  AndeanOscillator  *strategiesRepositories.AndeanOscillatorRepository
   IchimokuCloud     *strategiesRepositories.IchimokuCloudRepository
   SuperTrend        *strategiesRepositories.SuperTrendRepository
   SymbolsRepository *SymbolsRepository

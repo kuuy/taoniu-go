@@ -65,8 +65,8 @@ func (r *RsiRepository) Flush(symbol string, interval string, period int, limit 
     redisKey,
     "rsi",
     fmt.Sprintf(
-      "%v,%v,%d",
-      result[lastIdx],
+      "%s,%s,%d",
+      strconv.FormatFloat(result[lastIdx], 'f', -1, 64),
       strconv.FormatFloat(closes[lastIdx], 'f', -1, 64),
       timestamps[lastIdx],
     ),

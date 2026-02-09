@@ -4,6 +4,7 @@ import (
   "fmt"
   "math"
   "strconv"
+  "strings"
   "time"
 
   config "taoniu.local/cryptos/config/binance/futures"
@@ -16,6 +17,8 @@ type AndeanOscillatorRepository struct {
 func (r *AndeanOscillatorRepository) Get(symbol, interval string) (
   bull,
   bear float64,
+  price float64,
+  timestamp int64,
   err error) {
   day := time.Now().Format("0102")
   redisKey := fmt.Sprintf(
@@ -25,27 +28,23 @@ func (r *AndeanOscillatorRepository) Get(symbol, interval string) (
     day,
   )
 
-  fields := []string{
-    "ao_bull",
-    "ao_bear",
-  }
-  data, err := r.Rdb.HMGet(
+  val, err := r.Rdb.HGet(
     r.Ctx,
     redisKey,
-    fields...,
+    "andean_oscillator",
   ).Result()
   if err != nil {
     return
   }
-
-  for i := 0; i < len(fields); i++ {
-    switch fields[i] {
-    case "ao_bull":
-      bull, _ = strconv.ParseFloat(data[i].(string), 64)
-    case "ao_bear":
-      bear, _ = strconv.ParseFloat(data[i].(string), 64)
-    }
+  data := strings.Split(val, ",")
+  if len(data) < 8 {
+    err = fmt.Errorf("invalid data in redis")
+    return
   }
+  bull, _ = strconv.ParseFloat(data[0], 64)
+  bear, _ = strconv.ParseFloat(data[1], 64)
+  price, _ = strconv.ParseFloat(data[2], 64)
+  timestamp, _ = strconv.ParseInt(data[3], 10, 64)
   return
 }
 
@@ -97,13 +96,17 @@ func (r *AndeanOscillatorRepository) Flush(symbol string, interval string, perio
     symbol,
     day,
   )
-  r.Rdb.HMSet(
+  r.Rdb.HSet(
     r.Ctx,
     redisKey,
-    map[string]interface{}{
-      "ao_bull": bulls[lastIdx],
-      "ao_bear": bears[lastIdx],
-    },
+    "andean_oscillator",
+    fmt.Sprintf(
+      "%s,%s,%s,%d",
+      strconv.FormatFloat(bulls[lastIdx], 'f', -1, 64),
+      strconv.FormatFloat(bears[lastIdx], 'f', -1, 64),
+      strconv.FormatFloat(closes[lastIdx], 'f', -1, 64),
+      timestamps[lastIdx],
+    ),
   )
   ttl, _ := r.Rdb.TTL(r.Ctx, redisKey).Result()
   if -1 == ttl.Nanoseconds() {

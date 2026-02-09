@@ -62,9 +62,9 @@ func (r *StochRsiRepository) Flush(symbol string, interval string, period int, l
     redisKey,
     "stoch_rsi",
     fmt.Sprintf(
-      "%v,%v,%v,%d",
-      fastk[lastIdx],
-      fastd[lastIdx],
+      "%s,%s,%s,%d",
+      strconv.FormatFloat(fastk[lastIdx], 'f', -1, 64),
+      strconv.FormatFloat(fastd[lastIdx], 'f', -1, 64),
       strconv.FormatFloat(closes[lastIdx], 'f', -1, 64),
       timestamps[lastIdx],
     ),
