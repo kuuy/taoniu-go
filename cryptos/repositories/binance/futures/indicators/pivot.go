@@ -2,7 +2,7 @@ package indicators
 
 import (
   "fmt"
-  "math"
+  "github.com/shopspring/decimal"
   "strconv"
   "time"
 
@@ -89,12 +89,12 @@ func (r *PivotRepository) Flush(symbol string, interval string) (err error) {
   r3 := high + 2*(p-low)
 
   if tickSize > 0 {
-    s1 = math.Floor(s1/tickSize) * tickSize
-    s2 = math.Floor(s2/tickSize) * tickSize
-    s3 = math.Floor(s3/tickSize) * tickSize
-    r1 = math.Ceil(r1/tickSize) * tickSize
-    r2 = math.Ceil(r2/tickSize) * tickSize
-    r3 = math.Ceil(r3/tickSize) * tickSize
+    s1, _ = decimal.NewFromFloat(s1 / tickSize).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+    s2, _ = decimal.NewFromFloat(s2 / tickSize).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+    s3, _ = decimal.NewFromFloat(s3 / tickSize).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+    r1, _ = decimal.NewFromFloat(r1 / tickSize).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
+    r2, _ = decimal.NewFromFloat(r2 / tickSize).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
+    r3, _ = decimal.NewFromFloat(r3 / tickSize).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
   }
 
   day, err := r.Day(timestamp / 1000)

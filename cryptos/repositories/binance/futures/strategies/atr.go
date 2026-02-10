@@ -5,6 +5,8 @@ import (
   "math"
   "time"
 
+  "github.com/shopspring/decimal"
+
   config "taoniu.local/cryptos/config/binance/futures"
   repositories "taoniu.local/cryptos/repositories/binance/futures/indicators"
 )
@@ -29,11 +31,17 @@ func (r *AtrRepository) Flush(symbol string, interval string) (err error) {
   if err != nil {
     return
   }
-  profitTarget := math.Ceil((price*2-atr*1.5)/tickSize) * tickSize
-  stopLossPoint := math.Floor((price-atr)/tickSize) * tickSize
-  takeProfitPrice := math.Ceil((stopLossPoint+(profitTarget-stopLossPoint)/2)/tickSize) * tickSize
-  riskRewardRatio := math.Round((price-stopLossPoint)/(profitTarget-price)*100) / 100
-  takeProfitRatio := math.Round(price/takeProfitPrice*100) / 100
+  profitTarget := price*2 - atr*1.5
+  stopLossPoint := price - atr
+  takeProfitPrice := stopLossPoint + (profitTarget-stopLossPoint)/2
+  riskRewardRatio := math.Round((price-stopLossPoint)/(profitTarget-price)*10000) / 10000
+  takeProfitRatio := math.Round(price/takeProfitPrice*10000) / 10000
+
+  if tickSize > 0 {
+    profitTarget, _ = decimal.NewFromFloat(profitTarget / tickSize).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
+    stopLossPoint, _ = decimal.NewFromFloat(stopLossPoint / tickSize).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+    takeProfitPrice, _ = decimal.NewFromFloat(takeProfitPrice / tickSize).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
+  }
 
   r.Rdb.HMSet(
     r.Ctx,

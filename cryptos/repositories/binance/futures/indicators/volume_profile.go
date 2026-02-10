@@ -2,6 +2,7 @@ package indicators
 
 import (
   "fmt"
+  "github.com/shopspring/decimal"
   "math"
   "strconv"
   "time"
@@ -144,12 +145,12 @@ func (r *VolumeProfileRepository) Flush(symbol string, interval string, limit in
   poc := (pocSegment.MinPrice + pocSegment.MaxPrice) / 2
   vah := (segments[startIndex].MinPrice + segments[startIndex].MaxPrice) / 2
   val := (segments[endIndex].MinPrice + segments[endIndex].MaxPrice) / 2
-  pocRatio := (vah - val) / poc
+  pocRatio := math.Round((vah-val)*10000/poc) / 10000
 
   if tickSize > 0 {
-    poc = math.Floor(poc/tickSize) * tickSize
-    vah = math.Ceil(vah/tickSize) * tickSize
-    val = math.Floor(val/tickSize) * tickSize
+    poc, _ = decimal.NewFromFloat(poc / tickSize).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+    vah, _ = decimal.NewFromFloat(vah / tickSize).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
+    val, _ = decimal.NewFromFloat(val / tickSize).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
   }
 
   day, err := r.Day(timestamps[lastIdx] / 1000)
