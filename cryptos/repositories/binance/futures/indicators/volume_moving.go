@@ -28,7 +28,7 @@ func (r *VolumeMovingRepository) Get(symbol, interval string) (
   val, err := r.Rdb.HGet(
     r.Ctx,
     redisKey,
-    "volume",
+    "volume_moving",
   ).Result()
   if err != nil {
     return
