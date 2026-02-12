@@ -29,35 +29,41 @@ func (r *SmcRepository) Flush(symbol, interval string) (err error) {
   signal := 0
   if trend == 1 {
     // Bullish trend logic
-    if bos == 1 || choch == 1 {
-      signal = 1
-    }
-    // Check if price is in a Bullish Order Block
-    for _, item := range obs {
-      parts := strings.Split(item, ",")
-      if len(parts) == 4 && parts[3] == "1" {
-        h, _ := strconv.ParseFloat(parts[0], 64)
-        l, _ := strconv.ParseFloat(parts[1], 64)
-        if currentPrice >= l && currentPrice <= h {
-          signal = 1
-          break
+    if choch == 1 {
+      signal = 2 // Possible reversal to Bearish
+    } else if bos == 1 {
+      signal = 1 // Continuation
+    } else {
+      // Check if price is in a Bullish Order Block
+      for _, item := range obs {
+        parts := strings.Split(item, ",")
+        if len(parts) == 4 && parts[3] == "1" {
+          h, _ := strconv.ParseFloat(parts[0], 64)
+          l, _ := strconv.ParseFloat(parts[1], 64)
+          if currentPrice >= l && currentPrice <= h {
+            signal = 1
+            break
+          }
         }
       }
     }
   } else if trend == 2 {
     // Bearish trend logic
-    if bos == 1 || choch == 1 {
-      signal = 2
-    }
-    // Check if price is in a Bearish Order Block
-    for _, item := range obs {
-      parts := strings.Split(item, ",")
-      if len(parts) == 4 && parts[3] == "2" {
-        h, _ := strconv.ParseFloat(parts[0], 64)
-        l, _ := strconv.ParseFloat(parts[1], 64)
-        if currentPrice >= l && currentPrice <= h {
-          signal = 2
-          break
+    if choch == 1 {
+      signal = 1 // Possible reversal to Bullish
+    } else if bos == 1 {
+      signal = 2 // Continuation
+    } else {
+      // Check if price is in a Bearish Order Block
+      for _, item := range obs {
+        parts := strings.Split(item, ",")
+        if len(parts) == 4 && parts[3] == "2" {
+          h, _ := strconv.ParseFloat(parts[0], 64)
+          l, _ := strconv.ParseFloat(parts[1], 64)
+          if currentPrice >= l && currentPrice <= h {
+            signal = 2
+            break
+          }
         }
       }
     }
@@ -78,7 +84,10 @@ func (r *SmcRepository) Flush(symbol, interval string) (err error) {
   ).Take(&entity)
 
   if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    if entity.Signal == signal && entity.Timestamp >= kline.Timestamp {
+    if entity.Signal == signal {
+      return
+    }
+    if entity.Timestamp >= kline.Timestamp {
       return
     }
   }

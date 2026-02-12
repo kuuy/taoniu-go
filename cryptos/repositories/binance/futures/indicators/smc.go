@@ -85,7 +85,7 @@ func (r *SmcRepository) Flush(symbol string, interval string, depth int, limit i
   lows := data[3]
   volumes := data[4]
 
-  // Extract ZigZag Points
+  // Extract ZigZag Points (Swing Highs and Lows)
   var points []*ZigZagPoint
   for i := len(highs) - depth - 1; i >= depth; i-- {
     isHigh := true
@@ -101,7 +101,7 @@ func (r *SmcRepository) Flush(symbol string, interval string, depth int, limit i
 
     if isHigh {
       if len(points) > 0 && points[len(points)-1].Type == 1 {
-        if highs[i] >= points[len(points)-1].Price {
+        if highs[i] > points[len(points)-1].Price {
           points[len(points)-1] = &ZigZagPoint{Index: i, Type: 1, Price: highs[i]}
         }
       } else {
@@ -109,7 +109,7 @@ func (r *SmcRepository) Flush(symbol string, interval string, depth int, limit i
       }
     } else if isLow {
       if len(points) > 0 && points[len(points)-1].Type == -1 {
-        if lows[i] <= points[len(points)-1].Price {
+        if lows[i] < points[len(points)-1].Price {
           points[len(points)-1] = &ZigZagPoint{Index: i, Type: -1, Price: lows[i]}
         }
       } else {
@@ -122,10 +122,12 @@ func (r *SmcRepository) Flush(symbol string, interval string, depth int, limit i
     return
   }
 
+  // Determine market structure (HH, HL, LH, LL)
   var lastHigh, lastLow, prevHigh, prevLow float64
   hCount, lCount := 0, 0
   for i := len(points) - 1; i >= 0; i-- {
-    if points[i].Type == 1 {
+    switch points[i].Type {
+    case 1:
       switch hCount {
       case 0:
         lastHigh = points[i].Price
@@ -134,7 +136,7 @@ func (r *SmcRepository) Flush(symbol string, interval string, depth int, limit i
         prevHigh = points[i].Price
         hCount++
       }
-    } else {
+    case -1:
       switch lCount {
       case 0:
         lastLow = points[i].Price
@@ -151,37 +153,44 @@ func (r *SmcRepository) Flush(symbol string, interval string, depth int, limit i
 
   trend := 0
   if lastHigh > prevHigh && lastLow > prevLow {
-    trend = 1 // Bullish
+    trend = 1 // Bullish (HH + HL)
   } else if lastHigh < prevHigh && lastLow < prevLow {
-    trend = 2 // Bearish
+    trend = 2 // Bearish (LH + LL)
+  } else if lastHigh > prevHigh {
+    trend = 1 // Potential Bullish
+  } else if lastLow < prevLow {
+    trend = 2 // Potential Bearish
   }
 
   currentPrice := closes[len(closes)-1]
   bos := 0
   choch := 0
 
+  // Signal Detection
   if trend == 1 {
     if currentPrice > lastHigh {
-      bos = 1
+      bos = 1 // Continuation
     }
-    if currentPrice < lastLow {
-      choch = 1
+    if currentPrice < prevLow {
+      choch = 1 // Reversal
     }
   } else if trend == 2 {
     if currentPrice < lastLow {
-      bos = 1
+      bos = 1 // Continuation
     }
-    if currentPrice > lastHigh {
-      choch = 1
+    if currentPrice > prevHigh {
+      choch = 1 // Reversal
     }
   }
 
-  // Order Blocks
+  // Optimized Order Blocks Detection
   var obs []string
-  for i := 1; i < len(closes)-5; i++ {
-    if closes[i] < opens[i] { // Bearish candle
-      if closes[i+1] > opens[i+1] && closes[i+2] > opens[i+2] {
-        if (closes[i+2]-closes[i])/closes[i] > 0.01 {
+  for i := 1; i < len(closes)-2; i++ {
+    // Bullish OB: Last down candle before a sharp move up
+    if closes[i] < opens[i] {
+      if closes[i+1] > opens[i] && closes[i+2] > closes[i+1] {
+        move := (closes[i+2] - opens[i+1]) / opens[i+1]
+        if move > 0.005 { // 0.5% move threshold
           obs = append(obs, fmt.Sprintf(
             "%s,%s,%s,1",
             strconv.FormatFloat(highs[i], 'f', -1, 64),
@@ -191,9 +200,11 @@ func (r *SmcRepository) Flush(symbol string, interval string, depth int, limit i
         }
       }
     }
-    if closes[i] > opens[i] { // Bullish candle
-      if closes[i+1] < opens[i+1] && closes[i+2] < opens[i+2] {
-        if (closes[i]-closes[i+2])/closes[i] > 0.01 {
+    // Bearish OB: Last up candle before a sharp move down
+    if closes[i] > opens[i] {
+      if closes[i+1] < opens[i] && closes[i+2] < closes[i+1] {
+        move := (opens[i+1] - closes[i+2]) / opens[i+1]
+        if move > 0.005 {
           obs = append(obs, fmt.Sprintf(
             "%s,%s,%s,2",
             strconv.FormatFloat(highs[i], 'f', -1, 64),
