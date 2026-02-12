@@ -29,6 +29,12 @@ type ExchangeInfo struct {
   Symbols []Symbol `json:"symbols"`
 }
 
+type FundingRateInfo struct {
+  Symbol      string  `json:"symbol"`
+  FundingRate float64 `json:"lastFundingRate,string"`
+  Time        int64   `json:"time"`
+}
+
 type Symbol struct {
   Symbol                string                   `json:"symbol"`
   Pair                  string                   `json:"pair"`

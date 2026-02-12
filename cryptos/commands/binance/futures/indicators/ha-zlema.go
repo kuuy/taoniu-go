@@ -77,11 +77,11 @@ func NewHaZlemaCommand() *cli.Command {
 
 func (h *HaZlemaHandler) Get(symbol string, interval string) (err error) {
   log.Println("indicators ha zlema get...")
-  	prev,current, price, timestamp, err := h.Repository.Get(symbol, interval)
-	if err != nil {
-		return
-	}
-	log.Println("result", prev,current, price, timestamp)
+  prev, current, price, timestamp, err := h.Repository.Get(symbol, interval, 14)
+  if err != nil {
+    return
+  }
+  log.Println("result", prev, current, price, timestamp)
   return
 }
 

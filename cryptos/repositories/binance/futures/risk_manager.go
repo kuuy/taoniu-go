@@ -10,6 +10,7 @@ import (
 
   "github.com/go-redis/redis/v8"
   "gorm.io/gorm"
+  models "taoniu.local/cryptos/models/binance/futures"
   indicatorsRepositories "taoniu.local/cryptos/repositories/binance/futures/indicators"
 )
 
@@ -44,9 +45,9 @@ type RiskManagerRepository struct {
   Rdb *redis.Client
   Ctx context.Context
 
-  ZlemaRepository   *indicatorsRepositories.ZlemaRepository
-  HaZlemaRepository *indicatorsRepositories.HaZlemaRepository
-  VolumeRepository  *indicatorsRepositories.VolumeMovingRepository
+  ZlemaRepository        *indicatorsRepositories.ZlemaRepository
+  HaZlemaRepository      *indicatorsRepositories.HaZlemaRepository
+  VolumeMovingRepository *indicatorsRepositories.VolumeMovingRepository
 
   // 策略配置
   strategyWeights map[string]float64
@@ -66,18 +67,18 @@ type RiskManagerRepository struct {
 // NewRiskManagerRepository 创建风险预测仓库
 func NewRiskManagerRepository(db *gorm.DB, rdb *redis.Client, ctx context.Context) *RiskManagerRepository {
   return &RiskManagerRepository{
-    Db:                db,
-    Rdb:               rdb,
-    Ctx:               ctx,
-    ZlemaRepository:   &indicatorsRepositories.ZlemaRepository{BaseRepository: indicatorsRepositories.BaseRepository{Db: db, Rdb: rdb, Ctx: ctx}},
-    HaZlemaRepository: &indicatorsRepositories.HaZlemaRepository{BaseRepository: indicatorsRepositories.BaseRepository{Db: db, Rdb: rdb, Ctx: ctx}},
-    VolumeRepository:  &indicatorsRepositories.VolumeMovingRepository{BaseRepository: indicatorsRepositories.BaseRepository{Db: db, Rdb: rdb, Ctx: ctx}},
-    strategyWeights:   make(map[string]float64),
-    dailyLossMap:      make(map[string]float64),
-    MinConfidence:     0.3,   // 30%置信度才交易
-    MaxDailyLoss:      -0.05, // 日亏5%停止
-    HighConfidence:    0.7,   // >70%加仓
-    LowConfidence:     0.4,   // <40%减仓
+    Db:                     db,
+    Rdb:                    rdb,
+    Ctx:                    ctx,
+    ZlemaRepository:        &indicatorsRepositories.ZlemaRepository{BaseRepository: indicatorsRepositories.BaseRepository{Db: db, Rdb: rdb, Ctx: ctx}},
+    HaZlemaRepository:      &indicatorsRepositories.HaZlemaRepository{BaseRepository: indicatorsRepositories.BaseRepository{Db: db, Rdb: rdb, Ctx: ctx}},
+    VolumeMovingRepository: &indicatorsRepositories.VolumeMovingRepository{BaseRepository: indicatorsRepositories.BaseRepository{Db: db, Rdb: rdb, Ctx: ctx}},
+    strategyWeights:        make(map[string]float64),
+    dailyLossMap:           make(map[string]float64),
+    MinConfidence:          0.3,   // 30%置信度才交易
+    MaxDailyLoss:           -0.05, // 日亏5%停止
+    HighConfidence:         0.7,   // >70%加仓
+    LowConfidence:          0.4,   // <40%减仓
   }
 }
 
@@ -184,7 +185,7 @@ func (r *RiskManagerRepository) calculateStrategyFactor(signals []StrategySignal
   shortRatio := shortScore / totalWeight
 
   // 计算净得分
-  score = (longRatio - shortRatio)
+  score = longRatio - shortRatio
 
   if score > 0.2 {
     direction = 1
@@ -212,14 +213,10 @@ func (r *RiskManagerRepository) calculateTrendFactor(symbol string, interval str
   consensus := 0
   trendValue := shortTrend*0.5 + mediumTrend*0.3 + longTrend*0.2
 
-  if shortTrend > 0 && mediumTrend > 0 {
-    consensus++
-  }
-  if mediumTrend > 0 && longTrend > 0 {
-    consensus++
-  }
-  if shortTrend > 0 && longTrend > 0 {
-    consensus++
+  if shortTrend > 0 && mediumTrend > 0 && longTrend > 0 {
+    consensus = 2 // Strong consensus
+  } else if (shortTrend > 0 && mediumTrend > 0) || (mediumTrend > 0 && longTrend > 0) {
+    consensus = 1 // Moderate consensus
   }
 
   score = trendValue * (1 + float64(consensus)*0.2)
@@ -241,7 +238,7 @@ func (r *RiskManagerRepository) calculateTrendFactor(symbol string, interval str
 
 // getTrendDirection 获取趋势方向 (基于ZLEMA)
 func (r *RiskManagerRepository) getTrendDirection(symbol string, interval string, period int) float64 {
-  prev, current, _, _, err := r.ZlemaRepository.Get(symbol, interval)
+  prev, current, _, _, err := r.ZlemaRepository.Get(symbol, interval, period)
   if err != nil {
     return 0
   }
@@ -296,29 +293,17 @@ func (r *RiskManagerRepository) calculateFundingFactor(symbol string) (score flo
 func (r *RiskManagerRepository) calculateVolumeFactor(symbol string, interval string) (score float64, reason string) {
   // 放量上涨/缩量下跌 -> 做多
   // 放量下跌/缩量上涨 -> 做空
-  volumeKey := fmt.Sprintf("binance:futures:klines:%s:%s:volume", interval, symbol)
-  priceKey := fmt.Sprintf("binance:futures:klines:%s:%s:close", interval, symbol)
-
-  volStr, err1 := r.Rdb.Get(r.Ctx, volumeKey).Result()
-  priceStr, err2 := r.Rdb.Get(r.Ctx, priceKey).Result()
-
-  if err1 != nil || err2 != nil {
-    return 0, "成交量/价格数据不可用"
-  }
-
-  volume, _ := strconv.ParseFloat(volStr, 64)
-  price, _ := strconv.ParseFloat(priceStr, 64)
-
-  if volume == 0 || price == 0 {
-    return 0, "成交量/价格数据无效"
-  }
-
-  // 获取历史成交量均值
-  avgVolume, err := r.VolumeRepository.Get(symbol, interval)
+  avgVolume, err := r.VolumeMovingRepository.Get(symbol, interval, 20)
   if err != nil || avgVolume == 0 {
     return 0, "成交量均值无效"
   }
 
+  // Get current volume and price from indicators or klines
+  // Here we use a shortcut but should ideally be from Kline repository
+  var kline models.Kline
+  r.Db.Where("symbol=? AND interval=?", symbol, interval).Order("timestamp desc").Take(&kline)
+  
+  volume := kline.Volume
   volumeRatio := volume / avgVolume
 
   // 获取近期价格变化计算方向
@@ -475,7 +460,7 @@ func (r *RiskManagerRepository) DefaultStrategyWeights() {
   // SMC策略权重最高 (结构分析更可靠)
   r.strategyWeights["smc"] = 2.0        // Smart Money Concepts
   r.strategyWeights["supertrend"] = 1.5 // SuperTrend趋势
-  r.strategyWeights["rsistoch"] = 1.0   // RSI+KDJ
+  r.strategyWeights["stoch_rsi"] = 1.0  // RSI+KDJ
   r.strategyWeights["zlema"] = 1.0      // ZLEMA均线
   r.strategyWeights["bbands"] = 1.0     // 布林带
 }

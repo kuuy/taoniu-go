@@ -13,6 +13,7 @@ func NewFutoresCommand() *cli.Command {
       futures.NewSymbolsCommand(),
       futures.NewTickersCommand(),
       futures.NewKlinesCommand(),
+      futures.NewFundingRateCommand(),
       futures.NewDepthCommand(),
       futures.NewIndicatorsCommand(),
       futures.NewStrategiesCommand(),

@@ -14,7 +14,7 @@ type VolumeMovingRepository struct {
   BaseRepository
 }
 
-func (r *VolumeMovingRepository) Get(symbol, interval string) (
+func (r *VolumeMovingRepository) Get(symbol, interval string, period int) (
   volume float64,
   err error,
 ) {
@@ -28,7 +28,7 @@ func (r *VolumeMovingRepository) Get(symbol, interval string) (
   val, err := r.Rdb.HGet(
     r.Ctx,
     redisKey,
-    "volume_moving",
+    fmt.Sprintf("volume_moving:%d", period),
   ).Result()
   if err != nil {
     return
@@ -62,7 +62,7 @@ func (r *VolumeMovingRepository) Flush(symbol string, interval string, period in
   r.Rdb.HSet(
     r.Ctx,
     redisKey,
-    "volume_moving",
+    fmt.Sprintf("volume_moving:%d", period),
     strconv.FormatFloat(result[len(result)-1], 'f', -1, 64),
   )
   ttl, _ := r.Rdb.TTL(r.Ctx, redisKey).Result()
