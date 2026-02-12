@@ -95,6 +95,10 @@ func NewStrategiesCommand() *cli.Command {
         BaseRepository: baseStrategiesRepository,
         Repository:     &indicatorsRepositories.SuperTrendRepository{BaseRepository: baseIndicatorsRepository},
       }
+      h.StrategiesRepository.Smc = &strategiesRepositories.SmcRepository{
+        BaseRepository: baseStrategiesRepository,
+        Repository:     &indicatorsRepositories.SmcRepository{BaseRepository: baseIndicatorsRepository},
+      }
       h.ScalpingRepository = &repositories.ScalpingRepository{
         Db: h.Db,
       }

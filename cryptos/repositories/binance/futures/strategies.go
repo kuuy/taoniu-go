@@ -23,6 +23,7 @@ type StrategiesRepository struct {
   AndeanOscillator  *strategiesRepositories.AndeanOscillatorRepository
   IchimokuCloud     *strategiesRepositories.IchimokuCloudRepository
   SuperTrend        *strategiesRepositories.SuperTrendRepository
+  Smc               *strategiesRepositories.SmcRepository
   SymbolsRepository *SymbolsRepository
 }
 
@@ -463,6 +464,7 @@ func (r *StrategiesRepository) Flush(symbol string, interval string) (err error)
   r.BBands.Flush(symbol, interval)
   r.IchimokuCloud.Flush(symbol, interval)
   r.SuperTrend.Flush(symbol, interval)
+  r.Smc.Flush(symbol, interval)
   return
 }
 

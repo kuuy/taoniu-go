@@ -19,7 +19,6 @@ require (
 	github.com/kuuy/go-tvscanner v0.0.1
 	github.com/markcheno/go-talib v0.0.0-20190307022042-cd53a9264d70
 	github.com/nats-io/nats.go v1.38.0
-	github.com/redis/go-redis/v9 v9.0.2
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/xid v1.4.0
 	github.com/satori/go.uuid v1.2.0
@@ -74,6 +73,7 @@ require (
 	github.com/mr-tron/base58 v1.2.0 // indirect
 	github.com/nats-io/nkeys v0.4.9 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
+	github.com/redis/go-redis/v9 v9.0.2 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/cast v1.5.0 // indirect

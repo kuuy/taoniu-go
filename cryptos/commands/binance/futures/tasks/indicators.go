@@ -63,6 +63,7 @@ func NewIndicatorsCommand() *cli.Command {
       h.IndicatorsRepository.AndeanOscillator = &indicatorsRepositories.AndeanOscillatorRepository{BaseRepository: baseRepository}
       h.IndicatorsRepository.IchimokuCloud = &indicatorsRepositories.IchimokuCloudRepository{BaseRepository: baseRepository}
       h.IndicatorsRepository.SuperTrend = &indicatorsRepositories.SuperTrendRepository{BaseRepository: baseRepository}
+      h.IndicatorsRepository.Smc = &indicatorsRepositories.SmcRepository{BaseRepository: baseRepository}
       h.IndicatorsRepository.VolumeMoving = &indicatorsRepositories.VolumeMovingRepository{BaseRepository: baseRepository}
       h.IndicatorsRepository.VolumeProfile = &indicatorsRepositories.VolumeProfileRepository{BaseRepository: baseRepository}
       h.SymbolsRepository = &repositories.SymbolsRepository{

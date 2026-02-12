@@ -31,6 +31,7 @@ type IndicatorsRepository struct {
   AndeanOscillator  *indicatorsRepositories.AndeanOscillatorRepository
   IchimokuCloud     *indicatorsRepositories.IchimokuCloudRepository
   SuperTrend        *indicatorsRepositories.SuperTrendRepository
+  Smc               *indicatorsRepositories.SmcRepository
   VolumeMoving      *indicatorsRepositories.VolumeMovingRepository
   VolumeProfile     *indicatorsRepositories.VolumeProfileRepository
   SymbolsRepository *SymbolsRepository
@@ -233,6 +234,7 @@ func (r *IndicatorsRepository) Flush(symbol string, interval string) (err error)
     r.VolumeProfile.Flush(symbol, interval, 100)
   }
   r.SuperTrend.Flush(symbol, interval, 10, 3.0, 100)
+  r.Smc.Flush(symbol, interval, 5, 100)
   r.VolumeMoving.Flush(symbol, interval, 14, 100)
   return
 }

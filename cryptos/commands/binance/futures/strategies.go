@@ -56,6 +56,7 @@ func NewStrategiesCommand() *cli.Command {
       strategies.NewAndeanOscillatorCommand(),
       strategies.NewIchimokuCloudCommand(),
       strategies.NewSuperTrendCommand(),
+      strategies.NewSmcCommand(),
       {
         Name:  "clean",
         Usage: "",
