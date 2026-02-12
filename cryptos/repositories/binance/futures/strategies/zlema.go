@@ -16,7 +16,7 @@ type ZlemaRepository struct {
 }
 
 func (r *ZlemaRepository) Flush(symbol string, interval string) (err error) {
-  prev, current, price, timestamp, err := r.Repository.Get(symbol, interval, 14)
+  prev, current, price, timestamp, err := r.Repository.Get(symbol, interval)
   if err != nil {
     return
   }

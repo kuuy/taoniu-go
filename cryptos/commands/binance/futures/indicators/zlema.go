@@ -77,7 +77,7 @@ func NewZlemaCommand() *cli.Command {
 
 func (h *ZlemaHandler) Get(symbol string, interval string) (err error) {
   log.Println("indicators zlema get...")
-  prev, current, price, timestamp, err := h.Repository.Get(symbol, interval, 14)
+  prev, current, price, timestamp, err := h.Repository.Get(symbol, interval)
   if err != nil {
     return
   }

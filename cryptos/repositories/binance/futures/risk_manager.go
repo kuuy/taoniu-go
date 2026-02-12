@@ -238,7 +238,7 @@ func (r *RiskManagerRepository) calculateTrendFactor(symbol string, interval str
 
 // getTrendDirection 获取趋势方向 (基于ZLEMA)
 func (r *RiskManagerRepository) getTrendDirection(symbol string, interval string, period int) float64 {
-  prev, current, _, _, err := r.ZlemaRepository.Get(symbol, interval, period)
+  prev, current, _, _, err := r.ZlemaRepository.Get(symbol, interval)
   if err != nil {
     return 0
   }
@@ -293,7 +293,7 @@ func (r *RiskManagerRepository) calculateFundingFactor(symbol string) (score flo
 func (r *RiskManagerRepository) calculateVolumeFactor(symbol string, interval string) (score float64, reason string) {
   // 放量上涨/缩量下跌 -> 做多
   // 放量下跌/缩量上涨 -> 做空
-  avgVolume, err := r.VolumeMovingRepository.Get(symbol, interval, 20)
+  avgVolume, err := r.VolumeMovingRepository.Get(symbol, interval)
   if err != nil || avgVolume == 0 {
     return 0, "成交量均值无效"
   }
@@ -302,7 +302,7 @@ func (r *RiskManagerRepository) calculateVolumeFactor(symbol string, interval st
   // Here we use a shortcut but should ideally be from Kline repository
   var kline models.Kline
   r.Db.Where("symbol=? AND interval=?", symbol, interval).Order("timestamp desc").Take(&kline)
-  
+
   volume := kline.Volume
   volumeRatio := volume / avgVolume
 

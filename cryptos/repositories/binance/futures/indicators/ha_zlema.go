@@ -15,7 +15,7 @@ type HaZlemaRepository struct {
   BaseRepository
 }
 
-func (r *HaZlemaRepository) Get(symbol, interval string, period int) (
+func (r *HaZlemaRepository) Get(symbol, interval string) (
   prev,
   current,
   price float64,
@@ -32,13 +32,13 @@ func (r *HaZlemaRepository) Get(symbol, interval string, period int) (
   val, err := r.Rdb.HGet(
     r.Ctx,
     redisKey,
-    fmt.Sprintf("ha_zlema:%d", period),
+    "ha_zlema",
   ).Result()
   if err != nil {
     return
   }
   data := strings.Split(val, ",")
-  if len(data) < 4 {
+  if len(data) < 3 {
     err = fmt.Errorf("invalid data in redis")
     return
   }
@@ -93,9 +93,9 @@ func (r *HaZlemaRepository) Flush(symbol string, interval string, period int, li
   r.Rdb.HSet(
     r.Ctx,
     redisKey,
-    fmt.Sprintf("ha_zlema:%d", period),
+    "ha_zlema",
     fmt.Sprintf(
-      "%s,%s,%s,%d",
+      "%v,%v,%v,%d",
       strconv.FormatFloat(result[len(result)-2], 'f', -1, 64),
       strconv.FormatFloat(result[len(result)-1], 'f', -1, 64),
       strconv.FormatFloat(closes[lastIdx], 'f', -1, 64),

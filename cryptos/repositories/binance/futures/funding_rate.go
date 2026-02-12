@@ -16,6 +16,12 @@ import (
   config "taoniu.local/cryptos/config/binance/futures"
 )
 
+type FundingRateInfo struct {
+  Symbol      string  `json:"symbol"`
+  FundingRate float64 `json:"lastFundingRate,string"`
+  Time        int64   `json:"time"`
+}
+
 type FundingRateRepository struct {
   Db  *gorm.DB
   Rdb *redis.Client
