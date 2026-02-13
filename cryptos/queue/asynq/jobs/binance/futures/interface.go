@@ -16,6 +16,9 @@ type TickersUpdatePayload struct {
   Timestamp int64   `json:"timestamp"`
 }
 
+type FundingRateFlushPayload struct {
+}
+
 type KlinesFlushPayload struct {
   Symbol   string
   Interval string

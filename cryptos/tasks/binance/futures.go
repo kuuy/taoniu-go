@@ -6,21 +6,22 @@ import (
 )
 
 type FuturesTask struct {
-  AnsqContext    *common.AnsqClientContext
-  CronTask       *tasks.CronTask
-  AccountTask    *tasks.AccountTask
-  SymbolsTask    *tasks.SymbolsTask
-  TickersTask    *tasks.TickersTask
-  KlinesTask     *tasks.KlinesTask
-  DepthTask      *tasks.DepthTask
-  PatternsTask   *tasks.PatternsTask
-  OrdersTask     *tasks.OrdersTask
-  IndicatorsTask *tasks.IndicatorsTask
-  StrategiesTask *tasks.StrategiesTask
-  PlansTask      *tasks.PlansTask
-  ScalpingTask   *tasks.ScalpingTask
-  TradingsTask   *tasks.TradingsTask
-  AnalysisTask   *tasks.AnalysisTask
+  AnsqContext     *common.AnsqClientContext
+  CronTask        *tasks.CronTask
+  AccountTask     *tasks.AccountTask
+  SymbolsTask     *tasks.SymbolsTask
+  TickersTask     *tasks.TickersTask
+  FundingRateTask *tasks.FundingRateTask
+  KlinesTask      *tasks.KlinesTask
+  DepthTask       *tasks.DepthTask
+  PatternsTask    *tasks.PatternsTask
+  OrdersTask      *tasks.OrdersTask
+  IndicatorsTask  *tasks.IndicatorsTask
+  StrategiesTask  *tasks.StrategiesTask
+  PlansTask       *tasks.PlansTask
+  ScalpingTask    *tasks.ScalpingTask
+  TradingsTask    *tasks.TradingsTask
+  AnalysisTask    *tasks.AnalysisTask
 }
 
 func NewFuturesTask(ansqContext *common.AnsqClientContext) *FuturesTask {
@@ -55,6 +56,13 @@ func (t *FuturesTask) Tickers() *tasks.TickersTask {
     t.TickersTask = tasks.NewTickersTask(t.AnsqContext)
   }
   return t.TickersTask
+}
+
+func (t *FuturesTask) FundingRate() *tasks.FundingRateTask {
+  if t.FundingRateTask == nil {
+    t.FundingRateTask = tasks.NewFundingRateTask(t.AnsqContext)
+  }
+  return t.FundingRateTask
 }
 
 func (t *FuturesTask) Klines() *tasks.KlinesTask {

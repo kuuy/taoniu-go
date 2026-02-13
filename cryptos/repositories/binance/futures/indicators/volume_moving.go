@@ -59,11 +59,13 @@ func (r *VolumeMovingRepository) Flush(symbol string, interval string, period in
     symbol,
     day,
   )
-  r.Rdb.HSet(
+  r.Rdb.HMSet(
     r.Ctx,
     redisKey,
-    "volume_moving",
-    strconv.FormatFloat(result[len(result)-1], 'f', -1, 64),
+    map[string]interface{}{
+      "volume_moving": strconv.FormatFloat(result[len(result)-1], 'f', -1, 64),
+      "volume_ratio":  strconv.FormatFloat(volumes[len(result)-1]/result[len(result)-1], 'f', -1, 64),
+    },
   )
   ttl, _ := r.Rdb.TTL(r.Ctx, redisKey).Result()
   if -1 == ttl.Nanoseconds() {

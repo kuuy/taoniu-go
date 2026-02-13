@@ -74,6 +74,10 @@ func (r *FundingRateRepository) Flush() (err error) {
   if err != nil {
     return
   }
+  ttl, _ := r.Rdb.TTL(r.Ctx, redisKey).Result()
+  if -1 == ttl.Nanoseconds() {
+    r.Rdb.Expire(r.Ctx, redisKey, time.Hour*24)
+  }
 
   return
 }

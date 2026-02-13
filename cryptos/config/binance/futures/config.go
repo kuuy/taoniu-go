@@ -18,6 +18,7 @@ const (
   GAMBLING_ANT_MIN_BINANCE                     = 3000
   GAMBLING_ANT_MAX_AMOUNT                      = 125
   ASYNQ_QUEUE_TICKERS                          = "binance.futures.tickers"
+  ASYNQ_QUEUE_FUNDING                          = "binance.futures.funding"
   ASYNQ_QUEUE_KLINES                           = "binance.futures.klines"
   ASYNQ_QUEUE_DEPTH                            = "binance.futures.depth"
   ASYNQ_QUEUE_ACCOUNT                          = "binance.futures.account"
@@ -30,6 +31,7 @@ const (
   ASYNQ_QUEUE_TRADINGS_GAMBLING                = "binance.futures.tradings.gambling"
   ASYNQ_JOBS_TICKERS_FLUSH                     = "binance:futures:tickers:flush"
   ASYNQ_JOBS_TICKERS_UPDATE                    = "binance:futures:tickers:update"
+  ASYNQ_JOBS_FUNDING_RATE_FLUSH                = "binance:futures:funding:rate:flush"
   ASYNQ_JOBS_TRADINGS_SCALPING_PLACE           = "binance:futures:tradings:scalping:place"
   ASYNQ_JOBS_TRADINGS_SCALPING_FLUSH           = "binance:futures:tradings:scalping:flush"
   ASYNQ_JOBS_TRADINGS_TRIGGERS_PLACE           = "binance:futures:tradings:triggers:place"

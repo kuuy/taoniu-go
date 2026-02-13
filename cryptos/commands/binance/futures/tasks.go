@@ -13,6 +13,7 @@ func NewTasksCommand() *cli.Command {
       tasks.NewAccountCommand(),
       tasks.NewSymbolsCommand(),
       tasks.NewKlinesCommand(),
+      tasks.NewFundingRateCommand(),
       tasks.NewIndicatorsCommand(),
       tasks.NewStrategiesCommand(),
       tasks.NewPlansCommand(),
