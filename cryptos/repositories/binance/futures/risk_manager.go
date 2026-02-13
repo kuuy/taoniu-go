@@ -12,7 +12,6 @@ import (
   "gorm.io/gorm"
 
   config "taoniu.local/cryptos/config/binance/futures"
-  models "taoniu.local/cryptos/models/binance/futures"
   indicatorsRepositories "taoniu.local/cryptos/repositories/binance/futures/indicators"
 )
 
@@ -296,18 +295,10 @@ func (r *RiskManagerRepository) calculateFundingFactor(symbol string) (score flo
 func (r *RiskManagerRepository) calculateVolumeFactor(symbol string, interval string) (score float64, reason string) {
   // 放量上涨/缩量下跌 -> 做多
   // 放量下跌/缩量上涨 -> 做空
-  avgVolume, err := r.VolumeMoving.Get(symbol, interval)
-  if err != nil || avgVolume == 0 {
+  _, volumeRatio, err := r.VolumeMoving.Get(symbol, interval)
+  if err != nil {
     return 0, "成交量均值无效"
   }
-
-  // Get current volume and price from indicators or klines
-  // Here we use a shortcut but should ideally be from Kline repository
-  var kline models.Kline
-  r.Db.Where("symbol=? AND interval=?", symbol, interval).Order("timestamp desc").Take(&kline)
-
-  volume := kline.Volume
-  volumeRatio := volume / avgVolume
 
   // 获取近期价格变化计算方向
   trend := r.getTrendDirection(symbol, interval, 5)

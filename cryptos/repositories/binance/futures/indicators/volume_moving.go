@@ -15,7 +15,8 @@ type VolumeMovingRepository struct {
 }
 
 func (r *VolumeMovingRepository) Get(symbol, interval string) (
-  volume float64,
+  volumeMoving float64,
+  volumeRatio float64,
   err error,
 ) {
   day := time.Now().Format("0102")
@@ -25,15 +26,28 @@ func (r *VolumeMovingRepository) Get(symbol, interval string) (
     symbol,
     day,
   )
-  val, err := r.Rdb.HGet(
+
+  fields := []string{
+    "volume_moving",
+    "volume_ratio",
+  }
+  data, err := r.Rdb.HMGet(
     r.Ctx,
     redisKey,
-    "volume_moving",
+    fields...,
   ).Result()
   if err != nil {
     return
   }
-  volume, _ = strconv.ParseFloat(val, 64)
+
+  for i := 0; i < len(fields); i++ {
+    switch fields[i] {
+    case "volume_moving":
+      volumeMoving, _ = strconv.ParseFloat(data[i].(string), 64)
+    case "volume_ratio":
+      volumeRatio, _ = strconv.ParseFloat(data[i].(string), 64)
+    }
+  }
   return
 }
 
