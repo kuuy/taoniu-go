@@ -2,7 +2,6 @@ package gfw
 
 import (
   "bufio"
-  "bytes"
   "context"
   "crypto/sha1"
   "encoding/hex"
@@ -70,7 +69,7 @@ func (r *DnsRepository) Query(domains []string) ([]string, error) {
   tr.DialContext = session.DialContext
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   3 * time.Second,
+    Timeout:   5 * time.Second,
   }
 
   cookie, _ := r.Rdb.Get(r.Ctx, config.REDIS_KEY_GFW_DNS_API_COOKIE).Result()
@@ -138,7 +137,7 @@ func (r *DnsRepository) Query(domains []string) ([]string, error) {
   return result, nil
 }
 
-func (r *DnsRepository) Lookup(domain string) (result []string, err error) {
+func (r *DnsRepository) Resolve(domain string) (result []string, err error) {
   tr := &http.Transport{
     DisableKeepAlives: true,
     DialContext:       (&net.Dialer{}).DialContext,
@@ -154,17 +153,16 @@ func (r *DnsRepository) Lookup(domain string) (result []string, err error) {
   }
 
   params := url.Values{}
-  params.Add("addr", domain)
-  params.Add("dom_dns", "true")
-  params.Add("x", "19")
-  params.Add("y", "10")
-  payload := fmt.Sprintf("{\"domain\":\"%s\",\"dnsServer\":\"google\"}", domain)
+  params.Add("domain", domain)
+  params.Add("server", "google")
 
   url := "https://www.nslookup.io/api/v1/records"
-  req, _ := http.NewRequest("POST", url, bytes.NewBufferString(payload))
+  req, _ := http.NewRequest("GET", url, nil)
   for key, val := range headers {
     req.Header.Set(key, val)
   }
+  req.URL.RawQuery = params.Encode()
+  log.Println("url", req.URL)
   resp, err := httpClient.Do(req)
   if err != nil {
     return nil, err
@@ -172,12 +170,19 @@ func (r *DnsRepository) Lookup(domain string) (result []string, err error) {
   defer resp.Body.Close()
 
   if resp.StatusCode != http.StatusOK {
-    return nil, errors.New(fmt.Sprintf("request error: status[%s] code[%d]", resp.Status, resp.StatusCode))
+    err = errors.New(
+      fmt.Sprintf(
+        "request error: status[%s] code[%d]",
+        resp.Status,
+        resp.StatusCode,
+      ),
+    )
+    return
   }
 
   body, _ := io.ReadAll(resp.Body)
 
-  var response *LookupResponse
+  var response *ResolveResponse
   err = json.Unmarshal(body, &response)
   if err != nil {
     return

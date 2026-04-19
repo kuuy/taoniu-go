@@ -1,7 +1,6 @@
 package gambling
 
 import (
-  "errors"
   "fmt"
   "log"
   "strconv"
@@ -180,10 +179,10 @@ func (h *AntHandler) Apply(symbol string, side int, entryPrice float64, entryQua
         planQuantity, _ = decimal.NewFromFloat(planQuantity).Sub(decimal.NewFromFloat(plan.TakeQuantity)).Float64()
 
         if plan.TakeAmount < notional {
-          return errors.New(fmt.Sprintf("plan amount less then %v", notional))
+          return fmt.Errorf("plan amount less then %v", notional)
         }
         if plan.TakeAmount > config.GAMBLING_ANT_MAX_AMOUNT {
-          return errors.New(fmt.Sprintf("plan amount can not exceed %v", config.GAMBLING_ANT_MAX_AMOUNT))
+          return fmt.Errorf("plan amount can not exceed %v", config.GAMBLING_ANT_MAX_AMOUNT)
         }
 
         planPrices = append(planPrices, plan.TakePrice)
@@ -196,10 +195,10 @@ func (h *AntHandler) Apply(symbol string, side int, entryPrice float64, entryQua
     if planQuantity > 0 {
       takeAmount, _ := decimal.NewFromFloat(takePrice).Mul(decimal.NewFromFloat(planQuantity)).Float64()
       if takeAmount < notional {
-        return errors.New(fmt.Sprintf("plan amount less then %v", notional))
+        return fmt.Errorf("plan amount less then %v", notional)
       }
       if takeAmount > config.GAMBLING_ANT_MAX_AMOUNT {
-        return errors.New(fmt.Sprintf("plan amount can not exceed %v", config.GAMBLING_ANT_MAX_AMOUNT))
+        return fmt.Errorf("plan amount can not exceed %v", config.GAMBLING_ANT_MAX_AMOUNT)
       }
 
       planPrices = append(planPrices, takePrice)
@@ -319,7 +318,7 @@ func (h *AntHandler) Calc(
         planProfit, _ = decimal.NewFromFloat(planProfit).Add(decimal.NewFromFloat(takeProfit)).Float64()
         log.Println("plan", plan.TakePrice, strconv.FormatFloat(plan.TakeQuantity, 'f', -1, 64), takeProfit, planAmount, planProfit)
         if plan.TakeAmount < notional {
-          return errors.New(fmt.Sprintf("plan amount less then %v", notional))
+          return fmt.Errorf("plan amount less then %v", notional)
         }
       }
       if len(plans) == 0 || lastProfit > 0 {
@@ -338,7 +337,7 @@ func (h *AntHandler) Calc(
       log.Println("plan", takePrice, planQuantity, takeProfit, planAmount, planProfit)
 
       if takeAmount < notional {
-        return errors.New(fmt.Sprintf("plan amount less then %v", notional))
+        return fmt.Errorf("plan amount less then %v", notional)
       }
     }
   }
@@ -346,5 +345,5 @@ func (h *AntHandler) Calc(
   log.Println("planProfit", planProfit)
   log.Println("takePrice", takePrice)
 
-  return nil
+  return
 }

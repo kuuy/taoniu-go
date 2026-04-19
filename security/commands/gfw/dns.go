@@ -59,14 +59,14 @@ func NewDnsCommand() *cli.Command {
         },
       },
       {
-        Name:  "lookup",
+        Name:  "resolve",
         Usage: "",
         Action: func(c *cli.Context) error {
           if c.Args().Get(0) == "" {
             return errors.New("domain is empty")
           }
           domain := strings.TrimSpace(c.Args().Get(0))
-          if err := h.lookup(domain); err != nil {
+          if err := h.resolve(domain); err != nil {
             return cli.Exit(err.Error(), 1)
           }
           return nil
@@ -124,12 +124,12 @@ func (h *DnsHandler) cache() error {
   return h.Repository.Cache()
 }
 
-func (h *DnsHandler) lookup(domain string) (err error) {
-  log.Println("gfw dns lookup...")
+func (h *DnsHandler) resolve(domain string) (err error) {
+  log.Println("gfw dns resolve...")
   var result []string
-  result, err = h.Repository.Lookup(domain)
+  result, err = h.Repository.Resolve(domain)
   if err != nil {
-    log.Println("dns lookup failed", domain, err)
+    log.Println("dns resolve failed", domain, err)
     return
   }
   log.Println("result", result)

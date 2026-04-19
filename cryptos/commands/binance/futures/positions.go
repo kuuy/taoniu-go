@@ -136,9 +136,10 @@ func (h *PositionsHandler) Calc(
 
   for {
     if buyPrice > 0 && entryPrice > 0 {
-      if side == 1 {
+      switch side {
+      case 1:
         priceRatio, _ = decimal.NewFromFloat(entryPrice).Div(decimal.NewFromFloat(buyPrice)).Float64()
-      } else if side == 2 {
+      case 2:
         priceRatio, _ = decimal.NewFromFloat(buyPrice).Div(decimal.NewFromFloat(entryPrice)).Float64()
       }
     }

@@ -51,8 +51,8 @@ func (r *PositionsRepository) Ratio(capital float64, entryAmount float64, priceR
       return ratio
     }
     if totalAmount >= entryAmount-lastAmount {
-      if priceRatio > 1.01 {
-        factor := math.Min(1.5, priceRatio) // 最高增加 50% 额外权重
+      if priceRatio > 1.0 {
+        factor := 1.0 + math.Min(0.5, (priceRatio-1.0)*5)
         ratio, _ = decimal.NewFromFloat(ratio).Mul(decimal.NewFromFloat(factor)).Float64()
       }
       return ratio
@@ -151,9 +151,10 @@ func (r *PositionsRepository) StopPrice(
 
   for {
     if buyPrice > 0 && entryPrice > 0 {
-      if side == 1 {
+      switch side {
+      case 1:
         priceRatio, _ = decimal.NewFromFloat(entryPrice).Div(decimal.NewFromFloat(buyPrice)).Float64()
-      } else if side == 2 {
+      case 2:
         priceRatio, _ = decimal.NewFromFloat(buyPrice).Div(decimal.NewFromFloat(entryPrice)).Float64()
       }
     }

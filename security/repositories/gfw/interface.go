@@ -1,28 +1,28 @@
 package gfw
 
-type LookupResponse struct {
-  Records *LookupRecords `json:"records"`
+type ResolveResponse struct {
+  Records *ResolveRecords `json:"records"`
 }
 
-type LookupRecords struct {
-  A    *LookupItem `json:"a"`
-  AAAA *LookupItem `json:"aaaa"`
+type ResolveRecords struct {
+  A    *ResolveData `json:"a"`
+  AAAA *ResolveData `json:"aaaa"`
 }
 
-type LookupItem struct {
-  Response *LookupItemResponse `json:"response"`
+type ResolveData struct {
+  Response *ResolveRecordResponse `json:"response"`
 }
 
-type LookupItemResponse struct {
-  Code   string              `json:"rCode"`
-  Answer []*LookupItemAnswer `json:"answer"`
+type ResolveRecordResponse struct {
+  Code   string           `json:"rCode"`
+  Answer []*ResolveAnswer `json:"answer"`
 }
 
-type LookupItemAnswer struct {
-  Record *LookupItemRecord `json:"record"`
+type ResolveAnswer struct {
+  Record *ResolveRecord `json:"record"`
 }
 
-type LookupItemRecord struct {
+type ResolveRecord struct {
   RecordType string `json:"recordType"`
   Raw        string `json:"raw"`
 }
