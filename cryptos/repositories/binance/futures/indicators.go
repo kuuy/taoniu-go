@@ -34,6 +34,7 @@ type IndicatorsRepository struct {
   Smc               *indicatorsRepositories.SmcRepository
   VolumeMoving      *indicatorsRepositories.VolumeMovingRepository
   VolumeProfile     *indicatorsRepositories.VolumeProfileRepository
+  Ahr999            *indicatorsRepositories.Ahr999Repository
   SymbolsRepository *SymbolsRepository
 }
 
@@ -236,6 +237,9 @@ func (r *IndicatorsRepository) Flush(symbol string, interval string) (err error)
   r.SuperTrend.Flush(symbol, interval, 10, 3.0, 100)
   r.Smc.Flush(symbol, interval, 5, 100)
   r.VolumeMoving.Flush(symbol, interval, 14, 100)
+  if strings.HasPrefix(symbol, "BTC") && interval == "1d" {
+    r.Ahr999.Flush(symbol, interval, 400)
+  }
   return
 }
 

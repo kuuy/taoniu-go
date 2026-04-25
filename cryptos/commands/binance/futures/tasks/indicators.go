@@ -66,6 +66,7 @@ func NewIndicatorsCommand() *cli.Command {
       h.IndicatorsRepository.Smc = &indicatorsRepositories.SmcRepository{BaseRepository: baseRepository}
       h.IndicatorsRepository.VolumeMoving = &indicatorsRepositories.VolumeMovingRepository{BaseRepository: baseRepository}
       h.IndicatorsRepository.VolumeProfile = &indicatorsRepositories.VolumeProfileRepository{BaseRepository: baseRepository}
+      h.IndicatorsRepository.Ahr999 = &indicatorsRepositories.Ahr999Repository{BaseRepository: baseRepository}
       h.SymbolsRepository = &repositories.SymbolsRepository{
         Db: h.Db,
       }

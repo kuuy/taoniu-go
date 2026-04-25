@@ -89,6 +89,7 @@ func NewIndicators(ansqContext *common.AnsqServerContext) *Indicators {
   h.Repository.SuperTrend = &indicatorsRepositories.SuperTrendRepository{BaseRepository: baseRepository}
   h.Repository.VolumeMoving = &indicatorsRepositories.VolumeMovingRepository{BaseRepository: baseRepository}
   h.Repository.VolumeProfile = &indicatorsRepositories.VolumeProfileRepository{BaseRepository: baseRepository}
+  h.Repository.Ahr999 = &indicatorsRepositories.Ahr999Repository{BaseRepository: baseRepository}
   h.Repository.SymbolsRepository = &repositories.SymbolsRepository{
     Db: h.AnsqContext.Db,
   }
@@ -327,6 +328,38 @@ func (h *Indicators) AndeanOscillator(ctx context.Context, t *asynq.Task) error 
   return nil
 }
 
+type MvrvPayload struct {
+  Symbol   string
+  Interval string
+  Period   int
+  Limit    int
+}
+
+type Ahr999Payload struct {
+  Symbol   string
+  Interval string
+  Limit    int
+}
+
+func (h *Indicators) Ahr999(ctx context.Context, t *asynq.Task) error {
+  var payload Ahr999Payload
+  json.Unmarshal(t.Payload(), &payload)
+
+  mutex := common.NewMutex(
+    h.AnsqContext.Rdb,
+    h.AnsqContext.Ctx,
+    fmt.Sprintf("locks:binance:futures:indicators:ahr999:%s:%s", payload.Symbol, payload.Interval),
+  )
+  if !mutex.Lock(30 * time.Second) {
+    return nil
+  }
+  defer mutex.Unlock()
+
+  h.Repository.Ahr999.Flush(payload.Symbol, payload.Interval, payload.Limit)
+
+  return nil
+}
+
 func (h *Indicators) Register() error {
   h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_PIVOT, h.Pivot)
   h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_KDJ, h.Kdj)
@@ -339,5 +372,6 @@ func (h *Indicators) Register() error {
   h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_VOLUME, h.VolumeMoving)
   h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_VOLUME_PROFILE, h.VolumeProfile)
   h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_ANDEAN_OSCILLATOR, h.AndeanOscillator)
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_AHR999, h.Ahr999)
   return nil
 }

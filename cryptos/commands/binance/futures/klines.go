@@ -4,6 +4,7 @@ import (
   "context"
   "log"
   "strconv"
+  "strings"
 
   "github.com/go-redis/redis/v8"
   "github.com/nats-io/nats.go"
@@ -67,8 +68,15 @@ func NewKlinesCommand() *cli.Command {
             return nil
           }
           if interval == "1d" && (limit < 1 || limit > 100) {
-            log.Fatal("limit not in 1~100")
-            return nil
+            if strings.HasPrefix(symbol, "BTC") {
+              if limit > 400 {
+                log.Fatal("limit not in 1~400")
+                return nil
+              }
+            } else {
+              log.Fatal("limit not in 1~100")
+              return nil
+            }
           }
           if err := h.Flush(symbol, interval, limit); err != nil {
             return cli.Exit(err.Error(), 1)

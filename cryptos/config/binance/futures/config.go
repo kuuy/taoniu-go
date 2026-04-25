@@ -53,6 +53,7 @@ const (
   ASYNQ_JOBS_INDICATORS_VOLUME_PROFILE         = "binance:futures:indicators:volume_profile"
   ASYNQ_JOBS_INDICATORS_VOLUME                 = "binance:futures:indicators:volume"
   ASYNQ_JOBS_INDICATORS_ANDEAN_OSCILLATOR      = "binance:futures:indicators:andean_oscillator"
+  ASYNQ_JOBS_INDICATORS_AHR999                 = "binance:futures:indicators:ahr999"
   ASYNQ_JOBS_ORDERS_OPEN                       = "binance:futures:orders:open"
   ASYNQ_JOBS_ORDERS_FLUSH                      = "binance:futures:orders:flush"
   ASYNQ_JOBS_ORDERS_SYNC                       = "binance:futures:orders:sync"
