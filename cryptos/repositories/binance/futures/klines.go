@@ -308,7 +308,7 @@ func (r *KlinesRepository) Clean(symbol string) error {
 
   timestamp = r.Timestamp("1d") - r.Timestep("1d")*100
   if strings.HasPrefix(symbol, "BTC") {
-    timestamp = r.Timestamp("1d") - r.Timestep("1d")*400
+    timestamp = r.Timestamp("1d") - r.Timestep("1d")*200
   }
   r.Db.Where("symbol=? AND interval = ? AND timestamp < ?", symbol, "1d", timestamp).Delete(&models.Kline{})
 

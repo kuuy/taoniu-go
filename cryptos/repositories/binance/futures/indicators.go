@@ -238,7 +238,7 @@ func (r *IndicatorsRepository) Flush(symbol string, interval string) (err error)
   r.Smc.Flush(symbol, interval, 5, 100)
   r.VolumeMoving.Flush(symbol, interval, 14, 100)
   if strings.HasPrefix(symbol, "BTC") && interval == "1d" {
-    r.Ahr999.Flush(symbol, interval, 400)
+    r.Ahr999.Flush(symbol, interval, 200)
   }
   return
 }
