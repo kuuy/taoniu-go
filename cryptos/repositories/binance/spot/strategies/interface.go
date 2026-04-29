@@ -10,8 +10,8 @@ import (
 
   "github.com/go-redis/redis/v8"
   "gorm.io/gorm"
-  config "taoniu.local/cryptos/config/binance/futures"
-  models "taoniu.local/cryptos/models/binance/futures"
+  config "taoniu.local/cryptos/config/binance/spot"
+  models "taoniu.local/cryptos/models/binance/spot"
 )
 
 type BaseRepository struct {

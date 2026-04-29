@@ -7,15 +7,19 @@ import (
   "time"
 
   "github.com/hibiken/asynq"
-
   "taoniu.local/cryptos/common"
-  config "taoniu.local/cryptos/config/binance/spot"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
+  strategiesRepositories "taoniu.local/cryptos/repositories/binance/spot/strategies"
 )
 
 type Strategies struct {
   AnsqContext *common.AnsqServerContext
   Repository  *repositories.StrategiesRepository
+}
+
+type StrategyPayload struct {
+  Symbol   string
+  Interval string
 }
 
 func NewStrategies(ansqContext *common.AnsqServerContext) *Strategies {
@@ -27,6 +31,18 @@ func NewStrategies(ansqContext *common.AnsqServerContext) *Strategies {
     Rdb: h.AnsqContext.Rdb,
     Ctx: h.AnsqContext.Ctx,
   }
+  baseRepository := strategiesRepositories.BaseRepository{
+    Db:  h.AnsqContext.Db,
+    Rdb: h.AnsqContext.Rdb,
+    Ctx: h.AnsqContext.Ctx,
+  }
+  h.Repository.Atr = &strategiesRepositories.AtrRepository{BaseRepository: baseRepository}
+  h.Repository.Kdj = &strategiesRepositories.KdjRepository{BaseRepository: baseRepository}
+  h.Repository.StochRsi = &strategiesRepositories.StochRsiRepository{BaseRepository: baseRepository}
+  h.Repository.Zlema = &strategiesRepositories.ZlemaRepository{BaseRepository: baseRepository}
+  h.Repository.HaZlema = &strategiesRepositories.HaZlemaRepository{BaseRepository: baseRepository}
+  h.Repository.BBands = &strategiesRepositories.BBandsRepository{BaseRepository: baseRepository}
+  h.Repository.IchimokuCloud = &strategiesRepositories.IchimokuCloudRepository{BaseRepository: baseRepository}
   h.Repository.SymbolsRepository = &repositories.SymbolsRepository{
     Db: h.AnsqContext.Db,
   }
@@ -47,7 +63,7 @@ func (h *Strategies) Atr(ctx context.Context, t *asynq.Task) error {
   }
   defer mutex.Unlock()
 
-  h.Repository.Atr(payload.Symbol, payload.Interval)
+  h.Repository.Atr.Flush(payload.Symbol, payload.Interval)
 
   return nil
 }
@@ -66,7 +82,7 @@ func (h *Strategies) Zlema(ctx context.Context, t *asynq.Task) error {
   }
   defer mutex.Unlock()
 
-  h.Repository.Zlema(payload.Symbol, payload.Interval)
+  h.Repository.Zlema.Flush(payload.Symbol, payload.Interval)
 
   return nil
 }
@@ -85,7 +101,7 @@ func (h *Strategies) HaZlema(ctx context.Context, t *asynq.Task) error {
   }
   defer mutex.Unlock()
 
-  h.Repository.HaZlema(payload.Symbol, payload.Interval)
+  h.Repository.HaZlema.Flush(payload.Symbol, payload.Interval)
 
   return nil
 }
@@ -104,7 +120,7 @@ func (h *Strategies) Kdj(ctx context.Context, t *asynq.Task) error {
   }
   defer mutex.Unlock()
 
-  h.Repository.Kdj(payload.Symbol, payload.Interval)
+  h.Repository.Kdj.Flush(payload.Symbol, payload.Interval)
 
   return nil
 }
@@ -123,7 +139,7 @@ func (h *Strategies) BBands(ctx context.Context, t *asynq.Task) error {
   }
   defer mutex.Unlock()
 
-  h.Repository.BBands(payload.Symbol, payload.Interval)
+  h.Repository.BBands.Flush(payload.Symbol, payload.Interval)
 
   return nil
 }
@@ -142,17 +158,17 @@ func (h *Strategies) IchimokuCloud(ctx context.Context, t *asynq.Task) error {
   }
   defer mutex.Unlock()
 
-  h.Repository.IchimokuCloud(payload.Symbol, payload.Interval)
+  h.Repository.IchimokuCloud.Flush(payload.Symbol, payload.Interval)
 
   return nil
 }
 
 func (h *Strategies) Register() error {
-  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_STRATEGIES_ATR, h.Atr)
-  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_STRATEGIES_ZLEMA, h.Zlema)
-  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_STRATEGIES_HA_ZLEMA, h.HaZlema)
-  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_STRATEGIES_KDJ, h.Kdj)
-  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_STRATEGIES_BBANDS, h.BBands)
-  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_STRATEGIES_ICHIMOKU_CLOUD, h.IchimokuCloud)
+  h.AnsqContext.Mux.HandleFunc("binance:spot:strategies:atr", h.Atr)
+  h.AnsqContext.Mux.HandleFunc("binance:spot:strategies:zlema", h.Zlema)
+  h.AnsqContext.Mux.HandleFunc("binance:spot:strategies:ha_zlema", h.HaZlema)
+  h.AnsqContext.Mux.HandleFunc("binance:spot:strategies:kdj", h.Kdj)
+  h.AnsqContext.Mux.HandleFunc("binance:spot:strategies:bbands", h.BBands)
+  h.AnsqContext.Mux.HandleFunc("binance:spot:strategies:ichimoku_cloud", h.IchimokuCloud)
   return nil
 }

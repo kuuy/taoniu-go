@@ -36,45 +36,6 @@ type KlinesCleanPayload struct {
   Symbol string
 }
 
-type IndicatorPayload struct {
-  Symbol   string
-  Interval string
-  Period   int
-  Limit    int
-}
-
-type PivotPayload struct {
-  Symbol   string
-  Interval string
-}
-
-type KdjPayload struct {
-  Symbol      string
-  Interval    string
-  LongPeriod  int
-  ShortPeriod int
-  Limit       int
-}
-
-type VolumeProfilePayload struct {
-  Symbol   string
-  Interval string
-  Limit    int
-}
-
-type AndeanOscillatorPayload struct {
-  Symbol   string
-  Interval string
-  Period   int
-  Length   int
-  Limit    int
-}
-
-type StrategyPayload struct {
-  Symbol   string
-  Interval string
-}
-
 type PlansPayload struct {
   Interval string
 }

@@ -4,12 +4,12 @@ import (
   "context"
   "encoding/json"
   "fmt"
-  strategiesRepositories "taoniu.local/cryptos/repositories/binance/futures/strategies"
   "time"
 
   "github.com/hibiken/asynq"
   "taoniu.local/cryptos/common"
   repositories "taoniu.local/cryptos/repositories/binance/futures"
+  strategiesRepositories "taoniu.local/cryptos/repositories/binance/futures/strategies"
 )
 
 type Strategies struct {
