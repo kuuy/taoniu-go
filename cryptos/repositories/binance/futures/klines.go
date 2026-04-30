@@ -10,7 +10,6 @@ import (
   "net/http"
   "os"
   "strconv"
-  "strings"
   "time"
 
   "github.com/go-redis/redis/v8"
@@ -307,7 +306,7 @@ func (r *KlinesRepository) Clean(symbol string) error {
   r.Db.Where("symbol=? AND interval = ? AND timestamp < ?", symbol, "4h", timestamp).Delete(&models.Kline{})
 
   timestamp = r.Timestamp("1d") - r.Timestep("1d")*100
-  if strings.HasPrefix(symbol, "BTC") {
+  if symbol == "BTCUSDT" {
     timestamp = r.Timestamp("1d") - r.Timestep("1d")*200
   }
   r.Db.Where("symbol=? AND interval = ? AND timestamp < ?", symbol, "1d", timestamp).Delete(&models.Kline{})

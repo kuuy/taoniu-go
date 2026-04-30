@@ -2,7 +2,6 @@ package indicators
 
 import (
   "fmt"
-  "log"
   "math"
   "strconv"
   "strings"
@@ -55,7 +54,6 @@ func (r *Ahr999Repository) Flush(symbol string, interval string, limit int) (err
   powerLawPrice := math.Pow(10, (5.84*math.Log10(days))-17.01)
 
   ahr999 := (price / emaVal) * (price / powerLawPrice)
-  log.Println("power law price", days, ahr999, powerLawPrice)
 
   day, err := r.Day(timestamps[lastIdx] / 1000)
   if err != nil {

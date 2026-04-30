@@ -42,8 +42,8 @@ func NewTickersCommand() *cli.Command {
     Before: func(c *cli.Context) error {
       ctx, cancel := context.WithCancel(context.Background())
       h = TickersHandler{
-        Db:         common.NewDB(2),
-        Rdb:        common.NewRedis(2),
+        Db:         common.NewDB(1),
+        Rdb:        common.NewRedis(1),
         Ctx:        ctx,
         cancel:     cancel,
         workerChan: make(chan map[string]interface{}, 1024),

@@ -110,11 +110,12 @@ func (r *ScalpingRepository) Flush(id string) (err error) {
   var positionSide string
   var placeSide string
   var takeSide string
-  if scalping.Side == 1 {
+  switch scalping.Side {
+  case 1:
     positionSide = "LONG"
     placeSide = "BUY"
     takeSide = "SELL"
-  } else if scalping.Side == 2 {
+  case 2:
     positionSide = "SHORT"
     placeSide = "SELL"
     takeSide = "BUY"
@@ -176,7 +177,8 @@ func (r *ScalpingRepository) Flush(id string) (err error) {
         continue
       }
 
-      if status == "FILLED" {
+      switch status {
+      case "FILLED":
         if closeTrading.ID != "" && closeTrading.CreatedAt.Unix() < trading.CreatedAt.Unix() {
           buyQuantity, _ := decimal.NewFromFloat(trading.BuyQuantity).Add(decimal.NewFromFloat(closeTrading.BuyQuantity)).Float64()
           buyPrice, _ := decimal.NewFromFloat(trading.BuyPrice).Mul(decimal.NewFromFloat(trading.SellQuantity)).Add(
@@ -232,7 +234,7 @@ func (r *ScalpingRepository) Flush(id string) (err error) {
           }
         }
         r.Rdb.Set(r.Ctx, redisKey, trading.BuyPrice, time.Hour*24)
-      } else if status == "CANCELED" {
+      case "CANCELED":
         result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
           "status":  4,
           "version": gorm.Expr("version + ?", 1),
@@ -293,7 +295,8 @@ func (r *ScalpingRepository) Flush(id string) (err error) {
         continue
       }
 
-      if status == "FILLED" {
+      switch status {
+      case "FILLED":
         result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
           "status":  3,
           "version": gorm.Expr("version + ?", 1),
@@ -305,7 +308,7 @@ func (r *ScalpingRepository) Flush(id string) (err error) {
           return errors.New("order update failed")
         }
         r.Rdb.Del(r.Ctx, redisKey)
-      } else if status == "CANCELED" {
+      case "CANCELED":
         result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
           "sell_order_id": 0,
           "status":        1,
@@ -385,10 +388,11 @@ func (r *ScalpingRepository) Place(planId string) (err error) {
 
   var positionSide string
   var side string
-  if plan.Side == 1 {
+  switch plan.Side {
+  case 1:
     positionSide = "LONG"
     side = "BUY"
-  } else if plan.Side == 2 {
+  case 2:
     positionSide = "SHORT"
     side = "SELL"
   }
@@ -433,46 +437,50 @@ func (r *ScalpingRepository) Place(planId string) (err error) {
   var sellPrice float64
   if plan.Side == 1 {
     if plan.Amount > 15 {
-      if plan.Interval == "1m" {
+      switch plan.Interval {
+      case "1m":
         sellPrice = buyPrice * 1.0105
-      } else if plan.Interval == "15m" {
+      case "15m":
         sellPrice = buyPrice * 1.0125
-      } else if plan.Interval == "4h" {
+      case "4h":
         sellPrice = buyPrice * 1.0185
-      } else if plan.Interval == "1d" {
+      case "1d":
         sellPrice = buyPrice * 1.0385
       }
     } else {
-      if plan.Interval == "1m" {
+      switch plan.Interval {
+      case "1m":
         sellPrice = buyPrice * 1.0085
-      } else if plan.Interval == "15m" {
+      case "15m":
         sellPrice = buyPrice * 1.0105
-      } else if plan.Interval == "4h" {
+      case "4h":
         sellPrice = buyPrice * 1.012
-      } else if plan.Interval == "1d" {
+      case "1d":
         sellPrice = buyPrice * 1.0135
       }
     }
     sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
   } else {
     if plan.Amount > 15 {
-      if plan.Interval == "1m" {
+      switch plan.Interval {
+      case "1m":
         sellPrice = buyPrice * 0.9895
-      } else if plan.Interval == "15m" {
+      case "15m":
         sellPrice = buyPrice * 0.9875
-      } else if plan.Interval == "4h" {
+      case "4h":
         sellPrice = buyPrice * 0.9815
-      } else if plan.Interval == "1d" {
+      case "1d":
         sellPrice = buyPrice * 0.9615
       }
     } else {
-      if plan.Interval == "1m" {
+      switch plan.Interval {
+      case "1m":
         sellPrice = buyPrice * 0.9915
-      } else if plan.Interval == "15m" {
+      case "15m":
         sellPrice = buyPrice * 0.9895
-      } else if plan.Interval == "4h" {
+      case "4h":
         sellPrice = buyPrice * 0.988
-      } else if plan.Interval == "1d" {
+      case "1d":
         sellPrice = buyPrice * 0.9865
       }
     }
@@ -546,10 +554,11 @@ func (r *ScalpingRepository) Place(planId string) (err error) {
 func (r *ScalpingRepository) Take(scalping *models.Scalping, price float64) (err error) {
   var positionSide string
   var side string
-  if scalping.Side == 1 {
+  switch scalping.Side {
+  case 1:
     positionSide = "LONG"
     side = "SELL"
-  } else if scalping.Side == 2 {
+  case 2:
     positionSide = "SHORT"
     side = "BUY"
   }
@@ -708,9 +717,10 @@ func (r *ScalpingRepository) CanBuy(
   var buyPrice float64
 
   var positionSide string
-  if scalping.Side == 1 {
+  switch scalping.Side {
+  case 1:
     positionSide = "LONG"
-  } else if scalping.Side == 2 {
+  case 2:
     positionSide = "SHORT"
   }
 

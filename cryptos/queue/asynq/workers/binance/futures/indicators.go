@@ -89,6 +89,7 @@ func NewIndicators(ansqContext *common.AnsqServerContext) *Indicators {
   h.Repository.SuperTrend = &indicatorsRepositories.SuperTrendRepository{BaseRepository: baseRepository}
   h.Repository.VolumeMoving = &indicatorsRepositories.VolumeMovingRepository{BaseRepository: baseRepository}
   h.Repository.VolumeProfile = &indicatorsRepositories.VolumeProfileRepository{BaseRepository: baseRepository}
+  h.Repository.Mvrv = &indicatorsRepositories.MvrvRepository{BaseRepository: baseRepository}
   h.Repository.Ahr999 = &indicatorsRepositories.Ahr999Repository{BaseRepository: baseRepository}
   h.Repository.SymbolsRepository = &repositories.SymbolsRepository{
     Db: h.AnsqContext.Db,

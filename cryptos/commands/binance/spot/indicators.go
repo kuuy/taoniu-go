@@ -57,6 +57,7 @@ func NewIndicatorsCommand() *cli.Command {
       indicators.NewSmcCommand(),
       indicators.NewVolumeProfileCommand(),
       indicators.NewAhr999Command(),
+      indicators.NewMvrvCommand(),
       {
         Name:  "ranking",
         Usage: "",

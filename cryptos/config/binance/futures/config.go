@@ -95,6 +95,7 @@ const (
   LOCKS_TASKS_KLINES_FIX                       = "locks:binance:futures:tasks:klines:fix:%v:%v"
   LOCKS_TASKS_KLINES_CLEAN                     = "locks:binance:futures:tasks:klines:clean:%v"
   LOCKS_TASKS_INDICATORS_FLUSH                 = "locks:binance:futures:tasks:indicators:flush:%v:%v"
+  LOCKS_TASKS_INDICATORS_MVRV_FLUSH            = "locks:binance:futures:tasks:indicators:mvrv:flush"
   LOCKS_TASKS_STRATEGIES_FLUSH                 = "locks:binance:futures:tasks:strategies:flush:%v:%v"
   LOCKS_TASKS_STRATEGIES_CLEAN                 = "locks:binance:futures:tasks:strategies:clean:%v"
   LOCKS_TASKS_PLANS_CLEAN                      = "locks:binance:futures:tasks:plans:clean:%v"

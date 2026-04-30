@@ -37,8 +37,8 @@ func NewKlinesCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = KlinesHandler{
-        Db:   common.NewDB(2),
-        Rdb:  common.NewRedis(2),
+        Db:   common.NewDB(1),
+        Rdb:  common.NewRedis(1),
         Ctx:  context.Background(),
         Nats: common.NewNats(),
       }
@@ -120,7 +120,14 @@ func (h *KlinesHandler) Flush(interval string, current int) error {
   var wg sync.WaitGroup
   semaphore := make(chan struct{}, 10)
 
-  for _, symbol := range symbols[startPos:endPos] {
+  if interval == "1d" && current == 1 && !slices.Contains(symbols, "BTCUSDT") {
+    symbols = symbols[startPos:endPos]
+    symbols = append(symbols, "BTCUSDT")
+  } else {
+    symbols = symbols[startPos:endPos]
+  }
+
+  for _, symbol := range symbols {
     wg.Add(1)
     go func(s string) {
       defer wg.Done()
@@ -209,7 +216,14 @@ func (h *KlinesHandler) Fix(interval string, current int) error {
     limit = 100
   }
 
-  for _, symbol := range symbols[startPos:endPos] {
+  if interval == "1d" && !slices.Contains(symbols, "BTCUSDT") {
+    symbols = symbols[startPos:endPos]
+    symbols = append(symbols, "BTCUSDT")
+  } else {
+    symbols = symbols[startPos:endPos]
+  }
+
+  for _, symbol := range symbols {
     mutex := common.NewMutex(h.Rdb, h.Ctx, fmt.Sprintf(config.LOCKS_TASKS_KLINES_FIX, interval, symbol))
     if !mutex.Lock(30 * time.Second) {
       continue

@@ -66,6 +66,7 @@ func NewIndicatorsCommand() *cli.Command {
       h.IndicatorsRepository.Smc = &indicatorsRepositories.SmcRepository{BaseRepository: baseRepository}
       h.IndicatorsRepository.VolumeMoving = &indicatorsRepositories.VolumeMovingRepository{BaseRepository: baseRepository}
       h.IndicatorsRepository.VolumeProfile = &indicatorsRepositories.VolumeProfileRepository{BaseRepository: baseRepository}
+      h.IndicatorsRepository.Mvrv = &indicatorsRepositories.MvrvRepository{BaseRepository: baseRepository}
       h.IndicatorsRepository.Ahr999 = &indicatorsRepositories.Ahr999Repository{BaseRepository: baseRepository}
       h.SymbolsRepository = &repositories.SymbolsRepository{
         Db: h.Db,
@@ -114,6 +115,14 @@ func (h *IndicatorsHandler) Flush(interval string, current int) error {
 
   var wg sync.WaitGroup
   semaphore := make(chan struct{}, 10)
+
+  if interval == "1d" && current == 1 && !slices.Contains(symbols, "BTCUSDT") {
+    mutex := common.NewMutex(h.Rdb, h.Ctx, config.LOCKS_TASKS_INDICATORS_MVRV_FLUSH)
+    if mutex.Lock(30 * time.Second) {
+      h.IndicatorsRepository.Mvrv.Flush("BTCUSDT", interval, 1)
+    }
+    h.IndicatorsRepository.Ahr999.Flush("BTCUSDT", interval, 200)
+  }
 
   for _, symbol := range symbols[startPos:endPos] {
     wg.Add(1)

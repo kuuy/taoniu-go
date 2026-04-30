@@ -180,53 +180,57 @@ func (r *ScalpingRepository) Place(planId string) (err error) {
   if entryPrice > 0 {
     if price > entryPrice {
       r.Db.Delete(&scalpingPlan, "plan_id", planId)
-      return errors.New(fmt.Sprintf("scalping [%s] price big than entry price", scalping.Symbol))
+      return fmt.Errorf("scalping [%s] price big than entry price", scalping.Symbol)
     }
   }
 
   var sellPrice float64
   if plan.Side == 1 {
     if plan.Amount > 15 {
-      if plan.Interval == "1m" {
+      switch plan.Interval {
+      case "1m":
         sellPrice = buyPrice * 1.0105
-      } else if plan.Interval == "15m" {
+      case "15m":
         sellPrice = buyPrice * 1.0125
-      } else if plan.Interval == "4h" {
+      case "4h":
         sellPrice = buyPrice * 1.0185
-      } else if plan.Interval == "1d" {
+      case "1d":
         sellPrice = buyPrice * 1.0385
       }
     } else {
-      if plan.Interval == "1m" {
+      switch plan.Interval {
+      case "1m":
         sellPrice = buyPrice * 1.0085
-      } else if plan.Interval == "15m" {
+      case "15m":
         sellPrice = buyPrice * 1.0105
-      } else if plan.Interval == "4h" {
+      case "4h":
         sellPrice = buyPrice * 1.012
-      } else if plan.Interval == "1d" {
+      case "1d":
         sellPrice = buyPrice * 1.0135
       }
     }
     sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
   } else {
     if plan.Amount > 15 {
-      if plan.Interval == "1m" {
+      switch plan.Interval {
+      case "1m":
         sellPrice = buyPrice * 0.9895
-      } else if plan.Interval == "15m" {
+      case "15m":
         sellPrice = buyPrice * 0.9875
-      } else if plan.Interval == "4h" {
+      case "4h":
         sellPrice = buyPrice * 0.9815
-      } else if plan.Interval == "1d" {
+      case "1d":
         sellPrice = buyPrice * 0.9615
       }
     } else {
-      if plan.Interval == "1m" {
+      switch plan.Interval {
+      case "1m":
         sellPrice = buyPrice * 0.9915
-      } else if plan.Interval == "15m" {
+      case "15m":
         sellPrice = buyPrice * 0.9895
-      } else if plan.Interval == "4h" {
+      case "4h":
         sellPrice = buyPrice * 0.988
-      } else if plan.Interval == "1d" {
+      case "1d":
         sellPrice = buyPrice * 0.9865
       }
     }
@@ -237,11 +241,11 @@ func (r *ScalpingRepository) Place(planId string) (err error) {
   buyQuantity, _ = decimal.NewFromFloat(buyQuantity).Div(decimal.NewFromFloat(stepSize)).Ceil().Mul(decimal.NewFromFloat(stepSize)).Float64()
 
   if price > buyPrice {
-    return errors.New(fmt.Sprintf("scalping [%s] price must reach %v", scalping.Symbol, buyPrice))
+    return fmt.Errorf("scalping [%s] price must reach %v", scalping.Symbol, buyPrice)
   }
 
   if !r.CanBuy(scalping, buyPrice) {
-    return errors.New(fmt.Sprintf("scalping [%s] can not buy now", scalping.Symbol))
+    return fmt.Errorf("scalping [%s] can not buy now", scalping.Symbol)
   }
 
   balance, err := r.AccountRepository.Balance(entity.QuoteAsset)
@@ -250,7 +254,7 @@ func (r *ScalpingRepository) Place(planId string) (err error) {
   }
 
   if balance["free"] < config.SCALPING_MIN_BINANCE {
-    return errors.New(fmt.Sprintf("scalping free balance must reach %v", config.SCALPING_MIN_BINANCE))
+    return fmt.Errorf("scalping free balance must reach %v", config.SCALPING_MIN_BINANCE)
   }
 
   mutex := common.NewMutex(
@@ -367,7 +371,8 @@ func (r *ScalpingRepository) Flush(id string) (err error) {
         continue
       }
 
-      if status == "FILLED" {
+      switch status {
+      case "FILLED":
         if closeTrading.ID != "" && closeTrading.CreatedAt.Unix() < trading.CreatedAt.Unix() {
           err = r.Db.Transaction(func(tx *gorm.DB) (err error) {
             buyQuantity, _ := decimal.NewFromFloat(trading.BuyQuantity).Add(decimal.NewFromFloat(closeTrading.BuyQuantity)).Float64()
@@ -417,7 +422,7 @@ func (r *ScalpingRepository) Flush(id string) (err error) {
           }
         }
         r.Rdb.Set(r.Ctx, redisKey, trading.BuyPrice, time.Hour*24)
-      } else if status == "CANCELED" {
+      case "CANCELED":
         result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
           "buy_order_id": 0,
           "status":       4,
@@ -478,7 +483,8 @@ func (r *ScalpingRepository) Flush(id string) (err error) {
         continue
       }
 
-      if status == "FILLED" {
+      switch status {
+      case "FILLED":
         result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
           "status":  3,
           "version": gorm.Expr("version + ?", 1),
@@ -490,7 +496,7 @@ func (r *ScalpingRepository) Flush(id string) (err error) {
           return errors.New("order update failed")
         }
         r.Rdb.Del(r.Ctx, redisKey)
-      } else if status == "CANCELED" {
+      case "CANCELED":
         result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
           "sell_order_id": 0,
           "status":        1,
@@ -530,7 +536,7 @@ func (r *ScalpingRepository) Take(scalping *models.Scalping, price float64) (err
       r.Close(scalping)
       r.Rdb.Del(r.Ctx, redisKey)
     }
-    return errors.New(fmt.Sprintf("[%s] empty position", scalping.Symbol))
+    return fmt.Errorf("[%s] empty position", scalping.Symbol)
   }
 
   entryPrice = position.EntryPrice
@@ -583,7 +589,7 @@ func (r *ScalpingRepository) Take(scalping *models.Scalping, price float64) (err
   }
 
   if balance["free"] < trading.SellQuantity {
-    err = errors.New(fmt.Sprintf("[%s] free not enough", entity.BaseAsset))
+    err = fmt.Errorf("[%s] free not enough", entity.BaseAsset)
     return
   }
 

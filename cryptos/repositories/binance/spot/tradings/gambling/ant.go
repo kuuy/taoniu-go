@@ -154,7 +154,8 @@ func (r *AntRepository) Flush(id string) (err error) {
         continue
       }
 
-      if status == "FILLED" {
+      switch status {
+      case "FILLED":
         err = r.Db.Transaction(func(tx *gorm.DB) (err error) {
           placeQuantity, _ := decimal.NewFromFloat(ant.PlaceQuantity).Add(decimal.NewFromFloat(trading.Quantity)).Float64()
           result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
@@ -185,7 +186,7 @@ func (r *AntRepository) Flush(id string) (err error) {
           return
         }
         r.Rdb.Set(r.Ctx, redisKey, trading.Price, time.Hour*24)
-      } else if status == "CANCELED" {
+      case "CANCELED":
         result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
           "status":  4,
           "version": gorm.Expr("version + ?", 1),
@@ -246,7 +247,8 @@ func (r *AntRepository) Flush(id string) (err error) {
         continue
       }
 
-      if status == "FILLED" {
+      switch status {
+      case "FILLED":
         err = r.Db.Transaction(func(tx *gorm.DB) (err error) {
           takeQuantity, _ := decimal.NewFromFloat(ant.TakeQuantity).Add(decimal.NewFromFloat(trading.Quantity)).Float64()
           result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
@@ -277,7 +279,7 @@ func (r *AntRepository) Flush(id string) (err error) {
           return
         }
         r.Rdb.Del(r.Ctx, redisKey)
-      } else if status == "CANCELED" {
+      case "CANCELED":
         result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
           "status":  4,
           "version": gorm.Expr("version + ?", 1),
@@ -326,7 +328,7 @@ func (r *AntRepository) Place(id string) (err error) {
   }
 
   if position.EntryQuantity == 0 {
-    return errors.New(fmt.Sprintf("gambling ant place [%s] empty position", ant.Symbol))
+    return fmt.Errorf("gambling ant place [%s] empty position", ant.Symbol)
   }
 
   entity, err := r.SymbolsRepository.Get(ant.Symbol)
@@ -342,7 +344,7 @@ func (r *AntRepository) Place(id string) (err error) {
   }
 
   if price > entryPrice {
-    err = errors.New(fmt.Sprintf("gambling ant place [%s] price big than entry price", ant.Symbol))
+    err = fmt.Errorf("gambling ant place [%s] price big than entry price", ant.Symbol)
     return
   }
 
@@ -351,7 +353,7 @@ func (r *AntRepository) Place(id string) (err error) {
   buyAmount, _ := decimal.NewFromFloat(buyQuantity).Mul(decimal.NewFromFloat(buyPrice)).Float64()
 
   if !r.CanBuy(ant, buyPrice) {
-    err = errors.New(fmt.Sprintf("gambling ant [%s] can not place now", ant.Symbol))
+    err = fmt.Errorf("gambling ant [%s] can not place now", ant.Symbol)
     return
   }
 
@@ -361,7 +363,7 @@ func (r *AntRepository) Place(id string) (err error) {
   }
 
   if balance["free"] < math.Max(buyAmount, config.GAMBLING_ANT_MIN_BINANCE) {
-    err = errors.New(fmt.Sprintf("balance free must reach %v", math.Max(buyAmount, config.GAMBLING_ANT_MIN_BINANCE)))
+    err = fmt.Errorf("balance free must reach %v", math.Max(buyAmount, config.GAMBLING_ANT_MIN_BINANCE))
     return
   }
 
@@ -420,7 +422,7 @@ func (r *AntRepository) Take(ant *gamblingModels.Ant, price float64) (err error)
       r.Close(ant)
       r.Rdb.Del(r.Ctx, redisKey)
     }
-    return errors.New(fmt.Sprintf("[%s] empty position", ant.Symbol))
+    return fmt.Errorf("[%s] empty position", ant.Symbol)
   }
 
   if position.Timestamp > ant.Timestamp {
@@ -438,7 +440,7 @@ func (r *AntRepository) Take(ant *gamblingModels.Ant, price float64) (err error)
   }
 
   if ant.PlaceQuantity <= ant.TakeQuantity {
-    return errors.New(fmt.Sprintf("[%s] no quantity to take", ant.Symbol))
+    return fmt.Errorf("[%s] no quantity to take", ant.Symbol)
   }
 
   takeQuantity := 0.0
@@ -517,7 +519,7 @@ func (r *AntRepository) Take(ant *gamblingModels.Ant, price float64) (err error)
 
   if antSide == 1 {
     if price < sellPrice {
-      return errors.New(fmt.Sprintf("take price must reach %v", sellPrice))
+      return fmt.Errorf("take price must reach %v", sellPrice)
     }
     if sellPrice < price*0.9985 {
       sellPrice = price * 0.9985
@@ -527,7 +529,7 @@ func (r *AntRepository) Take(ant *gamblingModels.Ant, price float64) (err error)
 
   if antSide == 2 {
     if price > sellPrice {
-      return errors.New(fmt.Sprintf("take price can not exceed %v", sellPrice))
+      return fmt.Errorf("take price can not exceed %v", sellPrice)
     }
     if sellPrice > price*1.0015 {
       sellPrice = price * 1.0015
