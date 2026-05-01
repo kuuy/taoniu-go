@@ -114,7 +114,7 @@ func (h *KlinesHandler) Start(interval string, current int) error {
   }
 
   endpoint := fmt.Sprintf(
-    "%s/stream?streams=%s",
+    "%s/market/stream?streams=%s",
     os.Getenv("BINANCE_FUTURES_STREAMS_ENDPOINT"),
     strings.Join(streams, "/"),
   )
