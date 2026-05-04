@@ -149,6 +149,12 @@ func (h *KlinesHandler) Flush(interval string, current int) error {
 
       for _, v := range data {
         if v == nil {
+          if interval == "1d" && symbol == "BTCUSDT" {
+            entity, _ := h.KlinesRepository.Get(symbol, interval, timestamp)
+            if time.Now().UnixMilli()-entity.UpdatedAt.UnixMilli() > 30000 {
+              h.KlinesRepository.Flush(symbol, interval, 0, 1)
+            }
+          }
           return
         }
       }
