@@ -98,9 +98,10 @@ func (r *PlansRepository) Ranking(
     query.Where("created_at>?", conditions["expired_at"].(time.Time))
   }
   if sortField != "" {
-    if sortType == 1 {
+    switch sortType {
+    case 1:
       query.Order(fmt.Sprintf("%v ASC", sortField))
-    } else if sortType == -1 {
+    case -1:
       query.Order(fmt.Sprintf("%v DESC", sortField))
     }
   }
@@ -310,13 +311,14 @@ func (r *PlansRepository) Timestep(interval string) int64 {
 func (r *PlansRepository) Timestamp(interval string) int64 {
   now := time.Now().UTC()
   duration := -time.Second * time.Duration(now.Second())
-  if interval == "15m" {
+  switch interval {
+  case "15m":
     minute, _ := decimal.NewFromInt(int64(now.Minute())).Div(decimal.NewFromInt(15)).Floor().Mul(decimal.NewFromInt(15)).Float64()
     duration = duration - time.Minute*time.Duration(now.Minute()-int(minute))
-  } else if interval == "4h" {
+  case "4h":
     hour, _ := decimal.NewFromInt(int64(now.Hour())).Div(decimal.NewFromInt(4)).Floor().Mul(decimal.NewFromInt(4)).Float64()
     duration = duration - time.Hour*time.Duration(now.Hour()-int(hour)) - time.Minute*time.Duration(now.Minute())
-  } else if interval == "1d" {
+  case "1d":
     duration = duration - time.Hour*time.Duration(now.Hour()) - time.Minute*time.Duration(now.Minute())
   }
   return now.Add(duration).Unix() * 1000

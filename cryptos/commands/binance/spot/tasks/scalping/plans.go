@@ -1,11 +1,10 @@
-package tasks
+package scalping
 
 import (
   "context"
-  "errors"
   "fmt"
   "log"
-  "slices"
+  "strconv"
   "time"
 
   "github.com/go-redis/redis/v8"
@@ -13,7 +12,6 @@ import (
   "gorm.io/gorm"
 
   "taoniu.local/cryptos/common"
-  config "taoniu.local/cryptos/config/binance/spot"
   repositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
@@ -39,9 +37,6 @@ func NewPlansCommand() *cli.Command {
       h.PlansRepository = &repositories.PlansRepository{
         Db: h.Db,
       }
-      h.PlansRepository.SymbolsRepository = &repositories.SymbolsRepository{
-        Db: h.Db,
-      }
       h.ScalpingRepository = &repositories.ScalpingRepository{
         Db: h.Db,
       }
@@ -53,20 +48,15 @@ func NewPlansCommand() *cli.Command {
         Usage: "",
         Action: func(c *cli.Context) error {
           interval := c.Args().Get(0)
-          if !slices.Contains([]string{"1m", "15m", "4h", "1d"}, interval) {
-            return errors.New("invalid interval")
+          if interval == "" {
+            log.Fatal("interval can not be empty")
+            return nil
           }
-          if err := h.Flush(interval); err != nil {
-            return cli.Exit(err.Error(), 1)
+          limit, _ := strconv.Atoi(c.Args().Get(1))
+          if limit < 20 {
+            limit = 20
           }
-          return nil
-        },
-      },
-      {
-        Name:  "clean",
-        Usage: "",
-        Action: func(c *cli.Context) error {
-          if err := h.Clean(); err != nil {
+          if err := h.Flush(interval, limit); err != nil {
             return cli.Exit(err.Error(), 1)
           }
           return nil
@@ -76,33 +66,36 @@ func NewPlansCommand() *cli.Command {
   }
 }
 
-func (h *PlansHandler) Flush(interval string) error {
-  log.Println("binance futures tasks plans flush...")
+func (h *PlansHandler) Flush(interval string, limit int) error {
+  log.Println("binance spot tasks scalping plans flush...")
+
   mutex := common.NewMutex(
     h.Rdb,
     h.Ctx,
-    fmt.Sprintf(config.LOCKS_PLANS_FLUSH, interval),
+    fmt.Sprintf("locks:binance:spot:scalping:plans:%s:flush", interval),
   )
   if !mutex.Lock(30 * time.Second) {
     return nil
   }
   defer mutex.Unlock()
-  return h.PlansRepository.Flush(interval)
-}
 
-func (h *PlansHandler) Clean() error {
-  log.Println("binance spot tasks plans clean...")
-  symbols := h.ScalpingRepository.Scan()
-  for _, symbol := range symbols {
-    mutex := common.NewMutex(
-      h.Rdb,
-      h.Ctx,
-      fmt.Sprintf(config.LOCKS_TASKS_PLANS_CLEAN, symbol),
-    )
-    if !mutex.Lock(5 * time.Second) {
-      continue
-    }
-    h.PlansRepository.Clean(symbol)
+  conditions := map[string]interface{}{
+    "interval":   interval,
+    "expired_at": time.Now().Add(-180 * time.Second),
   }
+  plans := h.PlansRepository.Ranking(
+    []string{"id"},
+    conditions,
+    "created_at",
+    -1,
+    limit,
+  )
+  for _, plan := range plans {
+    log.Println("plan", plan.ID)
+    if !h.ScalpingRepository.IsPlanExists(plan.ID) {
+      h.ScalpingRepository.AddPlan(plan.ID)
+    }
+  }
+
   return nil
 }

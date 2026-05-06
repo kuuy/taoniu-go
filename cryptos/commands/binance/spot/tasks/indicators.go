@@ -16,9 +16,9 @@ import (
   "gorm.io/gorm"
 
   "taoniu.local/cryptos/common"
-  config "taoniu.local/cryptos/config/binance/futures"
-  repositories "taoniu.local/cryptos/repositories/binance/futures"
-  indicatorsRepositories "taoniu.local/cryptos/repositories/binance/futures/indicators"
+  config "taoniu.local/cryptos/config/binance/spot"
+  repositories "taoniu.local/cryptos/repositories/binance/spot"
+  indicatorsRepositories "taoniu.local/cryptos/repositories/binance/spot/indicators"
 )
 
 type IndicatorsHandler struct {
@@ -38,7 +38,7 @@ func NewIndicatorsCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = IndicatorsHandler{
-        Db:  common.NewDB(2),
+        Db:  common.NewDB(1),
         Rdb: common.NewRedis(2),
         Ctx: context.Background(),
       }
@@ -97,8 +97,8 @@ func NewIndicatorsCommand() *cli.Command {
 }
 
 func (h *IndicatorsHandler) Flush(interval string, current int) error {
-  log.Printf("flushing futures indicators [%s] (batch %d)...", interval, current)
-  symbols := h.ScalpingRepository.Scan(2)
+  log.Printf("flushing spot indicators [%s] (batch %d)...", interval, current)
+  symbols := h.ScalpingRepository.Scan()
 
   pageSize := common.GetEnvInt("BINANCE_FUTURES_SYMBOLS_SIZE")
   if pageSize <= 0 {

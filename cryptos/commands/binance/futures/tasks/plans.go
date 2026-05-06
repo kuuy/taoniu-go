@@ -2,8 +2,10 @@ package tasks
 
 import (
   "context"
+  "errors"
   "fmt"
   "log"
+  "slices"
   "time"
 
   "github.com/go-redis/redis/v8"
@@ -37,12 +39,29 @@ func NewPlansCommand() *cli.Command {
       h.PlansRepository = &repositories.PlansRepository{
         Db: h.Db,
       }
+      h.PlansRepository.SymbolsRepository = &repositories.SymbolsRepository{
+        Db: h.Db,
+      }
       h.ScalpingRepository = &repositories.ScalpingRepository{
         Db: h.Db,
       }
       return nil
     },
     Subcommands: []*cli.Command{
+      {
+        Name:  "flush",
+        Usage: "",
+        Action: func(c *cli.Context) error {
+          interval := c.Args().Get(0)
+          if !slices.Contains([]string{"1m", "15m", "4h", "1d"}, interval) {
+            return errors.New("invalid interval")
+          }
+          if err := h.Flush(interval); err != nil {
+            return cli.Exit(err.Error(), 1)
+          }
+          return nil
+        },
+      },
       {
         Name:  "clean",
         Usage: "",
@@ -55,6 +74,20 @@ func NewPlansCommand() *cli.Command {
       },
     },
   }
+}
+
+func (h *PlansHandler) Flush(interval string) error {
+  log.Println("binance futures tasks plans flush...")
+  mutex := common.NewMutex(
+    h.Rdb,
+    h.Ctx,
+    fmt.Sprintf(config.LOCKS_PLANS_FLUSH, interval),
+  )
+  if !mutex.Lock(30 * time.Second) {
+    return nil
+  }
+  defer mutex.Unlock()
+  return h.PlansRepository.Flush(interval)
 }
 
 func (h *PlansHandler) Clean() error {
