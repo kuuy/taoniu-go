@@ -120,7 +120,7 @@ func (h *KlinesHandler) Flush(interval string, current int) error {
   var wg sync.WaitGroup
   semaphore := make(chan struct{}, 10)
 
-  if interval == "1d" && current == 1 && !slices.Contains(symbols, "BTCUSDT") {
+  if interval == "1d" && current == 1 {
     symbols = symbols[startPos:endPos]
     symbols = append(symbols, "BTCUSDT")
   } else {

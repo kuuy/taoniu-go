@@ -116,7 +116,7 @@ func (h *IndicatorsHandler) Flush(interval string, current int) error {
   var wg sync.WaitGroup
   semaphore := make(chan struct{}, 10)
 
-  if interval == "1d" && current == 1 && !slices.Contains(symbols, "BTCUSDT") {
+  if interval == "1d" && current == 1 {
     mutex := common.NewMutex(h.Rdb, h.Ctx, config.LOCKS_TASKS_INDICATORS_MVRV_FLUSH)
     if mutex.Lock(30 * time.Second) {
       h.IndicatorsRepository.Mvrv.Flush("BTCUSDT", interval, 1)
