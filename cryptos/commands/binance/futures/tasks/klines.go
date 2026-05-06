@@ -222,7 +222,7 @@ func (h *KlinesHandler) Fix(interval string, current int) error {
     limit = 100
   }
 
-  if interval == "1d" && !slices.Contains(symbols, "BTCUSDT") {
+  if interval == "1d" {
     symbols = symbols[startPos:endPos]
     symbols = append(symbols, "BTCUSDT")
   } else {
