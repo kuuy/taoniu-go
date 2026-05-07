@@ -1,9 +1,6 @@
 package spot
 
 import (
-  "encoding/json"
-  "log"
-
   "github.com/nats-io/nats.go"
 
   "taoniu.local/cryptos/common"
@@ -35,19 +32,19 @@ func (h *Plans) Subscribe() error {
 }
 
 func (h *Plans) Create(m *nats.Msg) {
-  var payload *StrategiesUpdatePayload
-  json.Unmarshal(m.Data, &payload)
-
-  plan, err := h.Repository.Create(payload.Symbol, payload.Interval)
-  if err != nil {
-    log.Println("plan create error", err.Error())
-    return
-  }
-  message, _ := json.Marshal(&PlansUpdatePayload{
-    ID:     plan.ID,
-    Side:   plan.Side,
-    Amount: plan.Amount,
-  })
-  h.NatsContext.Conn.Publish(config.NATS_PLANS_UPDATE, message)
-  h.NatsContext.Conn.Flush()
+  //var payload *StrategiesUpdatePayload
+  //json.Unmarshal(m.Data, &payload)
+  //
+  //plan, err := h.Repository.Create(payload.Symbol, payload.Interval)
+  //if err != nil {
+  //  log.Println("plan create error", err.Error())
+  //  return
+  //}
+  //message, _ := json.Marshal(&PlansUpdatePayload{
+  //  ID:     plan.ID,
+  //  Side:   plan.Side,
+  //  Amount: plan.Amount,
+  //})
+  //h.NatsContext.Conn.Publish(config.NATS_PLANS_UPDATE, message)
+  //h.NatsContext.Conn.Flush()
 }

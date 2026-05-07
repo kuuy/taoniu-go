@@ -128,7 +128,39 @@ func (r *PlansRepository) Build(interval string, signals map[string]interface{},
         if p < price {
           price = p
         }
-        amount += 10
+        amount += 10.0
+      }
+    }
+    if _, ok := signals["rsi"]; ok {
+      if p, ok := signals["rsi"].(map[string]float64)[symbol]; ok {
+        if p < price {
+          price = p
+        }
+        amount += 10.0
+      }
+    }
+    if _, ok := signals["ichimoku_cloud"]; ok {
+      if p, ok := signals["ichimoku_cloud"].(map[string]float64)[symbol]; ok {
+        if p < price {
+          price = p
+        }
+        amount += 10.0
+      }
+    }
+    if _, ok := signals["andean_oscillator"]; ok {
+      if p, ok := signals["andean_oscillator"].(map[string]float64)[symbol]; ok {
+        if p < price {
+          price = p
+        }
+        amount += 10.0
+      }
+    }
+    if _, ok := signals["zlema"]; ok {
+      if p, ok := signals["zlema"].(map[string]float64)[symbol]; ok {
+        if p < price {
+          price = p
+        }
+        amount += 5.0
       }
     }
     if _, ok := signals["ha_zlema"]; ok {
@@ -136,8 +168,36 @@ func (r *PlansRepository) Build(interval string, signals map[string]interface{},
         if p < price {
           price = p
         }
-        amount += 5
+        amount += 5.0
       }
+    }
+    if _, ok := signals["stoch_rsi"]; ok {
+      if p, ok := signals["stoch_rsi"].(map[string]float64)[symbol]; ok {
+        if p < price {
+          price = p
+        }
+        amount += 5.0
+      }
+    }
+    if _, ok := signals["smc"]; ok {
+      if p, ok := signals["smc"].(map[string]float64)[symbol]; ok {
+        if p < price {
+          price = p
+        }
+        amount += 5.0
+      }
+    }
+    if _, ok := signals["supertrend"]; ok {
+      if p, ok := signals["supertrend"].(map[string]float64)[symbol]; ok {
+        if p < price {
+          price = p
+        }
+        amount += 5.0
+      }
+    }
+
+    if amount < 30.0 {
+      continue
     }
 
     tickSize, stepSize, err := r.Filters(symbol)
@@ -190,7 +250,14 @@ func (r *PlansRepository) Signals(interval string) (map[string]interface{}, map[
     []string{
       "kdj",
       "bbands",
+      "rsi",
       "ichimoku_cloud",
+      "zlema",
+      "ha_zlema",
+      "stoch_rsi",
+      "andean_oscillator",
+      "smc",
+      "supertrend",
     },
     interval,
     timestamp,
@@ -215,85 +282,6 @@ func (r *PlansRepository) Signals(interval string) (map[string]interface{}, map[
   }
 
   return buys, sells
-}
-
-func (r *PlansRepository) Create(symbol string, interval string) (plan models.Plan, err error) {
-  var strategy models.Strategy
-  result := r.Db.Select([]string{"price", "signal", "timestamp"}).Where(
-    "symbol = ? AND interval = ? AND indicator IN ('kdj','ichimoku_cloud') AND timestamp >= ?",
-    symbol,
-    interval,
-    r.Timestamp(interval)-60000,
-  ).Order(
-    "timestamp desc",
-  ).Take(&strategy)
-  if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    err = result.Error
-    return
-  }
-
-  price := strategy.Price
-  amount := 10.0
-
-  for _, indicators := range [][]string{
-    {"bbands"},
-    {"zlema", "ha_zlema"},
-  } {
-    var entity models.Strategy
-    r.Db.Select([]string{
-      "indicator",
-      "price",
-      "signal",
-    }).Where(
-      "symbol = ? AND indicator IN ? AND interval = ? AND timestamp >= ?",
-      symbol,
-      indicators,
-      interval,
-      strategy.Timestamp-14*r.Timestep(interval),
-    ).Order(
-      "timestamp desc",
-    ).Take(&entity)
-    if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-      continue
-    }
-    if entity.Signal != strategy.Signal {
-      continue
-    }
-    if entity.Indicator == "bbands" {
-      amount += 10
-    }
-    if entity.Indicator == "zlema" || entity.Indicator == "ha_zlema" {
-      amount += 5
-    }
-  }
-
-  tickSize, stepSize, err := r.Filters(symbol)
-  if err != nil {
-    return
-  }
-  price, _ = decimal.NewFromFloat(price).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
-  quantity, _ := decimal.NewFromFloat(amount).Div(decimal.NewFromFloat(price)).Float64()
-  quantity, _ = decimal.NewFromFloat(quantity).Div(decimal.NewFromFloat(stepSize)).Ceil().Mul(decimal.NewFromFloat(stepSize)).Float64()
-
-  var entity models.Plan
-  result = r.Db.Where("symbol=? AND interval=? AND timestamp=?", symbol, interval, strategy.Timestamp).Take(&entity)
-  if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    err = errors.New("plan timestamp has been taken")
-    return
-  }
-  plan = models.Plan{
-    ID:        xid.New().String(),
-    Symbol:    symbol,
-    Interval:  interval,
-    Side:      strategy.Signal,
-    Price:     price,
-    Quantity:  quantity,
-    Amount:    amount,
-    Timestamp: strategy.Timestamp,
-  }
-  r.Db.Create(&plan)
-
-  return
 }
 
 func (r *PlansRepository) Timestep(interval string) int64 {
