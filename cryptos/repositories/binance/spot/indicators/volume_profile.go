@@ -39,6 +39,10 @@ func (r *VolumeProfileRepository) Get(symbol, interval string) (poc, vah, val, p
   }
 
   for i := 0; i < len(fields); i++ {
+    if data[i] == nil {
+      err = fmt.Errorf("indicators of [%v][%v] volume_profile is empty", symbol, interval)
+      return
+    }
     switch fields[i] {
     case "poc":
       poc, _ = strconv.ParseFloat(data[i].(string), 64)

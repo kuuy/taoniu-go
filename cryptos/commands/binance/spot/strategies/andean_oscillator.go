@@ -23,7 +23,7 @@ type AndeanOscillatorHandler struct {
 func NewAndeanOscillatorCommand() *cli.Command {
   var h AndeanOscillatorHandler
   return &cli.Command{
-    Name:  "andean_oscillator-cloud",
+    Name:  "andean-oscillator",
     Usage: "",
     Before: func(c *cli.Context) error {
       h = AndeanOscillatorHandler{

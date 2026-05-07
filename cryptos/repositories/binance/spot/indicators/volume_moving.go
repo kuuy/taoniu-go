@@ -41,6 +41,10 @@ func (r *VolumeMovingRepository) Get(symbol, interval string) (
   }
 
   for i := 0; i < len(fields); i++ {
+    if data[i] == nil {
+      err = fmt.Errorf("indicators of [%v][%v] volume_moving is empty", symbol, interval)
+      return
+    }
     switch fields[i] {
     case "volume_moving":
       volumeMoving, _ = strconv.ParseFloat(data[i].(string), 64)

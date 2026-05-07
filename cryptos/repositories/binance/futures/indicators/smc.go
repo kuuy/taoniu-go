@@ -54,6 +54,10 @@ func (r *SmcRepository) Get(symbol, interval string) (
   }
 
   for i := 0; i < len(fields); i++ {
+    if data[i] == nil {
+      err = fmt.Errorf("indicators of [%v][%v] smc is empty", symbol, interval)
+      return
+    }
     switch fields[i] {
     case "smc_trend":
       trend, _ = strconv.Atoi(data[i].(string))

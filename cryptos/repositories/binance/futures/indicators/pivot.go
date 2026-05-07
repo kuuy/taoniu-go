@@ -48,6 +48,10 @@ func (r *PivotRepository) Get(symbol, interval string) (
   }
 
   for i := 0; i < len(fields); i++ {
+    if data[i] == nil {
+      err = fmt.Errorf("indicators of [%v][%v] pivot is empty", symbol, interval)
+      return
+    }
     switch fields[i] {
     case "r3":
       r3, _ = strconv.ParseFloat(data[i].(string), 64)
