@@ -37,7 +37,7 @@ func (r *StochRsiRepository) Flush(symbol string, interval string) (err error) {
   result := r.Db.Where(
     "symbol=? AND indicator=? AND interval=?",
     symbol,
-    "rsi_stoch",
+    "stoch_rsi",
     interval,
   ).Order(
     "timestamp DESC",
@@ -55,7 +55,7 @@ func (r *StochRsiRepository) Flush(symbol string, interval string) (err error) {
   entity = models.Strategy{
     ID:        xid.New().String(),
     Symbol:    symbol,
-    Indicator: "rsi_stoch",
+    Indicator: "stoch_rsi",
     Interval:  interval,
     Price:     price,
     Signal:    signal,
