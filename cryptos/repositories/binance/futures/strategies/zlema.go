@@ -2,7 +2,6 @@ package strategies
 
 import (
   "errors"
-
   "github.com/rs/xid"
   "gorm.io/gorm"
 
@@ -21,19 +20,14 @@ func (r *ZlemaRepository) Flush(symbol string, interval string) (err error) {
     return
   }
 
-  if prev*current >= 0.0 {
+  // Check for crossover: prev crosses current
+  if (prev >= current) || (price <= current) {
     return
   }
 
-  var signal int
-  if price > current {
-    signal = 1
-  } else if price < current {
-    signal = 2
-  }
-
-  if signal == 0 {
-    return
+  signal := 1 // ZLEMA rising, price above → buy signal
+  if price < current {
+    signal = 2 // ZLEMA rising but price below → sell signal
   }
 
   var entity models.Strategy

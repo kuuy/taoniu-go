@@ -1,14 +1,15 @@
 package indicators
 
 import (
-  "fmt"
-  "strconv"
-  "strings"
-  "time"
+	"fmt"
+	"math"
+	"strconv"
+	"strings"
+	"time"
 
-  "github.com/markcheno/go-talib"
+	"github.com/markcheno/go-talib"
 
-  config "taoniu.local/cryptos/config/binance/spot"
+	config "taoniu.local/cryptos/config/binance/spot"
 )
 
 type HaZlemaRepository struct {
@@ -38,7 +39,7 @@ func (r *HaZlemaRepository) Get(symbol, interval string) (
     return
   }
   data := strings.Split(val, ",")
-  if len(data) < 3 {
+  if len(data) < 4 {
     err = fmt.Errorf("invalid data in redis")
     return
   }
@@ -61,17 +62,34 @@ func (r *HaZlemaRepository) Flush(symbol string, interval string, period int, li
   lows := data[3]
   lastIdx := len(timestamps) - 1
 
-  lag := (period - 1) / 2
+  // 1. Calculate Heiken Ashi
+  haClose := make([]float64, len(opens))
+  haOpen := make([]float64, len(opens))
+  haHigh := make([]float64, len(opens))
+  haLow := make([]float64, len(opens))
 
-  var prices []float64
-  for i := 0; i <= lastIdx; i++ {
-    avgPrice := (opens[i] + closes[i] + highs[i] + lows[i]) / 4
-    prices = append(prices, avgPrice)
+  for i := 0; i < len(opens); i++ {
+    haClose[i] = (opens[i] + closes[i] + highs[i] + lows[i]) / 4
+    if i == 0 {
+      haOpen[i] = (opens[0] + closes[0]) / 2
+    } else {
+      haOpen[i] = (haOpen[i-1] + haClose[i-1]) / 2
+    }
+    haHigh[i] = math.Max(highs[i], math.Max(haOpen[i], haClose[i]))
+    haLow[i] = math.Min(lows[i], math.Min(haOpen[i], haClose[i]))
   }
 
-  var zdata []float64
-  for i := lag; i < len(prices); i++ {
-    zdata = append(zdata, prices[i]+(prices[i]-prices[i-lag]))
+  // 2. HA typical price
+  haTypical := make([]float64, len(haOpen))
+  for i := 0; i < len(haOpen); i++ {
+    haTypical[i] = (haOpen[i] + haClose[i] + haHigh[i] + haLow[i]) / 4
+  }
+
+  // 3. ZLEMA
+  lag := period - 1
+  zdata := make([]float64, len(haTypical))
+  for i := lag; i < len(haTypical); i++ {
+    zdata[i] = haTypical[i] + (haTypical[i] - haTypical[i-lag])
   }
 
   result := talib.Ema(zdata, period)

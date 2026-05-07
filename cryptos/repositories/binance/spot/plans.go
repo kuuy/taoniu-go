@@ -190,7 +190,7 @@ func (r *PlansRepository) Signals(interval string) (map[string]interface{}, map[
     []string{
       "kdj",
       "bbands",
-      "ha_zlema",
+      "ichimoku_cloud",
     },
     interval,
     timestamp,

@@ -38,6 +38,10 @@ func (r *ZlemaRepository) Get(symbol, interval string) (
     return
   }
   data := strings.Split(val, ",")
+  if len(data) < 4 {
+    err = fmt.Errorf("invalid data in redis")
+    return
+  }
   prev, _ = strconv.ParseFloat(data[0], 64)
   current, _ = strconv.ParseFloat(data[1], 64)
   price, _ = strconv.ParseFloat(data[2], 64)
@@ -54,14 +58,22 @@ func (r *ZlemaRepository) Flush(symbol string, interval string, period int, limi
   closes := data[0]
   lastIdx := len(timestamps) - 1
 
-  lag := (period - 1) / 2
+  // ZLEMA: adjusted = price + (price - price_lag), then EMA
+  // lag = period - 1 for zero-lag correction
+  lag := period - 1
+  if lag > lastIdx {
+    return fmt.Errorf("insufficient data for period %d", period)
+  }
 
-  var zdata []float64
+  zdata := make([]float64, lastIdx+1)
   for i := lag; i <= lastIdx; i++ {
-    zdata = append(zdata, closes[i]+(closes[i]-closes[i-lag]))
+    zdata[i] = closes[i] + (closes[i] - closes[i-lag])
   }
 
   result := talib.Ema(zdata, period)
+  if len(result) < 2 {
+    return fmt.Errorf("talib calculation failed to return enough data")
+  }
 
   day, err := r.Day(timestamps[lastIdx] / 1000)
   if err != nil {
