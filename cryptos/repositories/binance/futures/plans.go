@@ -317,6 +317,23 @@ func (r *PlansRepository) shouldSkip(symbol, interval string, timestamp int64, s
 
   if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
     if timestamp <= entity.Timestamp {
+      values := map[string]interface{}{}
+      if entity.Price != price {
+        if side == 1 {
+          values["price"] = math.Min(entity.Price, price)
+        } else {
+          values["price"] = math.Max(entity.Price, price)
+        }
+      }
+      if entity.Quantity != quantity {
+        values["quantity"] = quantity
+      }
+      if entity.Amount != amount {
+        values["amount"] = amount
+      }
+      if len(values) > 0 {
+        r.Db.Model(&entity).Updates(values)
+      }
       return true
     }
     if int(side) == entity.Side {
