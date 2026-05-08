@@ -2,7 +2,7 @@ package spot
 
 import (
   "errors"
-  "fmt"
+  "math"
   "time"
 
   "github.com/rs/xid"
@@ -25,6 +25,34 @@ type PlansInfo struct {
   Amount    float32
   Timestamp time.Time
 }
+
+type signalsInfo struct {
+  Symbol    string
+  Indicator string
+  Price     float64
+  Signal    int
+  Timestamp int64
+}
+
+const (
+  IndicatorSignalBuy  = 1
+  IndicatorSignalSell = 2
+)
+
+var indicatorWeights = map[string]float64{
+  "bbands":            30,
+  "rsi":               20,
+  "ichimoku_cloud":    20,
+  "zlema":             15,
+  "ha_zlema":          15,
+  "stoch_rsi":         10,
+  "andean_oscillator": 8,
+  "smc":               8,
+  "kdj":               5,
+  "supertrend":        5,
+}
+
+var requiredIndicators = []string{"kdj", "supertrend"}
 
 func (r *PlansRepository) Ids(status int) []string {
   var ids []string
@@ -50,11 +78,11 @@ func (r *PlansRepository) Find(id string) (*models.Plan, error) {
 func (r *PlansRepository) Count(conditions map[string]interface{}) int64 {
   var total int64
   query := r.Db.Model(&models.Plan{})
-  if _, ok := conditions["symbol"]; ok {
-    query.Where("symbol", conditions["symbol"].(string))
+  if symbol, ok := conditions["symbol"].(string); ok {
+    query.Where("symbol", symbol)
   }
-  if _, ok := conditions["side"]; ok {
-    query.Where("side", conditions["side"].(string))
+  if side, ok := conditions["side"].(uint32); ok {
+    query.Where("side", side)
   }
   query.Count(&total)
   return total
@@ -72,11 +100,11 @@ func (r *PlansRepository) Listings(conditions map[string]interface{}, current in
     "timestamp",
     "created_at",
   })
-  if _, ok := conditions["symbol"]; ok {
-    query.Where("symbol", conditions["symbol"].(string))
+  if symbol, ok := conditions["symbol"].(string); ok {
+    query.Where("symbol", symbol)
   }
-  if _, ok := conditions["side"]; ok {
-    query.Where("side", conditions["side"].(string))
+  if side, ok := conditions["side"].(uint32); ok {
+    query.Where("side", side)
   }
   query.Order("timestamp desc")
   query.Offset((current - 1) * pageSize).Limit(pageSize).Find(&plans)
@@ -91,18 +119,18 @@ func (r *PlansRepository) Ranking(
   limit int,
 ) (plans []*models.Plan) {
   query := r.Db.Select(fields)
-  if _, ok := conditions["interval"].(string); ok {
-    query.Where("interval", conditions["interval"].(string))
+  if interval, ok := conditions["interval"].(string); ok {
+    query.Where("interval", interval)
   }
-  if _, ok := conditions["expired_at"].(time.Time); ok {
-    query.Where("created_at>?", conditions["expired_at"].(time.Time))
+  if expiredAt, ok := conditions["expired_at"].(time.Time); ok {
+    query.Where("created_at > ?", expiredAt)
   }
   if sortField != "" {
     switch sortType {
     case 1:
-      query.Order(fmt.Sprintf("%v ASC", sortField))
+      query.Order(sortField + " ASC")
     case -1:
-      query.Order(fmt.Sprintf("%v DESC", sortField))
+      query.Order(sortField + " DESC")
     }
   }
   query.Limit(limit).Find(&plans)
@@ -110,117 +138,112 @@ func (r *PlansRepository) Ranking(
 }
 
 func (r *PlansRepository) Flush(interval string) error {
-  buys, sells := r.Signals(interval)
-  r.Build(interval, buys, 1)
-  r.Build(interval, sells, 2)
+  buys, err := r.GetSignals(interval, IndicatorSignalBuy)
+  if err != nil {
+    return err
+  }
+  sells, err := r.GetSignals(interval, IndicatorSignalSell)
+  if err != nil {
+    return err
+  }
+
+  if err := r.BuildPlans(interval, buys); err != nil {
+    return err
+  }
+  if err := r.BuildPlans(interval, sells); err != nil {
+    return err
+  }
   return nil
 }
 
-func (r *PlansRepository) Build(interval string, signals map[string]interface{}, side int) error {
-  if _, ok := signals["supertrend"]; !ok {
-    return nil
+func (r *PlansRepository) GetSignals(interval string, signal int) (map[string][]signalsInfo, error) {
+  timestamp := time.Now().UnixMilli()
+  switch interval {
+  case "1m":
+    timestamp -= 900000
+  case "15m":
+    timestamp -= 2700000
+  case "4h":
+    timestamp -= 14400000
+  case "1d":
+    timestamp -= 86400000
   }
-  timestamp := r.Timestamp(interval)
-  for symbol, price := range signals["supertrend"].(map[string]float64) {
-    amount := 10.0
-    if _, ok := signals["bbands"]; ok {
-      if p, ok := signals["bbands"].(map[string]float64)[symbol]; ok {
-        if p < price {
-          price = p
-        }
-        amount += 15.0
-      }
-    }
-    if _, ok := signals["rsi"]; ok {
-      if p, ok := signals["rsi"].(map[string]float64)[symbol]; ok {
-        if p < price {
-          price = p
-        }
-        amount += 15.0
-      }
-    }
-    if _, ok := signals["ichimoku_cloud"]; ok {
-      if p, ok := signals["ichimoku_cloud"].(map[string]float64)[symbol]; ok {
-        if p < price {
-          price = p
-        }
-        amount += 15.0
-      }
-    }
-    if _, ok := signals["zlema"]; ok {
-      if p, ok := signals["zlema"].(map[string]float64)[symbol]; ok {
-        if p < price {
-          price = p
-        }
-        amount += 10.0
-      }
-    }
-    if _, ok := signals["ha_zlema"]; ok {
-      if p, ok := signals["ha_zlema"].(map[string]float64)[symbol]; ok {
-        if p < price {
-          price = p
-        }
-        amount += 10.0
-      }
-    }
-    if _, ok := signals["stoch_rsi"]; ok {
-      if p, ok := signals["stoch_rsi"].(map[string]float64)[symbol]; ok {
-        if p < price {
-          price = p
-        }
-        amount += 10.0
-      }
-    }
-    if _, ok := signals["andean_oscillator"]; ok {
-      if p, ok := signals["andean_oscillator"].(map[string]float64)[symbol]; ok {
-        if p < price {
-          price = p
-        }
-        amount += 5.0
-      }
-    }
-    if _, ok := signals["smc"]; ok {
-      if p, ok := signals["smc"].(map[string]float64)[symbol]; ok {
-        if p < price {
-          price = p
-        }
-        amount += 5.0
-      }
-    }
 
-    if amount < 30.0 {
+  indicators := make([]string, 0, len(indicatorWeights))
+  for k := range indicatorWeights {
+    indicators = append(indicators, k)
+  }
+
+  var strategies []*models.Strategy
+  err := r.Db.Select([]string{
+    "symbol",
+    "indicator",
+    "price",
+    "signal",
+    "timestamp",
+  }).Where(
+    "indicator IN ? AND interval = ? AND timestamp > ? AND signal = ?",
+    indicators,
+    interval,
+    timestamp,
+    signal,
+  ).Order(
+    "timestamp DESC",
+  ).Find(&strategies).Error
+  if err != nil {
+    return nil, err
+  }
+
+  result := make(map[string][]signalsInfo)
+  for _, s := range strategies {
+    result[s.Symbol] = append(result[s.Symbol], signalsInfo{
+      Symbol:    s.Symbol,
+      Indicator: s.Indicator,
+      Price:     s.Price,
+      Signal:    s.Signal,
+      Timestamp: s.Timestamp,
+    })
+  }
+
+  return result, nil
+}
+
+func (r *PlansRepository) BuildPlans(interval string, signals map[string][]signalsInfo) error {
+  for symbol, indicators := range signals {
+    var timestamp int64
+    var n int
+    for _, indicator := range indicators {
+      if timestamp < indicator.Timestamp {
+        timestamp = indicator.Timestamp
+        n = 0
+        indicators[n] = indicator
+        n++
+      } else if indicator.Timestamp == timestamp {
+        indicators[n] = indicator
+        n++
+      }
+    }
+    indicators = indicators[:n]
+    side := r.detectSide(indicators)
+
+    basePrice, totalAmount := r.calculatePriceAndAmount(indicators)
+    price, quantity, err := r.formatOrder(symbol, side, basePrice, totalAmount)
+    if err != nil || price == 0 || quantity == 0 {
       continue
     }
 
-    tickSize, stepSize, err := r.Filters(symbol)
-    if err != nil {
+    if r.shouldSkip(symbol, interval, timestamp, side, price, quantity, totalAmount) {
       continue
     }
-    quantity, _ := decimal.NewFromFloat(amount).Div(decimal.NewFromFloat(price)).Float64()
 
-    price, _ = decimal.NewFromFloat(price).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
-    quantity, _ = decimal.NewFromFloat(quantity).Div(decimal.NewFromFloat(stepSize)).Ceil().Mul(decimal.NewFromFloat(stepSize)).Float64()
-    if price == 0 || quantity == 0 {
-      continue
-    }
-    var entity models.Plan
-    result := r.Db.Where("symbol=? AND interval=?", symbol, interval).Order("timestamp desc").Take(&entity)
-    if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-      if timestamp <= entity.Timestamp {
-        continue
-      }
-      if side == entity.Side {
-        continue
-      }
-    }
-    entity = models.Plan{
+    entity := models.Plan{
       ID:        xid.New().String(),
       Symbol:    symbol,
       Interval:  interval,
-      Side:      side,
+      Side:      int(side),
       Price:     price,
       Quantity:  quantity,
-      Amount:    amount,
+      Amount:    totalAmount,
       Timestamp: timestamp,
     }
     r.Db.Create(&entity)
@@ -229,51 +252,95 @@ func (r *PlansRepository) Build(interval string, signals map[string]interface{},
   return nil
 }
 
-func (r *PlansRepository) Signals(interval string) (map[string]interface{}, map[string]interface{}) {
-  timestamp := time.Now().Unix() - 86400
-  var strategies []*models.Strategy
-  r.Db.Select([]string{
-    "symbol",
-    "indicator",
-    "price",
-    "signal",
-  }).Where(
-    "indicator in ? AND interval = ? AND timestamp > ?",
-    []string{
-      "kdj",
-      "bbands",
-      "rsi",
-      "ichimoku_cloud",
-      "zlema",
-      "ha_zlema",
-      "stoch_rsi",
-      "andean_oscillator",
-      "smc",
-      "supertrend",
-    },
-    interval,
-    timestamp,
-  ).Order(
-    "timestamp desc",
-  ).Find(&strategies)
-  var buys = make(map[string]interface{})
-  var sells = make(map[string]interface{})
-  for _, strategy := range strategies {
-    if _, ok := buys[strategy.Indicator]; strategy.Signal == 1 && !ok {
-      buys[strategy.Indicator] = make(map[string]float64)
-    }
-    if strategy.Signal == 1 {
-      buys[strategy.Indicator].(map[string]float64)[strategy.Symbol] = strategy.Price
-    }
-    if _, ok := sells[strategy.Indicator]; strategy.Signal == 2 && !ok {
-      sells[strategy.Indicator] = make(map[string]float64)
-    }
-    if strategy.Signal == 2 {
-      sells[strategy.Indicator].(map[string]float64)[strategy.Symbol] = strategy.Price
-    }
+func (r *PlansRepository) hasRequiredIndicators(indicators []signalsInfo) bool {
+  found := make(map[string]bool)
+  for _, ind := range indicators {
+    found[ind.Indicator] = true
   }
 
-  return buys, sells
+  for _, required := range requiredIndicators {
+    if !found[required] {
+      return false
+    }
+  }
+  return true
+}
+
+func (r *PlansRepository) calculatePriceAndAmount(indicators []signalsInfo) (float64, float64) {
+  var basePrice float64
+  var totalAmount float64
+
+  for _, ind := range indicators {
+    weight, ok := indicatorWeights[ind.Indicator]
+    if !ok {
+      continue
+    }
+
+    if basePrice == 0 || ind.Price < basePrice {
+      basePrice = ind.Price
+    }
+    totalAmount += weight
+  }
+
+  return basePrice, totalAmount
+}
+
+func (r *PlansRepository) formatOrder(symbol string, side uint32, price, amount float64) (float64, float64, error) {
+  tickSize, stepSize, err := r.Filters(symbol)
+  if err != nil {
+    return 0, 0, err
+  }
+
+  if side == 1 {
+    price, _ = decimal.NewFromFloat(price).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+  } else {
+    price, _ = decimal.NewFromFloat(price).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
+  }
+  quantity, _ := decimal.NewFromFloat(amount).Div(decimal.NewFromFloat(price)).Float64()
+  quantity, _ = decimal.NewFromFloat(quantity).Div(decimal.NewFromFloat(stepSize)).Ceil().Mul(decimal.NewFromFloat(stepSize)).Float64()
+
+  return price, quantity, nil
+}
+
+func (r *PlansRepository) detectSide(indicators []signalsInfo) uint32 {
+  if len(indicators) == 0 {
+    return 0
+  }
+  return uint32(indicators[0].Signal)
+}
+
+func (r *PlansRepository) shouldSkip(symbol, interval string, timestamp int64, side uint32, price, quantity, amount float64) bool {
+  var entity models.Plan
+  result := r.Db.Where("symbol = ? AND interval = ?", symbol, interval).
+    Order("timestamp DESC").
+    Take(&entity)
+
+  if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+    if timestamp <= entity.Timestamp {
+      return true
+    }
+    if int(side) == entity.Side {
+      values := map[string]interface{}{}
+      if entity.Price != price {
+        if side == 1 {
+          values["price"] = math.Min(entity.Price, price)
+        } else {
+          values["price"] = math.Max(entity.Price, price)
+        }
+      }
+      if entity.Quantity != quantity {
+        values["quantity"] = quantity
+      }
+      if entity.Amount != amount {
+        values["amount"] = amount
+      }
+      if len(values) > 0 {
+        r.Db.Model(&entity).Updates(values)
+      }
+      return true
+    }
+  }
+  return false
 }
 
 func (r *PlansRepository) Timestep(interval string) int64 {
@@ -293,10 +360,10 @@ func (r *PlansRepository) Timestamp(interval string) int64 {
   duration := -time.Second * time.Duration(now.Second())
   switch interval {
   case "15m":
-    minute, _ := decimal.NewFromInt(int64(now.Minute())).Div(decimal.NewFromInt(15)).Floor().Mul(decimal.NewFromInt(15)).Float64()
+    minute := float64(now.Minute() / 15 * 15)
     duration = duration - time.Minute*time.Duration(now.Minute()-int(minute))
   case "4h":
-    hour, _ := decimal.NewFromInt(int64(now.Hour())).Div(decimal.NewFromInt(4)).Floor().Mul(decimal.NewFromInt(4)).Float64()
+    hour := float64(now.Hour() / 4 * 4)
     duration = duration - time.Hour*time.Duration(now.Hour()-int(hour)) - time.Minute*time.Duration(now.Minute())
   case "1d":
     duration = duration - time.Hour*time.Duration(now.Hour()) - time.Minute*time.Duration(now.Minute())
@@ -314,12 +381,15 @@ func (r *PlansRepository) Filters(symbol string) (tickSize float64, stepSize flo
 }
 
 func (r *PlansRepository) Clean(symbol string) (err error) {
-  var plan = &models.Plan{}
   for _, interval := range []string{"1m", "15m", "4h", "1d"} {
     var timestamp int64
-    err = r.Db.Model(&plan).Select("timestamp").Where("symbol=? AND interval = ?", symbol, interval).Order("timestamp DESC").Offset(30).Take(&timestamp).Error
+    err = r.Db.Model(&models.Plan{}).Select("timestamp").
+      Where("symbol = ? AND interval = ?", symbol, interval).
+      Order("timestamp DESC").
+      Offset(30).
+      Take(&timestamp).Error
     if err == nil {
-      r.Db.Where("symbol=? AND interval = ? AND timestamp < ?", symbol, interval, timestamp).Delete(&plan)
+      r.Db.Where("symbol = ? AND interval = ? AND timestamp < ?", symbol, interval, timestamp).Delete(&models.Plan{})
     }
   }
   r.Db.Where("status IN ?", []int{4, 5, 10}).Delete(&models.ScalpingPlan{})
