@@ -2,6 +2,7 @@ package futures
 
 import (
   "errors"
+  "math"
   "time"
 
   "github.com/rs/xid"
@@ -25,10 +26,12 @@ type PlansInfo struct {
   Timestamp time.Time
 }
 
-type indicatorSignal struct {
-  Symbol string
-  Price  float64
-  Signal int
+type signalsInfo struct {
+  Symbol    string
+  Indicator string
+  Price     float64
+  Signal    int
+  Timestamp int64
 }
 
 const (
@@ -153,8 +156,18 @@ func (r *PlansRepository) Flush(interval string) error {
   return nil
 }
 
-func (r *PlansRepository) GetSignals(interval string, signal int) (map[string][]indicatorSignal, error) {
-  timestamp := time.Now().UnixMilli() - 86400000
+func (r *PlansRepository) GetSignals(interval string, signal int) (map[string][]signalsInfo, error) {
+  timestamp := time.Now().UnixMilli()
+  switch interval {
+  case "1m":
+    timestamp -= 900000
+  case "15m":
+    timestamp -= 2700000
+  case "4h":
+    timestamp -= 14400000
+  case "1d":
+    timestamp -= 86400000
+  }
 
   indicators := make([]string, 0, len(indicatorWeights))
   for k := range indicatorWeights {
@@ -167,6 +180,7 @@ func (r *PlansRepository) GetSignals(interval string, signal int) (map[string][]
     "indicator",
     "price",
     "signal",
+    "timestamp",
   }).Where(
     "indicator IN ? AND interval = ? AND timestamp > ? AND signal = ?",
     indicators,
@@ -180,38 +194,45 @@ func (r *PlansRepository) GetSignals(interval string, signal int) (map[string][]
     return nil, err
   }
 
-  result := make(map[string][]indicatorSignal)
+  result := make(map[string][]signalsInfo)
   for _, s := range strategies {
-    result[s.Symbol] = append(result[s.Symbol], indicatorSignal{
-      Symbol: s.Symbol,
-      Price:  s.Price,
-      Signal: s.Signal,
+    result[s.Symbol] = append(result[s.Symbol], signalsInfo{
+      Symbol:    s.Symbol,
+      Indicator: s.Indicator,
+      Price:     s.Price,
+      Signal:    s.Signal,
+      Timestamp: s.Timestamp,
     })
   }
 
   return result, nil
 }
 
-func (r *PlansRepository) BuildPlans(interval string, signals map[string][]indicatorSignal) error {
-  timestamp := r.Timestamp(interval)
-
+func (r *PlansRepository) BuildPlans(interval string, signals map[string][]signalsInfo) error {
   for symbol, indicators := range signals {
-    if !r.hasRequiredIndicators(indicators) {
-      continue
+    var timestamp int64
+    var n int
+    for _, indicator := range indicators {
+      if timestamp < indicator.Timestamp {
+        timestamp = indicator.Timestamp
+        n = 0
+        indicators[n] = indicator
+        n++
+      } else if indicator.Timestamp == timestamp {
+        indicators[n] = indicator
+        n++
+      }
     }
+    indicators = indicators[:n]
+    side := r.detectSide(indicators)
 
     basePrice, totalAmount := r.calculatePriceAndAmount(indicators)
-    if totalAmount < 30.0 {
-      continue
-    }
-
-    price, quantity, err := r.formatOrder(symbol, basePrice, totalAmount)
+    price, quantity, err := r.formatOrder(symbol, side, basePrice, totalAmount)
     if err != nil || price == 0 || quantity == 0 {
       continue
     }
 
-    side := r.detectSide(indicators)
-    if r.shouldSkip(symbol, interval, timestamp, side) {
+    if r.shouldSkip(symbol, interval, timestamp, side, price, quantity, totalAmount) {
       continue
     }
 
@@ -231,10 +252,10 @@ func (r *PlansRepository) BuildPlans(interval string, signals map[string][]indic
   return nil
 }
 
-func (r *PlansRepository) hasRequiredIndicators(indicators []indicatorSignal) bool {
+func (r *PlansRepository) hasRequiredIndicators(indicators []signalsInfo) bool {
   found := make(map[string]bool)
   for _, ind := range indicators {
-    found[ind.Symbol] = true
+    found[ind.Indicator] = true
   }
 
   for _, required := range requiredIndicators {
@@ -245,12 +266,12 @@ func (r *PlansRepository) hasRequiredIndicators(indicators []indicatorSignal) bo
   return true
 }
 
-func (r *PlansRepository) calculatePriceAndAmount(indicators []indicatorSignal) (float64, float64) {
+func (r *PlansRepository) calculatePriceAndAmount(indicators []signalsInfo) (float64, float64) {
   var basePrice float64
   var totalAmount float64
 
   for _, ind := range indicators {
-    weight, ok := indicatorWeights[ind.Symbol]
+    weight, ok := indicatorWeights[ind.Indicator]
     if !ok {
       continue
     }
@@ -264,28 +285,31 @@ func (r *PlansRepository) calculatePriceAndAmount(indicators []indicatorSignal) 
   return basePrice, totalAmount
 }
 
-func (r *PlansRepository) formatOrder(symbol string, price, amount float64) (float64, float64, error) {
+func (r *PlansRepository) formatOrder(symbol string, side uint32, price, amount float64) (float64, float64, error) {
   tickSize, stepSize, err := r.Filters(symbol)
   if err != nil {
     return 0, 0, err
   }
 
+  if side == 1 {
+    price, _ = decimal.NewFromFloat(price).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+  } else {
+    price, _ = decimal.NewFromFloat(price).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
+  }
   quantity, _ := decimal.NewFromFloat(amount).Div(decimal.NewFromFloat(price)).Float64()
-
-  price, _ = decimal.NewFromFloat(price).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
   quantity, _ = decimal.NewFromFloat(quantity).Div(decimal.NewFromFloat(stepSize)).Ceil().Mul(decimal.NewFromFloat(stepSize)).Float64()
 
   return price, quantity, nil
 }
 
-func (r *PlansRepository) detectSide(indicators []indicatorSignal) uint32 {
+func (r *PlansRepository) detectSide(indicators []signalsInfo) uint32 {
   if len(indicators) == 0 {
     return 0
   }
   return uint32(indicators[0].Signal)
 }
 
-func (r *PlansRepository) shouldSkip(symbol, interval string, timestamp int64, side uint32) bool {
+func (r *PlansRepository) shouldSkip(symbol, interval string, timestamp int64, side uint32, price, quantity, amount float64) bool {
   var entity models.Plan
   result := r.Db.Where("symbol = ? AND interval = ?", symbol, interval).
     Order("timestamp DESC").
@@ -296,6 +320,23 @@ func (r *PlansRepository) shouldSkip(symbol, interval string, timestamp int64, s
       return true
     }
     if int(side) == entity.Side {
+      values := map[string]interface{}{}
+      if entity.Price != price {
+        if side == 1 {
+          values["price"] = math.Min(entity.Price, price)
+        } else {
+          values["price"] = math.Max(entity.Price, price)
+        }
+      }
+      if entity.Quantity != quantity {
+        values["quantity"] = quantity
+      }
+      if entity.Amount != amount {
+        values["amount"] = amount
+      }
+      if len(values) > 0 {
+        r.Db.Model(&entity).Updates(values)
+      }
       return true
     }
   }
