@@ -1028,7 +1028,7 @@ func (r *CandlesticksRepository) Timestamp(interval string) int64 {
   } else if interval == "1d" {
     duration = duration - time.Hour*time.Duration(now.Hour()) - time.Minute*time.Duration(now.Minute())
   }
-  return now.Add(duration).Unix() * 1000
+  return now.Add(duration).UnixMilli()
 }
 
 func (r *CandlesticksRepository) Timestep(interval string) int64 {

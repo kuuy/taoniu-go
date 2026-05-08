@@ -49,6 +49,9 @@ func (h *StrategiesHandler) Listings(
   if q.Get("symbol") != "" {
     conditions["symbol"] = q.Get("symbol")
   }
+  if q.Get("interval") != "" {
+    conditions["interval"] = q.Get("interval")
+  }
   if q.Get("signal") != "" {
     conditions["signal"], _ = strconv.Atoi(q.Get("signal"))
   }

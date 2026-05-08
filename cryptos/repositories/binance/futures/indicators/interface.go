@@ -74,17 +74,17 @@ func (r *BaseRepository) Timestep(interval string) int64 {
 func (r *BaseRepository) Timestamp(interval string) int64 {
   now := time.Now().UTC()
   duration := -time.Second * time.Duration(now.Second())
-  	switch interval {
-	case "15m":
-		minute := float64(now.Minute() / 15 * 15)
-		duration = duration - time.Minute*time.Duration(now.Minute()-int(minute))
-	case "4h":
-		hour := float64(now.Hour() / 4 * 4)
+  switch interval {
+  case "15m":
+    minute := float64(now.Minute() / 15 * 15)
+    duration = duration - time.Minute*time.Duration(now.Minute()-int(minute))
+  case "4h":
+    hour := float64(now.Hour() / 4 * 4)
     duration = duration - time.Hour*time.Duration(now.Hour()-int(hour)) - time.Minute*time.Duration(now.Minute())
   case "1d":
     duration = duration - time.Hour*time.Duration(now.Hour()) - time.Minute*time.Duration(now.Minute())
   }
-  return now.Add(duration).Unix() * 1000
+  return now.Add(duration).UnixMilli()
 }
 
 func (r *BaseRepository) Kline(symbol, interval string, fields ...string) (data []float64, timestamp int64, err error) {

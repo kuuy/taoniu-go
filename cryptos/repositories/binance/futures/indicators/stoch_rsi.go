@@ -30,7 +30,7 @@ func (r *StochRsiRepository) Get(symbol, interval string) (fastk, fastd, price f
   fastk, _ = strconv.ParseFloat(data[0], 64)
   fastd, _ = strconv.ParseFloat(data[1], 64)
   price, _ = strconv.ParseFloat(data[2], 64)
-  timestamp, _ = strconv.ParseInt(data[2], 10, 64)
+  timestamp, _ = strconv.ParseInt(data[3], 10, 64)
   return
 }
 

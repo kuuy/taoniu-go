@@ -117,18 +117,18 @@ func (r *PlansRepository) Flush(interval string) error {
 }
 
 func (r *PlansRepository) Build(interval string, signals map[string]interface{}, side int) error {
-  if _, ok := signals["kdj"]; !ok {
+  if _, ok := signals["supertrend"]; !ok {
     return nil
   }
   timestamp := r.Timestamp(interval)
-  for symbol, price := range signals["kdj"].(map[string]float64) {
+  for symbol, price := range signals["supertrend"].(map[string]float64) {
     amount := 10.0
     if _, ok := signals["bbands"]; ok {
       if p, ok := signals["bbands"].(map[string]float64)[symbol]; ok {
         if p < price {
           price = p
         }
-        amount += 10.0
+        amount += 15.0
       }
     }
     if _, ok := signals["rsi"]; ok {
@@ -136,11 +136,35 @@ func (r *PlansRepository) Build(interval string, signals map[string]interface{},
         if p < price {
           price = p
         }
-        amount += 10.0
+        amount += 15.0
       }
     }
     if _, ok := signals["ichimoku_cloud"]; ok {
       if p, ok := signals["ichimoku_cloud"].(map[string]float64)[symbol]; ok {
+        if p < price {
+          price = p
+        }
+        amount += 15.0
+      }
+    }
+    if _, ok := signals["zlema"]; ok {
+      if p, ok := signals["zlema"].(map[string]float64)[symbol]; ok {
+        if p < price {
+          price = p
+        }
+        amount += 10.0
+      }
+    }
+    if _, ok := signals["ha_zlema"]; ok {
+      if p, ok := signals["ha_zlema"].(map[string]float64)[symbol]; ok {
+        if p < price {
+          price = p
+        }
+        amount += 10.0
+      }
+    }
+    if _, ok := signals["stoch_rsi"]; ok {
+      if p, ok := signals["stoch_rsi"].(map[string]float64)[symbol]; ok {
         if p < price {
           price = p
         }
@@ -152,43 +176,11 @@ func (r *PlansRepository) Build(interval string, signals map[string]interface{},
         if p < price {
           price = p
         }
-        amount += 10.0
-      }
-    }
-    if _, ok := signals["zlema"]; ok {
-      if p, ok := signals["zlema"].(map[string]float64)[symbol]; ok {
-        if p < price {
-          price = p
-        }
-        amount += 5.0
-      }
-    }
-    if _, ok := signals["ha_zlema"]; ok {
-      if p, ok := signals["ha_zlema"].(map[string]float64)[symbol]; ok {
-        if p < price {
-          price = p
-        }
-        amount += 5.0
-      }
-    }
-    if _, ok := signals["stoch_rsi"]; ok {
-      if p, ok := signals["stoch_rsi"].(map[string]float64)[symbol]; ok {
-        if p < price {
-          price = p
-        }
         amount += 5.0
       }
     }
     if _, ok := signals["smc"]; ok {
       if p, ok := signals["smc"].(map[string]float64)[symbol]; ok {
-        if p < price {
-          price = p
-        }
-        amount += 5.0
-      }
-    }
-    if _, ok := signals["supertrend"]; ok {
-      if p, ok := signals["supertrend"].(map[string]float64)[symbol]; ok {
         if p < price {
           price = p
         }
@@ -309,7 +301,7 @@ func (r *PlansRepository) Timestamp(interval string) int64 {
   case "1d":
     duration = duration - time.Hour*time.Duration(now.Hour()) - time.Minute*time.Duration(now.Minute())
   }
-  return now.Add(duration).Unix() * 1000
+  return now.Add(duration).UnixMilli()
 }
 
 func (r *PlansRepository) Filters(symbol string) (tickSize float64, stepSize float64, err error) {

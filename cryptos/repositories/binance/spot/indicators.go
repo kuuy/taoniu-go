@@ -281,7 +281,7 @@ func (r *IndicatorsRepository) Timestamp(interval string) int64 {
   case "1d":
     duration = duration - time.Hour*time.Duration(now.Hour()) - time.Minute*time.Duration(now.Minute())
   }
-  return now.Add(duration).Unix() * 1000
+  return now.Add(duration).UnixMilli()
 }
 
 func (r *IndicatorsRepository) Filters(symbol string) (tickSize float64, stepSize float64, err error) {

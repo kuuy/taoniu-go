@@ -186,7 +186,7 @@ func (r *ScalpingRepository) Place(planId string) (err error) {
 
   var sellPrice float64
   if plan.Side == 1 {
-    if plan.Amount > 40 {
+    if plan.Amount > 50 {
       switch plan.Interval {
       case "1m":
         sellPrice = buyPrice * 1.0105
@@ -211,7 +211,7 @@ func (r *ScalpingRepository) Place(planId string) (err error) {
     }
     sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
   } else {
-    if plan.Amount > 40 {
+    if plan.Amount > 50 {
       switch plan.Interval {
       case "1m":
         sellPrice = buyPrice * 0.9895
