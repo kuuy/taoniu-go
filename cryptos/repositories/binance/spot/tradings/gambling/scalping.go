@@ -172,6 +172,10 @@ func (r *ScalpingRepository) Place(id string) (err error) {
     return errors.New(fmt.Sprintf("gambling scalping free balance must reach %v", config.GAMBLING_SCALPING_MIN_BINANCE))
   }
 
+  if common.GetEnvInt("BINANCE_SPOT_TRADINGS_ENABLE") == 0 {
+    return errors.New("binance spot tradings not enable now")
+  }
+
   mutex := common.NewMutex(
     r.Rdb,
     r.Ctx,

@@ -408,6 +408,10 @@ func (r *AntRepository) Place(id string) (err error) {
     return
   }
 
+  if common.GetEnvInt("BINANCE_FUTURES_TRADINGS_ENABLE") == 0 {
+    return errors.New("binance futures tradings not enable now")
+  }
+
   mutex := common.NewMutex(
     r.Rdb,
     r.Ctx,

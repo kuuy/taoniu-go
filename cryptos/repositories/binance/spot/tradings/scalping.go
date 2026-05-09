@@ -257,6 +257,10 @@ func (r *ScalpingRepository) Place(planId string) (err error) {
     return fmt.Errorf("scalping free balance must reach %v", config.SCALPING_MIN_BINANCE)
   }
 
+  if common.GetEnvInt("BINANCE_SPOT_TRADINGS_ENABLE") == 0 {
+    return errors.New("binance spot tradings not enable now")
+  }
+
   mutex := common.NewMutex(
     r.Rdb,
     r.Ctx,
