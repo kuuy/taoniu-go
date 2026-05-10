@@ -17,7 +17,7 @@ type PlansRepository struct {
   SymbolsRepository *SymbolsRepository
 }
 
-type PlansInfo struct {
+type PlanInfo struct {
   Symbol    string
   Side      uint32
   Price     float32
@@ -26,7 +26,7 @@ type PlansInfo struct {
   Timestamp time.Time
 }
 
-type signalsInfo struct {
+type signalInfo struct {
   Symbol    string
   Indicator string
   Price     float64
@@ -51,8 +51,6 @@ var indicatorWeights = map[string]float64{
   "kdj":               5,
   "supertrend":        5,
 }
-
-var requiredIndicators = []string{"kdj", "supertrend"}
 
 func (r *PlansRepository) Ids(status int) []string {
   var ids []string
@@ -156,7 +154,7 @@ func (r *PlansRepository) Flush(interval string) error {
   return nil
 }
 
-func (r *PlansRepository) GetSignals(interval string, signal int) (map[string][]signalsInfo, error) {
+func (r *PlansRepository) GetSignals(interval string, signal int) (map[string][]signalInfo, error) {
   timestamp := time.Now().UnixMilli()
   switch interval {
   case "1m":
@@ -194,9 +192,9 @@ func (r *PlansRepository) GetSignals(interval string, signal int) (map[string][]
     return nil, err
   }
 
-  result := make(map[string][]signalsInfo)
+  result := make(map[string][]signalInfo)
   for _, s := range strategies {
-    result[s.Symbol] = append(result[s.Symbol], signalsInfo{
+    result[s.Symbol] = append(result[s.Symbol], signalInfo{
       Symbol:    s.Symbol,
       Indicator: s.Indicator,
       Price:     s.Price,
@@ -208,7 +206,7 @@ func (r *PlansRepository) GetSignals(interval string, signal int) (map[string][]
   return result, nil
 }
 
-func (r *PlansRepository) BuildPlans(interval string, signals map[string][]signalsInfo) error {
+func (r *PlansRepository) BuildPlans(interval string, signals map[string][]signalInfo) error {
   for symbol, indicators := range signals {
     var timestamp int64
     var n int
@@ -252,21 +250,7 @@ func (r *PlansRepository) BuildPlans(interval string, signals map[string][]signa
   return nil
 }
 
-func (r *PlansRepository) hasRequiredIndicators(indicators []signalsInfo) bool {
-  found := make(map[string]bool)
-  for _, ind := range indicators {
-    found[ind.Indicator] = true
-  }
-
-  for _, required := range requiredIndicators {
-    if !found[required] {
-      return false
-    }
-  }
-  return true
-}
-
-func (r *PlansRepository) calculatePriceAndAmount(indicators []signalsInfo) (float64, float64) {
+func (r *PlansRepository) calculatePriceAndAmount(indicators []signalInfo) (float64, float64) {
   var basePrice float64
   var totalAmount float64
 
@@ -302,7 +286,7 @@ func (r *PlansRepository) formatOrder(symbol string, side uint32, price, amount 
   return price, quantity, nil
 }
 
-func (r *PlansRepository) detectSide(indicators []signalsInfo) uint32 {
+func (r *PlansRepository) detectSide(indicators []signalInfo) uint32 {
   if len(indicators) == 0 {
     return 0
   }
