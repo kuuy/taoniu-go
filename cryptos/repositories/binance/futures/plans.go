@@ -2,7 +2,6 @@ package futures
 
 import (
   "errors"
-  "math"
   "time"
 
   "github.com/rs/xid"
@@ -79,6 +78,9 @@ func (r *PlansRepository) Count(conditions map[string]interface{}) int64 {
   if symbol, ok := conditions["symbol"].(string); ok {
     query.Where("symbol", symbol)
   }
+  if _, ok := conditions["interval"]; ok {
+    query.Where("interval", conditions["interval"].(string))
+  }
   if side, ok := conditions["side"].(uint32); ok {
     query.Where("side", side)
   }
@@ -100,6 +102,9 @@ func (r *PlansRepository) Listings(conditions map[string]interface{}, current in
   })
   if symbol, ok := conditions["symbol"].(string); ok {
     query.Where("symbol", symbol)
+  }
+  if _, ok := conditions["interval"]; ok {
+    query.Where("interval", conditions["interval"].(string))
   }
   if side, ok := conditions["side"].(uint32); ok {
     query.Where("side", side)
@@ -179,6 +184,7 @@ func (r *PlansRepository) GetSignals(interval string, signal int) (map[string][]
     "price",
     "signal",
     "timestamp",
+    "created_at",
   }).Where(
     "indicator IN ? AND interval = ? AND timestamp > ? AND signal = ?",
     indicators,
@@ -195,16 +201,16 @@ func (r *PlansRepository) GetSignals(interval string, signal int) (map[string][]
   result := make(map[string][]signalInfo)
   for _, s := range strategies {
     createdTimestamp := s.CreatedAt.UnixMilli()
-    if interval == "1m" && createdTimestamp >= timestamp-900000 {
+    if interval == "1m" && createdTimestamp < timestamp-900000 {
       continue
     }
-    if interval == "15m" && createdTimestamp >= timestamp-2700000 {
+    if interval == "15m" && createdTimestamp < timestamp-2700000 {
       continue
     }
-    if interval == "4h" && createdTimestamp >= timestamp-5400000 {
+    if interval == "4h" && createdTimestamp < timestamp-5400000 {
       continue
     }
-    if interval == "1d" && createdTimestamp >= timestamp-21600000 {
+    if interval == "1d" && createdTimestamp < timestamp-21600000 {
       continue
     }
     result[s.Symbol] = append(result[s.Symbol], signalInfo{
@@ -243,21 +249,41 @@ func (r *PlansRepository) BuildPlans(interval string, signals map[string][]signa
       continue
     }
 
-    if r.shouldSkip(symbol, interval, timestamp, side, price, quantity, totalAmount) {
-      continue
-    }
+    var entity models.Plan
+    result := r.Db.Where(
+      "symbol = ? AND interval = ? AND timestamp = ?",
+      symbol,
+      interval,
+      timestamp,
+    ).Take(&entity)
 
-    entity := models.Plan{
-      ID:        xid.New().String(),
-      Symbol:    symbol,
-      Interval:  interval,
-      Side:      int(side),
-      Price:     price,
-      Quantity:  quantity,
-      Amount:    totalAmount,
-      Timestamp: timestamp,
+    if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+      entity = models.Plan{
+        ID:        xid.New().String(),
+        Symbol:    symbol,
+        Interval:  interval,
+        Side:      int(side),
+        Price:     price,
+        Quantity:  quantity,
+        Amount:    totalAmount,
+        Timestamp: timestamp,
+      }
+      r.Db.Create(&entity)
+    } else if entity.Side == int(side) {
+      values := map[string]interface{}{}
+      if entity.Price != price {
+        values["price"] = price
+      }
+      if entity.Quantity != quantity {
+        values["quantity"] = price
+      }
+      if entity.Amount != totalAmount {
+        values["amount"] = totalAmount
+      }
+      if len(values) > 0 {
+        r.Db.Model(&entity).Updates(values)
+      }
     }
-    r.Db.Create(&entity)
   }
 
   return nil
@@ -304,57 +330,6 @@ func (r *PlansRepository) detectSide(indicators []signalInfo) uint32 {
     return 0
   }
   return uint32(indicators[0].Signal)
-}
-
-func (r *PlansRepository) shouldSkip(symbol, interval string, timestamp int64, side uint32, price, quantity, amount float64) bool {
-  var entity models.Plan
-  result := r.Db.Where("symbol = ? AND interval = ?", symbol, interval).
-    Order("timestamp DESC").
-    Take(&entity)
-
-  if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    if timestamp <= entity.Timestamp {
-      values := map[string]interface{}{}
-      if entity.Price != price {
-        if side == 1 {
-          values["price"] = math.Min(entity.Price, price)
-        } else {
-          values["price"] = math.Max(entity.Price, price)
-        }
-      }
-      if entity.Quantity != quantity {
-        values["quantity"] = quantity
-      }
-      if entity.Amount != amount {
-        values["amount"] = amount
-      }
-      if len(values) > 0 {
-        r.Db.Model(&entity).Updates(values)
-      }
-      return true
-    }
-    if int(side) == entity.Side {
-      values := map[string]interface{}{}
-      if entity.Price != price {
-        if side == 1 {
-          values["price"] = math.Min(entity.Price, price)
-        } else {
-          values["price"] = math.Max(entity.Price, price)
-        }
-      }
-      if entity.Quantity != quantity {
-        values["quantity"] = quantity
-      }
-      if entity.Amount != amount {
-        values["amount"] = amount
-      }
-      if len(values) > 0 {
-        r.Db.Model(&entity).Updates(values)
-      }
-      return true
-    }
-  }
-  return false
 }
 
 func (r *PlansRepository) Timestep(interval string) int64 {

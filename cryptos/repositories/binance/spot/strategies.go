@@ -33,6 +33,9 @@ func (r *StrategiesRepository) Count(conditions map[string]interface{}) int64 {
   if _, ok := conditions["symbol"]; ok {
     query.Where("symbol", conditions["symbol"].(string))
   }
+  if _, ok := conditions["interval"]; ok {
+    query.Where("interval", conditions["interval"].(string))
+  }
   if _, ok := conditions["signal"]; ok {
     query.Where("signal", conditions["signal"].(string))
   }

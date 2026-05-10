@@ -48,6 +48,9 @@ func (h *PlansHandler) Listings(
   if q.Get("symbol") != "" {
     conditions["symbol"] = q.Get("symbol")
   }
+  if q.Get("interval") != "" {
+    conditions["interval"] = q.Get("interval")
+  }
   if q.Get("side") != "" {
     conditions["side"], _ = strconv.Atoi(q.Get("side"))
   }
