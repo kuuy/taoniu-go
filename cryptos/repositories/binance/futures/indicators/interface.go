@@ -84,7 +84,7 @@ func (r *BaseRepository) Timestamp(interval string) int64 {
   case "1d":
     duration = duration - time.Hour*time.Duration(now.Hour()) - time.Minute*time.Duration(now.Minute())
   }
-  return now.Add(duration).UnixMilli()
+  return now.Add(duration).Unix() * 1000
 }
 
 func (r *BaseRepository) Kline(symbol, interval string, fields ...string) (data []float64, timestamp int64, err error) {
@@ -142,6 +142,7 @@ func (r *BaseRepository) Klines(symbol, interval string, limit int, fields ...st
     &klines,
   ).Error
   if err != nil {
+    log.Println("aa", symbol)
     return
   }
   if len(klines) < limit {
@@ -151,6 +152,7 @@ func (r *BaseRepository) Klines(symbol, interval string, limit int, fields ...st
   }
 
   if klines[0].Timestamp < r.Timestamp(interval)-60000 {
+    log.Println("klines", symbol, klines[0].Timestamp, r.Timestamp(interval))
     err = fmt.Errorf("[%s] waiting for %s klines flush", symbol, interval)
     return
   }

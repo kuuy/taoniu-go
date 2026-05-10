@@ -385,7 +385,7 @@ func (r *PlansRepository) Timestamp(interval string) int64 {
   case "1d":
     duration = duration - time.Hour*time.Duration(now.Hour()) - time.Minute*time.Duration(now.Minute())
   }
-  return now.Add(duration).UnixMilli()
+  return now.Add(duration).Unix() * 1000
 }
 
 func (r *PlansRepository) Filters(symbol string) (tickSize float64, stepSize float64, err error) {
