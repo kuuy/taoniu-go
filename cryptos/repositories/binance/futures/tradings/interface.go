@@ -30,6 +30,11 @@ type PositionRepository interface {
   StopPrice(maxCapital float64, side int, price float64, leverage int, entryPrice float64, entryQuantity float64, tickSize float64, stepSize float64) (float64, error)
 }
 
+type AtrRepository interface {
+  Get(symbol, interval string) (float64, error)
+  Multiplier(price, atr float64) float64
+}
+
 type OrdersRepository interface {
   Status(symbol string, orderId int64) string
   Create(symbol string, positionSide string, side string, price float64, quantity float64) (int64, error)

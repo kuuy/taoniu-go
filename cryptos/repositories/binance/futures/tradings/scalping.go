@@ -27,6 +27,7 @@ type ScalpingRepository struct {
   AccountRepository  AccountRepository
   OrdersRepository   OrdersRepository
   PositionRepository PositionRepository
+  AtrRepository      AtrRepository
 }
 
 func (r *ScalpingRepository) Scan(side int) []string {
@@ -614,6 +615,22 @@ func (r *ScalpingRepository) Take(scalping *models.Scalping, price float64) (err
     if errors.Is(result.Error, gorm.ErrRecordNotFound) {
       return errors.New("empty scalping")
     }
+    if r.AtrRepository != nil {
+      if atr, atrErr := r.AtrRepository.Get(scalping.Symbol, r.planInterval(trading.PlanId)); atrErr == nil && atr > 0 {
+        m := r.AtrRepository.Multiplier(entryPrice, atr)
+        if newStop := price - m*atr; newStop > scalping.StopPrice {
+          r.Db.Model(&scalping).Where("version", scalping.Version).Updates(map[string]interface{}{
+            "stop_price": newStop,
+            "version":    gorm.Expr("version + ?", 1),
+          })
+          scalping.StopPrice = newStop
+          scalping.Version++
+        }
+        if scalping.StopPrice > 0 && price <= scalping.StopPrice {
+          return r.stopLoss(scalping, trading, positionSide, price)
+        }
+      }
+    }
     if price < trading.SellPrice {
       if price < entryPrice*1.0105 {
         return errors.New("compare with sell price too low")
@@ -643,6 +660,22 @@ func (r *ScalpingRepository) Take(scalping *models.Scalping, price float64) (err
     result := r.Db.Where("scalping_id=? AND status=?", scalping.ID, 1).Order("sell_price desc").Take(&trading)
     if errors.Is(result.Error, gorm.ErrRecordNotFound) {
       return errors.New("empty scalping")
+    }
+    if r.AtrRepository != nil {
+      if atr, atrErr := r.AtrRepository.Get(scalping.Symbol, r.planInterval(trading.PlanId)); atrErr == nil && atr > 0 {
+        m := r.AtrRepository.Multiplier(entryPrice, atr)
+        if newStop := price + m*atr; scalping.StopPrice == 0 || newStop < scalping.StopPrice {
+          r.Db.Model(&scalping).Where("version", scalping.Version).Updates(map[string]interface{}{
+            "stop_price": newStop,
+            "version":    gorm.Expr("version + ?", 1),
+          })
+          scalping.StopPrice = newStop
+          scalping.Version++
+        }
+        if scalping.StopPrice > 0 && price >= scalping.StopPrice {
+          return r.stopLoss(scalping, trading, positionSide, price)
+        }
+      }
     }
     if price > trading.SellPrice {
       if price > entryPrice*0.9895 {
@@ -699,7 +732,33 @@ func (r *ScalpingRepository) Take(scalping *models.Scalping, price float64) (err
   return
 }
 
+func (r *ScalpingRepository) stopLoss(scalping *models.Scalping, trading *tradingsModels.Scalping, positionSide string, price float64) error {
+  orderId, err := r.OrdersRepository.Stop(scalping.Symbol, positionSide, price)
+  if err != nil {
+    return err
+  }
+  return r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+    "sell_order_id": orderId,
+    "sell_price":    price,
+    "status":        2,
+    "version":       gorm.Expr("version + ?", 1),
+  }).Error
+}
+
+func (r *ScalpingRepository) planInterval(planId string) string {
+  var plan models.Plan
+  if r.Db.Select("interval").Take(&plan, "id", planId).Error == nil {
+    return plan.Interval
+  }
+  return "15m"
+}
+
 func (r *ScalpingRepository) Close(scalping *models.Scalping) {
+  r.Db.Model(&scalping).Where("version", scalping.Version).Updates(map[string]interface{}{
+    "stop_price": 0,
+    "version":    gorm.Expr("version + ?", 1),
+  })
+
   var total int64
   r.Db.Model(&tradingsModels.Scalping{}).Where("scalping_id = ? AND status IN ?", scalping.ID, []int{0, 1}).Count(&total)
   if total == 0 {
