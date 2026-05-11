@@ -615,22 +615,22 @@ func (r *ScalpingRepository) Take(scalping *models.Scalping, price float64) (err
     if errors.Is(result.Error, gorm.ErrRecordNotFound) {
       return errors.New("empty scalping")
     }
-    if r.AtrRepository != nil {
-      if atr, atrErr := r.AtrRepository.Get(scalping.Symbol, r.planInterval(trading.PlanId)); atrErr == nil && atr > 0 {
-        m := r.AtrRepository.Multiplier(entryPrice, atr)
-        if newStop := price - m*atr; newStop > scalping.StopPrice {
-          r.Db.Model(&scalping).Where("version", scalping.Version).Updates(map[string]interface{}{
-            "stop_price": newStop,
-            "version":    gorm.Expr("version + ?", 1),
-          })
-          scalping.StopPrice = newStop
-          scalping.Version++
-        }
-        if scalping.StopPrice > 0 && price <= scalping.StopPrice {
-          return r.stopLoss(scalping, trading, positionSide, price)
-        }
+
+    if atr, atrErr := r.AtrRepository.Get(scalping.Symbol, r.planInterval(trading.PlanId)); atrErr == nil && atr > 0 {
+      m := r.AtrRepository.Multiplier(entryPrice, atr)
+      if newStop := price - m*atr; newStop > scalping.StopPrice {
+        r.Db.Model(&scalping).Where("version", scalping.Version).Updates(map[string]interface{}{
+          "stop_price": newStop,
+          "version":    gorm.Expr("version + ?", 1),
+        })
+        scalping.StopPrice = newStop
+        scalping.Version++
+      }
+      if scalping.StopPrice > 0 && price <= scalping.StopPrice {
+        return r.stopLoss(scalping, trading, positionSide, price)
       }
     }
+
     if price < trading.SellPrice {
       if price < entryPrice*1.0105 {
         return errors.New("compare with sell price too low")
@@ -661,22 +661,22 @@ func (r *ScalpingRepository) Take(scalping *models.Scalping, price float64) (err
     if errors.Is(result.Error, gorm.ErrRecordNotFound) {
       return errors.New("empty scalping")
     }
-    if r.AtrRepository != nil {
-      if atr, atrErr := r.AtrRepository.Get(scalping.Symbol, r.planInterval(trading.PlanId)); atrErr == nil && atr > 0 {
-        m := r.AtrRepository.Multiplier(entryPrice, atr)
-        if newStop := price + m*atr; scalping.StopPrice == 0 || newStop < scalping.StopPrice {
-          r.Db.Model(&scalping).Where("version", scalping.Version).Updates(map[string]interface{}{
-            "stop_price": newStop,
-            "version":    gorm.Expr("version + ?", 1),
-          })
-          scalping.StopPrice = newStop
-          scalping.Version++
-        }
-        if scalping.StopPrice > 0 && price >= scalping.StopPrice {
-          return r.stopLoss(scalping, trading, positionSide, price)
-        }
+
+    if atr, atrErr := r.AtrRepository.Get(scalping.Symbol, r.planInterval(trading.PlanId)); atrErr == nil && atr > 0 {
+      m := r.AtrRepository.Multiplier(entryPrice, atr)
+      if newStop := price + m*atr; scalping.StopPrice == 0 || newStop < scalping.StopPrice {
+        r.Db.Model(&scalping).Where("version", scalping.Version).Updates(map[string]interface{}{
+          "stop_price": newStop,
+          "version":    gorm.Expr("version + ?", 1),
+        })
+        scalping.StopPrice = newStop
+        scalping.Version++
+      }
+      if scalping.StopPrice > 0 && price >= scalping.StopPrice {
+        return r.stopLoss(scalping, trading, positionSide, price)
       }
     }
+
     if price > trading.SellPrice {
       if price > entryPrice*0.9895 {
         return errors.New("price too high")

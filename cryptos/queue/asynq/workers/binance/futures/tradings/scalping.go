@@ -10,43 +10,52 @@ import (
 
   "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/futures"
-  futuresRepositories "taoniu.local/cryptos/repositories/binance/futures"
-  repositories "taoniu.local/cryptos/repositories/binance/futures/tradings"
+  repositories "taoniu.local/cryptos/repositories/binance/futures"
+  indicatorsRepositories "taoniu.local/cryptos/repositories/binance/futures/indicators"
+  tradingsRepositories "taoniu.local/cryptos/repositories/binance/futures/tradings"
 )
 
 type Scalping struct {
   AnsqContext       *common.AnsqServerContext
-  Repository        *repositories.ScalpingRepository
-  AccountRepository *futuresRepositories.AccountRepository
+  Repository        *tradingsRepositories.ScalpingRepository
+  AccountRepository *repositories.AccountRepository
 }
 
 func NewScalping(ansqContext *common.AnsqServerContext) *Scalping {
   h := &Scalping{
     AnsqContext: ansqContext,
   }
-  h.Repository = &repositories.ScalpingRepository{
+  h.Repository = &tradingsRepositories.ScalpingRepository{
     Db:  h.AnsqContext.Db,
     Rdb: h.AnsqContext.Rdb,
     Ctx: h.AnsqContext.Ctx,
   }
-  h.Repository.SymbolsRepository = &futuresRepositories.SymbolsRepository{
+  baseIndicatorsRepository := indicatorsRepositories.BaseRepository{
     Db:  h.AnsqContext.Db,
     Rdb: h.AnsqContext.Rdb,
     Ctx: h.AnsqContext.Ctx,
   }
-  h.Repository.AccountRepository = &futuresRepositories.AccountRepository{
-    Rdb: h.AnsqContext.Rdb,
-    Ctx: h.AnsqContext.Ctx,
-  }
-  h.Repository.OrdersRepository = &futuresRepositories.OrdersRepository{
+  h.Repository.SymbolsRepository = &repositories.SymbolsRepository{
     Db:  h.AnsqContext.Db,
     Rdb: h.AnsqContext.Rdb,
     Ctx: h.AnsqContext.Ctx,
   }
-  h.Repository.PositionRepository = &futuresRepositories.PositionsRepository{
+  h.Repository.AccountRepository = &repositories.AccountRepository{
+    Rdb: h.AnsqContext.Rdb,
+    Ctx: h.AnsqContext.Ctx,
+  }
+  h.Repository.OrdersRepository = &repositories.OrdersRepository{
+    Db:  h.AnsqContext.Db,
+    Rdb: h.AnsqContext.Rdb,
+    Ctx: h.AnsqContext.Ctx,
+  }
+  h.Repository.PositionRepository = &repositories.PositionsRepository{
     Db: h.AnsqContext.Db,
   }
-  h.AccountRepository = &futuresRepositories.AccountRepository{
+  h.Repository.AtrRepository = &indicatorsRepositories.AtrRepository{
+    BaseRepository: baseIndicatorsRepository,
+  }
+  h.AccountRepository = &repositories.AccountRepository{
     Db:   h.AnsqContext.Db,
     Rdb:  h.AnsqContext.Rdb,
     Ctx:  h.AnsqContext.Ctx,

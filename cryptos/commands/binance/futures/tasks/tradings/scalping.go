@@ -13,6 +13,7 @@ import (
   "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/futures"
   repositories "taoniu.local/cryptos/repositories/binance/futures"
+  indicatorsRepositories "taoniu.local/cryptos/repositories/binance/futures/indicators"
   tradingsRepositories "taoniu.local/cryptos/repositories/binance/futures/tradings"
 )
 
@@ -40,6 +41,11 @@ func NewScalpingCommand() *cli.Command {
         Rdb: h.Rdb,
         Ctx: h.Ctx,
       }
+      baseIndicatorsRepository := indicatorsRepositories.BaseRepository{
+        Db:  h.Db,
+        Rdb: h.Rdb,
+        Ctx: h.Ctx,
+      }
       h.TradingsRepository.SymbolsRepository = &repositories.SymbolsRepository{
         Db:  h.Db,
         Rdb: h.Rdb,
@@ -56,6 +62,9 @@ func NewScalpingCommand() *cli.Command {
       }
       h.TradingsRepository.PositionRepository = &repositories.PositionsRepository{
         Db: h.Db,
+      }
+      h.TradingsRepository.AtrRepository = &indicatorsRepositories.AtrRepository{
+        BaseRepository: baseIndicatorsRepository,
       }
       h.ScalpingRepository = &repositories.ScalpingRepository{
         Db: h.Db,

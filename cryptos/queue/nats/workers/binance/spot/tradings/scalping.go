@@ -9,39 +9,39 @@ import (
 
   "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/spot"
-  spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
-  repositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
+  repositories "taoniu.local/cryptos/repositories/binance/spot"
+  tradingsRepositories "taoniu.local/cryptos/repositories/binance/spot/tradings"
 )
 
 type Scalping struct {
   NatsContext *common.NatsContext
-  Repository  *repositories.ScalpingRepository
+  Repository  *tradingsRepositories.ScalpingRepository
 }
 
 func NewScalping(natsContext *common.NatsContext) *Scalping {
   h := &Scalping{
     NatsContext: natsContext,
   }
-  h.Repository = &repositories.ScalpingRepository{
+  h.Repository = &tradingsRepositories.ScalpingRepository{
     Db:  h.NatsContext.Db,
     Rdb: h.NatsContext.Rdb,
     Ctx: h.NatsContext.Ctx,
   }
-  h.Repository.SymbolsRepository = &spotRepositories.SymbolsRepository{
+  h.Repository.SymbolsRepository = &repositories.SymbolsRepository{
     Db:  h.NatsContext.Db,
     Rdb: h.NatsContext.Rdb,
     Ctx: h.NatsContext.Ctx,
   }
-  h.Repository.AccountRepository = &spotRepositories.AccountRepository{
+  h.Repository.AccountRepository = &repositories.AccountRepository{
     Rdb: h.NatsContext.Rdb,
     Ctx: h.NatsContext.Ctx,
   }
-  h.Repository.OrdersRepository = &spotRepositories.OrdersRepository{
+  h.Repository.OrdersRepository = &repositories.OrdersRepository{
     Db:  h.NatsContext.Db,
     Rdb: h.NatsContext.Rdb,
     Ctx: h.NatsContext.Ctx,
   }
-  h.Repository.PositionRepository = &spotRepositories.PositionsRepository{
+  h.Repository.PositionRepository = &repositories.PositionsRepository{
     Db: h.NatsContext.Db,
   }
   return h
