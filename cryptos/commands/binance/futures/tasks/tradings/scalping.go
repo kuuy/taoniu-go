@@ -66,6 +66,10 @@ func NewScalpingCommand() *cli.Command {
       h.TradingsRepository.AtrRepository = &indicatorsRepositories.AtrRepository{
         BaseRepository: baseIndicatorsRepository,
       }
+      h.TradingsRepository.FundingRateRepository = &repositories.FundingRateRepository{
+        Rdb: h.Rdb,
+        Ctx: h.Ctx,
+      }
       h.ScalpingRepository = &repositories.ScalpingRepository{
         Db: h.Db,
       }

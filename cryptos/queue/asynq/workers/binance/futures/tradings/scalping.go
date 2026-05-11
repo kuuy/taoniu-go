@@ -55,6 +55,10 @@ func NewScalping(ansqContext *common.AnsqServerContext) *Scalping {
   h.Repository.AtrRepository = &indicatorsRepositories.AtrRepository{
     BaseRepository: baseIndicatorsRepository,
   }
+  h.Repository.FundingRateRepository = &repositories.FundingRateRepository{
+    Rdb: h.AnsqContext.Rdb,
+    Ctx: h.AnsqContext.Ctx,
+  }
   h.AccountRepository = &repositories.AccountRepository{
     Db:   h.AnsqContext.Db,
     Rdb:  h.AnsqContext.Rdb,

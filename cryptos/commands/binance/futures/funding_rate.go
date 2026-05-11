@@ -32,7 +32,6 @@ func NewFundingRateCommand() *cli.Command {
         Ctx: context.Background(),
       }
       h.FundingRateRepository = &repositories.FundingRateRepository{
-        Db:  h.Db,
         Rdb: h.Rdb,
         Ctx: h.Ctx,
       }

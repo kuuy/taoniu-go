@@ -53,6 +53,10 @@ func NewScalping(natsContext *common.NatsContext) *Scalping {
   h.Repository.AtrRepository = &indicatorsRepositories.AtrRepository{
     BaseRepository: baseIndicatorsRepository,
   }
+  h.Repository.FundingRateRepository = &repositories.FundingRateRepository{
+    Rdb: h.NatsContext.Rdb,
+    Ctx: h.NatsContext.Ctx,
+  }
   return h
 }
 

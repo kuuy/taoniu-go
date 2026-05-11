@@ -35,6 +35,10 @@ type AtrRepository interface {
   Multiplier(price, atr float64) float64
 }
 
+type FundingRateRepository interface {
+  Get(symbol string) (float64, error)
+}
+
 type OrdersRepository interface {
   Status(symbol string, orderId int64) string
   Create(symbol string, positionSide string, side string, price float64, quantity float64) (int64, error)

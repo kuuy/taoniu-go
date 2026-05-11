@@ -10,7 +10,6 @@ import (
   "time"
 
   "github.com/go-redis/redis/v8"
-  "gorm.io/gorm"
 
   "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/futures"
@@ -23,9 +22,22 @@ type FundingRateInfo struct {
 }
 
 type FundingRateRepository struct {
-  Db  *gorm.DB
   Rdb *redis.Client
   Ctx context.Context
+}
+
+func (r *FundingRateRepository) Get(symbol string) (float64, error) {
+  day := time.Now().Format("0102")
+  redisKey := fmt.Sprintf(config.REDIS_KEY_FUNDING_RATE, day)
+  val, err := r.Rdb.HGet(r.Ctx, redisKey, symbol).Result()
+  if err != nil {
+    return 0, err
+  }
+  var rate float64
+  if err = json.Unmarshal([]byte(val), &rate); err != nil {
+    return 0, err
+  }
+  return rate, nil
 }
 
 func (r *FundingRateRepository) Flush() (err error) {

@@ -20,14 +20,15 @@ import (
 )
 
 type ScalpingRepository struct {
-  Db                 *gorm.DB
-  Rdb                *redis.Client
-  Ctx                context.Context
-  SymbolsRepository  SymbolsRepository
-  AccountRepository  AccountRepository
-  OrdersRepository   OrdersRepository
-  PositionRepository PositionRepository
-  AtrRepository      AtrRepository
+  Db                    *gorm.DB
+  Rdb                   *redis.Client
+  Ctx                   context.Context
+  SymbolsRepository     SymbolsRepository
+  AccountRepository     AccountRepository
+  OrdersRepository      OrdersRepository
+  PositionRepository    PositionRepository
+  AtrRepository         AtrRepository
+  FundingRateRepository FundingRateRepository
 }
 
 func (r *ScalpingRepository) Scan(side int) []string {
@@ -103,6 +104,7 @@ func (r *ScalpingRepository) Flush(id string) (err error) {
   if err != nil {
     return err
   }
+
   err = r.Take(scalping, price)
   if err != nil {
     log.Println("take error", scalping.Symbol, err)
@@ -382,6 +384,15 @@ func (r *ScalpingRepository) Place(planId string) (err error) {
     return errors.New("plan price too low")
   }
 
+  if fundingRate, frErr := r.FundingRateRepository.Get(plan.Symbol); frErr == nil {
+    if plan.Side == 1 && fundingRate > 0.001 {
+      return fmt.Errorf("scalping [%s] long blocked: funding rate %.4f%% too high", plan.Symbol, fundingRate*100)
+    }
+    if plan.Side == 2 && fundingRate < -0.001 {
+      return fmt.Errorf("scalping [%s] short blocked: funding rate %.4f%% too negative", plan.Symbol, fundingRate*100)
+    }
+  }
+
   entity, err := r.SymbolsRepository.Get(plan.Symbol)
   if err != nil {
     return
@@ -631,6 +642,13 @@ func (r *ScalpingRepository) Take(scalping *models.Scalping, price float64) (err
       }
     }
 
+    if fundingRate, frErr := r.FundingRateRepository.Get(scalping.Symbol); frErr == nil {
+      if fundingRate >= 0.005 {
+        r.stopLoss(scalping, trading, positionSide, price)
+        return fmt.Errorf("[%s] %s closed: funding rate %.4f%%", scalping.Symbol, positionSide, fundingRate*100)
+      }
+    }
+
     if price < trading.SellPrice {
       if price < entryPrice*1.0105 {
         return errors.New("compare with sell price too low")
@@ -674,6 +692,13 @@ func (r *ScalpingRepository) Take(scalping *models.Scalping, price float64) (err
       }
       if scalping.StopPrice > 0 && price >= scalping.StopPrice {
         return r.stopLoss(scalping, trading, positionSide, price)
+      }
+    }
+
+    if fundingRate, frErr := r.FundingRateRepository.Get(scalping.Symbol); frErr == nil {
+      if fundingRate <= -0.005 {
+        r.stopLoss(scalping, trading, positionSide, price)
+        return fmt.Errorf("[%s] %s closed: funding rate %.4f%%", scalping.Symbol, positionSide, fundingRate*100)
       }
     }
 

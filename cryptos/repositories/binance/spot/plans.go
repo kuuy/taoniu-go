@@ -78,6 +78,9 @@ func (r *PlansRepository) Count(conditions map[string]interface{}) int64 {
   if symbol, ok := conditions["symbol"].(string); ok {
     query.Where("symbol", symbol)
   }
+  if _, ok := conditions["interval"]; ok {
+    query.Where("interval", conditions["interval"].(string))
+  }
   if side, ok := conditions["side"].(uint32); ok {
     query.Where("side", side)
   }
@@ -99,6 +102,9 @@ func (r *PlansRepository) Listings(conditions map[string]interface{}, current in
   })
   if symbol, ok := conditions["symbol"].(string); ok {
     query.Where("symbol", symbol)
+  }
+  if _, ok := conditions["interval"]; ok {
+    query.Where("interval", conditions["interval"].(string))
   }
   if side, ok := conditions["side"].(uint32); ok {
     query.Where("side", side)
