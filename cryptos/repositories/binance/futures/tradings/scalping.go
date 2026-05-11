@@ -391,6 +391,8 @@ func (r *ScalpingRepository) Place(planId string) (err error) {
     if plan.Side == 2 && fundingRate < -0.001 {
       return fmt.Errorf("scalping [%s] short blocked: funding rate %.4f%% too negative", plan.Symbol, fundingRate*100)
     }
+  } else {
+    return errors.New("funding rate not exists")
   }
 
   entity, err := r.SymbolsRepository.Get(plan.Symbol)
