@@ -5,7 +5,6 @@ import (
   "errors"
   "fmt"
   "log"
-  "math"
   "strconv"
   "time"
 
@@ -507,7 +506,7 @@ func (r *ScalpingRepository) Place(planId string) (err error) {
     sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
   }
 
-  buyQuantity, _ := decimal.NewFromFloat(math.Max(notional, plan.Amount)).Div(decimal.NewFromFloat(buyPrice)).Float64()
+  buyQuantity, _ := decimal.NewFromFloat(notional).Div(decimal.NewFromFloat(buyPrice)).Float64()
   buyQuantity, _ = decimal.NewFromFloat(buyQuantity).Div(decimal.NewFromFloat(stepSize)).Ceil().Mul(decimal.NewFromFloat(stepSize)).Float64()
 
   if plan.Side == 1 && price > buyPrice {
