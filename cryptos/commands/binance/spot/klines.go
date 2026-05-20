@@ -75,8 +75,8 @@ func NewKlinesCommand() *cli.Command {
           }
           if interval == "1d" && (limit < 1 || limit > 100) {
             if strings.HasPrefix(symbol, "BTC") {
-              if limit > 400 {
-                log.Fatal("limit not in 1~400")
+              if limit > 200 {
+                log.Fatal("limit not in 1~200")
                 return nil
               }
             } else {
@@ -106,7 +106,15 @@ func NewKlinesCommand() *cli.Command {
             return nil
           }
           if interval == "1d" && (limit < 1 || limit > 100) {
-            log.Fatal("limit not in 1~100")
+            if strings.HasPrefix(symbol, "BTC") {
+              if limit > 200 {
+                log.Fatal("limit not in 1~200")
+                return nil
+              }
+            } else {
+              log.Fatal("limit not in 1~100")
+              return nil
+            }
             return nil
           }
           if err := h.Fix(symbol, interval, limit); err != nil {

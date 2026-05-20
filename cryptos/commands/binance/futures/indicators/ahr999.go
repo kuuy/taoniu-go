@@ -81,6 +81,6 @@ func (h *Ahr999Handler) Get(symbol string, interval string) (err error) {
 
 func (h *Ahr999Handler) Flush() (err error) {
   log.Println("indicators ahr999 flush...")
-  err = h.Repository.Flush("BTCUSDT", "1d", 400)
+  err = h.Repository.Flush("BTCUSDT", "1d", 200)
   return
 }
