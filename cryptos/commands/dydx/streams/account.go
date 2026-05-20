@@ -20,7 +20,6 @@ import (
   "gorm.io/gorm"
 
   "taoniu.local/cryptos/common"
-  config "taoniu.local/cryptos/config/dydx"
 )
 
 type AccountHandler struct {
@@ -90,18 +89,18 @@ func (h *AccountHandler) handler(message map[string]interface{}) {
   }
 
   if message["type"] == "channel_data" && message["channel"] == "v3_accounts" {
-    contents := message["contents"].(map[string]interface{})
-    orders := contents["orders"].([]interface{})
-    for _, order := range orders {
-      order := order.(map[string]interface{})
-      data, _ := json.Marshal(map[string]interface{}{
-        "symbol":   order["market"].(string),
-        "order_id": order["id"].(string),
-        "status":   order["status"].(string),
-      })
-      h.Nats.Publish(config.NATS_ORDERS_UPDATE, data)
-    }
-    h.Nats.Flush()
+    //contents := message["contents"].(map[string]interface{})
+    //orders := contents["orders"].([]interface{})
+    //for _, order := range orders {
+    //  order := order.(map[string]interface{})
+    //  data, _ := json.Marshal(map[string]interface{}{
+    //    "symbol":   order["market"].(string),
+    //    "order_id": order["id"].(string),
+    //    "status":   order["status"].(string),
+    //  })
+    //  h.Nats.Publish(config.NATS_ORDERS_UPDATE, data)
+    //}
+    //h.Nats.Flush()
   }
 }
 

@@ -8,7 +8,6 @@ import (
   "log"
   "os"
   "strconv"
-  config "taoniu.local/cryptos/config/dydx"
   "time"
 
   "github.com/coder/websocket"
@@ -91,17 +90,17 @@ func (h *TradesHandler) handler(message map[string]interface{}) {
     }
   }
   if message["type"] == "channel_data" && message["channel"] == "v3_trades" {
-    contents := message["contents"].(map[string]interface{})
-    trades := contents["trades"].([]interface{})
-    trade := trades[0].(map[string]interface{})
-    price, _ := strconv.ParseFloat(trade["price"].(string), 64)
-    data, _ := json.Marshal(map[string]interface{}{
-      "symbol": message["id"].(string),
-      "price":  price,
-      "side":   trade["side"],
-    })
-    h.Nats.Publish(config.NATS_TRADES_UPDATE, data)
-    h.Nats.Flush()
+    //contents := message["contents"].(map[string]interface{})
+    //trades := contents["trades"].([]interface{})
+    //trade := trades[0].(map[string]interface{})
+    //price, _ := strconv.ParseFloat(trade["price"].(string), 64)
+    //data, _ := json.Marshal(map[string]interface{}{
+    //  "symbol": message["id"].(string),
+    //  "price":  price,
+    //  "side":   trade["side"],
+    //})
+    //h.Nats.Publish(config.NATS_TRADES_UPDATE, data)
+    //h.Nats.Flush()
   }
 }
 

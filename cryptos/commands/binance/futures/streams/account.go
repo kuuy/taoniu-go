@@ -2,12 +2,10 @@ package streams
 
 import (
   "context"
-  "encoding/json"
   "fmt"
   "log"
   "net/http"
   "os"
-  "strconv"
   "time"
 
   "github.com/adshao/go-binance/v2"
@@ -18,7 +16,6 @@ import (
 
   "github.com/go-redis/redis/v8"
   "taoniu.local/cryptos/common"
-  config "taoniu.local/cryptos/config/binance/futures"
   jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/futures/streams"
 )
 
@@ -96,15 +93,15 @@ func (h *AccountHandler) handler(message map[string]interface{}) {
   }
 
   if event == "ORDER_TRADE_UPDATE" {
-    order := message["o"].(map[string]interface{})
-    orderId, _ := strconv.ParseInt(fmt.Sprintf("%.0f", order["i"]), 10, 64)
-    data, _ := json.Marshal(map[string]interface{}{
-      "symbol":   order["s"].(string),
-      "order_id": orderId,
-      "status":   order["X"].(string),
-    })
-    h.Nats.Publish(config.NATS_ORDERS_UPDATE, data)
-    h.Nats.Flush()
+    //order := message["o"].(map[string]interface{})
+    //orderId, _ := strconv.ParseInt(fmt.Sprintf("%.0f", order["i"]), 10, 64)
+    //data, _ := json.Marshal(map[string]interface{}{
+    //  "symbol":   order["s"].(string),
+    //  "order_id": orderId,
+    //  "status":   order["X"].(string),
+    //})
+    //h.Nats.Publish(config.NATS_ORDERS_UPDATE, data)
+    //h.Nats.Flush()
   }
 }
 

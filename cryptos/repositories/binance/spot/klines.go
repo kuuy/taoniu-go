@@ -19,7 +19,6 @@ import (
   "gorm.io/gorm"
 
   "taoniu.local/cryptos/common"
-  config "taoniu.local/cryptos/config/binance/spot"
   models "taoniu.local/cryptos/models/binance/spot"
 )
 
@@ -163,12 +162,12 @@ func (r *KlinesRepository) Flush(symbol string, interval string, endtime int64, 
     }
   }
 
-  message, _ := json.Marshal(map[string]interface{}{
-    "symbol":   symbol,
-    "interval": interval,
-  })
-  r.Nats.Publish(config.NATS_KLINES_UPDATE, message)
-  r.Nats.Flush()
+  //message, _ := json.Marshal(map[string]interface{}{
+  //  "symbol":   symbol,
+  //  "interval": interval,
+  //})
+  //r.Nats.Publish(config.NATS_KLINES_UPDATE, message)
+  //r.Nats.Flush()
 
   return nil
 }

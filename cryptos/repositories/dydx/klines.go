@@ -19,7 +19,6 @@ import (
   "gorm.io/gorm"
 
   "taoniu.local/cryptos/common"
-  config "taoniu.local/cryptos/config/dydx"
   models "taoniu.local/cryptos/models/dydx"
 )
 
@@ -134,12 +133,12 @@ func (r *KlinesRepository) Flush(symbol string, interval string, endtime int64, 
     return r.Flush(symbol, interval, endtime, limit-len(klines))
   }
 
-  message, _ := json.Marshal(map[string]interface{}{
-    "symbol":   symbol,
-    "interval": interval,
-  })
-  r.Nats.Publish(config.NATS_KLINES_UPDATE, message)
-  r.Nats.Flush()
+  //message, _ := json.Marshal(map[string]interface{}{
+  //  "symbol":   symbol,
+  //  "interval": interval,
+  //})
+  //r.Nats.Publish(config.NATS_KLINES_UPDATE, message)
+  //r.Nats.Flush()
 
   return nil
 }

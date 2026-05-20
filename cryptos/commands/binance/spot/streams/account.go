@@ -5,7 +5,6 @@ import (
   "crypto/hmac"
   "crypto/sha256"
   "encoding/hex"
-  "encoding/json"
   "errors"
   "fmt"
   "log"
@@ -94,14 +93,14 @@ func (h *AccountHandler) processMessage(message map[string]interface{}) {
   }
 
   if event == "executionReport" {
-    orderId, _ := strconv.ParseInt(fmt.Sprintf("%.0f", data["i"]), 10, 64)
-    data, _ := json.Marshal(map[string]interface{}{
-      "symbol":   data["s"].(string),
-      "order_id": orderId,
-      "status":   data["X"].(string),
-    })
-    h.Nats.Publish(config.NATS_ORDERS_UPDATE, data)
-    h.Nats.Flush()
+    //orderId, _ := strconv.ParseInt(fmt.Sprintf("%.0f", data["i"]), 10, 64)
+    //data, _ := json.Marshal(map[string]interface{}{
+    //  "symbol":   data["s"].(string),
+    //  "order_id": orderId,
+    //  "status":   data["X"].(string),
+    //})
+    //h.Nats.Publish(config.NATS_ORDERS_UPDATE, data)
+    //h.Nats.Flush()
   }
 }
 
@@ -154,14 +153,14 @@ func (h *AccountHandler) handler(message map[string]interface{}) {
   }
 
   if event == "executionReport" {
-    orderId, _ := strconv.ParseInt(fmt.Sprintf("%.0f", raw["i"]), 10, 64)
-    data, _ := json.Marshal(map[string]interface{}{
-      "symbol":   raw["s"].(string),
-      "order_id": orderId,
-      "status":   raw["X"].(string),
-    })
-    h.Nats.Publish(config.NATS_ORDERS_UPDATE, data)
-    h.Nats.Flush()
+    //orderId, _ := strconv.ParseInt(fmt.Sprintf("%.0f", raw["i"]), 10, 64)
+    //data, _ := json.Marshal(map[string]interface{}{
+    //  "symbol":   raw["s"].(string),
+    //  "order_id": orderId,
+    //  "status":   raw["X"].(string),
+    //})
+    //h.Nats.Publish(config.NATS_ORDERS_UPDATE, data)
+    //h.Nats.Flush()
   }
 }
 
