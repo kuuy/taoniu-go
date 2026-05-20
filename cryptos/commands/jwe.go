@@ -2,15 +2,14 @@ package commands
 
 import (
   "errors"
+  "github.com/urfave/cli/v2"
   "log"
 
-  "github.com/urfave/cli/v2"
-
-  "taoniu.local/cryptos/repositories"
+  "taoniu.local/cryptos/common"
 )
 
 type JweHandler struct {
-  JweRepository *repositories.JweRepository
+  Jwe *common.Jwe
 }
 
 func NewJweCommand() *cli.Command {
@@ -20,7 +19,7 @@ func NewJweCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = JweHandler{}
-      h.JweRepository = &repositories.JweRepository{}
+      h.Jwe = &common.Jwe{}
       return nil
     },
     Subcommands: []*cli.Command{
@@ -60,14 +59,14 @@ func NewJweCommand() *cli.Command {
 
 func (h *JweHandler) Encrypt(payload string) error {
   log.Println("jwe encrypt...")
-  jweCompact, _ := h.JweRepository.Encrypt([]byte(payload))
+  jweCompact, _ := h.Jwe.Encrypt([]byte(payload))
   log.Println("jweCompact", jweCompact)
   return nil
 }
 
 func (h *JweHandler) Decrypt(jweCompact string) (err error) {
   log.Println("jwe decrypt...")
-  payload, err := h.JweRepository.Decrypt(jweCompact)
+  payload, err := h.Jwe.Decrypt(jweCompact)
   if err != nil {
     return
   }

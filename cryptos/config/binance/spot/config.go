@@ -39,6 +39,7 @@ const (
   ASYNQ_JOBS_INDICATORS_ZLEMA                  = "binance:spot:indicators:zlema"
   ASYNQ_JOBS_INDICATORS_HA_ZLEMA               = "binance:spot:indicators:ha_zlema"
   ASYNQ_JOBS_INDICATORS_KDJ                    = "binance:spot:indicators:kdj"
+  ASYNQ_JOBS_INDICATORS_RSI                    = "binance:spot:indicators:rsi"
   ASYNQ_JOBS_INDICATORS_BBANDS                 = "binance:spot:indicators:bbands"
   ASYNQ_JOBS_INDICATORS_ICHIMOKU_CLOUD         = "binance:spot:indicators:ichimoku_cloud"
   ASYNQ_JOBS_INDICATORS_PIVOT                  = "binance:spot:indicators:pivot"

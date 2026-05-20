@@ -10,14 +10,13 @@ import (
 
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
-  "taoniu.local/cryptos/repositories"
-  analysisRepositories "taoniu.local/cryptos/repositories/binance/futures/analysis/tradings"
+  repositories "taoniu.local/cryptos/repositories/binance/futures/analysis/tradings"
 )
 
 type ScalpingHandler struct {
   ApiContext *common.ApiContext
   Response   *api.ResponseHandler
-  Repository *analysisRepositories.ScalpingRepository
+  Repository *repositories.ScalpingRepository
 }
 
 func NewScalpingRouter(apiContext *common.ApiContext) http.Handler {
@@ -25,8 +24,8 @@ func NewScalpingRouter(apiContext *common.ApiContext) http.Handler {
     ApiContext: apiContext,
   }
   h.Response = &api.ResponseHandler{}
-  h.Response.JweRepository = &repositories.JweRepository{}
-  h.Repository = &analysisRepositories.ScalpingRepository{
+  h.Response.Jwe = &common.Jwe{}
+  h.Repository = &repositories.ScalpingRepository{
     Db:  h.ApiContext.Db,
     Rdb: h.ApiContext.Rdb,
     Ctx: h.ApiContext.Ctx,

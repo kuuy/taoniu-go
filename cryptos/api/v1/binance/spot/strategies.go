@@ -8,7 +8,6 @@ import (
 
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
-  "taoniu.local/cryptos/repositories"
   spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
@@ -23,7 +22,7 @@ func NewStrategiesRouter(apiContext *common.ApiContext) http.Handler {
     ApiContext: apiContext,
   }
   h.Response = &api.ResponseHandler{}
-  h.Response.JweRepository = &repositories.JweRepository{}
+  h.Response.Jwe = &common.Jwe{}
   h.Repository = &spotRepositories.StrategiesRepository{
     Db: h.ApiContext.Db,
   }

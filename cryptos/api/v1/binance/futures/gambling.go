@@ -10,15 +10,14 @@ import (
 
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
-  "taoniu.local/cryptos/repositories"
-  futuresRepositories "taoniu.local/cryptos/repositories/binance/futures"
+  repositories "taoniu.local/cryptos/repositories/binance/futures"
 )
 
 type GamblingHandler struct {
   ApiContext          *common.ApiContext
   Response            *api.ResponseHandler
-  Repository          *futuresRepositories.GamblingRepository
-  PositionsRepository *futuresRepositories.PositionsRepository
+  Repository          *repositories.GamblingRepository
+  PositionsRepository *repositories.PositionsRepository
 }
 
 func NewGamblingRouter(apiContext *common.ApiContext) http.Handler {
@@ -26,11 +25,11 @@ func NewGamblingRouter(apiContext *common.ApiContext) http.Handler {
     ApiContext: apiContext,
   }
   h.Response = &api.ResponseHandler{}
-  h.Response.JweRepository = &repositories.JweRepository{}
-  h.Repository = &futuresRepositories.GamblingRepository{
+  h.Response.Jwe = &common.Jwe{}
+  h.Repository = &repositories.GamblingRepository{
     Db: h.ApiContext.Db,
   }
-  h.Repository.SymbolsRepository = &futuresRepositories.SymbolsRepository{
+  h.Repository.SymbolsRepository = &repositories.SymbolsRepository{
     Db: h.ApiContext.Db,
   }
 

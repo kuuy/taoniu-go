@@ -10,14 +10,13 @@ import (
 
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
-  "taoniu.local/cryptos/repositories"
-  futuresRepositories "taoniu.local/cryptos/repositories/binance/futures"
+  repositories "taoniu.local/cryptos/repositories/binance/futures"
 )
 
 type PositionsHandler struct {
   ApiContext *common.ApiContext
   Response   *api.ResponseHandler
-  Repository *futuresRepositories.PositionsRepository
+  Repository *repositories.PositionsRepository
 }
 
 func NewPositionsRouter(apiContext *common.ApiContext) http.Handler {
@@ -25,11 +24,11 @@ func NewPositionsRouter(apiContext *common.ApiContext) http.Handler {
     ApiContext: apiContext,
   }
   h.Response = &api.ResponseHandler{}
-  h.Response.JweRepository = &repositories.JweRepository{}
-  h.Repository = &futuresRepositories.PositionsRepository{
+  h.Response.Jwe = &common.Jwe{}
+  h.Repository = &repositories.PositionsRepository{
     Db: h.ApiContext.Db,
   }
-  h.Repository.SymbolsRepository = &futuresRepositories.SymbolsRepository{
+  h.Repository.SymbolsRepository = &repositories.SymbolsRepository{
     Db: h.ApiContext.Db,
   }
 

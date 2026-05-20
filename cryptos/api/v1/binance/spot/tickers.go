@@ -9,7 +9,6 @@ import (
 
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
-  "taoniu.local/cryptos/repositories"
   spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
@@ -26,7 +25,7 @@ func NewTickersRouter(apiContext *common.ApiContext) http.Handler {
     ApiContext: apiContext,
   }
   h.Response = &api.ResponseHandler{}
-  h.Response.JweRepository = &repositories.JweRepository{}
+  h.Response.Jwe = &common.Jwe{}
   h.Repository = &spotRepositories.TickersRepository{
     Rdb: h.ApiContext.Rdb,
     Ctx: h.ApiContext.Ctx,

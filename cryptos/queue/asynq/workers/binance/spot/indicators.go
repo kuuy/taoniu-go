@@ -363,7 +363,7 @@ func (h *Indicators) Ahr999(ctx context.Context, t *asynq.Task) error {
 func (h *Indicators) Register() error {
   h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_PIVOT, h.Pivot)
   h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_KDJ, h.Kdj)
-  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_KDJ, h.Rsi)
+  h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_RSI, h.Rsi)
   h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_ATR, h.Atr)
   h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_ZLEMA, h.Zlema)
   h.AnsqContext.Mux.HandleFunc(config.ASYNQ_JOBS_INDICATORS_HA_ZLEMA, h.HaZlema)

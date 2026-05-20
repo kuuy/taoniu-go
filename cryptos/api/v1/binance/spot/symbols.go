@@ -7,7 +7,6 @@ import (
 
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
-  "taoniu.local/cryptos/repositories"
   spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
@@ -22,7 +21,7 @@ func NewSymbolsRouter(apiContext *common.ApiContext) http.Handler {
     ApiContext: apiContext,
   }
   h.Response = &api.ResponseHandler{}
-  h.Response.JweRepository = &repositories.JweRepository{}
+  h.Response.Jwe = &common.Jwe{}
   h.Repository = &spotRepositories.SymbolsRepository{
     Db: h.ApiContext.Db,
   }

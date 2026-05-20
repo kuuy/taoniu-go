@@ -8,16 +8,15 @@ import (
   "github.com/go-chi/chi/v5"
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
-  "taoniu.local/cryptos/repositories"
-  futuresRepositories "taoniu.local/cryptos/repositories/binance/futures"
+  repositories "taoniu.local/cryptos/repositories/binance/futures"
 )
 
 type TickersHandler struct {
   ApiContext         *common.ApiContext
   Response           *api.ResponseHandler
-  Repository         *futuresRepositories.TickersRepository
-  SymbolsRepository  *futuresRepositories.SymbolsRepository
-  ScalpingRepository *futuresRepositories.ScalpingRepository
+  Repository         *repositories.TickersRepository
+  SymbolsRepository  *repositories.SymbolsRepository
+  ScalpingRepository *repositories.ScalpingRepository
 }
 
 func NewTickersRouter(apiContext *common.ApiContext) http.Handler {
@@ -25,15 +24,15 @@ func NewTickersRouter(apiContext *common.ApiContext) http.Handler {
     ApiContext: apiContext,
   }
   h.Response = &api.ResponseHandler{}
-  h.Response.JweRepository = &repositories.JweRepository{}
-  h.Repository = &futuresRepositories.TickersRepository{
+  h.Response.Jwe = &common.Jwe{}
+  h.Repository = &repositories.TickersRepository{
     Rdb: h.ApiContext.Rdb,
     Ctx: h.ApiContext.Ctx,
   }
-  h.SymbolsRepository = &futuresRepositories.SymbolsRepository{
+  h.SymbolsRepository = &repositories.SymbolsRepository{
     Db: h.ApiContext.Db,
   }
-  h.ScalpingRepository = &futuresRepositories.ScalpingRepository{
+  h.ScalpingRepository = &repositories.ScalpingRepository{
     Db: h.ApiContext.Db,
   }
 

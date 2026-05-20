@@ -3,7 +3,7 @@ package api
 import (
   "encoding/json"
   "net/http"
-  "taoniu.local/cryptos/repositories"
+  "taoniu.local/cryptos/common"
 )
 
 type jsonResponse struct {
@@ -26,8 +26,8 @@ type errorResponse struct {
 }
 
 type ResponseHandler struct {
-  JweRepository *repositories.JweRepository
-  Writer        http.ResponseWriter
+  Jwe    *common.Jwe
+  Writer http.ResponseWriter
 }
 
 func (h *ResponseHandler) Out(data interface{}) {
@@ -54,7 +54,7 @@ func (h *ResponseHandler) Json(data interface{}) {
     return
   }
 
-  jweCompact, _ := h.JweRepository.Encrypt(payload)
+  jweCompact, _ := h.Jwe.Encrypt(payload)
   h.Writer.Write([]byte(jweCompact))
 }
 
@@ -78,7 +78,7 @@ func (h *ResponseHandler) Pagenate(
     return
   }
 
-  jweCompact, _ := h.JweRepository.Encrypt(payload)
+  jweCompact, _ := h.Jwe.Encrypt(payload)
   h.Writer.Write([]byte(jweCompact))
 }
 
@@ -95,6 +95,6 @@ func (h *ResponseHandler) Error(status int, code int, message string) {
     return
   }
 
-  jweCompact, _ := h.JweRepository.Encrypt(payload)
+  jweCompact, _ := h.Jwe.Encrypt(payload)
   h.Writer.Write([]byte(jweCompact))
 }

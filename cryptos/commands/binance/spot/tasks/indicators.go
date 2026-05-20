@@ -39,7 +39,7 @@ func NewIndicatorsCommand() *cli.Command {
     Before: func(c *cli.Context) error {
       h = IndicatorsHandler{
         Db:  common.NewDB(1),
-        Rdb: common.NewRedis(2),
+        Rdb: common.NewRedis(1),
         Ctx: context.Background(),
       }
       h.IndicatorsRepository = &repositories.IndicatorsRepository{

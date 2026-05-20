@@ -47,6 +47,7 @@ const (
   ASYNQ_JOBS_INDICATORS_ZLEMA                  = "binance:futures:indicators:zlema"
   ASYNQ_JOBS_INDICATORS_HA_ZLEMA               = "binance:futures:indicators:ha_zlema"
   ASYNQ_JOBS_INDICATORS_KDJ                    = "binance:futures:indicators:kdj"
+  ASYNQ_JOBS_INDICATORS_RSI                    = "binance:futures:indicators:rsi"
   ASYNQ_JOBS_INDICATORS_BBANDS                 = "binance:futures:indicators:bbands"
   ASYNQ_JOBS_INDICATORS_ICHIMOKU_CLOUD         = "binance:futures:indicators:ichimoku_cloud"
   ASYNQ_JOBS_INDICATORS_PIVOT                  = "binance:futures:indicators:pivot"

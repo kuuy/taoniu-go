@@ -8,14 +8,13 @@ import (
   "github.com/go-chi/chi/v5"
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
-  "taoniu.local/cryptos/repositories"
-  futuresRepositories "taoniu.local/cryptos/repositories/binance/futures"
+  repositories "taoniu.local/cryptos/repositories/binance/futures"
 )
 
 type OrdersHandler struct {
   ApiContext *common.ApiContext
   Response   *api.ResponseHandler
-  Repository *futuresRepositories.OrdersRepository
+  Repository *repositories.OrdersRepository
 }
 
 func NewOrdersRouter(apiContext *common.ApiContext) http.Handler {
@@ -23,8 +22,8 @@ func NewOrdersRouter(apiContext *common.ApiContext) http.Handler {
     ApiContext: apiContext,
   }
   h.Response = &api.ResponseHandler{}
-  h.Response.JweRepository = &repositories.JweRepository{}
-  h.Repository = &futuresRepositories.OrdersRepository{
+  h.Response.Jwe = &common.Jwe{}
+  h.Repository = &repositories.OrdersRepository{
     Db:  h.ApiContext.Db,
     Rdb: h.ApiContext.Rdb,
     Ctx: h.ApiContext.Ctx,

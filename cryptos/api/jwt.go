@@ -5,14 +5,14 @@ import (
   "net/http"
   "strings"
 
-  "taoniu.local/cryptos/repositories"
-  accountRepositories "taoniu.local/cryptos/repositories/account"
+  "taoniu.local/cryptos/common"
+  repositories "taoniu.local/cryptos/repositories/account"
 )
 
 func Authenticator(next http.Handler) http.Handler {
   return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
     response := &ResponseHandler{}
-    response.JweRepository = &repositories.JweRepository{}
+    response.Jwe = &common.Jwe{}
     response.Writer = w
 
     bearer := r.Header.Get("Authorization")
@@ -21,7 +21,7 @@ func Authenticator(next http.Handler) http.Handler {
       return
     }
 
-    repository := &accountRepositories.TokenRepository{}
+    repository := &repositories.TokenRepository{}
     uid, err := repository.Uid(bearer[7:])
     if err != nil {
       log.Println("token error", err.Error())

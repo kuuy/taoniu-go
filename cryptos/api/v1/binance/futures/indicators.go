@@ -8,15 +8,14 @@ import (
   "github.com/go-chi/chi/v5"
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
-  "taoniu.local/cryptos/repositories"
-  futuresRepositories "taoniu.local/cryptos/repositories/binance/futures"
+  repositories "taoniu.local/cryptos/repositories/binance/futures"
 )
 
 type IndicatorsHandler struct {
   ApiContext        *common.ApiContext
   Response          *api.ResponseHandler
-  Repository        *futuresRepositories.IndicatorsRepository
-  SymbolsRepository *futuresRepositories.SymbolsRepository
+  Repository        *repositories.IndicatorsRepository
+  SymbolsRepository *repositories.SymbolsRepository
 }
 
 func NewIndicatorsRouter(apiContext *common.ApiContext) http.Handler {
@@ -24,12 +23,12 @@ func NewIndicatorsRouter(apiContext *common.ApiContext) http.Handler {
     ApiContext: apiContext,
   }
   h.Response = &api.ResponseHandler{}
-  h.Response.JweRepository = &repositories.JweRepository{}
-  h.Repository = &futuresRepositories.IndicatorsRepository{
+  h.Response.Jwe = &common.Jwe{}
+  h.Repository = &repositories.IndicatorsRepository{
     Rdb: h.ApiContext.Rdb,
     Ctx: h.ApiContext.Ctx,
   }
-  h.SymbolsRepository = &futuresRepositories.SymbolsRepository{
+  h.SymbolsRepository = &repositories.SymbolsRepository{
     Db: h.ApiContext.Db,
   }
 

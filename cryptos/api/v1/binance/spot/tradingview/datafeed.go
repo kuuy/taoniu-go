@@ -12,16 +12,16 @@ import (
 
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
-  spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
+  repositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
 type DatafeedHandler struct {
   ApiContext         *common.ApiContext
   Response           *api.ResponseHandler
-  SymbolsRepository  *spotRepositories.SymbolsRepository
-  KlinesRepository   *spotRepositories.KlinesRepository
-  TickersRepository  *spotRepositories.TickersRepository
-  ScalpingRepository *spotRepositories.ScalpingRepository
+  SymbolsRepository  *repositories.SymbolsRepository
+  KlinesRepository   *repositories.KlinesRepository
+  TickersRepository  *repositories.TickersRepository
+  ScalpingRepository *repositories.ScalpingRepository
 }
 
 type SearchInfo struct {
@@ -73,17 +73,17 @@ func NewDatafeedRouter(apiContext *common.ApiContext) http.Handler {
   h := DatafeedHandler{
     ApiContext: apiContext,
   }
-  h.SymbolsRepository = &spotRepositories.SymbolsRepository{
+  h.SymbolsRepository = &repositories.SymbolsRepository{
     Db: h.ApiContext.Db,
   }
-  h.KlinesRepository = &spotRepositories.KlinesRepository{
+  h.KlinesRepository = &repositories.KlinesRepository{
     Db: h.ApiContext.Db,
   }
-  h.TickersRepository = &spotRepositories.TickersRepository{
+  h.TickersRepository = &repositories.TickersRepository{
     Rdb: h.ApiContext.Rdb,
     Ctx: h.ApiContext.Ctx,
   }
-  h.ScalpingRepository = &spotRepositories.ScalpingRepository{
+  h.ScalpingRepository = &repositories.ScalpingRepository{
     Db: h.ApiContext.Db,
   }
 
