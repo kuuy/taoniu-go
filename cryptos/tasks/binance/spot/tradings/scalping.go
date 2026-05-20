@@ -36,7 +36,7 @@ func (t *ScalpingTask) Place() error {
   for _, planId := range planIds {
     task, err := t.Job.Place(planId)
     if err != nil {
-      return err
+      continue
     }
     t.AnsqContext.Conn.Enqueue(
       task,
@@ -49,11 +49,11 @@ func (t *ScalpingTask) Place() error {
 }
 
 func (t *ScalpingTask) Flush() error {
-  ids := t.Repository.ScalpingIds()
-  for _, id := range ids {
-    task, err := t.Job.Flush(id)
+  planIds := t.Repository.ScalpingIds()
+  for _, planId := range planIds {
+    task, err := t.Job.Flush(planId)
     if err != nil {
-      return err
+      continue
     }
     t.AnsqContext.Conn.Enqueue(
       task,

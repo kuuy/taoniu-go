@@ -1,6 +1,7 @@
 package tradings
 
 import (
+  "fmt"
   "time"
 
   "github.com/hibiken/asynq"
@@ -32,11 +33,19 @@ func NewScalpingTask(ansqContext *common.AnsqClientContext) *ScalpingTask {
 }
 
 func (t *ScalpingTask) Place() error {
-  ids := t.ParentRepository.PlanIds(0)
-  for _, id := range ids {
-    task, err := t.Job.Place(id)
+  planIds := t.ParentRepository.PlanIds(0)
+  for _, planId := range planIds {
+    mutex := common.NewMutex(
+      t.AnsqContext.Rdb,
+      t.AnsqContext.Ctx,
+      fmt.Sprintf(config.LOCKS_TRADINGS_SCALPING_PLACE, planId),
+    )
+    if !mutex.Lock(30 * time.Second) {
+      continue
+    }
+    task, err := t.Job.Place(planId)
     if err != nil {
-      return err
+      continue
     }
     t.AnsqContext.Conn.Enqueue(
       task,

@@ -112,12 +112,12 @@ func (r *ScalpingRepository) Place(planId string) (err error) {
 
   timestamp := time.Now().UnixMilli()
   createdTimestamp := plan.CreatedAt.UnixMilli()
-  if plan.Interval == "1m" && createdTimestamp < timestamp-900000 {
+  if plan.Interval == "1m" && createdTimestamp < timestamp-300000 {
     r.Db.Delete(&plan, "id", planId)
     r.Db.Delete(&scalpingPlan, "plan_id", planId)
     return errors.New("plan has been expired")
   }
-  if plan.Interval == "15m" && createdTimestamp < timestamp-2700000 {
+  if plan.Interval == "15m" && createdTimestamp < timestamp-1800000 {
     r.Db.Delete(&plan, "id", planId)
     r.Db.Delete(&scalpingPlan, "plan_id", planId)
     return errors.New("plan has been expired")

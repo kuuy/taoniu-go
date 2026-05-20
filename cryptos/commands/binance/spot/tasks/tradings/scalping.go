@@ -96,7 +96,7 @@ func (h *ScalpingHandler) Place() error {
       fmt.Sprintf(config.LOCKS_TRADINGS_SCALPING_PLACE, planId),
     )
     if !mutex.Lock(30 * time.Second) {
-      return nil
+      continue
     }
     err := h.TradingsRepository.Place(planId)
     if err != nil {
@@ -116,7 +116,7 @@ func (h *ScalpingHandler) Flush() error {
       fmt.Sprintf(config.LOCKS_TRADINGS_SCALPING_FLUSH, id),
     )
     if !mutex.Lock(30 * time.Second) {
-      return nil
+      continue
     }
     err := h.TradingsRepository.Flush(id)
     if err != nil {

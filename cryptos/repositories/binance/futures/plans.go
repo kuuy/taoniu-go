@@ -201,10 +201,10 @@ func (r *PlansRepository) GetSignals(interval string, signal int) (map[string][]
   result := make(map[string][]signalInfo)
   for _, s := range strategies {
     createdTimestamp := s.CreatedAt.UnixMilli()
-    if interval == "1m" && createdTimestamp < timestamp-900000 {
+    if interval == "1m" && createdTimestamp < timestamp-300000 {
       continue
     }
-    if interval == "15m" && createdTimestamp < timestamp-2700000 {
+    if interval == "15m" && createdTimestamp < timestamp-1800000 {
       continue
     }
     if interval == "4h" && createdTimestamp < timestamp-5400000 {
