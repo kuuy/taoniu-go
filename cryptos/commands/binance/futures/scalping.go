@@ -258,8 +258,8 @@ func (h *ScalpingHandler) Flush(side int) error {
         entity.Symbol,
         time.Now().Format("0102"),
       ),
-      "vah",
-      "val",
+      "take_profit_price",
+      "stop_loss_point",
     ).Result()
     if len(data) == 0 || data[0] == nil || data[1] == nil {
       log.Println("indicators empty", entity.Symbol)

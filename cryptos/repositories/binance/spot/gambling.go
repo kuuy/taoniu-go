@@ -143,12 +143,3 @@ func (r *GamblingRepository) Calc(
   }
   return
 }
-
-func (r *GamblingRepository) Filters(symbol string) (tickSize float64, stepSize float64, err error) {
-  entity, err := r.SymbolsRepository.Get(symbol)
-  if err != nil {
-    return
-  }
-  tickSize, stepSize, _, err = r.SymbolsRepository.Filters(entity.Filters)
-  return
-}

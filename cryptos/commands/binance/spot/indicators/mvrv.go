@@ -81,6 +81,6 @@ func (h *MvrvHandler) Get(symbol string, interval string) (err error) {
 
 func (h *MvrvHandler) Flush() (err error) {
   log.Println("indicators mvrv flush...")
-  err = h.Repository.Flush("BTCUSDT", "1d", 400)
+  err = h.Repository.Flush("BTCUSDT", "1d", 1)
   return
 }
