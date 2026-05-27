@@ -21,10 +21,9 @@ func NewAccount(ansqContext *common.AnsqServerContext) *Account {
     AnsqContext: ansqContext,
   }
   h.Repository = &repositories.AccountRepository{
-    Db:   h.AnsqContext.Db,
-    Rdb:  h.AnsqContext.Rdb,
-    Ctx:  h.AnsqContext.Ctx,
-    Nats: h.AnsqContext.Nats,
+    Db:  h.AnsqContext.Db,
+    Rdb: h.AnsqContext.Rdb,
+    Ctx: h.AnsqContext.Ctx,
   }
   return h
 }

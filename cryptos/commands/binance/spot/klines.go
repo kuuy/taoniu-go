@@ -9,7 +9,6 @@ import (
   "strings"
 
   "github.com/go-redis/redis/v8"
-  "github.com/nats-io/nats.go"
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
 
@@ -21,7 +20,6 @@ type KlinesHandler struct {
   Db                *gorm.DB
   Rdb               *redis.Client
   Ctx               context.Context
-  Nats              *nats.Conn
   KlinesRepository  *repositories.KlinesRepository
   SymbolsRepository *repositories.SymbolsRepository
 }
@@ -33,16 +31,14 @@ func NewKlinesCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = KlinesHandler{
-        Db:   common.NewDB(1),
-        Rdb:  common.NewRedis(1),
-        Ctx:  context.Background(),
-        Nats: common.NewNats(),
+        Db:  common.NewDB(1),
+        Rdb: common.NewRedis(1),
+        Ctx: context.Background(),
       }
       h.KlinesRepository = &repositories.KlinesRepository{
-        Db:   h.Db,
-        Rdb:  h.Rdb,
-        Ctx:  h.Ctx,
-        Nats: h.Nats,
+        Db:  h.Db,
+        Rdb: h.Rdb,
+        Ctx: h.Ctx,
       }
       h.SymbolsRepository = &repositories.SymbolsRepository{
         Db: h.Db,

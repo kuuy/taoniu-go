@@ -60,10 +60,9 @@ func NewScalping(ansqContext *common.AnsqServerContext) *Scalping {
     Ctx: h.AnsqContext.Ctx,
   }
   h.AccountRepository = &repositories.AccountRepository{
-    Db:   h.AnsqContext.Db,
-    Rdb:  h.AnsqContext.Rdb,
-    Ctx:  h.AnsqContext.Ctx,
-    Nats: h.AnsqContext.Nats,
+    Db:  h.AnsqContext.Db,
+    Rdb: h.AnsqContext.Rdb,
+    Ctx: h.AnsqContext.Ctx,
   }
   return h
 }

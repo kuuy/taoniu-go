@@ -6,7 +6,6 @@ import (
   "time"
 
   "github.com/go-redis/redis/v8"
-  "github.com/nats-io/nats.go"
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
 
@@ -19,7 +18,6 @@ type SymbolsHandler struct {
   Db                 *gorm.DB
   Rdb                *redis.Client
   Ctx                context.Context
-  Nats               *nats.Conn
   SymbolsRepository  *repositories.SymbolsRepository
   TradingsRepository *repositories.TradingsRepository
 }

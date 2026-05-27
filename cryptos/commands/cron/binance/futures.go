@@ -59,7 +59,6 @@ func (h *FuturesHandler) run() error {
     Rdb:  h.Rdb,
     Ctx:  h.Ctx,
     Conn: h.Asynq,
-    Nats: h.Nats,
   }
 
   binance := tasks.NewBinanceTask(ansqContext)

@@ -5,7 +5,6 @@ import (
   "log"
 
   "github.com/go-redis/redis/v8"
-  "github.com/nats-io/nats.go"
   "github.com/urfave/cli/v2"
 
   "taoniu.local/cryptos/common"
@@ -15,7 +14,6 @@ import (
 type AccountHandler struct {
   Rdb               *redis.Client
   Ctx               context.Context
-  Nats              *nats.Conn
   AccountRepository *repositories.AccountRepository
 }
 
@@ -26,14 +24,12 @@ func NewAccountCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = AccountHandler{
-        Rdb:  common.NewRedis(1),
-        Ctx:  context.Background(),
-        Nats: common.NewNats(),
+        Rdb: common.NewRedis(1),
+        Ctx: context.Background(),
       }
       h.AccountRepository = &repositories.AccountRepository{
-        Rdb:  h.Rdb,
-        Ctx:  h.Ctx,
-        Nats: h.Nats,
+        Rdb: h.Rdb,
+        Ctx: h.Ctx,
       }
       return nil
     },

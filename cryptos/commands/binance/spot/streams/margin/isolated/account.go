@@ -10,17 +10,14 @@ import (
 
   "github.com/adshao/go-binance/v2"
   "github.com/coder/websocket"
-  "github.com/nats-io/nats.go"
   "github.com/urfave/cli/v2"
 
-  "taoniu.local/cryptos/common"
   jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/spot/streams"
 )
 
 type AccountHandler struct {
   Ctx        context.Context
   Socket     *websocket.Conn
-  Nats       *nats.Conn
   AccountJob *jobs.Account
   OrdersJob  *jobs.Orders
 }
@@ -33,7 +30,6 @@ func NewAccountCommand() *cli.Command {
     Before: func(c *cli.Context) error {
       h = AccountHandler{
         Ctx:        context.Background(),
-        Nats:       common.NewNats(),
         AccountJob: &jobs.Account{},
         OrdersJob:  &jobs.Orders{},
       }

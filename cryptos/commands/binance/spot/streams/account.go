@@ -17,7 +17,6 @@ import (
   "github.com/coder/websocket/wsjson"
   "github.com/go-redis/redis/v8"
   "github.com/google/uuid"
-  "github.com/nats-io/nats.go"
   "github.com/urfave/cli/v2"
 
   "taoniu.local/cryptos/common"
@@ -29,7 +28,6 @@ type AccountHandler struct {
   Rdb        *redis.Client
   Ctx        context.Context
   Socket     *websocket.Conn
-  Nats       *nats.Conn
   AccountJob *jobs.Account
   OrdersJob  *jobs.Orders
   workerChan chan map[string]interface{}
@@ -44,7 +42,6 @@ func NewAccountCommand() *cli.Command {
       h = AccountHandler{
         Rdb:        common.NewRedis(1),
         Ctx:        context.Background(),
-        Nats:       common.NewNats(),
         AccountJob: &jobs.Account{},
         OrdersJob:  &jobs.Orders{},
         workerChan: make(chan map[string]interface{}, 1024),

@@ -48,11 +48,10 @@ func (h *CrossHandler) Run() error {
   worker := common.NewAsynqServer("BINANCE_MARGIN_CROSS")
 
   ansqContext := &common.AnsqServerContext{
-    Db:   h.Db,
-    Rdb:  h.Rdb,
-    Ctx:  h.Ctx,
-    Mux:  mux,
-    Nats: common.NewNats(),
+    Db:  h.Db,
+    Rdb: h.Rdb,
+    Ctx: h.Ctx,
+    Mux: mux,
   }
 
   workers.NewCross(ansqContext).Register()

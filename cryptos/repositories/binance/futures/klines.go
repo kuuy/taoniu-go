@@ -13,7 +13,6 @@ import (
   "time"
 
   "github.com/go-redis/redis/v8"
-  "github.com/nats-io/nats.go"
   "github.com/rs/xid"
   "github.com/shopspring/decimal"
   "gorm.io/gorm"
@@ -23,10 +22,9 @@ import (
 )
 
 type KlinesRepository struct {
-  Db   *gorm.DB
-  Rdb  *redis.Client
-  Ctx  context.Context
-  Nats *nats.Conn
+  Db  *gorm.DB
+  Rdb *redis.Client
+  Ctx context.Context
 }
 
 func (r *KlinesRepository) Get(symbol string, interval string, timestamp int64) (kline *models.Kline, err error) {

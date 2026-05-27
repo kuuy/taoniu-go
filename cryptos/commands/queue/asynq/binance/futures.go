@@ -48,11 +48,10 @@ func (h *FuturesHandler) Run() error {
   worker := common.NewAsynqServer("BINANCE_FUTURES")
 
   ansqContext := &common.AnsqServerContext{
-    Db:   h.Db,
-    Rdb:  h.Rdb,
-    Ctx:  h.Ctx,
-    Mux:  mux,
-    Nats: common.NewNats(),
+    Db:  h.Db,
+    Rdb: h.Rdb,
+    Ctx: h.Ctx,
+    Mux: mux,
   }
 
   workers.NewFutures(ansqContext).Register()

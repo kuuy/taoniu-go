@@ -26,10 +26,9 @@ func NewKlines(ansqContext *common.AnsqServerContext) *Klines {
     AnsqContext: ansqContext,
   }
   h.Repository = &repositories.KlinesRepository{
-    Db:   h.AnsqContext.Db,
-    Rdb:  h.AnsqContext.Rdb,
-    Ctx:  h.AnsqContext.Ctx,
-    Nats: h.AnsqContext.Nats,
+    Db:  h.AnsqContext.Db,
+    Rdb: h.AnsqContext.Rdb,
+    Ctx: h.AnsqContext.Ctx,
   }
   return h
 }

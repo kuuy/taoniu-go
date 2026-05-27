@@ -6,7 +6,6 @@ import (
   "time"
 
   "github.com/go-redis/redis/v8"
-  "github.com/nats-io/nats.go"
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
 
@@ -19,7 +18,6 @@ type SymbolsHandler struct {
   Db                 *gorm.DB
   Rdb                *redis.Client
   Ctx                context.Context
-  Nats               *nats.Conn
   SymbolsRepository  *repositories.SymbolsRepository
   TradingsRepository *repositories.TradingsRepository
 }
@@ -31,10 +29,9 @@ func NewSymbolsCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = SymbolsHandler{
-        Db:   common.NewDB(2),
-        Rdb:  common.NewRedis(2),
-        Ctx:  context.Background(),
-        Nats: common.NewNats(),
+        Db:  common.NewDB(2),
+        Rdb: common.NewRedis(2),
+        Ctx: context.Background(),
       }
       h.SymbolsRepository = &repositories.SymbolsRepository{
         Db:  h.Db,

@@ -48,11 +48,10 @@ func (h *DydxHandler) run() error {
   worker := common.NewAsynqServer("DYDX")
 
   ansqContext := &common.AnsqServerContext{
-    Db:   h.Db,
-    Rdb:  h.Rdb,
-    Ctx:  h.Ctx,
-    Mux:  mux,
-    Nats: common.NewNats(),
+    Db:  h.Db,
+    Rdb: h.Rdb,
+    Ctx: h.Ctx,
+    Mux: mux,
   }
 
   workers.NewDydx(ansqContext).Register()

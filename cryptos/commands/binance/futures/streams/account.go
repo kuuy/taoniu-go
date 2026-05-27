@@ -11,7 +11,6 @@ import (
   "github.com/adshao/go-binance/v2"
   "github.com/coder/websocket"
   "github.com/coder/websocket/wsjson"
-  "github.com/nats-io/nats.go"
   "github.com/urfave/cli/v2"
 
   "github.com/go-redis/redis/v8"
@@ -23,7 +22,6 @@ type AccountHandler struct {
   Rdb        *redis.Client
   Ctx        context.Context
   Socket     *websocket.Conn
-  Nats       *nats.Conn
   AccountJob *jobs.Account
   OrdersJob  *jobs.Orders
 }
@@ -37,7 +35,6 @@ func NewAccountCommand() *cli.Command {
       h = AccountHandler{
         Rdb:        common.NewRedis(2),
         Ctx:        context.Background(),
-        Nats:       common.NewNats(),
         AccountJob: &jobs.Account{},
         OrdersJob:  &jobs.Orders{},
       }

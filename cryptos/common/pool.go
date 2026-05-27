@@ -50,11 +50,10 @@ type MqttContext struct {
 }
 
 type AnsqServerContext struct {
-  Db   *gorm.DB
-  Rdb  *redis.Client
-  Ctx  context.Context
-  Mux  *asynq.ServeMux
-  Nats *nats.Conn
+  Db  *gorm.DB
+  Rdb *redis.Client
+  Ctx context.Context
+  Mux *asynq.ServeMux
 }
 
 type AnsqClientContext struct {
@@ -62,13 +61,11 @@ type AnsqClientContext struct {
   Rdb  *redis.Client
   Ctx  context.Context
   Conn *asynq.Client
-  Nats *nats.Conn
 }
 
 type SocketContext struct {
   Socket *socketio.Server
   Conn   socketio.Conn
-  Nats   *nats.Conn
 }
 
 type Mutex struct {

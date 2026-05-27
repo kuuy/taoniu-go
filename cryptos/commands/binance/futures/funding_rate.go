@@ -3,7 +3,6 @@ package futures
 import (
   "context"
   "github.com/go-redis/redis/v8"
-  "github.com/nats-io/nats.go"
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
   "log"
@@ -16,7 +15,6 @@ type FundingRateHandler struct {
   Db                    *gorm.DB
   Rdb                   *redis.Client
   Ctx                   context.Context
-  Nats                  *nats.Conn
   FundingRateRepository *repositories.FundingRateRepository
 }
 
