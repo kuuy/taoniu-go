@@ -8,7 +8,6 @@ import (
 
   "github.com/go-redis/redis/v8"
   "github.com/hibiken/asynq"
-  "github.com/nats-io/nats.go"
   "github.com/robfig/cron/v3"
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
@@ -22,7 +21,6 @@ type FuturesHandler struct {
   Rdb   *redis.Client
   Ctx   context.Context
   Asynq *asynq.Client
-  Nats  *nats.Conn
 }
 
 func NewFuturesCommand() *cli.Command {
@@ -34,8 +32,8 @@ func NewFuturesCommand() *cli.Command {
       h = FuturesHandler{
         Db:    common.NewDB(2),
         Rdb:   common.NewRedis(2),
-        Asynq: common.NewAsynqClient("BINANCE_FUTURES"),
         Ctx:   context.Background(),
+        Asynq: common.NewAsynqClient("BINANCE_FUTURES"),
       }
       return nil
     },

@@ -8,7 +8,6 @@ import (
 
   "github.com/go-redis/redis/v8"
   "github.com/hibiken/asynq"
-  "github.com/nats-io/nats.go"
   "github.com/robfig/cron/v3"
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
@@ -22,7 +21,6 @@ type SpotHandler struct {
   Rdb   *redis.Client
   Ctx   context.Context
   Asynq *asynq.Client
-  Nats  *nats.Conn
 }
 
 func NewSpotCommand() *cli.Command {
@@ -36,7 +34,6 @@ func NewSpotCommand() *cli.Command {
         Rdb:   common.NewRedis(1),
         Ctx:   context.Background(),
         Asynq: common.NewAsynqClient("BINANCE_SPOT"),
-        Nats:  common.NewNats(),
       }
       return nil
     },
