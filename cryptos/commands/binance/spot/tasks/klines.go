@@ -52,6 +52,12 @@ func NewKlinesCommand() *cli.Command {
       }
       return nil
     },
+    After: func(c *cli.Context) error {
+      sqlDB, _ := h.Db.DB()
+      sqlDB.Close()
+      h.Rdb.Close()
+      return nil
+    },
     Subcommands: []*cli.Command{
       {
         Name:  "flush",
@@ -232,6 +238,7 @@ func (h *KlinesHandler) Fix(interval string, current int) error {
     }
     h.KlinesRepository.Fix(symbol, interval, limit)
   }
+
   return nil
 }
 
