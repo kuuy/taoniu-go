@@ -104,8 +104,11 @@ func (r *SymbolsRepository) Flush() (err error) {
     Timeout:   30 * time.Second,
   }
 
+  ctx, cancel := context.WithTimeout(r.Ctx, 30*time.Second)
+  defer cancel()
+
   url := fmt.Sprintf("%s/api/v3/exchangeInfo", os.Getenv("BINANCE_SPOT_API_ENDPOINT"))
-  req, _ := http.NewRequest("GET", url, nil)
+  req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
   resp, err := httpClient.Do(req)
   if err != nil {
     return

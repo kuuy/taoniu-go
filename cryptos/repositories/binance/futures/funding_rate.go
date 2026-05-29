@@ -59,8 +59,11 @@ func (r *FundingRateRepository) Flush() (err error) {
     Timeout:   30 * time.Second,
   }
 
+  ctx, cancel := context.WithTimeout(r.Ctx, 30*time.Second)
+  defer cancel()
+
   url := fmt.Sprintf("%s/fapi/v1/premiumIndex", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))
-  req, _ := http.NewRequest("GET", url, nil)
+  req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
   resp, err := httpClient.Do(req)
   if err != nil {
     return

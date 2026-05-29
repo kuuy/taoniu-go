@@ -263,8 +263,11 @@ func (r *KlinesRepository) Request(symbol string, interval string, endtime int64
     Timeout:   15 * time.Second,
   }
 
+  ctx, cancel := context.WithTimeout(r.Ctx, 15*time.Second)
+  defer cancel()
+
   url := fmt.Sprintf("%s/api/v3/klines", os.Getenv("BINANCE_SPOT_API_ENDPOINT"))
-  req, _ := http.NewRequest("GET", url, nil)
+  req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
   q := req.URL.Query()
   q.Add("symbol", symbol)
   q.Add("interval", interval)

@@ -221,7 +221,10 @@ func (r *AccountRepository) Request() (result *AccountInfo, err error) {
     url = fmt.Sprintf("%s/fapi/v2/account", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))
   }
 
-  req, _ := http.NewRequest("GET", url, nil)
+  ctx, cancel := context.WithTimeout(r.Ctx, 3*time.Second)
+  defer cancel()
+
+  req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
   req.URL.RawQuery = params.Encode()
   req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
   req.Header.Set("X-MBX-APIKEY", apiKey)

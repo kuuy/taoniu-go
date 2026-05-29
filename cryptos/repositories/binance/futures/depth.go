@@ -1,6 +1,7 @@
 package futures
 
 import (
+  "context"
   "encoding/json"
   "fmt"
   "net"
@@ -15,8 +16,8 @@ import (
 )
 
 type DepthRepository struct {
-  Db       *gorm.DB
-  UseProxy bool
+  Db  *gorm.DB
+  Ctx context.Context
 }
 
 func (r *DepthRepository) Flush(symbol string, limit int) error {
@@ -47,8 +48,11 @@ func (r *DepthRepository) Request(symbol string, limit int) (map[string]interfac
     Timeout:   3 * time.Second,
   }
 
+  ctx, cancel := context.WithTimeout(r.Ctx, 3*time.Second)
+  defer cancel()
+
   url := fmt.Sprintf("%s/fapi/v1/depth", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))
-  req, _ := http.NewRequest("GET", url, nil)
+  req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
   q := req.URL.Query()
   q.Add("symbol", symbol)
   q.Add("limit", fmt.Sprintf("%v", limit))

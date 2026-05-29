@@ -179,8 +179,11 @@ func (r *OrdersRepository) Open(symbol string) (err error) {
   signature := mac.Sum(nil)
   params.Add("signature", fmt.Sprintf("%x", signature))
 
+  ctx, cancel := context.WithTimeout(r.Ctx, 5*time.Second)
+  defer cancel()
+
   url := fmt.Sprintf("%s/api/v3/openOrders", os.Getenv("BINANCE_SPOT_API_ENDPOINT"))
-  req, _ := http.NewRequest("GET", url, nil)
+  req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
   req.URL.RawQuery = params.Encode()
   req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
   req.Header.Set("X-MBX-APIKEY", os.Getenv("BINANCE_SPOT_ACCOUNT_API_KEY"))
