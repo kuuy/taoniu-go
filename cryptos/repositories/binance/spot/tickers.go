@@ -92,8 +92,11 @@ func (r *TickersRepository) Request(symbols []string) ([]*TickerInfo, error) {
     Timeout:   5 * time.Second,
   }
 
+  ctx, cancel := context.WithTimeout(r.Ctx, 5*time.Second)
+  defer cancel()
+
   url := fmt.Sprintf("%s/api/v3/ticker/24hr", os.Getenv("BINANCE_SPOT_API_ENDPOINT"))
-  req, _ := http.NewRequest("GET", url, nil)
+  req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
   q := req.URL.Query()
   val, _ := json.Marshal(symbols)
   q.Add("symbols", string(val))

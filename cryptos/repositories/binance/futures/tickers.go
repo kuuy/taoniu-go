@@ -140,8 +140,11 @@ func (r *TickersRepository) Request() ([]*TickerInfo, error) {
     Timeout:   5 * time.Second,
   }
 
+  ctx, cancel := context.WithTimeout(r.Ctx, 5*time.Second)
+  defer cancel()
+
   url := fmt.Sprintf("%s/fapi/v1/ticker/24hr", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))
-  req, _ := http.NewRequest("GET", url, nil)
+  req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
   q := req.URL.Query()
   req.URL.RawQuery = q.Encode()
   resp, err := httpClient.Do(req)
