@@ -40,6 +40,12 @@ func NewSymbolsCommand() *cli.Command {
       }
       return nil
     },
+    After: func(c *cli.Context) error {
+      sqlDB, _ := h.Db.DB()
+      sqlDB.Close()
+      h.Rdb.Close()
+      return nil
+    },
     Subcommands: []*cli.Command{
       {
         Name:  "flush",

@@ -15,7 +15,6 @@ import (
   "time"
 
   "github.com/go-redis/redis/v8"
-  "github.com/nats-io/nats.go"
   "github.com/rs/xid"
   "gorm.io/gorm"
 
@@ -25,10 +24,9 @@ import (
 )
 
 type AccountRepository struct {
-  Db   *gorm.DB
-  Rdb  *redis.Client
-  Ctx  context.Context
-  Nats *nats.Conn
+  Db  *gorm.DB
+  Rdb *redis.Client
+  Ctx context.Context
 }
 
 func (r *AccountRepository) Balance(asset string) (map[string]float64, error) {

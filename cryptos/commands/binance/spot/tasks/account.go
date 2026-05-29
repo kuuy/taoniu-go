@@ -33,6 +33,10 @@ func NewAccountCommand() *cli.Command {
       }
       return nil
     },
+    After: func(c *cli.Context) error {
+      h.Rdb.Close()
+      return nil
+    },
     Subcommands: []*cli.Command{
       {
         Name:  "flush",

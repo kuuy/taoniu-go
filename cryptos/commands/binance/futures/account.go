@@ -28,16 +28,14 @@ func NewAccountCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = AccountHandler{
-        Db:   common.NewDB(2),
-        Rdb:  common.NewRedis(2),
-        Ctx:  context.Background(),
-        Nats: common.NewNats(),
+        Db:  common.NewDB(2),
+        Rdb: common.NewRedis(2),
+        Ctx: context.Background(),
       }
       h.AccountRepository = &repositories.AccountRepository{
-        Db:   h.Db,
-        Rdb:  h.Rdb,
-        Ctx:  h.Ctx,
-        Nats: h.Nats,
+        Db:  h.Db,
+        Rdb: h.Rdb,
+        Ctx: h.Ctx,
       }
       return nil
     },
