@@ -36,7 +36,7 @@ func (t *DepthTask) Flush(limit int) error {
       task,
       asynq.Queue(config.ASYNQ_QUEUE_DEPTH),
       asynq.MaxRetry(0),
-      asynq.Timeout(5*time.Minute),
+      asynq.Unique(5*time.Minute),
     )
   }
   return nil

@@ -36,7 +36,7 @@ func (t *IndicatorsTask) Pivot(interval string) error {
       task,
       asynq.Queue(config.ASYNQ_QUEUE_INDICATORS),
       asynq.MaxRetry(0),
-      asynq.Timeout(5*time.Minute),
+      asynq.Unique(5*time.Minute),
     )
   }
   return nil
@@ -52,7 +52,7 @@ func (t *IndicatorsTask) Atr(interval string, period int, limit int) error {
       task,
       asynq.Queue(config.ASYNQ_QUEUE_INDICATORS),
       asynq.MaxRetry(0),
-      asynq.Timeout(5*time.Minute),
+      asynq.Unique(5*time.Minute),
     )
   }
   return nil
@@ -68,7 +68,7 @@ func (t *IndicatorsTask) Zlema(interval string, period int, limit int) error {
       task,
       asynq.Queue(config.ASYNQ_QUEUE_INDICATORS),
       asynq.MaxRetry(0),
-      asynq.Timeout(5*time.Minute),
+      asynq.Unique(5*time.Minute),
     )
   }
   return nil
@@ -84,7 +84,7 @@ func (t *IndicatorsTask) HaZlema(interval string, period int, limit int) error {
       task,
       asynq.Queue(config.ASYNQ_QUEUE_INDICATORS),
       asynq.MaxRetry(0),
-      asynq.Timeout(5*time.Minute),
+      asynq.Unique(5*time.Minute),
     )
   }
   return nil
@@ -100,7 +100,7 @@ func (t *IndicatorsTask) Kdj(interval string, longPeriod int, shortPeriod int, l
       task,
       asynq.Queue(config.ASYNQ_QUEUE_INDICATORS),
       asynq.MaxRetry(0),
-      asynq.Timeout(5*time.Minute),
+      asynq.Unique(5*time.Minute),
     )
   }
   return nil
@@ -116,7 +116,7 @@ func (t *IndicatorsTask) BBands(interval string, period int, limit int) error {
       task,
       asynq.Queue(config.ASYNQ_QUEUE_INDICATORS),
       asynq.MaxRetry(0),
-      asynq.Timeout(5*time.Minute),
+      asynq.Unique(5*time.Minute),
     )
   }
   return nil
@@ -132,7 +132,7 @@ func (t *IndicatorsTask) IchimokuCloud(interval string) error {
       task,
       asynq.Queue(config.ASYNQ_QUEUE_INDICATORS),
       asynq.MaxRetry(0),
-      asynq.Timeout(5*time.Minute),
+      asynq.Unique(5*time.Minute),
     )
   }
   return nil
@@ -159,7 +159,7 @@ func (t *IndicatorsTask) VolumeProfile(interval string) error {
       task,
       asynq.Queue(config.ASYNQ_QUEUE_INDICATORS),
       asynq.MaxRetry(0),
-      asynq.Timeout(5*time.Minute),
+      asynq.Unique(5*time.Minute),
     )
   }
 
@@ -187,7 +187,7 @@ func (t *IndicatorsTask) AndeanOscillator(interval string, period int, length in
       task,
       asynq.Queue(config.ASYNQ_QUEUE_INDICATORS),
       asynq.MaxRetry(0),
-      asynq.Timeout(5*time.Minute),
+      asynq.Unique(5*time.Minute),
     )
   }
 

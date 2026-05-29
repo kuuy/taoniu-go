@@ -40,7 +40,7 @@ func (t *StrategiesTask) Atr(interval string) error {
       task,
       asynq.Queue(config.ASYNQ_QUEUE_STRATEGIES),
       asynq.MaxRetry(0),
-      asynq.Timeout(5*time.Minute),
+      asynq.Unique(5*time.Minute),
     )
   }
   return nil
@@ -56,7 +56,7 @@ func (t *StrategiesTask) Zlema(interval string) error {
       task,
       asynq.Queue(config.ASYNQ_QUEUE_STRATEGIES),
       asynq.MaxRetry(0),
-      asynq.Timeout(5*time.Minute),
+      asynq.Unique(5*time.Minute),
     )
   }
   return nil
@@ -72,7 +72,7 @@ func (t *StrategiesTask) HaZlema(interval string) error {
       task,
       asynq.Queue(config.ASYNQ_QUEUE_STRATEGIES),
       asynq.MaxRetry(0),
-      asynq.Timeout(5*time.Minute),
+      asynq.Unique(5*time.Minute),
     )
   }
   return nil
@@ -88,7 +88,7 @@ func (t *StrategiesTask) Kdj(interval string) error {
       task,
       asynq.Queue(config.ASYNQ_QUEUE_STRATEGIES),
       asynq.MaxRetry(0),
-      asynq.Timeout(5*time.Minute),
+      asynq.Unique(5*time.Minute),
     )
   }
   return nil
@@ -104,7 +104,7 @@ func (t *StrategiesTask) BBands(interval string) error {
       task,
       asynq.Queue(config.ASYNQ_QUEUE_STRATEGIES),
       asynq.MaxRetry(0),
-      asynq.Timeout(5*time.Minute),
+      asynq.Unique(5*time.Minute),
     )
   }
   return nil
@@ -120,7 +120,7 @@ func (t *StrategiesTask) IchimokuCloud(interval string) error {
       task,
       asynq.Queue(config.ASYNQ_QUEUE_STRATEGIES),
       asynq.MaxRetry(0),
-      asynq.Timeout(5*time.Minute),
+      asynq.Unique(5*time.Minute),
     )
   }
   return nil

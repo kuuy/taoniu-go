@@ -51,7 +51,7 @@ func (t *OrdersTask) Open() error {
       task,
       asynq.Queue(config.ASYNQ_QUEUE_ORDERS),
       asynq.MaxRetry(0),
-      asynq.Timeout(5*time.Minute),
+      asynq.Unique(5*time.Minute),
     )
   }
   return nil
@@ -68,7 +68,7 @@ func (t *OrdersTask) Flush() error {
       task,
       asynq.Queue(config.ASYNQ_QUEUE_ORDERS),
       asynq.MaxRetry(0),
-      asynq.Timeout(5*time.Minute),
+      asynq.Unique(5*time.Minute),
     )
   }
   return nil
@@ -85,7 +85,7 @@ func (t *OrdersTask) Sync(startTime int64, limit int) error {
       task,
       asynq.Queue(config.ASYNQ_QUEUE_ORDERS),
       asynq.MaxRetry(0),
-      asynq.Timeout(5*time.Minute),
+      asynq.Unique(5*time.Minute),
     )
   }
   return nil

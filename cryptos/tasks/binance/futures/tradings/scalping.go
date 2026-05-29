@@ -51,7 +51,7 @@ func (t *ScalpingTask) Place() error {
       task,
       asynq.Queue(config.ASYNQ_QUEUE_TRADINGS_SCALPING),
       asynq.MaxRetry(0),
-      asynq.Timeout(5*time.Minute),
+      asynq.Unique(5*time.Minute),
     )
   }
   return nil
@@ -68,7 +68,7 @@ func (t *ScalpingTask) Flush() error {
       task,
       asynq.Queue(config.ASYNQ_QUEUE_TRADINGS_SCALPING),
       asynq.MaxRetry(0),
-      asynq.Timeout(5*time.Minute),
+      asynq.Unique(5*time.Minute),
     )
   }
   return nil
