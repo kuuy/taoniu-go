@@ -34,7 +34,8 @@ func NewDepthCommand() *cli.Command {
         Ctx: context.Background(),
       }
       h.DepthRepository = &repositories.DepthRepository{
-        Db: h.Db,
+        Db:  h.Db,
+        Ctx: h.Ctx,
       }
       h.SymbolsRepository = &repositories.SymbolsRepository{
         Db: h.Db,
@@ -55,7 +56,6 @@ func NewDepthCommand() *cli.Command {
           },
         },
         Action: func(c *cli.Context) error {
-          h.DepthRepository.UseProxy = c.Bool("proxy")
           if err := h.Flush(); err != nil {
             return cli.Exit(err.Error(), 1)
           }
