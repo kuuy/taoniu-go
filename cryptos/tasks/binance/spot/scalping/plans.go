@@ -39,7 +39,7 @@ func (t *PlansTask) Flush(interval string) error {
     task,
     asynq.Queue(config.ASYNQ_QUEUE_PLANS),
     asynq.MaxRetry(0),
-    asynq.Timeout(5*time.Minute),
+    asynq.Unique(5*time.Minute),
   )
   return nil
 }
