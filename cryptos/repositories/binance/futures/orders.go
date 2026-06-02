@@ -246,7 +246,7 @@ func (r *OrdersRepository) Sync(symbol string, startTime int64, limit int) (err 
 
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   5 * time.Second,
+    Timeout:   15 * time.Second,
   }
 
   params := url.Values{}
@@ -286,7 +286,10 @@ func (r *OrdersRepository) Sync(symbol string, startTime int64, limit int) (err 
     url = fmt.Sprintf("%s/fapi/v1/allOrders", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))
   }
 
-  req, _ := http.NewRequest("GET", url, nil)
+  ctx, cancel := context.WithTimeout(r.Ctx, 15*time.Second)
+  defer cancel()
+
+  req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
   req.URL.RawQuery = params.Encode()
   req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
   req.Header.Set("X-MBX-APIKEY", apiKey)
@@ -332,7 +335,7 @@ func (r *OrdersRepository) Create(
 
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   5 * time.Second,
+    Timeout:   8 * time.Second,
   }
 
   params := url.Values{}
@@ -396,7 +399,10 @@ func (r *OrdersRepository) Create(
     url = fmt.Sprintf("%s/fapi/v1/order", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))
   }
 
-  req, _ := http.NewRequest("POST", url, body)
+  ctx, cancel := context.WithTimeout(r.Ctx, 8*time.Second)
+  defer cancel()
+
+  req, _ := http.NewRequestWithContext(ctx, "POST", url, body)
   req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
   req.Header.Set("X-MBX-APIKEY", apiKey)
   resp, err := httpClient.Do(req)
@@ -451,7 +457,7 @@ func (r *OrdersRepository) Take(
 
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   5 * time.Second,
+    Timeout:   8 * time.Second,
   }
 
   var side string
@@ -520,7 +526,10 @@ func (r *OrdersRepository) Take(
     url = fmt.Sprintf("%s/fapi/v1/order", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))
   }
 
-  req, _ := http.NewRequest("POST", url, body)
+  ctx, cancel := context.WithTimeout(r.Ctx, 8*time.Second)
+  defer cancel()
+
+  req, _ := http.NewRequestWithContext(ctx, "POST", url, body)
   req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
   req.Header.Set("X-MBX-APIKEY", apiKey)
   resp, err := httpClient.Do(req)
@@ -642,7 +651,10 @@ func (r *OrdersRepository) Stop(
     url = fmt.Sprintf("%s/fapi/v1/order", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))
   }
 
-  req, _ := http.NewRequest("POST", url, body)
+  ctx, cancel := context.WithTimeout(r.Ctx, 5*time.Second)
+  defer cancel()
+
+  req, _ := http.NewRequestWithContext(ctx, "POST", url, body)
   req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
   req.Header.Set("X-MBX-APIKEY", apiKey)
   resp, err := httpClient.Do(req)
@@ -746,7 +758,10 @@ func (r *OrdersRepository) Cancel(symbol string, orderId int64) (err error) {
     url = fmt.Sprintf("%s/fapi/v1/order", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))
   }
 
-  req, _ := http.NewRequest("DELETE", url, body)
+  ctx, cancel := context.WithTimeout(r.Ctx, 5*time.Second)
+  defer cancel()
+
+  req, _ := http.NewRequestWithContext(ctx, "DELETE", url, body)
   req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
   req.Header.Set("X-MBX-APIKEY", apiKey)
   resp, err := httpClient.Do(req)
@@ -833,7 +848,10 @@ func (r *OrdersRepository) Flush(symbol string, orderId int64) (err error) {
     url = fmt.Sprintf("%s/fapi/v1/order", os.Getenv("BINANCE_FUTURES_API_ENDPOINT"))
   }
 
-  req, _ := http.NewRequest("GET", url, nil)
+  ctx, cancel := context.WithTimeout(r.Ctx, 5*time.Second)
+  defer cancel()
+
+  req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
   req.URL.RawQuery = params.Encode()
   req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
   req.Header.Set("X-MBX-APIKEY", apiKey)

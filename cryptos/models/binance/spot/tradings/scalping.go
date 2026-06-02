@@ -7,6 +7,7 @@ type Scalping struct {
   Symbol       string    `gorm:"size:20;not null"`
   ScalpingId   string    `gorm:"size:20;index:idx_binance_spot_tradings_scalping"`
   PlanId       string    `gorm:"size:20"`
+  LastPrice    float64   `gorm:"type:double precision;not null"`
   BuyPrice     float64   `gorm:"type:double precision;not null"`
   SellPrice    float64   `gorm:"type:double precision;not null"`
   BuyQuantity  float64   `gorm:"type:double precision;not null"`

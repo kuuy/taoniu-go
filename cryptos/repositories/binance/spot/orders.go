@@ -222,7 +222,7 @@ func (r *OrdersRepository) Sync(symbol string, startTime int64, limit int) (err 
 
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   5 * time.Second,
+    Timeout:   15 * time.Second,
   }
 
   params := url.Values{}
@@ -244,8 +244,11 @@ func (r *OrdersRepository) Sync(symbol string, startTime int64, limit int) (err 
   signature := mac.Sum(nil)
   params.Add("signature", fmt.Sprintf("%x", signature))
 
+  ctx, cancel := context.WithTimeout(r.Ctx, 15*time.Second)
+  defer cancel()
+
   url := fmt.Sprintf("%s/api/v3/allOrders", os.Getenv("BINANCE_SPOT_API_ENDPOINT"))
-  req, _ := http.NewRequest("GET", url, nil)
+  req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
   req.URL.RawQuery = params.Encode()
   req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
   req.Header.Set("X-MBX-APIKEY", os.Getenv("BINANCE_SPOT_ACCOUNT_API_KEY"))
@@ -313,7 +316,7 @@ func (r *OrdersRepository) Create(
 
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   5 * time.Second,
+    Timeout:   8 * time.Second,
   }
 
   params := url.Values{}
@@ -342,8 +345,11 @@ func (r *OrdersRepository) Create(
 
   body := bytes.NewBufferString(fmt.Sprintf("%s&%s", payload, data.Encode()))
 
+  ctx, cancel := context.WithTimeout(r.Ctx, 8*time.Second)
+  defer cancel()
+
   url := fmt.Sprintf("%s/api/v3/order", os.Getenv("BINANCE_SPOT_API_ENDPOINT"))
-  req, _ := http.NewRequest("POST", url, body)
+  req, _ := http.NewRequestWithContext(ctx, "POST", url, body)
   req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
   req.Header.Set("X-MBX-APIKEY", os.Getenv("BINANCE_SPOT_TRADE_API_KEY"))
   resp, err := httpClient.Do(req)
@@ -394,7 +400,7 @@ func (r *OrdersRepository) Cancel(symbol string, orderId int64) (err error) {
 
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   5 * time.Second,
+    Timeout:   8 * time.Second,
   }
 
   params := url.Values{}
@@ -422,8 +428,11 @@ func (r *OrdersRepository) Cancel(symbol string, orderId int64) (err error) {
 
   body := bytes.NewBufferString(fmt.Sprintf("%s&%s", payload, data.Encode()))
 
+  ctx, cancel := context.WithTimeout(r.Ctx, 8*time.Second)
+  defer cancel()
+
   url := fmt.Sprintf("%s/api/v3/order", os.Getenv("BINANCE_SPOT_API_ENDPOINT"))
-  req, _ := http.NewRequest("DELETE", url, body)
+  req, _ := http.NewRequestWithContext(ctx, "DELETE", url, body)
   req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
   req.Header.Set("X-MBX-APIKEY", os.Getenv("BINANCE_SPOT_TRADE_API_KEY"))
   resp, err := httpClient.Do(req)
@@ -492,8 +501,11 @@ func (r *OrdersRepository) Flush(symbol string, orderId int64) (err error) {
   signature := mac.Sum(nil)
   params.Add("signature", fmt.Sprintf("%x", signature))
 
+  ctx, cancel := context.WithTimeout(r.Ctx, 5*time.Second)
+  defer cancel()
+
   url := fmt.Sprintf("%s/api/v3/order", os.Getenv("BINANCE_SPOT_API_ENDPOINT"))
-  req, _ := http.NewRequest("GET", url, nil)
+  req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
   req.URL.RawQuery = params.Encode()
   req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
   req.Header.Set("X-MBX-APIKEY", os.Getenv("BINANCE_SPOT_ACCOUNT_API_KEY"))

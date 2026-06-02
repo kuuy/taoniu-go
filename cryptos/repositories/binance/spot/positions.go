@@ -272,12 +272,8 @@ func (r *PositionsRepository) Flush(position *models.Position) (err error) {
   var entryAmount float64
   var entryQuantity float64
   for _, order := range orders {
-    if order.Status != "FILLED" {
+    if order.Status == "PARTIALLY_FILLED" || order.ExecutedQuantity == 0 {
       continue
-    }
-    if order.ExecutedQuantity != order.Quantity {
-      r.OrdersRepository.Flush(order.Symbol, order.OrderId)
-      return
     }
     executedQuantity := decimal.NewFromFloat(order.ExecutedQuantity)
     executedAmount := decimal.NewFromFloat(order.Price).Mul(executedQuantity)

@@ -5,6 +5,7 @@ import (
   "errors"
   "fmt"
   "log"
+  "math"
   "strconv"
   "time"
 
@@ -382,6 +383,7 @@ func (r *ScalpingRepository) Flush(id string) (err error) {
 
       switch status {
       case "FILLED":
+        var lastPrice float64
         if closeTrading.ID != "" && closeTrading.CreatedAt.Unix() < trading.CreatedAt.Unix() {
           err = r.Db.Transaction(func(tx *gorm.DB) (err error) {
             buyQuantity, _ := decimal.NewFromFloat(trading.BuyQuantity).Add(decimal.NewFromFloat(closeTrading.BuyQuantity)).Float64()
@@ -399,7 +401,9 @@ func (r *ScalpingRepository) Flush(id string) (err error) {
             if result.RowsAffected == 0 {
               return errors.New("last trading close failed")
             }
+            lastPrice = math.Min(closeTrading.BuyPrice, trading.BuyPrice)
             result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+              "last_price":    lastPrice,
               "buy_price":     buyPrice,
               "buy_quantity":  buyQuantity,
               "sell_price":    sellPrice,
@@ -419,6 +423,9 @@ func (r *ScalpingRepository) Flush(id string) (err error) {
             return
           }
         } else {
+          if trading.LastPrice == 0.0 {
+            lastPrice = trading.BuyPrice
+          }
           result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
             "status":  1,
             "version": gorm.Expr("version + ?", 1),
@@ -430,7 +437,7 @@ func (r *ScalpingRepository) Flush(id string) (err error) {
             return errors.New("order update failed")
           }
         }
-        r.Rdb.Set(r.Ctx, redisKey, trading.BuyPrice, time.Hour*24)
+        r.Rdb.Set(r.Ctx, redisKey, lastPrice, time.Hour*24)
       case "CANCELED":
         result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
           "buy_order_id": 0,
@@ -674,11 +681,15 @@ func (r *ScalpingRepository) CanBuy(
     if trading.Status == 0 {
       return false
     }
-    if price >= trading.BuyPrice*0.9615 {
+    lastPrice := trading.LastPrice
+    if lastPrice == 0.0 {
+      lastPrice = trading.BuyPrice
+    }
+    if price >= lastPrice*0.9615 {
       return false
     }
-    if buyPrice == 0 || buyPrice > trading.BuyPrice {
-      buyPrice = trading.BuyPrice
+    if buyPrice == 0 || buyPrice > lastPrice {
+      buyPrice = lastPrice
       isChange = true
     }
   }
