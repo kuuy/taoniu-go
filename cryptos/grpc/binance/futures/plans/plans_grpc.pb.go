@@ -22,7 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type PlansClient interface {
-	Pagenate(ctx context.Context, in *PagenateRequest, opts ...grpc.CallOption) (*PagenateReply, error)
+	Paginate(ctx context.Context, in *PaginateRequest, opts ...grpc.CallOption) (*PaginateReply, error)
 }
 
 type plansClient struct {
@@ -33,9 +33,9 @@ func NewPlansClient(cc grpc.ClientConnInterface) PlansClient {
 	return &plansClient{cc}
 }
 
-func (c *plansClient) Pagenate(ctx context.Context, in *PagenateRequest, opts ...grpc.CallOption) (*PagenateReply, error) {
-	out := new(PagenateReply)
-	err := c.cc.Invoke(ctx, "/taoniu.local.cryptos.grpc.binance.futures.plans.Plans/Pagenate", in, out, opts...)
+func (c *plansClient) Paginate(ctx context.Context, in *PaginateRequest, opts ...grpc.CallOption) (*PaginateReply, error) {
+	out := new(PaginateReply)
+	err := c.cc.Invoke(ctx, "/taoniu.local.cryptos.grpc.binance.futures.plans.Plans/Paginate", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +46,7 @@ func (c *plansClient) Pagenate(ctx context.Context, in *PagenateRequest, opts ..
 // All implementations must embed UnimplementedPlansServer
 // for forward compatibility
 type PlansServer interface {
-	Pagenate(context.Context, *PagenateRequest) (*PagenateReply, error)
+	Paginate(context.Context, *PaginateRequest) (*PaginateReply, error)
 	mustEmbedUnimplementedPlansServer()
 }
 
@@ -54,8 +54,8 @@ type PlansServer interface {
 type UnimplementedPlansServer struct {
 }
 
-func (UnimplementedPlansServer) Pagenate(context.Context, *PagenateRequest) (*PagenateReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Pagenate not implemented")
+func (UnimplementedPlansServer) Paginate(context.Context, *PaginateRequest) (*PaginateReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Paginate not implemented")
 }
 func (UnimplementedPlansServer) mustEmbedUnimplementedPlansServer() {}
 
@@ -70,20 +70,20 @@ func RegisterPlansServer(s grpc.ServiceRegistrar, srv PlansServer) {
 	s.RegisterService(&Plans_ServiceDesc, srv)
 }
 
-func _Plans_Pagenate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PagenateRequest)
+func _Plans_Paginate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PaginateRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(PlansServer).Pagenate(ctx, in)
+		return srv.(PlansServer).Paginate(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/taoniu.local.cryptos.grpc.binance.futures.plans.Plans/Pagenate",
+		FullMethod: "/taoniu.local.cryptos.grpc.binance.futures.plans.Plans/Paginate",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PlansServer).Pagenate(ctx, req.(*PagenateRequest))
+		return srv.(PlansServer).Paginate(ctx, req.(*PaginateRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -96,8 +96,8 @@ var Plans_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*PlansServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Pagenate",
-			Handler:    _Plans_Pagenate_Handler,
+			MethodName: "Paginate",
+			Handler:    _Plans_Paginate_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

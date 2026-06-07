@@ -6,7 +6,7 @@ option go_package = "taoniu.local/cryptos/grpc/binance/futures/markets/live";
 import "google/protobuf/timestamp.proto";
 
 service Live {
-  rpc Pagenate (PagenateRequest) returns (PagenateReply) {}
+  rpc Paginate (PaginateRequest) returns (PaginateReply) {}
 }
 
 message LiveInfo {
@@ -20,13 +20,13 @@ message LiveInfo {
   google.protobuf.Timestamp timestamp = 8;
 }
 
-message PagenateRequest {
+message PaginateRequest {
   string symbol = 1;
   int32 current = 2;
   int32 pageSize = 3;
 }
 
-message PagenateReply {
+message PaginateReply {
   int64 total = 1;
   repeated LiveInfo data = 2;
 }

@@ -22,7 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type GridsClient interface {
-	Pagenate(ctx context.Context, in *PagenateRequest, opts ...grpc.CallOption) (*PagenateReply, error)
+	Paginate(ctx context.Context, in *PaginateRequest, opts ...grpc.CallOption) (*PaginateReply, error)
 }
 
 type gridsClient struct {
@@ -33,9 +33,9 @@ func NewGridsClient(cc grpc.ClientConnInterface) GridsClient {
 	return &gridsClient{cc}
 }
 
-func (c *gridsClient) Pagenate(ctx context.Context, in *PagenateRequest, opts ...grpc.CallOption) (*PagenateReply, error) {
-	out := new(PagenateReply)
-	err := c.cc.Invoke(ctx, "/taoniu.local.cryptos.grpc.binance.futures.tradings.triggers.grids.Grids/Pagenate", in, out, opts...)
+func (c *gridsClient) Paginate(ctx context.Context, in *PaginateRequest, opts ...grpc.CallOption) (*PaginateReply, error) {
+	out := new(PaginateReply)
+	err := c.cc.Invoke(ctx, "/taoniu.local.cryptos.grpc.binance.futures.tradings.triggers.grids.Grids/Paginate", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +46,7 @@ func (c *gridsClient) Pagenate(ctx context.Context, in *PagenateRequest, opts ..
 // All implementations must embed UnimplementedGridsServer
 // for forward compatibility
 type GridsServer interface {
-	Pagenate(context.Context, *PagenateRequest) (*PagenateReply, error)
+	Paginate(context.Context, *PaginateRequest) (*PaginateReply, error)
 	mustEmbedUnimplementedGridsServer()
 }
 
@@ -54,8 +54,8 @@ type GridsServer interface {
 type UnimplementedGridsServer struct {
 }
 
-func (UnimplementedGridsServer) Pagenate(context.Context, *PagenateRequest) (*PagenateReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Pagenate not implemented")
+func (UnimplementedGridsServer) Paginate(context.Context, *PaginateRequest) (*PaginateReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Paginate not implemented")
 }
 func (UnimplementedGridsServer) mustEmbedUnimplementedGridsServer() {}
 
@@ -70,20 +70,20 @@ func RegisterGridsServer(s grpc.ServiceRegistrar, srv GridsServer) {
 	s.RegisterService(&Grids_ServiceDesc, srv)
 }
 
-func _Grids_Pagenate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PagenateRequest)
+func _Grids_Paginate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PaginateRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(GridsServer).Pagenate(ctx, in)
+		return srv.(GridsServer).Paginate(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/taoniu.local.cryptos.grpc.binance.futures.tradings.triggers.grids.Grids/Pagenate",
+		FullMethod: "/taoniu.local.cryptos.grpc.binance.futures.tradings.triggers.grids.Grids/Paginate",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GridsServer).Pagenate(ctx, req.(*PagenateRequest))
+		return srv.(GridsServer).Paginate(ctx, req.(*PaginateRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -96,8 +96,8 @@ var Grids_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*GridsServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Pagenate",
-			Handler:    _Grids_Pagenate_Handler,
+			MethodName: "Paginate",
+			Handler:    _Grids_Paginate_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -121,5 +121,5 @@ func (h *TickersHandler) Ranking(
 
   result := h.Repository.Ranking(symbols, fields, sortField, sortType, current, pageSize)
 
-  h.Response.Pagenate(result.Data, int64(result.Total), current, pageSize)
+  h.Response.Paginate(result.Data, int64(result.Total), current, pageSize)
 }

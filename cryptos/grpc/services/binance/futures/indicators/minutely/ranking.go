@@ -26,8 +26,8 @@ func NewRanking(db *gorm.DB, rdb *redis.Client, ctx context.Context) *Ranking {
   }
 }
 
-func (srv *Ranking) Pagenate(ctx context.Context, request *pb.PagenateRequest) (*pb.PagenateReply, error) {
-  reply := &pb.PagenateReply{}
+func (srv *Ranking) Paginate(ctx context.Context, request *pb.PaginateRequest) (*pb.PaginateReply, error) {
+  reply := &pb.PaginateReply{}
   //ranking := srv.Repository.Listings(
   //  request.Symbol,
   //  request.Fields,

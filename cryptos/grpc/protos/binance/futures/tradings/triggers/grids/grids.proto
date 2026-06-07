@@ -6,7 +6,7 @@ option go_package = "taoniu.local/cryptos/grpc/binance/futures/tradings/triggers
 import "google/protobuf/timestamp.proto";
 
 service Grids {
-  rpc Pagenate (PagenateRequest) returns (PagenateReply) {}
+  rpc Paginate (PaginateRequest) returns (PaginateReply) {}
 }
 
 message GridInfo {
@@ -21,14 +21,14 @@ message GridInfo {
   google.protobuf.Timestamp updatedAt = 9;
 }
 
-message PagenateRequest {
+message PaginateRequest {
   string symbol = 1;
   repeated uint32 status = 2;
   int32 current = 3;
   int32 pageSize = 4;
 }
 
-message PagenateReply {
+message PaginateReply {
   int64 total = 1;
   repeated GridInfo data = 2;
 }

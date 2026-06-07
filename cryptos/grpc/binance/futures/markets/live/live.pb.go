@@ -124,7 +124,7 @@ func (x *LiveInfo) GetTimestamp() *timestamp.Timestamp {
 	return nil
 }
 
-type PagenateRequest struct {
+type PaginateRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -134,8 +134,8 @@ type PagenateRequest struct {
 	PageSize int32  `protobuf:"varint,3,opt,name=pageSize,proto3" json:"pageSize,omitempty"`
 }
 
-func (x *PagenateRequest) Reset() {
-	*x = PagenateRequest{}
+func (x *PaginateRequest) Reset() {
+	*x = PaginateRequest{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_binance_futures_markets_live_live_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -143,13 +143,13 @@ func (x *PagenateRequest) Reset() {
 	}
 }
 
-func (x *PagenateRequest) String() string {
+func (x *PaginateRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*PagenateRequest) ProtoMessage() {}
+func (*PaginateRequest) ProtoMessage() {}
 
-func (x *PagenateRequest) ProtoReflect() protoreflect.Message {
+func (x *PaginateRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_binance_futures_markets_live_live_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -161,33 +161,33 @@ func (x *PagenateRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use PagenateRequest.ProtoReflect.Descriptor instead.
-func (*PagenateRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use PaginateRequest.ProtoReflect.Descriptor instead.
+func (*PaginateRequest) Descriptor() ([]byte, []int) {
 	return file_binance_futures_markets_live_live_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *PagenateRequest) GetSymbol() string {
+func (x *PaginateRequest) GetSymbol() string {
 	if x != nil {
 		return x.Symbol
 	}
 	return ""
 }
 
-func (x *PagenateRequest) GetCurrent() int32 {
+func (x *PaginateRequest) GetCurrent() int32 {
 	if x != nil {
 		return x.Current
 	}
 	return 0
 }
 
-func (x *PagenateRequest) GetPageSize() int32 {
+func (x *PaginateRequest) GetPageSize() int32 {
 	if x != nil {
 		return x.PageSize
 	}
 	return 0
 }
 
-type PagenateReply struct {
+type PaginateReply struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -196,8 +196,8 @@ type PagenateReply struct {
 	Data  []*LiveInfo `protobuf:"bytes,2,rep,name=data,proto3" json:"data,omitempty"`
 }
 
-func (x *PagenateReply) Reset() {
-	*x = PagenateReply{}
+func (x *PaginateReply) Reset() {
+	*x = PaginateReply{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_binance_futures_markets_live_live_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -205,13 +205,13 @@ func (x *PagenateReply) Reset() {
 	}
 }
 
-func (x *PagenateReply) String() string {
+func (x *PaginateReply) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*PagenateReply) ProtoMessage() {}
+func (*PaginateReply) ProtoMessage() {}
 
-func (x *PagenateReply) ProtoReflect() protoreflect.Message {
+func (x *PaginateReply) ProtoReflect() protoreflect.Message {
 	mi := &file_binance_futures_markets_live_live_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -223,19 +223,19 @@ func (x *PagenateReply) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use PagenateReply.ProtoReflect.Descriptor instead.
-func (*PagenateReply) Descriptor() ([]byte, []int) {
+// Deprecated: Use PaginateReply.ProtoReflect.Descriptor instead.
+func (*PaginateReply) Descriptor() ([]byte, []int) {
 	return file_binance_futures_markets_live_live_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *PagenateReply) GetTotal() int64 {
+func (x *PaginateReply) GetTotal() int64 {
 	if x != nil {
 		return x.Total
 	}
 	return 0
 }
 
-func (x *PagenateReply) GetData() []*LiveInfo {
+func (x *PaginateReply) GetData() []*LiveInfo {
 	if x != nil {
 		return x.Data
 	}
@@ -313,15 +313,15 @@ func file_binance_futures_markets_live_live_proto_rawDescGZIP() []byte {
 var file_binance_futures_markets_live_live_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_binance_futures_markets_live_live_proto_goTypes = []interface{}{
 	(*LiveInfo)(nil),            // 0: taoniu.local.cryptos.grpc.binance.futures.markets.live.LiveInfo
-	(*PagenateRequest)(nil),     // 1: taoniu.local.cryptos.grpc.binance.futures.markets.live.PagenateRequest
-	(*PagenateReply)(nil),       // 2: taoniu.local.cryptos.grpc.binance.futures.markets.live.PagenateReply
+	(*PaginateRequest)(nil),     // 1: taoniu.local.cryptos.grpc.binance.futures.markets.live.PaginateRequest
+	(*PaginateReply)(nil),       // 2: taoniu.local.cryptos.grpc.binance.futures.markets.live.PaginateReply
 	(*timestamp.Timestamp)(nil), // 3: google.protobuf.Timestamp
 }
 var file_binance_futures_markets_live_live_proto_depIdxs = []int32{
 	3, // 0: taoniu.local.cryptos.grpc.binance.futures.markets.live.LiveInfo.timestamp:type_name -> google.protobuf.Timestamp
-	0, // 1: taoniu.local.cryptos.grpc.binance.futures.markets.live.PagenateReply.data:type_name -> taoniu.local.cryptos.grpc.binance.futures.markets.live.LiveInfo
-	1, // 2: taoniu.local.cryptos.grpc.binance.futures.markets.live.Live.Pagenate:input_type -> taoniu.local.cryptos.grpc.binance.futures.markets.live.PagenateRequest
-	2, // 3: taoniu.local.cryptos.grpc.binance.futures.markets.live.Live.Pagenate:output_type -> taoniu.local.cryptos.grpc.binance.futures.markets.live.PagenateReply
+	0, // 1: taoniu.local.cryptos.grpc.binance.futures.markets.live.PaginateReply.data:type_name -> taoniu.local.cryptos.grpc.binance.futures.markets.live.LiveInfo
+	1, // 2: taoniu.local.cryptos.grpc.binance.futures.markets.live.Live.Paginate:input_type -> taoniu.local.cryptos.grpc.binance.futures.markets.live.PaginateRequest
+	2, // 3: taoniu.local.cryptos.grpc.binance.futures.markets.live.Live.Paginate:output_type -> taoniu.local.cryptos.grpc.binance.futures.markets.live.PaginateReply
 	3, // [3:4] is the sub-list for method output_type
 	2, // [2:3] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name
@@ -348,7 +348,7 @@ func file_binance_futures_markets_live_live_proto_init() {
 			}
 		}
 		file_binance_futures_markets_live_live_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PagenateRequest); i {
+			switch v := v.(*PaginateRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -360,7 +360,7 @@ func file_binance_futures_markets_live_live_proto_init() {
 			}
 		}
 		file_binance_futures_markets_live_live_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PagenateReply); i {
+			switch v := v.(*PaginateReply); i {
 			case 0:
 				return &v.state
 			case 1:

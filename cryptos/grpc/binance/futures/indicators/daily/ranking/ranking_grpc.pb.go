@@ -22,7 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type RankingClient interface {
-	Pagenate(ctx context.Context, in *PagenateRequest, opts ...grpc.CallOption) (*PagenateReply, error)
+	Paginate(ctx context.Context, in *PaginateRequest, opts ...grpc.CallOption) (*PaginateReply, error)
 }
 
 type rankingClient struct {
@@ -33,9 +33,9 @@ func NewRankingClient(cc grpc.ClientConnInterface) RankingClient {
 	return &rankingClient{cc}
 }
 
-func (c *rankingClient) Pagenate(ctx context.Context, in *PagenateRequest, opts ...grpc.CallOption) (*PagenateReply, error) {
-	out := new(PagenateReply)
-	err := c.cc.Invoke(ctx, "/taoniu.local.cryptos.grpc.binance.futures.indicators.daily.ranking.Ranking/Pagenate", in, out, opts...)
+func (c *rankingClient) Paginate(ctx context.Context, in *PaginateRequest, opts ...grpc.CallOption) (*PaginateReply, error) {
+	out := new(PaginateReply)
+	err := c.cc.Invoke(ctx, "/taoniu.local.cryptos.grpc.binance.futures.indicators.daily.ranking.Ranking/Paginate", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +46,7 @@ func (c *rankingClient) Pagenate(ctx context.Context, in *PagenateRequest, opts 
 // All implementations must embed UnimplementedRankingServer
 // for forward compatibility
 type RankingServer interface {
-	Pagenate(context.Context, *PagenateRequest) (*PagenateReply, error)
+	Paginate(context.Context, *PaginateRequest) (*PaginateReply, error)
 	mustEmbedUnimplementedRankingServer()
 }
 
@@ -54,8 +54,8 @@ type RankingServer interface {
 type UnimplementedRankingServer struct {
 }
 
-func (UnimplementedRankingServer) Pagenate(context.Context, *PagenateRequest) (*PagenateReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Pagenate not implemented")
+func (UnimplementedRankingServer) Paginate(context.Context, *PaginateRequest) (*PaginateReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Paginate not implemented")
 }
 func (UnimplementedRankingServer) mustEmbedUnimplementedRankingServer() {}
 
@@ -70,20 +70,20 @@ func RegisterRankingServer(s grpc.ServiceRegistrar, srv RankingServer) {
 	s.RegisterService(&Ranking_ServiceDesc, srv)
 }
 
-func _Ranking_Pagenate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PagenateRequest)
+func _Ranking_Paginate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PaginateRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(RankingServer).Pagenate(ctx, in)
+		return srv.(RankingServer).Paginate(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/taoniu.local.cryptos.grpc.binance.futures.indicators.daily.ranking.Ranking/Pagenate",
+		FullMethod: "/taoniu.local.cryptos.grpc.binance.futures.indicators.daily.ranking.Ranking/Paginate",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RankingServer).Pagenate(ctx, req.(*PagenateRequest))
+		return srv.(RankingServer).Paginate(ctx, req.(*PaginateRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -96,8 +96,8 @@ var Ranking_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*RankingServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Pagenate",
-			Handler:    _Ranking_Pagenate_Handler,
+			MethodName: "Paginate",
+			Handler:    _Ranking_Paginate_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

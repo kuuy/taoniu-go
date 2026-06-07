@@ -95,5 +95,5 @@ func (h *StrategiesHandler) Listings(
     }
   }
 
-  h.Response.Pagenate(data, total, current, pageSize)
+  h.Response.Paginate(data, total, current, pageSize)
 }

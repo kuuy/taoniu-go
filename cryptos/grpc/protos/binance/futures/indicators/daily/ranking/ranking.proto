@@ -4,10 +4,10 @@ package taoniu.local.cryptos.grpc.binance.futures.indicators.daily.ranking;
 option go_package = "taoniu.local/cryptos/grpc/binance/futures/indicators/daily/ranking";
 
 service Ranking {
-  rpc Pagenate (PagenateRequest) returns (PagenateReply) {}
+  rpc Paginate (PaginateRequest) returns (PaginateReply) {}
 }
 
-message PagenateRequest {
+message PaginateRequest {
   string symbol = 1;
   repeated string fields = 2;
   string sortField = 3;
@@ -16,7 +16,7 @@ message PagenateRequest {
   int32 pageSize = 6;
 }
 
-message PagenateReply {
+message PaginateReply {
   int64 total = 1;
   repeated string data = 2;
 }

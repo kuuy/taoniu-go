@@ -58,7 +58,7 @@ func (h *ResponseHandler) Json(data interface{}) {
   h.Writer.Write([]byte(jweCompact))
 }
 
-func (h *ResponseHandler) Pagenate(
+func (h *ResponseHandler) Paginate(
   data interface{},
   total int64,
   current int,

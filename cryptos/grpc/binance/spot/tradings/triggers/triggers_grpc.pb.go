@@ -22,7 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type TriggersClient interface {
-	Pagenate(ctx context.Context, in *PagenateRequest, opts ...grpc.CallOption) (*PagenateReply, error)
+	Paginate(ctx context.Context, in *PaginateRequest, opts ...grpc.CallOption) (*PaginateReply, error)
 }
 
 type triggersClient struct {
@@ -33,9 +33,9 @@ func NewTriggersClient(cc grpc.ClientConnInterface) TriggersClient {
 	return &triggersClient{cc}
 }
 
-func (c *triggersClient) Pagenate(ctx context.Context, in *PagenateRequest, opts ...grpc.CallOption) (*PagenateReply, error) {
-	out := new(PagenateReply)
-	err := c.cc.Invoke(ctx, "/taoniu.local.cryptos.grpc.binance.spot.tradings.triggers.Triggers/Pagenate", in, out, opts...)
+func (c *triggersClient) Paginate(ctx context.Context, in *PaginateRequest, opts ...grpc.CallOption) (*PaginateReply, error) {
+	out := new(PaginateReply)
+	err := c.cc.Invoke(ctx, "/taoniu.local.cryptos.grpc.binance.spot.tradings.triggers.Triggers/Paginate", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +46,7 @@ func (c *triggersClient) Pagenate(ctx context.Context, in *PagenateRequest, opts
 // All implementations must embed UnimplementedTriggersServer
 // for forward compatibility
 type TriggersServer interface {
-	Pagenate(context.Context, *PagenateRequest) (*PagenateReply, error)
+	Paginate(context.Context, *PaginateRequest) (*PaginateReply, error)
 	mustEmbedUnimplementedTriggersServer()
 }
 
@@ -54,8 +54,8 @@ type TriggersServer interface {
 type UnimplementedTriggersServer struct {
 }
 
-func (UnimplementedTriggersServer) Pagenate(context.Context, *PagenateRequest) (*PagenateReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Pagenate not implemented")
+func (UnimplementedTriggersServer) Paginate(context.Context, *PaginateRequest) (*PaginateReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Paginate not implemented")
 }
 func (UnimplementedTriggersServer) mustEmbedUnimplementedTriggersServer() {}
 
@@ -70,20 +70,20 @@ func RegisterTriggersServer(s grpc.ServiceRegistrar, srv TriggersServer) {
 	s.RegisterService(&Triggers_ServiceDesc, srv)
 }
 
-func _Triggers_Pagenate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PagenateRequest)
+func _Triggers_Paginate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PaginateRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TriggersServer).Pagenate(ctx, in)
+		return srv.(TriggersServer).Paginate(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/taoniu.local.cryptos.grpc.binance.spot.tradings.triggers.Triggers/Pagenate",
+		FullMethod: "/taoniu.local.cryptos.grpc.binance.spot.tradings.triggers.Triggers/Paginate",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TriggersServer).Pagenate(ctx, req.(*PagenateRequest))
+		return srv.(TriggersServer).Paginate(ctx, req.(*PaginateRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -96,8 +96,8 @@ var Triggers_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*TriggersServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Pagenate",
-			Handler:    _Triggers_Pagenate_Handler,
+			MethodName: "Paginate",
+			Handler:    _Triggers_Paginate_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -25,13 +25,13 @@ func NewPlans(db *gorm.DB) *Plans {
   }
 }
 
-func (srv *Plans) Pagenate(ctx context.Context, request *pb.PagenateRequest) (*pb.PagenateReply, error) {
+func (srv *Plans) Paginate(ctx context.Context, request *pb.PaginateRequest) (*pb.PaginateReply, error) {
   conditions := make(map[string]interface{})
   if request.Symbol != "" {
     conditions["symbol"] = request.Symbol
   }
 
-  reply := &pb.PagenateReply{}
+  reply := &pb.PaginateReply{}
   reply.Total = srv.Repository.Count(conditions)
   data := srv.Repository.Listings(
     conditions,

@@ -5,6 +5,7 @@ import (
   "errors"
   "fmt"
   "log"
+  "math"
   "strconv"
   "time"
 
@@ -182,6 +183,7 @@ func (r *ScalpingRepository) Flush(id string) (err error) {
 
       switch status {
       case "FILLED":
+        var lastPrice float64
         if closeTrading.ID != "" && closeTrading.CreatedAt.Unix() < trading.CreatedAt.Unix() {
           buyQuantity, _ := decimal.NewFromFloat(trading.BuyQuantity).Add(decimal.NewFromFloat(closeTrading.BuyQuantity)).Float64()
           buyPrice, _ := decimal.NewFromFloat(trading.BuyPrice).Mul(decimal.NewFromFloat(trading.SellQuantity)).Add(
@@ -205,7 +207,14 @@ func (r *ScalpingRepository) Flush(id string) (err error) {
               log.Println("trading", closeTrading.ID, closeTrading.Version)
               return errors.New("last trading close failed")
             }
+            switch scalping.Side {
+            case 1:
+              lastPrice = math.Min(closeTrading.BuyPrice, trading.BuyPrice)
+            case 2:
+              lastPrice = math.Max(closeTrading.BuyPrice, trading.BuyPrice)
+            }
             result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
+              "last_price":    lastPrice,
               "buy_price":     buyPrice,
               "buy_quantity":  buyQuantity,
               "sell_price":    sellPrice,
@@ -225,6 +234,9 @@ func (r *ScalpingRepository) Flush(id string) (err error) {
             return
           }
         } else {
+          if trading.LastPrice == 0.0 {
+            lastPrice = trading.BuyPrice
+          }
           result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
             "status":  1,
             "version": gorm.Expr("version + ?", 1),
@@ -236,7 +248,7 @@ func (r *ScalpingRepository) Flush(id string) (err error) {
             return errors.New("trading update failed")
           }
         }
-        r.Rdb.Set(r.Ctx, redisKey, trading.BuyPrice, time.Hour*24)
+        r.Rdb.Set(r.Ctx, redisKey, lastPrice, time.Hour*24)
       case "CANCELED":
         result = r.Db.Model(&trading).Where("version", trading.Version).Updates(map[string]interface{}{
           "status":  4,
@@ -839,22 +851,26 @@ func (r *ScalpingRepository) CanBuy(
     if trading.Status == 0 {
       return false
     }
-    if scalping.Side == 1 && price >= trading.BuyPrice*0.9615 {
+    lastPrice := trading.LastPrice
+    if lastPrice == 0.0 {
+      lastPrice = trading.BuyPrice
+    }
+    if scalping.Side == 1 && price >= lastPrice*0.9615 {
       return false
     }
-    if scalping.Side == 2 && price <= trading.BuyPrice*1.0385 {
+    if scalping.Side == 2 && price <= lastPrice*1.0385 {
       return false
     }
     if buyPrice == 0 {
-      buyPrice = trading.BuyPrice
+      buyPrice = lastPrice
       isChange = true
     } else {
-      if scalping.Side == 1 && buyPrice > trading.BuyPrice {
-        buyPrice = trading.BuyPrice
+      if scalping.Side == 1 && buyPrice > lastPrice {
+        buyPrice = lastPrice
         isChange = true
       }
-      if scalping.Side == 2 && buyPrice < trading.BuyPrice {
-        buyPrice = trading.BuyPrice
+      if scalping.Side == 2 && buyPrice < lastPrice {
+        buyPrice = lastPrice
         isChange = true
       }
     }

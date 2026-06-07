@@ -22,7 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type LiveClient interface {
-	Pagenate(ctx context.Context, in *PagenateRequest, opts ...grpc.CallOption) (*PagenateReply, error)
+	Paginate(ctx context.Context, in *PaginateRequest, opts ...grpc.CallOption) (*PaginateReply, error)
 }
 
 type liveClient struct {
@@ -33,9 +33,9 @@ func NewLiveClient(cc grpc.ClientConnInterface) LiveClient {
 	return &liveClient{cc}
 }
 
-func (c *liveClient) Pagenate(ctx context.Context, in *PagenateRequest, opts ...grpc.CallOption) (*PagenateReply, error) {
-	out := new(PagenateReply)
-	err := c.cc.Invoke(ctx, "/taoniu.local.cryptos.grpc.binance.spot.markets.live.Live/Pagenate", in, out, opts...)
+func (c *liveClient) Paginate(ctx context.Context, in *PaginateRequest, opts ...grpc.CallOption) (*PaginateReply, error) {
+	out := new(PaginateReply)
+	err := c.cc.Invoke(ctx, "/taoniu.local.cryptos.grpc.binance.spot.markets.live.Live/Paginate", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +46,7 @@ func (c *liveClient) Pagenate(ctx context.Context, in *PagenateRequest, opts ...
 // All implementations must embed UnimplementedLiveServer
 // for forward compatibility
 type LiveServer interface {
-	Pagenate(context.Context, *PagenateRequest) (*PagenateReply, error)
+	Paginate(context.Context, *PaginateRequest) (*PaginateReply, error)
 	mustEmbedUnimplementedLiveServer()
 }
 
@@ -54,8 +54,8 @@ type LiveServer interface {
 type UnimplementedLiveServer struct {
 }
 
-func (UnimplementedLiveServer) Pagenate(context.Context, *PagenateRequest) (*PagenateReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Pagenate not implemented")
+func (UnimplementedLiveServer) Paginate(context.Context, *PaginateRequest) (*PaginateReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Paginate not implemented")
 }
 func (UnimplementedLiveServer) mustEmbedUnimplementedLiveServer() {}
 
@@ -70,20 +70,20 @@ func RegisterLiveServer(s grpc.ServiceRegistrar, srv LiveServer) {
 	s.RegisterService(&Live_ServiceDesc, srv)
 }
 
-func _Live_Pagenate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PagenateRequest)
+func _Live_Paginate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PaginateRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(LiveServer).Pagenate(ctx, in)
+		return srv.(LiveServer).Paginate(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/taoniu.local.cryptos.grpc.binance.spot.markets.live.Live/Pagenate",
+		FullMethod: "/taoniu.local.cryptos.grpc.binance.spot.markets.live.Live/Paginate",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LiveServer).Pagenate(ctx, req.(*PagenateRequest))
+		return srv.(LiveServer).Paginate(ctx, req.(*PaginateRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -96,8 +96,8 @@ var Live_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*LiveServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Pagenate",
-			Handler:    _Live_Pagenate_Handler,
+			MethodName: "Paginate",
+			Handler:    _Live_Paginate_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

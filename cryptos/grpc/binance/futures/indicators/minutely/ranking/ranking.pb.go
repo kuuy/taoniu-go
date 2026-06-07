@@ -20,7 +20,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type PagenateRequest struct {
+type PaginateRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -33,8 +33,8 @@ type PagenateRequest struct {
 	PageSize  int32    `protobuf:"varint,6,opt,name=pageSize,proto3" json:"pageSize,omitempty"`
 }
 
-func (x *PagenateRequest) Reset() {
-	*x = PagenateRequest{}
+func (x *PaginateRequest) Reset() {
+	*x = PaginateRequest{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_binance_futures_indicators_minutely_ranking_ranking_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -42,13 +42,13 @@ func (x *PagenateRequest) Reset() {
 	}
 }
 
-func (x *PagenateRequest) String() string {
+func (x *PaginateRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*PagenateRequest) ProtoMessage() {}
+func (*PaginateRequest) ProtoMessage() {}
 
-func (x *PagenateRequest) ProtoReflect() protoreflect.Message {
+func (x *PaginateRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_binance_futures_indicators_minutely_ranking_ranking_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -60,54 +60,54 @@ func (x *PagenateRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use PagenateRequest.ProtoReflect.Descriptor instead.
-func (*PagenateRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use PaginateRequest.ProtoReflect.Descriptor instead.
+func (*PaginateRequest) Descriptor() ([]byte, []int) {
 	return file_binance_futures_indicators_minutely_ranking_ranking_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *PagenateRequest) GetSymbol() string {
+func (x *PaginateRequest) GetSymbol() string {
 	if x != nil {
 		return x.Symbol
 	}
 	return ""
 }
 
-func (x *PagenateRequest) GetFields() []string {
+func (x *PaginateRequest) GetFields() []string {
 	if x != nil {
 		return x.Fields
 	}
 	return nil
 }
 
-func (x *PagenateRequest) GetSortField() string {
+func (x *PaginateRequest) GetSortField() string {
 	if x != nil {
 		return x.SortField
 	}
 	return ""
 }
 
-func (x *PagenateRequest) GetSortType() int32 {
+func (x *PaginateRequest) GetSortType() int32 {
 	if x != nil {
 		return x.SortType
 	}
 	return 0
 }
 
-func (x *PagenateRequest) GetCurrent() int32 {
+func (x *PaginateRequest) GetCurrent() int32 {
 	if x != nil {
 		return x.Current
 	}
 	return 0
 }
 
-func (x *PagenateRequest) GetPageSize() int32 {
+func (x *PaginateRequest) GetPageSize() int32 {
 	if x != nil {
 		return x.PageSize
 	}
 	return 0
 }
 
-type PagenateReply struct {
+type PaginateReply struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -116,8 +116,8 @@ type PagenateReply struct {
 	Data  []string `protobuf:"bytes,2,rep,name=data,proto3" json:"data,omitempty"`
 }
 
-func (x *PagenateReply) Reset() {
-	*x = PagenateReply{}
+func (x *PaginateReply) Reset() {
+	*x = PaginateReply{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_binance_futures_indicators_minutely_ranking_ranking_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -125,13 +125,13 @@ func (x *PagenateReply) Reset() {
 	}
 }
 
-func (x *PagenateReply) String() string {
+func (x *PaginateReply) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*PagenateReply) ProtoMessage() {}
+func (*PaginateReply) ProtoMessage() {}
 
-func (x *PagenateReply) ProtoReflect() protoreflect.Message {
+func (x *PaginateReply) ProtoReflect() protoreflect.Message {
 	mi := &file_binance_futures_indicators_minutely_ranking_ranking_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -143,19 +143,19 @@ func (x *PagenateReply) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use PagenateReply.ProtoReflect.Descriptor instead.
-func (*PagenateReply) Descriptor() ([]byte, []int) {
+// Deprecated: Use PaginateReply.ProtoReflect.Descriptor instead.
+func (*PaginateReply) Descriptor() ([]byte, []int) {
 	return file_binance_futures_indicators_minutely_ranking_ranking_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *PagenateReply) GetTotal() int64 {
+func (x *PaginateReply) GetTotal() int64 {
 	if x != nil {
 		return x.Total
 	}
 	return 0
 }
 
-func (x *PagenateReply) GetData() []string {
+func (x *PaginateReply) GetData() []string {
 	if x != nil {
 		return x.Data
 	}
@@ -222,12 +222,12 @@ func file_binance_futures_indicators_minutely_ranking_ranking_proto_rawDescGZIP(
 
 var file_binance_futures_indicators_minutely_ranking_ranking_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_binance_futures_indicators_minutely_ranking_ranking_proto_goTypes = []interface{}{
-	(*PagenateRequest)(nil), // 0: taoniu.local.cryptos.grpc.binance.futures.indicators.minutely.ranking.PagenateRequest
-	(*PagenateReply)(nil),   // 1: taoniu.local.cryptos.grpc.binance.futures.indicators.minutely.ranking.PagenateReply
+	(*PaginateRequest)(nil), // 0: taoniu.local.cryptos.grpc.binance.futures.indicators.minutely.ranking.PaginateRequest
+	(*PaginateReply)(nil),   // 1: taoniu.local.cryptos.grpc.binance.futures.indicators.minutely.ranking.PaginateReply
 }
 var file_binance_futures_indicators_minutely_ranking_ranking_proto_depIdxs = []int32{
-	0, // 0: taoniu.local.cryptos.grpc.binance.futures.indicators.minutely.ranking.Ranking.Pagenate:input_type -> taoniu.local.cryptos.grpc.binance.futures.indicators.minutely.ranking.PagenateRequest
-	1, // 1: taoniu.local.cryptos.grpc.binance.futures.indicators.minutely.ranking.Ranking.Pagenate:output_type -> taoniu.local.cryptos.grpc.binance.futures.indicators.minutely.ranking.PagenateReply
+	0, // 0: taoniu.local.cryptos.grpc.binance.futures.indicators.minutely.ranking.Ranking.Paginate:input_type -> taoniu.local.cryptos.grpc.binance.futures.indicators.minutely.ranking.PaginateRequest
+	1, // 1: taoniu.local.cryptos.grpc.binance.futures.indicators.minutely.ranking.Ranking.Paginate:output_type -> taoniu.local.cryptos.grpc.binance.futures.indicators.minutely.ranking.PaginateReply
 	1, // [1:2] is the sub-list for method output_type
 	0, // [0:1] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
@@ -242,7 +242,7 @@ func file_binance_futures_indicators_minutely_ranking_ranking_proto_init() {
 	}
 	if !protoimpl.UnsafeEnabled {
 		file_binance_futures_indicators_minutely_ranking_ranking_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PagenateRequest); i {
+			switch v := v.(*PaginateRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -254,7 +254,7 @@ func file_binance_futures_indicators_minutely_ranking_ranking_proto_init() {
 			}
 		}
 		file_binance_futures_indicators_minutely_ranking_ranking_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PagenateReply); i {
+			switch v := v.(*PaginateReply); i {
 			case 0:
 				return &v.state
 			case 1:

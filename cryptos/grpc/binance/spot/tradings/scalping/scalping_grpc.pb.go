@@ -22,7 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ScalpingClient interface {
-	Pagenate(ctx context.Context, in *PagenateRequest, opts ...grpc.CallOption) (*PagenateReply, error)
+	Paginate(ctx context.Context, in *PaginateRequest, opts ...grpc.CallOption) (*PaginateReply, error)
 }
 
 type scalpingClient struct {
@@ -33,9 +33,9 @@ func NewScalpingClient(cc grpc.ClientConnInterface) ScalpingClient {
 	return &scalpingClient{cc}
 }
 
-func (c *scalpingClient) Pagenate(ctx context.Context, in *PagenateRequest, opts ...grpc.CallOption) (*PagenateReply, error) {
-	out := new(PagenateReply)
-	err := c.cc.Invoke(ctx, "/taoniu.local.cryptos.grpc.binance.spot.tradings.scalping.Scalping/Pagenate", in, out, opts...)
+func (c *scalpingClient) Paginate(ctx context.Context, in *PaginateRequest, opts ...grpc.CallOption) (*PaginateReply, error) {
+	out := new(PaginateReply)
+	err := c.cc.Invoke(ctx, "/taoniu.local.cryptos.grpc.binance.spot.tradings.scalping.Scalping/Paginate", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +46,7 @@ func (c *scalpingClient) Pagenate(ctx context.Context, in *PagenateRequest, opts
 // All implementations must embed UnimplementedScalpingServer
 // for forward compatibility
 type ScalpingServer interface {
-	Pagenate(context.Context, *PagenateRequest) (*PagenateReply, error)
+	Paginate(context.Context, *PaginateRequest) (*PaginateReply, error)
 	mustEmbedUnimplementedScalpingServer()
 }
 
@@ -54,8 +54,8 @@ type ScalpingServer interface {
 type UnimplementedScalpingServer struct {
 }
 
-func (UnimplementedScalpingServer) Pagenate(context.Context, *PagenateRequest) (*PagenateReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Pagenate not implemented")
+func (UnimplementedScalpingServer) Paginate(context.Context, *PaginateRequest) (*PaginateReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Paginate not implemented")
 }
 func (UnimplementedScalpingServer) mustEmbedUnimplementedScalpingServer() {}
 
@@ -70,20 +70,20 @@ func RegisterScalpingServer(s grpc.ServiceRegistrar, srv ScalpingServer) {
 	s.RegisterService(&Scalping_ServiceDesc, srv)
 }
 
-func _Scalping_Pagenate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PagenateRequest)
+func _Scalping_Paginate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PaginateRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ScalpingServer).Pagenate(ctx, in)
+		return srv.(ScalpingServer).Paginate(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/taoniu.local.cryptos.grpc.binance.spot.tradings.scalping.Scalping/Pagenate",
+		FullMethod: "/taoniu.local.cryptos.grpc.binance.spot.tradings.scalping.Scalping/Paginate",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ScalpingServer).Pagenate(ctx, req.(*PagenateRequest))
+		return srv.(ScalpingServer).Paginate(ctx, req.(*PaginateRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -96,8 +96,8 @@ var Scalping_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*ScalpingServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Pagenate",
-			Handler:    _Scalping_Pagenate_Handler,
+			MethodName: "Paginate",
+			Handler:    _Scalping_Paginate_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
