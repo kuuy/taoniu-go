@@ -45,7 +45,7 @@ func (r *ScalpingRepository) Flush(side int) error {
   analysis.AdditiveProfit = 0
 
   var tradings []*tradingsModels.Scalping
-  query := r.Db.Where("created_at>=? AND updated_at < ? AND status IN (1,2,3,5)", datetime, datetime.Add(24*time.Hour))
+  query := r.Db.Where("created_at>=? AND updated_at < ? AND status IN (1,2,3)", datetime, datetime.Add(24*time.Hour))
   if side == 1 {
     query.Where("buy_price < sell_price")
   } else {

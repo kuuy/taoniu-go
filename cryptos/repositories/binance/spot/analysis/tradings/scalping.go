@@ -44,7 +44,7 @@ func (r *ScalpingRepository) Flush() error {
   analysis.AdditiveProfit = 0
 
   var tradings []*tradingsModels.Scalping
-  query := r.Db.Where("created_at>=? AND updated_at < ? AND status IN (1,2,3,5)", datetime, datetime.Add(24*time.Hour))
+  query := r.Db.Where("created_at>=? AND updated_at < ? AND status IN (1,2,3)", datetime, datetime.Add(24*time.Hour))
   query.Find(&tradings)
   for _, trading := range tradings {
     if trading.Status == 5 {
