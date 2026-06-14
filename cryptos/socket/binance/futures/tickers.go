@@ -1,12 +1,10 @@
 package futures
 
 import (
-  "encoding/json"
   "errors"
   "github.com/nats-io/nats.go"
   socketio "github.com/vchitai/go-socket.io/v4"
   "taoniu.local/cryptos/common"
-  config "taoniu.local/cryptos/config/binance/futures"
 )
 
 type Tickers struct {
@@ -35,13 +33,13 @@ func (h *Tickers) Flush(symbols []string) error {
   if h.FlushSubscribe != nil && h.FlushSubscribe.IsValid() {
     h.FlushSubscribe.Unsubscribe()
   }
-  h.FlushSubscribe, _ = h.SocketContext.Nats.Subscribe(config.NATS_TICKERS_UPDATE, func(msg *nats.Msg) {
-    var payload *TickersUpdatePayload
-    json.Unmarshal(msg.Data, &payload)
-    if h.contains(symbols, payload.Symbol) {
-      h.SocketContext.Conn.Emit("tickers", payload)
-    }
-  })
+  //h.FlushSubscribe, _ = h.SocketContext.Nats.Subscribe(config.NATS_TICKERS_UPDATE, func(msg *nats.Msg) {
+  //  var payload *TickersUpdatePayload
+  //  json.Unmarshal(msg.Data, &payload)
+  //  if h.contains(symbols, payload.Symbol) {
+  //    h.SocketContext.Conn.Emit("tickers", payload)
+  //  }
+  //})
   return nil
 }
 

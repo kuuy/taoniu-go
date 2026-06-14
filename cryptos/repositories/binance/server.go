@@ -3,7 +3,6 @@ package binance
 import (
   "context"
   "encoding/json"
-  "errors"
   "fmt"
   "net"
   "net/http"
@@ -35,8 +34,11 @@ func (r *ServerRepository) Time() (serverTime int64, err error) {
 
   timestamp := time.Now().UnixMilli()
 
+  ctx, cancel := context.WithTimeout(r.Ctx, 3*time.Second)
+  defer cancel()
+
   url := "https://api.binance.com/api/v1/time"
-  req, _ := http.NewRequest("GET", url, nil)
+  req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
   resp, err := httpClient.Do(req)
   if err != nil {
     return
@@ -44,12 +46,10 @@ func (r *ServerRepository) Time() (serverTime int64, err error) {
   defer resp.Body.Close()
 
   if resp.StatusCode != http.StatusOK {
-    err = errors.New(
-      fmt.Sprintf(
-        "request error: status[%s] code[%d]",
-        resp.Status,
-        resp.StatusCode,
-      ),
+    err = fmt.Errorf(
+      "request error: status[%s] code[%d]",
+      resp.Status,
+      resp.StatusCode,
     )
     return
   }
