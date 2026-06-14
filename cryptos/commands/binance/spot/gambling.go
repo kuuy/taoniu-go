@@ -94,7 +94,7 @@ func (h *GamblingHandler) Calc(
 
   planPrice := entryPrice
   planQuantity := entryQuantity
-  planAmount := entryAmount
+  planAmount := 0.0
   planProfit := 0.0
   lastProfit := 0.0
   takeProfit := 0.0
@@ -125,7 +125,7 @@ func (h *GamblingHandler) Calc(
       }
       planPrice = plan.TakePrice
       planQuantity, _ = decimal.NewFromFloat(planQuantity).Sub(decimal.NewFromFloat(plan.TakeQuantity)).Float64()
-      planAmount, _ = decimal.NewFromFloat(planAmount).Sub(decimal.NewFromFloat(plan.TakeAmount)).Float64()
+      planAmount, _ = decimal.NewFromFloat(planAmount).Add(decimal.NewFromFloat(plan.TakeAmount)).Float64()
       planProfit, _ = decimal.NewFromFloat(planProfit).Add(decimal.NewFromFloat(takeProfit)).Float64()
 
       if plan.TakeAmount < notional {

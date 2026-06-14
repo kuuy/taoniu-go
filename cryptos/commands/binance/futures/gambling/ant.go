@@ -242,7 +242,7 @@ func (h *AntHandler) Calc(
 
   planPrice := entryPrice
   planQuantity := entryQuantity
-  planAmount := entryAmount
+  planAmount := 0.0
   planProfit := 0.0
   lastPrice := 0.0
   lastProfit := 0.0
@@ -278,7 +278,6 @@ func (h *AntHandler) Calc(
   }
 
   if planQuantity > 0 {
-    planAmount = 0.0
     quantities = append(quantities, planQuantity)
   }
 
