@@ -21,7 +21,7 @@ type ServerTime struct {
   Timestamp int64 `json:"serverTime"`
 }
 
-func (r *ServerRepository) Time() (int64, error) {
+func (r *ServerRepository) Time() (serverTime int64, err error) {
   tr := &http.Transport{
     DisableKeepAlives: true,
   }
@@ -39,31 +39,35 @@ func (r *ServerRepository) Time() (int64, error) {
   req, _ := http.NewRequest("GET", url, nil)
   resp, err := httpClient.Do(req)
   if err != nil {
-    return 0, err
+    return
   }
   defer resp.Body.Close()
 
   if resp.StatusCode != http.StatusOK {
-    return 0, errors.New(
+    err = errors.New(
       fmt.Sprintf(
         "request error: status[%s] code[%d]",
         resp.Status,
         resp.StatusCode,
       ),
     )
+    return
   }
 
   var result ServerTime
-  json.NewDecoder(resp.Body).Decode(&result)
+  if err = json.NewDecoder(resp.Body).Decode(&result); err != nil {
+    return
+  }
+  serverTime = result.Timestamp
 
   r.Rdb.HMSet(
     r.Ctx,
     "binance:server",
     map[string]interface{}{
-      "timestamp": result.Timestamp,
-      "timediff":  timestamp - result.Timestamp,
+      "timestamp": serverTime,
+      "timediff":  timestamp - serverTime,
     },
   )
 
-  return result.Timestamp, nil
+  return
 }

@@ -221,9 +221,12 @@ func (r *OrdersRepository) Open(symbol string) (err error) {
     return
   }
 
-  var result []*service.Order
-  json.NewDecoder(resp.Body).Decode(&result)
-  for _, order := range result {
+  var orders []*service.Order
+  if err = json.NewDecoder(resp.Body).Decode(&orders); err != nil {
+    return
+  }
+
+  for _, order := range orders {
     r.Save(order)
   }
 
@@ -304,9 +307,12 @@ func (r *OrdersRepository) Sync(symbol string, startTime int64, limit int) (err 
     return
   }
 
-  var result []*service.Order
-  json.NewDecoder(resp.Body).Decode(&result)
-  for _, order := range result {
+  var orders []*service.Order
+  if err = json.NewDecoder(resp.Body).Decode(&orders); err != nil {
+    return
+  }
+
+  for _, order := range orders {
     r.Save(order)
   }
 
@@ -867,7 +873,9 @@ func (r *OrdersRepository) Flush(symbol string, orderId int64) (err error) {
   }
 
   var order *service.Order
-  json.NewDecoder(resp.Body).Decode(&order)
+  if err = json.NewDecoder(resp.Body).Decode(&order); err != nil {
+    return
+  }
 
   r.Save(order)
 

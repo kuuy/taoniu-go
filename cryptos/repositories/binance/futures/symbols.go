@@ -121,7 +121,9 @@ func (r *SymbolsRepository) Flush() (err error) {
   }
 
   var response ExchangeInfo
-  json.NewDecoder(resp.Body).Decode(&response)
+  if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
+    return
+  }
 
   for _, item := range response.Symbols {
     if item.QuoteAsset != "USDT" {

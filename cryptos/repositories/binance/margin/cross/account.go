@@ -101,7 +101,9 @@ func (r *AccountRepository) Flush() (err error) {
   }
 
   var account *AccountInfo
-  json.NewDecoder(resp.Body).Decode(&account)
+  if err = json.NewDecoder(resp.Body).Decode(&account); err != nil {
+    return
+  }
 
   oldCurrencies, _ := r.Rdb.SMembers(r.Ctx, "binance:margin:cross:currencies").Result()
   var currencies []string

@@ -76,7 +76,9 @@ func (r *FundingRateRepository) Flush() (err error) {
   }
 
   var response []FundingRateInfo
-  json.NewDecoder(resp.Body).Decode(&response)
+  if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
+    return
+  }
 
   day := time.Now().Format("0102")
   redisKey := fmt.Sprintf(config.REDIS_KEY_FUNDING_RATE, day)

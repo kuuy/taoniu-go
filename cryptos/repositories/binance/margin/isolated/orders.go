@@ -187,9 +187,12 @@ func (r *OrdersRepository) Open(symbol string) (err error) {
     return
   }
 
-  var result []*binance.Order
-  json.NewDecoder(resp.Body).Decode(&result)
-  for _, order := range result {
+  var orders []*binance.Order
+  if err = json.NewDecoder(resp.Body).Decode(&orders); err != nil {
+    return
+  }
+
+  for _, order := range orders {
     r.Save(order)
   }
   return
@@ -423,9 +426,12 @@ func (r *OrdersRepository) Sync(symbol string, startTime int64, limit int) (err 
     return
   }
 
-  var result []*binance.Order
-  json.NewDecoder(resp.Body).Decode(&result)
-  for _, order := range result {
+  var orders []*binance.Order
+  if err = json.NewDecoder(resp.Body).Decode(&orders); err != nil {
+    return
+  }
+
+  for _, order := range orders {
     r.Save(order)
   }
 

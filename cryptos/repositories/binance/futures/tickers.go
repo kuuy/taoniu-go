@@ -121,7 +121,7 @@ func (r *TickersRepository) Flush() error {
   return nil
 }
 
-func (r *TickersRepository) Request() ([]*TickerInfo, error) {
+func (r *TickersRepository) Request() (tickers []*TickerInfo, err error) {
   tr := &http.Transport{
     DisableKeepAlives: true,
   }
@@ -154,19 +154,21 @@ func (r *TickersRepository) Request() ([]*TickerInfo, error) {
   defer resp.Body.Close()
 
   if resp.StatusCode != http.StatusOK {
-    return nil, fmt.Errorf("request error: status[%s] code[%d]", resp.Status, resp.StatusCode)
+    err = fmt.Errorf("request error: status[%s] code[%d]", resp.Status, resp.StatusCode)
+    return
   }
 
-  var result []*TickerInfo
-  json.NewDecoder(resp.Body).Decode(&result)
+  if err = json.NewDecoder(resp.Body).Decode(&tickers); err != nil {
+    return
+  }
 
-  for _, ticker := range result {
+  for _, ticker := range tickers {
     if ticker.Open > 0 {
       ticker.Change, _ = decimal.NewFromFloat(ticker.Price).Sub(decimal.NewFromFloat(ticker.Open)).Div(decimal.NewFromFloat(ticker.Open)).Round(4).Float64()
     }
   }
 
-  return result, nil
+  return
 }
 
 func (r *TickersRepository) Ranking(

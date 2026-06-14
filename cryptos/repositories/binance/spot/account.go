@@ -149,6 +149,6 @@ func (r *AccountRepository) Request() (result *AccountInfo, err error) {
     return
   }
 
-  json.NewDecoder(resp.Body).Decode(&result)
+  err = json.NewDecoder(resp.Body).Decode(&result)
   return
 }

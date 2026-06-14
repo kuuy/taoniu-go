@@ -73,7 +73,7 @@ func (r *TickersRepository) Flush(symbols []string) error {
   return nil
 }
 
-func (r *TickersRepository) Request(symbols []string) ([]*TickerInfo, error) {
+func (r *TickersRepository) Request(symbols []string) (result []*TickerInfo, err error) {
   tr := &http.Transport{
     DisableKeepAlives: true,
   }
@@ -103,16 +103,18 @@ func (r *TickersRepository) Request(symbols []string) ([]*TickerInfo, error) {
   req.URL.RawQuery = q.Encode()
   resp, err := httpClient.Do(req)
   if err != nil {
-    return nil, err
+    return
   }
   defer resp.Body.Close()
 
   if resp.StatusCode != http.StatusOK {
-    return nil, fmt.Errorf("request error: status[%s] code[%d]", resp.Status, resp.StatusCode)
+    err = fmt.Errorf("request error: status[%s] code[%d]", resp.Status, resp.StatusCode)
+    return
   }
 
-  var result []*TickerInfo
-  json.NewDecoder(resp.Body).Decode(&result)
+  if err = json.NewDecoder(resp.Body).Decode(&result); err != nil {
+    return
+  }
 
   for _, ticker := range result {
     if ticker.Open > 0 {
@@ -121,10 +123,11 @@ func (r *TickersRepository) Request(symbols []string) ([]*TickerInfo, error) {
   }
 
   if len(result) == 0 {
-    return nil, errors.New("invalid response")
+    err = errors.New("invalid response")
+    return
   }
 
-  return result, nil
+  return
 }
 
 func (r *TickersRepository) Gets(symbols []string, fields []string) []string {
