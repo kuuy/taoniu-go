@@ -846,7 +846,7 @@ func (r *ScalpingRepository) CanBuy(
   isChange := false
 
   var tradings []*tradingsModels.Scalping
-  r.Db.Select([]string{"status", "buy_price"}).Where("scalping_id=? AND status IN ?", scalping.ID, []int{0, 1, 2}).Find(&tradings)
+  r.Db.Select([]string{"status", "buy_price", "last_price"}).Where("scalping_id=? AND status IN ?", scalping.ID, []int{0, 1, 2}).Find(&tradings)
   for _, trading := range tradings {
     if trading.Status == 0 {
       return false
