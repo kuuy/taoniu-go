@@ -1,9 +1,7 @@
 package strategies
 
 import (
-  "errors"
   "github.com/rs/xid"
-  "gorm.io/gorm"
   "strconv"
   "strings"
 
@@ -23,7 +21,10 @@ func (r *SmcRepository) Flush(symbol, interval string) (err error) {
   }
 
   var kline models.Kline
-  r.Db.Where("symbol=? AND interval=?", symbol, interval).Order("timestamp desc").Take(&kline)
+  result := r.Db.Where("symbol=? AND interval=?", symbol, interval).Order("timestamp desc").Take(&kline)
+  if result.Error != nil {
+    return
+  }
   currentPrice := kline.Close
 
   signal := 0
@@ -74,7 +75,7 @@ func (r *SmcRepository) Flush(symbol, interval string) (err error) {
   }
 
   var entity models.Strategy
-  result := r.Db.Where(
+  result = r.Db.Where(
     "symbol=? AND indicator=? AND interval=?",
     symbol,
     "smc",
@@ -82,14 +83,15 @@ func (r *SmcRepository) Flush(symbol, interval string) (err error) {
   ).Order(
     "timestamp DESC",
   ).Take(&entity)
+  if result.Error != nil {
+    return
+  }
 
-  if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-    if entity.Signal == signal {
-      return
-    }
-    if entity.Timestamp >= kline.Timestamp {
-      return
-    }
+  if entity.Signal == signal {
+    return
+  }
+  if entity.Timestamp >= kline.Timestamp {
+    return
   }
 
   entity = models.Strategy{

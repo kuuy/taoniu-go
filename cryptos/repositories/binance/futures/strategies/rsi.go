@@ -22,10 +22,10 @@ func (r *RsiRepository) Flush(symbol string, interval string) (err error) {
   }
 
   var signal int
-  if value < 20 && value < 30 {
+  if value > 20 && value < 30 {
     signal = 1
   }
-  if value > 80 && value > 70 {
+  if value < 80 && value > 70 {
     signal = 2
   }
 
