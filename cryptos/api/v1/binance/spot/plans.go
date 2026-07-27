@@ -8,13 +8,13 @@ import (
 
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
-  spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
+  repositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
 type PlansHandler struct {
   ApiContext *common.ApiContext
   Response   *api.ResponseHandler
-  Repository *spotRepositories.PlansRepository
+  Repository *repositories.PlansRepository
 }
 
 func NewPlansRouter(apiContext *common.ApiContext) http.Handler {
@@ -23,7 +23,7 @@ func NewPlansRouter(apiContext *common.ApiContext) http.Handler {
   }
   h.Response = &api.ResponseHandler{}
   h.Response.Jwe = &common.Jwe{}
-  h.Repository = &spotRepositories.PlansRepository{
+  h.Repository = &repositories.PlansRepository{
     Db: h.ApiContext.Db,
   }
 
@@ -37,11 +37,6 @@ func (h *PlansHandler) Listings(
   w http.ResponseWriter,
   r *http.Request,
 ) {
-  h.ApiContext.Mux.Lock()
-  defer h.ApiContext.Mux.Unlock()
-
-  h.Response.Writer = w
-
   q := r.URL.Query()
   conditions := make(map[string]interface{})
   if q.Get("symbol") != "" {
@@ -60,7 +55,7 @@ func (h *PlansHandler) Listings(
   }
   current, _ = strconv.Atoi(q.Get("current"))
   if current < 1 {
-    h.Response.Error(http.StatusForbidden, 1004, "current not valid")
+    h.Response.Error(w, http.StatusForbidden, 1004, "current not valid")
     return
   }
 
@@ -71,7 +66,7 @@ func (h *PlansHandler) Listings(
     pageSize, _ = strconv.Atoi(q.Get("page_size"))
   }
   if pageSize < 1 || pageSize > 100 {
-    h.Response.Error(http.StatusForbidden, 1004, "page size not valid")
+    h.Response.Error(w, http.StatusForbidden, 1004, "page size not valid")
     return
   }
 
@@ -92,5 +87,5 @@ func (h *PlansHandler) Listings(
     }
   }
 
-  h.Response.Paginate(data, total, current, pageSize)
+  h.Response.Paginate(w, data, total, current, pageSize)
 }

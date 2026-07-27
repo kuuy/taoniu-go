@@ -39,7 +39,7 @@ func NewAccountCommand() *cli.Command {
       h = AccountHandler{
         Rdb:  common.NewRedis(1),
         Ctx:  context.Background(),
-        Nats: common.NewNats(),
+        Nats: common.NewNats(1),
       }
       return nil
     },

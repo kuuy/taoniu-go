@@ -7,6 +7,7 @@ import (
   "time"
 
   "github.com/go-redis/redis/v8"
+  "github.com/nats-io/nats.go"
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
 
@@ -18,6 +19,7 @@ type TickersHandler struct {
   Db                *gorm.DB
   Rdb               *redis.Client
   Ctx               context.Context
+  Nats              *nats.Conn
   TickersRepository *repositories.TickersRepository
   SymbolsRepository *repositories.SymbolsRepository
 }
@@ -29,13 +31,15 @@ func NewTickersCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = TickersHandler{
-        Db:  common.NewDB(1),
-        Rdb: common.NewRedis(1),
-        Ctx: context.Background(),
+        Db:   common.NewDB(1),
+        Rdb:  common.NewRedis(1),
+        Ctx:  context.Background(),
+        Nats: common.NewNats(1),
       }
       h.TickersRepository = &repositories.TickersRepository{
-        Rdb: h.Rdb,
-        Ctx: h.Ctx,
+        Rdb:  h.Rdb,
+        Ctx:  h.Ctx,
+        Nats: h.Nats,
       }
       h.SymbolsRepository = &repositories.SymbolsRepository{
         Db: h.Db,

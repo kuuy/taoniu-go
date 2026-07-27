@@ -6,6 +6,7 @@ import (
   "sync"
 
   "github.com/go-redis/redis/v8"
+  "github.com/nats-io/nats.go"
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
 
@@ -14,9 +15,10 @@ import (
 )
 
 type SpotHandler struct {
-  Db  *gorm.DB
-  Rdb *redis.Client
-  Ctx context.Context
+  Db   *gorm.DB
+  Rdb  *redis.Client
+  Ctx  context.Context
+  Nats *nats.Conn
 }
 
 func NewSpotCommand() *cli.Command {
@@ -26,10 +28,18 @@ func NewSpotCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = SpotHandler{
-        Db:  common.NewDB(1),
-        Rdb: common.NewRedis(1),
-        Ctx: context.Background(),
+        Db:   common.NewDB(1),
+        Rdb:  common.NewRedis(1),
+        Ctx:  context.Background(),
+        Nats: common.NewNats(1),
       }
+      return nil
+    },
+    After: func(c *cli.Context) error {
+      sqlDB, _ := h.Db.DB()
+      sqlDB.Close()
+      h.Rdb.Close()
+      h.Nats.Close()
       return nil
     },
     Action: func(c *cli.Context) error {
@@ -47,14 +57,11 @@ func (h *SpotHandler) Run() error {
   wg := &sync.WaitGroup{}
   wg.Add(1)
 
-  nc := common.NewNats()
-  defer nc.Close()
-
   natsContext := &common.NatsContext{
     Db:   h.Db,
     Rdb:  h.Rdb,
     Ctx:  h.Ctx,
-    Conn: nc,
+    Conn: h.Nats,
   }
   workers.NewSpot(natsContext).Subscribe()
 

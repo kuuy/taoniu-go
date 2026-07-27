@@ -19,6 +19,18 @@ func GetEnvInt(key string) int {
   return result
 }
 
+func GetEnvIntWithDefault(key string, defaultValue int) int {
+  value := os.Getenv(key)
+  if value == "" {
+    return defaultValue
+  }
+  result, err := strconv.Atoi(value)
+  if err != nil {
+    panic(err.Error())
+  }
+  return result
+}
+
 func GetEnvInt64(key string) int64 {
   value := os.Getenv(key)
   result, err := strconv.ParseInt(value, 10, 64)

@@ -42,11 +42,6 @@ func (h *ScalpingHandler) Listings(
   w http.ResponseWriter,
   r *http.Request,
 ) {
-  h.ApiContext.Mux.Lock()
-  defer h.ApiContext.Mux.Unlock()
-
-  h.Response.Writer = w
-
   var current int
   if !r.URL.Query().Has("current") {
     current = 1
@@ -54,7 +49,7 @@ func (h *ScalpingHandler) Listings(
     current, _ = strconv.Atoi(r.URL.Query().Get("current"))
   }
   if current < 1 {
-    h.Response.Error(http.StatusForbidden, 1004, "current not valid")
+    h.Response.Error(w, http.StatusForbidden, 1004, "current not valid")
     return
   }
 
@@ -65,7 +60,7 @@ func (h *ScalpingHandler) Listings(
     pageSize, _ = strconv.Atoi(r.URL.Query().Get("page_size"))
   }
   if pageSize < 1 || pageSize > 100 {
-    h.Response.Error(http.StatusForbidden, 1004, "page size not valid")
+    h.Response.Error(w, http.StatusForbidden, 1004, "page size not valid")
     return
   }
 
@@ -87,18 +82,13 @@ func (h *ScalpingHandler) Listings(
     }
   }
 
-  h.Response.Paginate(data, total, current, pageSize)
+  h.Response.Paginate(w, data, total, current, pageSize)
 }
 
 func (h *ScalpingHandler) Series(
   w http.ResponseWriter,
   r *http.Request,
 ) {
-  h.ApiContext.Mux.Lock()
-  defer h.ApiContext.Mux.Unlock()
-
-  h.Response.Writer = w
-
   var limit int
   if !r.URL.Query().Has("limit") {
     limit = 15
@@ -106,10 +96,10 @@ func (h *ScalpingHandler) Series(
     limit, _ = strconv.Atoi(r.URL.Query().Get("limit"))
   }
   if limit < 1 || limit > 100 {
-    h.Response.Error(http.StatusForbidden, 1004, "limit not valid")
+    h.Response.Error(w, http.StatusForbidden, 1004, "limit not valid")
     return
   }
 
   series := h.AnalysisRepository.Series(limit)
-  h.Response.Json(series)
+  h.Response.Json(w, series)
 }

@@ -36,6 +36,7 @@ func main() {
       commands.NewJweCommand(),
       commands.NewGrpcCommand(),
       commands.NewMqttCommand(),
+      commands.NewSocketCommand(),
       commands.NewBinanceCommand(),
       commands.NewDydxCommand(),
       commands.NewCronCommand(),

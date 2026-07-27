@@ -43,25 +43,20 @@ func (h *IndicatorsHandler) Gets(
   w http.ResponseWriter,
   r *http.Request,
 ) {
-  h.ApiContext.Mux.Lock()
-  defer h.ApiContext.Mux.Unlock()
-
-  h.Response.Writer = w
-
   q := r.URL.Query()
 
   if q.Get("symbols") == "" {
-    h.Response.Error(http.StatusForbidden, 1004, "symbols is empty")
+    h.Response.Error(w, http.StatusForbidden, 1004, "symbols is empty")
     return
   }
 
   if q.Get("interval") == "" {
-    h.Response.Error(http.StatusForbidden, 1004, "interval is empty")
+    h.Response.Error(w, http.StatusForbidden, 1004, "interval is empty")
     return
   }
 
   if q.Get("fields") == "" {
-    h.Response.Error(http.StatusForbidden, 1004, "fields is empty")
+    h.Response.Error(w, http.StatusForbidden, 1004, "fields is empty")
     return
   }
 
@@ -71,32 +66,27 @@ func (h *IndicatorsHandler) Gets(
 
   indicators := h.Repository.Gets(symbols, interval, fields)
 
-  h.Response.Json(indicators)
+  h.Response.Json(w, indicators)
 }
 
 func (h *IndicatorsHandler) Ranking(
   w http.ResponseWriter,
   r *http.Request,
 ) {
-  h.ApiContext.Mux.Lock()
-  defer h.ApiContext.Mux.Unlock()
-
-  h.Response.Writer = w
-
   q := r.URL.Query()
 
   if q.Get("interval") == "" {
-    h.Response.Error(http.StatusForbidden, 1004, "interval is empty")
+    h.Response.Error(w, http.StatusForbidden, 1004, "interval is empty")
     return
   }
 
   if q.Get("fields") == "" {
-    h.Response.Error(http.StatusForbidden, 1004, "fields is empty")
+    h.Response.Error(w, http.StatusForbidden, 1004, "fields is empty")
     return
   }
 
   if q.Get("sort") == "" {
-    h.Response.Error(http.StatusForbidden, 1004, "sort is empty")
+    h.Response.Error(w, http.StatusForbidden, 1004, "sort is empty")
     return
   }
 
@@ -119,7 +109,7 @@ func (h *IndicatorsHandler) Ranking(
   }
   current, _ = strconv.Atoi(q.Get("current"))
   if current < 1 {
-    h.Response.Error(http.StatusForbidden, 1004, "current not valid")
+    h.Response.Error(w, http.StatusForbidden, 1004, "current not valid")
     return
   }
 
@@ -130,11 +120,11 @@ func (h *IndicatorsHandler) Ranking(
     pageSize, _ = strconv.Atoi(q.Get("page_size"))
   }
   if pageSize < 1 || pageSize > 100 {
-    h.Response.Error(http.StatusForbidden, 1004, "page size not valid")
+    h.Response.Error(w, http.StatusForbidden, 1004, "page size not valid")
     return
   }
 
   result := h.Repository.Ranking(symbols, interval, fields, sortField, sortType, current, pageSize)
 
-  h.Response.Paginate(result.Data, int64(result.Total), current, pageSize)
+  h.Response.Paginate(w, result.Data, int64(result.Total), current, pageSize)
 }

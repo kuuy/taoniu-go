@@ -52,11 +52,7 @@ func (h *OrdersHandler) Listings(
   w http.ResponseWriter,
   r *http.Request,
 ) {
-  h.ApiContext.Mux.Lock()
-  defer h.ApiContext.Mux.Unlock()
-
   h.Response = &api.ResponseHandler{
-    Writer: w,
   }
 
   var current int
@@ -65,7 +61,7 @@ func (h *OrdersHandler) Listings(
   }
   current, _ = strconv.Atoi(r.URL.Query().Get("current"))
   if current < 1 {
-    h.Response.Error(http.StatusForbidden, 1004, "current not valid")
+    h.Response.Error(w, http.StatusForbidden, 1004, "current not valid")
     return
   }
 
@@ -76,7 +72,7 @@ func (h *OrdersHandler) Listings(
     pageSize, _ = strconv.Atoi(r.URL.Query().Get("page_size"))
   }
   if pageSize < 1 || pageSize > 100 {
-    h.Response.Error(http.StatusForbidden, 1004, "page size not valid")
+    h.Response.Error(w, http.StatusForbidden, 1004, "page size not valid")
     return
   }
 
@@ -113,26 +109,22 @@ func (h *OrdersHandler) Listings(
     }
   }
 
-  h.Response.Paginate(data, total, current, pageSize)
+  h.Response.Paginate(w, data, total, current, pageSize)
 }
 
 func (h *OrdersHandler) Cancel(
   w http.ResponseWriter,
   r *http.Request,
 ) {
-  h.ApiContext.Mux.Lock()
-  defer h.ApiContext.Mux.Unlock()
-
   h.Response = &api.ResponseHandler{
-    Writer: w,
   }
 
   //id := chi.URLParam(r, "id")
   //err := h.Repository.Cancel(id)
   //if err != nil {
-  //	h.Response.Error(http.StatusForbidden, 1004, err.Error())
+  //	h.Response.Error(w, http.StatusForbidden, 1004, err.Error())
   //	return
   //}
 
-  h.Response.Json(nil)
+  h.Response.Json(w, nil)
 }

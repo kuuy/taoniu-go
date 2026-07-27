@@ -32,6 +32,12 @@ func NewFuturesCommand() *cli.Command {
       }
       return nil
     },
+    After: func(c *cli.Context) error {
+      sqlDB, _ := h.Db.DB()
+      sqlDB.Close()
+      h.Rdb.Close()
+      return nil
+    },
     Action: func(c *cli.Context) error {
       if err := h.Run(); err != nil {
         return cli.Exit(err.Error(), 1)

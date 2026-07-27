@@ -97,7 +97,7 @@ func (h *FuturesHandler) Run() (err error) {
     log.Println("err", err)
   }
 
-  nc := common.NewNats()
+  nc := common.NewNats(2)
   defer nc.Close()
 
   mqttContext := &common.MqttContext{

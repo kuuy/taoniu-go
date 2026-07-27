@@ -9,15 +9,15 @@ import (
 
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
-  spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
+  repositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
 type TickersHandler struct {
   ApiContext         *common.ApiContext
   Response           *api.ResponseHandler
-  Repository         *spotRepositories.TickersRepository
-  SymbolsRepository  *spotRepositories.SymbolsRepository
-  ScalpingRepository *spotRepositories.ScalpingRepository
+  Repository         *repositories.TickersRepository
+  SymbolsRepository  *repositories.SymbolsRepository
+  ScalpingRepository *repositories.ScalpingRepository
 }
 
 func NewTickersRouter(apiContext *common.ApiContext) http.Handler {
@@ -26,14 +26,14 @@ func NewTickersRouter(apiContext *common.ApiContext) http.Handler {
   }
   h.Response = &api.ResponseHandler{}
   h.Response.Jwe = &common.Jwe{}
-  h.Repository = &spotRepositories.TickersRepository{
+  h.Repository = &repositories.TickersRepository{
     Rdb: h.ApiContext.Rdb,
     Ctx: h.ApiContext.Ctx,
   }
-  h.SymbolsRepository = &spotRepositories.SymbolsRepository{
+  h.SymbolsRepository = &repositories.SymbolsRepository{
     Db: h.ApiContext.Db,
   }
-  h.ScalpingRepository = &spotRepositories.ScalpingRepository{
+  h.ScalpingRepository = &repositories.ScalpingRepository{
     Db: h.ApiContext.Db,
   }
 
@@ -48,18 +48,13 @@ func (h *TickersHandler) Gets(
   w http.ResponseWriter,
   r *http.Request,
 ) {
-  h.ApiContext.Mux.Lock()
-  defer h.ApiContext.Mux.Unlock()
-
-  h.Response.Writer = w
-
   if r.URL.Query().Get("symbols") == "" {
-    h.Response.Error(http.StatusForbidden, 1004, "symbols is empty")
+    h.Response.Error(w, http.StatusForbidden, 1004, "symbols is empty")
     return
   }
 
   if r.URL.Query().Get("fields") == "" {
-    h.Response.Error(http.StatusForbidden, 1004, "fields is empty")
+    h.Response.Error(w, http.StatusForbidden, 1004, "fields is empty")
     return
   }
 
@@ -68,27 +63,22 @@ func (h *TickersHandler) Gets(
 
   tickers := h.Repository.Gets(symbols, fields)
 
-  h.Response.Json(tickers)
+  h.Response.Json(w, tickers)
 }
 
 func (h *TickersHandler) Ranking(
   w http.ResponseWriter,
   r *http.Request,
 ) {
-  h.ApiContext.Mux.Lock()
-  defer h.ApiContext.Mux.Unlock()
-
-  h.Response.Writer = w
-
   q := r.URL.Query()
 
   if q.Get("fields") == "" {
-    h.Response.Error(http.StatusForbidden, 1004, "fields is empty")
+    h.Response.Error(w, http.StatusForbidden, 1004, "fields is empty")
     return
   }
 
   if q.Get("sort") == "" {
-    h.Response.Error(http.StatusForbidden, 1004, "sort is empty")
+    h.Response.Error(w, http.StatusForbidden, 1004, "sort is empty")
     return
   }
 
@@ -110,7 +100,7 @@ func (h *TickersHandler) Ranking(
   }
   current, _ = strconv.Atoi(q.Get("current"))
   if current < 1 {
-    h.Response.Error(http.StatusForbidden, 1004, "current not valid")
+    h.Response.Error(w, http.StatusForbidden, 1004, "current not valid")
     return
   }
 
@@ -120,12 +110,12 @@ func (h *TickersHandler) Ranking(
   } else {
     pageSize, _ = strconv.Atoi(q.Get("page_size"))
   }
-  if pageSize < 1 || pageSize > 100 {
-    h.Response.Error(http.StatusForbidden, 1004, "page size not valid")
+  if pageSize < 1 || pageSize > 200 {
+    h.Response.Error(w, http.StatusForbidden, 1004, "page size not valid")
     return
   }
 
   result := h.Repository.Ranking(symbols, fields, sortField, sortType, current, pageSize)
 
-  h.Response.Paginate(result.Data, int64(result.Total), current, pageSize)
+  h.Response.Paginate(w, result.Data, int64(result.Total), current, pageSize)
 }

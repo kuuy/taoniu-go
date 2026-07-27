@@ -16,8 +16,6 @@ import (
   "github.com/hibiken/asynq"
   "github.com/nats-io/nats.go"
   "github.com/rs/xid"
-  socketio "github.com/vchitai/go-socket.io/v4"
-  "github.com/vchitai/go-socket.io/v4/engineio"
 
   "gorm.io/driver/postgres"
   "gorm.io/gorm"
@@ -64,8 +62,10 @@ type AnsqClientContext struct {
 }
 
 type SocketContext struct {
-  Socket *socketio.Server
-  Conn   socketio.Conn
+  Db   *gorm.DB
+  Rdb  *redis.Client
+  Ctx  context.Context
+  Nats *nats.Conn
 }
 
 type Mutex struct {
@@ -93,9 +93,14 @@ func NewDBPool(i int) *sql.DB {
     if err != nil {
       panic(err)
     }
-    pool.SetMaxIdleConns(50)
-    pool.SetMaxOpenConns(100)
-    pool.SetConnMaxLifetime(5 * time.Minute)
+    maxIdle := GetEnvIntWithDefault(fmt.Sprintf("DB_%02d_MAX_IDLE", i), 200)
+    pool.SetMaxIdleConns(maxIdle)
+
+    maxOpen := GetEnvIntWithDefault(fmt.Sprintf("DB_%02d_MAX_OPEN", i), 200)
+    pool.SetMaxOpenConns(maxOpen)
+
+    connMaxLifetime := GetEnvIntWithDefault(fmt.Sprintf("DB_%02d_CONN_MAX_LIFETIME", i), 300)
+    pool.SetConnMaxLifetime(time.Duration(connMaxLifetime) * time.Second)
     dbPools[key] = pool
   }
   return pool
@@ -138,22 +143,11 @@ func NewAsynqClient(topic string) *asynq.Client {
   })
 }
 
-func NewSocketServer(opts *engineio.Options) *socketio.Server {
-  server := socketio.NewServer(opts)
-  _, err := server.Adapter(&socketio.RedisAdapterConfig{
-    Addr:     GetEnvString("CRYPTOS_SOCKET_REDIS_ADDR"),
-    Password: GetEnvString("CRYPTOS_SOCKET_REDIS_PASSWORD"),
-    DB:       GetEnvInt("CRYPTOS_SOCKET_REDIS_DB"),
-    Prefix:   "socket.io",
-  })
-  if err != nil {
-    panic(err)
-  }
-  return server
-}
-
-func NewNats() *nats.Conn {
-  nc, err := nats.Connect("127.0.0.1", nats.Token(GetEnvString("NATS_TOKEN")))
+func NewNats(i int) *nats.Conn {
+  nc, err := nats.Connect(
+    GetEnvString(fmt.Sprintf("NATS_%02d_HOST", i)),
+    nats.Token(GetEnvString(fmt.Sprintf("NATS_%02d_TOKEN", i))),
+  )
   if err != nil {
     panic(err)
   }

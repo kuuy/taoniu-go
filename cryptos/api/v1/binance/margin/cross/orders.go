@@ -49,11 +49,7 @@ func (h *OrdersHandler) Listings(
   w http.ResponseWriter,
   r *http.Request,
 ) {
-  h.ApiContext.Mux.Lock()
-  defer h.ApiContext.Mux.Unlock()
-
   h.Response = &api.ResponseHandler{
-    Writer: w,
   }
 
   var current int
@@ -62,7 +58,7 @@ func (h *OrdersHandler) Listings(
   }
   current, _ = strconv.Atoi(r.URL.Query().Get("current"))
   if current < 1 {
-    h.Response.Error(http.StatusForbidden, 1004, "current not valid")
+    h.Response.Error(w, http.StatusForbidden, 1004, "current not valid")
     return
   }
 
@@ -73,7 +69,7 @@ func (h *OrdersHandler) Listings(
     pageSize, _ = strconv.Atoi(r.URL.Query().Get("page_size"))
   }
   if pageSize < 1 || pageSize > 100 {
-    h.Response.Error(http.StatusForbidden, 1004, "page size not valid")
+    h.Response.Error(w, http.StatusForbidden, 1004, "page size not valid")
     return
   }
 
@@ -99,59 +95,51 @@ func (h *OrdersHandler) Listings(
     }
   }
 
-  h.Response.Paginate(data, total, current, pageSize)
+  h.Response.Paginate(w, data, total, current, pageSize)
 }
 
 func (h *OrdersHandler) Create(
   w http.ResponseWriter,
   r *http.Request,
 ) {
-  h.ApiContext.Mux.Lock()
-  defer h.ApiContext.Mux.Unlock()
-
   h.Response = &api.ResponseHandler{
-    Writer: w,
   }
 
   symbol := r.URL.Query().Get("symbol")
   if symbol == "" {
-    h.Response.Error(http.StatusForbidden, 1004, "symbol is empty")
+    h.Response.Error(w, http.StatusForbidden, 1004, "symbol is empty")
     return
   }
   side := r.URL.Query().Get("side")
   if side == "" {
-    h.Response.Error(http.StatusForbidden, 1004, "side is empty")
+    h.Response.Error(w, http.StatusForbidden, 1004, "side is empty")
     return
   }
   if r.URL.Query().Get("price") == "" {
-    h.Response.Error(http.StatusForbidden, 1004, "price is empty")
+    h.Response.Error(w, http.StatusForbidden, 1004, "price is empty")
     return
   }
   price, _ := strconv.ParseFloat(r.URL.Query().Get("price"), 64)
   if r.URL.Query().Get("amount") == "" {
-    h.Response.Error(http.StatusForbidden, 1004, "amount is empty")
+    h.Response.Error(w, http.StatusForbidden, 1004, "amount is empty")
     return
   }
   amount, _ := strconv.ParseFloat(r.URL.Query().Get("amount"), 64)
 
   _, err := h.Repository.Create(symbol, side, price, amount)
   if err != nil {
-    h.Response.Error(http.StatusForbidden, 1004, err.Error())
+    h.Response.Error(w, http.StatusForbidden, 1004, err.Error())
     return
   }
 
-  h.Response.Json(nil)
+  h.Response.Json(w, nil)
 }
 
 func (h *OrdersHandler) Cancel(
   w http.ResponseWriter,
   r *http.Request,
 ) {
-  h.ApiContext.Mux.Lock()
-  defer h.ApiContext.Mux.Unlock()
-
   h.Response = &api.ResponseHandler{
-    Writer: w,
   }
 
   //id := chi.URLParam(r, "id")
@@ -159,9 +147,9 @@ func (h *OrdersHandler) Cancel(
   orderId := int64(0)
   err := h.Repository.Cancel(symbol, orderId)
   if err != nil {
-    h.Response.Error(http.StatusForbidden, 1004, err.Error())
+    h.Response.Error(w, http.StatusForbidden, 1004, err.Error())
     return
   }
 
-  h.Response.Json(nil)
+  h.Response.Json(w, nil)
 }

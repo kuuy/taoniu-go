@@ -9,13 +9,13 @@ import (
 
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
-  spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
+  repositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
 type OrdersHandler struct {
   ApiContext *common.ApiContext
   Response   *api.ResponseHandler
-  Repository *spotRepositories.OrdersRepository
+  Repository *repositories.OrdersRepository
 }
 
 func NewOrdersRouter(apiContext *common.ApiContext) http.Handler {
@@ -24,7 +24,7 @@ func NewOrdersRouter(apiContext *common.ApiContext) http.Handler {
   }
   h.Response = &api.ResponseHandler{}
   h.Response.Jwe = &common.Jwe{}
-  h.Repository = &spotRepositories.OrdersRepository{
+  h.Repository = &repositories.OrdersRepository{
     Db:  h.ApiContext.Db,
     Rdb: h.ApiContext.Rdb,
     Ctx: h.ApiContext.Ctx,
@@ -40,18 +40,13 @@ func (h *OrdersHandler) Listings(
   w http.ResponseWriter,
   r *http.Request,
 ) {
-  h.ApiContext.Mux.Lock()
-  defer h.ApiContext.Mux.Unlock()
-
-  h.Response.Writer = w
-
   var current int
   if !r.URL.Query().Has("current") {
     current = 1
   }
   current, _ = strconv.Atoi(r.URL.Query().Get("current"))
   if current < 1 {
-    h.Response.Error(http.StatusForbidden, 1004, "current not valid")
+    h.Response.Error(w, http.StatusForbidden, 1004, "current not valid")
     return
   }
 
@@ -62,7 +57,7 @@ func (h *OrdersHandler) Listings(
     pageSize, _ = strconv.Atoi(r.URL.Query().Get("page_size"))
   }
   if pageSize < 1 || pageSize > 100 {
-    h.Response.Error(http.StatusForbidden, 1004, "page size not valid")
+    h.Response.Error(w, http.StatusForbidden, 1004, "page size not valid")
     return
   }
 
@@ -92,63 +87,53 @@ func (h *OrdersHandler) Listings(
     }
   }
 
-  h.Response.Paginate(data, total, current, pageSize)
+  h.Response.Paginate(w, data, total, current, pageSize)
 }
 
 func (h *OrdersHandler) Create(
   w http.ResponseWriter,
   r *http.Request,
 ) {
-  h.ApiContext.Mux.Lock()
-  defer h.ApiContext.Mux.Unlock()
-
-  h.Response.Writer = w
-
   symbol := r.URL.Query().Get("symbol")
   if symbol == "" {
-    h.Response.Error(http.StatusForbidden, 1004, "symbol is empty")
+    h.Response.Error(w, http.StatusForbidden, 1004, "symbol is empty")
     return
   }
   side := r.URL.Query().Get("side")
   if side == "" {
-    h.Response.Error(http.StatusForbidden, 1004, "side is empty")
+    h.Response.Error(w, http.StatusForbidden, 1004, "side is empty")
     return
   }
   if r.URL.Query().Get("price") == "" {
-    h.Response.Error(http.StatusForbidden, 1004, "price is empty")
+    h.Response.Error(w, http.StatusForbidden, 1004, "price is empty")
     return
   }
   price, _ := strconv.ParseFloat(r.URL.Query().Get("price"), 64)
   if r.URL.Query().Get("amount") == "" {
-    h.Response.Error(http.StatusForbidden, 1004, "amount is empty")
+    h.Response.Error(w, http.StatusForbidden, 1004, "amount is empty")
     return
   }
   amount, _ := strconv.ParseFloat(r.URL.Query().Get("amount"), 64)
 
   _, err := h.Repository.Create(symbol, side, price, amount)
   if err != nil {
-    h.Response.Error(http.StatusForbidden, 1004, err.Error())
+    h.Response.Error(w, http.StatusForbidden, 1004, err.Error())
     return
   }
 
-  h.Response.Json(nil)
+  h.Response.Json(w, nil)
 }
 
 func (h *OrdersHandler) Cancel(
   w http.ResponseWriter,
   r *http.Request,
 ) {
-  h.ApiContext.Mux.Lock()
-  defer h.ApiContext.Mux.Unlock()
-
-  h.Response.Writer = w
-
   //id := chi.URLParam(r, "id")
   //err := h.Repository.Cancel(id)
   //if err != nil {
-  //	h.Response.Error(http.StatusForbidden, 1004, err.Error())
+  //	h.Response.Error(w, http.StatusForbidden, 1004, err.Error())
   //	return
   //}
 
-  h.Response.Json(nil)
+  h.Response.Json(w, nil)
 }

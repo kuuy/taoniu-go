@@ -37,16 +37,12 @@ func (h *ChartsHandler) Gets(
   w http.ResponseWriter,
   r *http.Request,
 ) {
-  h.ApiContext.Mux.Lock()
-  defer h.ApiContext.Mux.Unlock()
-
   h.Response = &api.ResponseHandler{
-    Writer: w,
   }
 
   var charts []*ChartInfo
 
-  h.Response.Out(map[string]interface{}{
+  h.Response.Out(w, map[string]interface{}{
     "status": "ok",
     "data":   charts,
   })

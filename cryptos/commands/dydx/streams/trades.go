@@ -40,7 +40,7 @@ func NewTradesCommand() *cli.Command {
       h = TradesHandler{
         Db:   common.NewDB(1),
         Ctx:  context.Background(),
-        Nats: common.NewNats(),
+        Nats: common.NewNats(1),
         //TradesJob: &jobs.Trades{},
       }
       h.TradingsRepository = &repositories.TradingsRepository{

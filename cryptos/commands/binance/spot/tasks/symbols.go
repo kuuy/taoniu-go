@@ -34,7 +34,8 @@ func NewSymbolsCommand() *cli.Command {
         Ctx: context.Background(),
       }
       h.SymbolsRepository = &repositories.SymbolsRepository{
-        Db: h.Db,
+        Db:  h.Db,
+        Ctx: h.Ctx,
       }
       return nil
     },

@@ -13,11 +13,10 @@ func Authenticator(next http.Handler) http.Handler {
   return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
     response := &ResponseHandler{}
     response.Jwe = &common.Jwe{}
-    response.Writer = w
 
     bearer := r.Header.Get("Authorization")
-    if len(bearer) <= 7 || strings.ToUpper(bearer[0:6]) != "TAONIU" {
-      response.Error(http.StatusForbidden, 403, "access not allowed")
+    if len(bearer) <= 7 || (strings.ToUpper(bearer[0:6]) != "TAONIU" && strings.ToUpper(bearer[0:6]) != "BEARER") {
+      response.Error(w, http.StatusForbidden, 403, "access not allowed")
       return
     }
 
@@ -26,9 +25,9 @@ func Authenticator(next http.Handler) http.Handler {
     if err != nil {
       log.Println("token error", err.Error())
       if uid != "" {
-        response.Error(http.StatusUnauthorized, 401, err.Error())
+        response.Error(w, http.StatusUnauthorized, 401, err.Error())
       } else {
-        response.Error(http.StatusForbidden, 403, "access not allowed")
+        response.Error(w, http.StatusForbidden, 403, "access not allowed")
       }
       return
     }

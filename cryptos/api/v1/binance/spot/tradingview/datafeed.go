@@ -101,27 +101,19 @@ func (h *DatafeedHandler) Time(
   w http.ResponseWriter,
   r *http.Request,
 ) {
-  h.ApiContext.Mux.Lock()
-  defer h.ApiContext.Mux.Unlock()
-
   h.Response = &api.ResponseHandler{
-    Writer: w,
   }
 
   timestamp := time.Now().Unix()
 
-  h.Response.Out(timestamp)
+  h.Response.Out(w, timestamp)
 }
 
 func (h *DatafeedHandler) Config(
   w http.ResponseWriter,
   r *http.Request,
 ) {
-  h.ApiContext.Mux.Lock()
-  defer h.ApiContext.Mux.Unlock()
-
   h.Response = &api.ResponseHandler{
-    Writer: w,
   }
 
   config := map[string]interface{}{}
@@ -153,18 +145,14 @@ func (h *DatafeedHandler) Config(
   config["supports_timescale_marks"] = false
   config["supports_time"] = true
 
-  h.Response.Out(config)
+  h.Response.Out(w, config)
 }
 
 func (h *DatafeedHandler) Search(
   w http.ResponseWriter,
   r *http.Request,
 ) {
-  h.ApiContext.Mux.Lock()
-  defer h.ApiContext.Mux.Unlock()
-
   h.Response = &api.ResponseHandler{
-    Writer: w,
   }
 
   q := r.URL.Query().Get("query")
@@ -202,24 +190,20 @@ func (h *DatafeedHandler) Search(
     }
   }
 
-  h.Response.Out(result)
+  h.Response.Out(w, result)
 }
 
 func (h *DatafeedHandler) SymbolInfo(
   w http.ResponseWriter,
   r *http.Request,
 ) {
-  h.ApiContext.Mux.Lock()
-  defer h.ApiContext.Mux.Unlock()
-
   h.Response = &api.ResponseHandler{
-    Writer: w,
   }
 
   symbol := r.URL.Query().Get("symbol")
   entity, err := h.SymbolsRepository.Get(symbol)
   if err != nil {
-    h.Response.Out(map[string]interface{}{
+    h.Response.Out(w, map[string]interface{}{
       "s":      "error",
       "errmsg": fmt.Sprintf("unknown_symbol %v", symbol),
     })
@@ -227,7 +211,7 @@ func (h *DatafeedHandler) SymbolInfo(
   }
   tickSize, _, _, err := h.SymbolsRepository.Filters(entity.Filters)
   if err != nil {
-    h.Response.Out(map[string]interface{}{
+    h.Response.Out(w, map[string]interface{}{
       "s":      "error",
       "errmsg": fmt.Sprintf("symbil filters empty %v", symbol),
     })
@@ -261,18 +245,14 @@ func (h *DatafeedHandler) SymbolInfo(
     },
   }
 
-  h.Response.Out(result)
+  h.Response.Out(w, result)
 }
 
 func (h *DatafeedHandler) History(
   w http.ResponseWriter,
   r *http.Request,
 ) {
-  h.ApiContext.Mux.Lock()
-  defer h.ApiContext.Mux.Unlock()
-
   h.Response = &api.ResponseHandler{
-    Writer: w,
   }
 
   symbol := r.URL.Query().Get("symbol")
@@ -291,7 +271,7 @@ func (h *DatafeedHandler) History(
 
   from, err := strconv.ParseInt(r.URL.Query().Get("from"), 10, 64)
   if err != nil {
-    h.Response.Out(map[string]interface{}{
+    h.Response.Out(w, map[string]interface{}{
       "s":      "error",
       "errmsg": fmt.Sprintf("invalid request"),
     })
@@ -300,7 +280,7 @@ func (h *DatafeedHandler) History(
 
   to, err := strconv.ParseInt(r.URL.Query().Get("to"), 10, 64)
   if err != nil {
-    h.Response.Out(map[string]interface{}{
+    h.Response.Out(w, map[string]interface{}{
       "s":      "error",
       "errmsg": fmt.Sprintf("invalid request"),
     })
@@ -309,7 +289,7 @@ func (h *DatafeedHandler) History(
 
   limit, err := strconv.Atoi(r.URL.Query().Get("countback"))
   if err != nil {
-    h.Response.Out(map[string]interface{}{
+    h.Response.Out(w, map[string]interface{}{
       "s":      "error",
       "errmsg": fmt.Sprintf("invalid request"),
     })
@@ -318,7 +298,7 @@ func (h *DatafeedHandler) History(
 
   klines := h.KlinesRepository.History(symbol, interval, from*1000, to*1000, limit)
   if len(klines) == 0 {
-    h.Response.Out(map[string]interface{}{
+    h.Response.Out(w, map[string]interface{}{
       "s":        "no_data",
       "nextTime": 0,
     })
@@ -343,5 +323,5 @@ func (h *DatafeedHandler) History(
     result.Volume = append([]float64{kline.Volume}, result.Volume...)
   }
 
-  h.Response.Out(result)
+  h.Response.Out(w, result)
 }

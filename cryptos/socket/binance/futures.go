@@ -1,39 +1,34 @@
 package binance
 
 import (
-  "errors"
   "taoniu.local/cryptos/common"
   "taoniu.local/cryptos/socket/binance/futures"
 )
 
+type HubInterface interface {
+  Subscribe(client interface{}, topic string)
+  Unsubscribe(client interface{}, topic string)
+  Broadcast(topic string, message []byte)
+}
+
 type Futures struct {
   SocketContext *common.SocketContext
+  Hub           interface{}
 }
 
-func NewFutures(socketContext *common.SocketContext) *Futures {
-  return &Futures{socketContext}
-}
-
-func (h *Futures) Subscribe(req map[string]interface{}) error {
-  if _, ok := req["topic"]; !ok {
-    return errors.New("topic is empty")
-  }
-  switch req["topic"].(string) {
-  case "tickers":
-    return futures.NewTickers(h.SocketContext).Subscribe(req)
-  default:
-    return errors.New("topic not supported")
+func NewFutures(socketContext *common.SocketContext, hub interface{}) *Futures {
+  return &Futures{
+    SocketContext: socketContext,
+    Hub:           hub,
   }
 }
 
-func (h *Futures) UnSubscribe(req map[string]interface{}) error {
-  if _, ok := req["topic"]; !ok {
-    return errors.New("topic is empty")
-  }
-  switch req["topic"].(string) {
-  case "tickers":
-    return futures.NewTickers(h.SocketContext).UnSubscribe()
-  default:
-    return errors.New("topic not supported")
-  }
+func (h *Futures) Subscribe(client interface{}, req interface{}) error {
+  tickers := futures.NewTickers(h.SocketContext, h.Hub)
+  return tickers.Subscribe(client, req)
+}
+
+func (h *Futures) Unsubscribe(client interface{}, req interface{}) error {
+  tickers := futures.NewTickers(h.SocketContext, h.Hub)
+  return tickers.Unsubscribe(client, req)
 }

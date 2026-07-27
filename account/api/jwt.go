@@ -15,7 +15,7 @@ func Authenticator(next http.Handler) http.Handler {
     response.Writer = w
 
     bearer := r.Header.Get("Authorization")
-    if len(bearer) <= 7 || strings.ToUpper(bearer[0:6]) != "TAONIU" {
+    if len(bearer) <= 7 || (strings.ToUpper(bearer[0:6]) != "TAONIU" && strings.ToUpper(bearer[0:6]) != "BEARER") {
       response.Error(http.StatusForbidden, 403, "access not allowed")
       return
     }

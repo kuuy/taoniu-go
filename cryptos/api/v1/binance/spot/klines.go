@@ -9,13 +9,13 @@ import (
 
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
-  spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
+  repositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
 type KlinesHandler struct {
   ApiContext *common.ApiContext
   Response   *api.ResponseHandler
-  Repository *spotRepositories.KlinesRepository
+  Repository *repositories.KlinesRepository
 }
 
 func NewKlinesRouter(apiContext *common.ApiContext) http.Handler {
@@ -24,7 +24,7 @@ func NewKlinesRouter(apiContext *common.ApiContext) http.Handler {
   }
   h.Response = &api.ResponseHandler{}
   h.Response.Jwe = &common.Jwe{}
-  h.Repository = &spotRepositories.KlinesRepository{
+  h.Repository = &repositories.KlinesRepository{
     Db: h.ApiContext.Db,
   }
 
@@ -38,14 +38,9 @@ func (h *KlinesHandler) Series(
   w http.ResponseWriter,
   r *http.Request,
 ) {
-  h.ApiContext.Mux.Lock()
-  defer h.ApiContext.Mux.Unlock()
-
-  h.Response.Writer = w
-
   symbol := r.URL.Query().Get("symbol")
   if symbol == "" {
-    h.Response.Error(http.StatusForbidden, 1004, "symbol is empty")
+    h.Response.Error(w, http.StatusForbidden, 1004, "symbol is empty")
     return
   }
 
@@ -68,11 +63,11 @@ func (h *KlinesHandler) Series(
     limit, _ = strconv.Atoi(r.URL.Query().Get("limit"))
   }
   if limit < 1 || limit > 100 {
-    h.Response.Error(http.StatusForbidden, 1004, "limit not valid")
+    h.Response.Error(w, http.StatusForbidden, 1004, "limit not valid")
     return
   }
 
   series := h.Repository.Series(symbol, interval, timestamp, limit)
 
-  h.Response.Json(series)
+  h.Response.Json(w, series)
 }

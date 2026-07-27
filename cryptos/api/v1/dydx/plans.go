@@ -46,11 +46,7 @@ func (h *PlansHandler) Listings(
   w http.ResponseWriter,
   r *http.Request,
 ) {
-  h.ApiContext.Mux.Lock()
-  defer h.ApiContext.Mux.Unlock()
-
   h.Response = &api.ResponseHandler{
-    Writer: w,
   }
 
   q := r.URL.Query()
@@ -68,7 +64,7 @@ func (h *PlansHandler) Listings(
   }
   current, _ = strconv.Atoi(q.Get("current"))
   if current < 1 {
-    h.Response.Error(http.StatusForbidden, 1004, "current not valid")
+    h.Response.Error(w, http.StatusForbidden, 1004, "current not valid")
     return
   }
 
@@ -79,7 +75,7 @@ func (h *PlansHandler) Listings(
     pageSize, _ = strconv.Atoi(q.Get("page_size"))
   }
   if pageSize < 1 || pageSize > 100 {
-    h.Response.Error(http.StatusForbidden, 1004, "page size not valid")
+    h.Response.Error(w, http.StatusForbidden, 1004, "page size not valid")
     return
   }
 
@@ -99,5 +95,5 @@ func (h *PlansHandler) Listings(
     }
   }
 
-  h.Response.Paginate(data, total, current, pageSize)
+  h.Response.Paginate(w, data, total, current, pageSize)
 }

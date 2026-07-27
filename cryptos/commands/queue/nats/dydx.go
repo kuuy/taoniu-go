@@ -47,7 +47,7 @@ func (h *DydxHandler) Run() error {
   wg := &sync.WaitGroup{}
   wg.Add(1)
 
-  nc := common.NewNats()
+  nc := common.NewNats(1)
   defer nc.Close()
 
   natsContext := &common.NatsContext{

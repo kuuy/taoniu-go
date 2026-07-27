@@ -2,6 +2,7 @@ package streams
 
 import (
   "context"
+  "encoding/json"
   "errors"
   "fmt"
   "log"
@@ -16,6 +17,7 @@ import (
   "github.com/coder/websocket"
   "github.com/coder/websocket/wsjson"
   "github.com/go-redis/redis/v8"
+  "github.com/nats-io/nats.go"
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
 
@@ -27,6 +29,7 @@ import (
 type TickersHandler struct {
   Db                 *gorm.DB
   Rdb                *redis.Client
+  Nats               *nats.Conn
   Ctx                context.Context
   cancel             context.CancelFunc
   Socket             *websocket.Conn
@@ -44,6 +47,7 @@ func NewTickersCommand() *cli.Command {
       h = TickersHandler{
         Db:         common.NewDB(2),
         Rdb:        common.NewRedis(2),
+        Nats:       common.NewNats(2),
         Ctx:        ctx,
         cancel:     cancel,
         workerChan: make(chan map[string]interface{}, 1024),
@@ -51,6 +55,11 @@ func NewTickersCommand() *cli.Command {
       h.ScalpingRepository = &repositories.ScalpingRepository{
         Db: h.Db,
       }
+      return nil
+    },
+    After: func(c *cli.Context) error {
+      h.Rdb.Close()
+      h.Nats.Close()
       return nil
     },
     Action: func(c *cli.Context) error {
@@ -88,6 +97,9 @@ func NewTickersCommand() *cli.Command {
 
 func (h *TickersHandler) Start(current int) error {
   symbols := h.ScalpingRepository.Scan(2)
+  sqlDB, _ := h.Db.DB()
+  sqlDB.Close()
+
   pageSize := common.GetEnvInt("BINANCE_FUTURES_SYMBOLS_SIZE")
   if pageSize <= 0 {
     pageSize = 100
@@ -103,7 +115,7 @@ func (h *TickersHandler) Start(current int) error {
     endPos = len(symbols)
   }
 
-  var streams []string
+  streams := make([]string, 0, endPos-offset)
   for _, symbol := range symbols[offset:endPos] {
     streams = append(streams, fmt.Sprintf("%s@miniTicker", strings.ToLower(symbol)))
   }
@@ -136,15 +148,16 @@ func (h *TickersHandler) Start(current int) error {
   }
   defer h.Socket.Close(websocket.StatusNormalClosure, "")
 
-  go h.pingLoop()
+  connCtx, connCancel := context.WithCancel(h.Ctx)
+  defer connCancel()
+
+  go h.pingLoop(connCtx)
 
   log.Printf("stream started for index %d (%d symbols)", current, len(streams))
 
   for {
     var message map[string]interface{}
-    readCtx, readCancel := context.WithTimeout(h.Ctx, 10*time.Second)
-    err = wsjson.Read(readCtx, h.Socket, &message)
-    readCancel()
+    err = wsjson.Read(connCtx, h.Socket, &message)
 
     if err != nil {
       if errors.Is(err, context.Canceled) {
@@ -204,6 +217,8 @@ func (h *TickersHandler) processMessage(message map[string]interface{}) {
     change = float64(int(change*10000)) / 10000
   }
 
+  timestamp := time.Now().UnixMilli()
+
   h.Rdb.HMSet(
     h.Ctx,
     fmt.Sprintf(config.REDIS_KEY_TICKERS, symbol),
@@ -216,26 +231,41 @@ func (h *TickersHandler) processMessage(message map[string]interface{}) {
       "low":       low,
       "volume":    volume,
       "quota":     quota,
-      "timestamp": time.Now().UnixMilli(),
+      "timestamp": timestamp,
     },
   )
+
+  if h.Nats != nil {
+    payload, _ := json.Marshal(map[string]interface{}{
+      "symbol":    symbol,
+      "open":      open,
+      "price":     price,
+      "high":      high,
+      "low":       low,
+      "volume":    volume,
+      "quota":     quota,
+      "timestamp": timestamp,
+    })
+    h.Nats.Publish(config.NATS_TICKERS_UPDATE, payload)
+    h.Nats.Flush()
+  }
 }
 
-func (h *TickersHandler) pingLoop() {
+func (h *TickersHandler) pingLoop(ctx context.Context) {
   ticker := time.NewTicker(20 * time.Second)
   defer ticker.Stop()
 
   for {
     select {
-    case <-h.Ctx.Done():
+    case <-ctx.Done():
       return
     case <-ticker.C:
       if h.Socket == nil {
         return
       }
-      ctx, cancel := context.WithTimeout(h.Ctx, 5*time.Second)
-      err := h.Socket.Ping(ctx)
-      cancel()
+      pingCtx, pingCancel := context.WithTimeout(ctx, 5*time.Second)
+      err := h.Socket.Ping(pingCtx)
+      pingCancel()
       if err != nil {
         log.Printf("ping error: %v", err)
         return

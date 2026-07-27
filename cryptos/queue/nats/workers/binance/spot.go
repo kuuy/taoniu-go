@@ -18,12 +18,12 @@ func NewSpot(natsContext *common.NatsContext) *Spot {
 func (h *Spot) Subscribe() error {
   spot.NewTickers(h.NatsContext).Subscribe()
   //spot.NewKlines(h.NatsContext).Subscribe()
-  spot.NewIndicators(h.NatsContext).Subscribe()
-  spot.NewStrategies(h.NatsContext).Subscribe()
-  spot.NewPlans(h.NatsContext).Subscribe()
-  spot.NewAccount(h.NatsContext).Subscribe()
-  spot.NewOrders(h.NatsContext).Subscribe()
-  spot.NewScalping(h.NatsContext).Subscribe()
-  spot.NewTradings(h.NatsContext).Subscribe()
+  //spot.NewIndicators(h.NatsContext).Subscribe()
+  //spot.NewStrategies(h.NatsContext).Subscribe()
+  //spot.NewPlans(h.NatsContext).Subscribe()
+  //spot.NewAccount(h.NatsContext).Subscribe()
+  //spot.NewOrders(h.NatsContext).Subscribe()
+  //spot.NewScalping(h.NatsContext).Subscribe()
+  //spot.NewTradings(h.NatsContext).Subscribe()
   return nil
 }

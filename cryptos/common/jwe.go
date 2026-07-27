@@ -4,9 +4,17 @@ import (
   "crypto/rsa"
   "os"
   "path"
+  "sync"
 
   "github.com/go-jose/go-jose/v4"
   "golang.org/x/crypto/ssh"
+)
+
+var (
+  globalPrivateKey     *rsa.PrivateKey
+  globalPrivateKeyOnce sync.Once
+  globalPublicKey      *rsa.PublicKey
+  globalPublicKeyOnce  sync.Once
 )
 
 type Jwe struct {
@@ -16,38 +24,44 @@ type Jwe struct {
 
 func (r *Jwe) PrivateKey() *rsa.PrivateKey {
   if r.privateKey == nil {
-    home, err := os.UserHomeDir()
-    if err != nil {
-      panic(err)
-    }
-    bytes, err := os.ReadFile(path.Join(home, ".ssh/jwe_rsa"))
-    if err != nil {
-      panic(err)
-    }
-    privateKey, err := ssh.ParseRawPrivateKey(bytes)
-    if err != nil {
-      panic(err)
-    }
-    r.privateKey = privateKey.(*rsa.PrivateKey)
+    globalPrivateKeyOnce.Do(func() {
+      home, err := os.UserHomeDir()
+      if err != nil {
+        panic(err)
+      }
+      bytes, err := os.ReadFile(path.Join(home, ".ssh/jwe_rsa"))
+      if err != nil {
+        panic(err)
+      }
+      privateKey, err := ssh.ParseRawPrivateKey(bytes)
+      if err != nil {
+        panic(err)
+      }
+      globalPrivateKey = privateKey.(*rsa.PrivateKey)
+    })
+    r.privateKey = globalPrivateKey
   }
   return r.privateKey
 }
 
 func (r *Jwe) PublicKey() *rsa.PublicKey {
   if r.publicKey == nil {
-    home, err := os.UserHomeDir()
-    if err != nil {
-      panic(err)
-    }
-    bytes, err := os.ReadFile(path.Join(home, ".ssh/client_rsa"))
-    if err != nil {
-      panic(err)
-    }
-    privateKey, err := ssh.ParseRawPrivateKey(bytes)
-    if err != nil {
-      panic(err)
-    }
-    r.publicKey = &privateKey.(*rsa.PrivateKey).PublicKey
+    globalPublicKeyOnce.Do(func() {
+      home, err := os.UserHomeDir()
+      if err != nil {
+        panic(err)
+      }
+      bytes, err := os.ReadFile(path.Join(home, ".ssh/client_rsa"))
+      if err != nil {
+        panic(err)
+      }
+      privateKey, err := ssh.ParseRawPrivateKey(bytes)
+      if err != nil {
+        panic(err)
+      }
+      globalPublicKey = &privateKey.(*rsa.PrivateKey).PublicKey
+    })
+    r.publicKey = globalPublicKey
   }
   return r.publicKey
 }

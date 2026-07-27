@@ -29,12 +29,8 @@ func (h *DrawingHandler) Gets(
   w http.ResponseWriter,
   r *http.Request,
 ) {
-  h.ApiContext.Mux.Lock()
-  defer h.ApiContext.Mux.Unlock()
-
   h.Response = &api.ResponseHandler{
-    Writer: w,
   }
 
-  h.Response.Out("")
+  h.Response.Out(w, "")
 }

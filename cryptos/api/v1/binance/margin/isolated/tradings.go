@@ -34,12 +34,8 @@ func (h *TradingsHandler) Scan(
   w http.ResponseWriter,
   r *http.Request,
 ) {
-  h.ApiContext.Mux.Lock()
-  defer h.ApiContext.Mux.Unlock()
-
   h.Response = &api.ResponseHandler{
-    Writer: w,
   }
   symbols := h.Repository.Scan()
-  h.Response.Json(symbols)
+  h.Response.Json(w, symbols)
 }

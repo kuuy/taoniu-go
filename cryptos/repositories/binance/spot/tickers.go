@@ -14,14 +14,17 @@ import (
   "time"
 
   "github.com/go-redis/redis/v8"
+  "github.com/nats-io/nats.go"
   "github.com/shopspring/decimal"
 
   "taoniu.local/cryptos/common"
+  config "taoniu.local/cryptos/config/binance/spot"
 )
 
 type TickersRepository struct {
-  Rdb *redis.Client
-  Ctx context.Context
+  Rdb  *redis.Client
+  Ctx  context.Context
+  Nats *nats.Conn
 }
 
 type TickerInfo struct {
@@ -67,8 +70,24 @@ func (r *TickersRepository) Flush(symbols []string) error {
         "timestamp": timestamp,
       },
     )
+    if r.Nats != nil {
+      payload, _ := json.Marshal(map[string]interface{}{
+        "symbol":    ticker.Symbol,
+        "open":      ticker.Open,
+        "price":     ticker.Price,
+        "high":      ticker.High,
+        "low":       ticker.Low,
+        "volume":    ticker.Volume,
+        "quota":     ticker.Quota,
+        "timestamp": timestamp,
+      })
+      r.Nats.Publish(config.NATS_TICKERS_UPDATE, payload)
+    }
   }
   pipe.Exec(r.Ctx)
+  if r.Nats != nil {
+    r.Nats.Flush()
+  }
 
   return nil
 }

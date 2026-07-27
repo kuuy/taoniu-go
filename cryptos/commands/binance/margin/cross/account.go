@@ -40,7 +40,7 @@ func NewAccountCommand() *cli.Command {
         Db:   common.NewDB(1),
         Rdb:  common.NewRedis(1),
         Ctx:  context.Background(),
-        Nats: common.NewNats(),
+        Nats: common.NewNats(1),
       }
       h.Repository = &repositories.AccountRepository{
         Rdb:  h.Rdb,

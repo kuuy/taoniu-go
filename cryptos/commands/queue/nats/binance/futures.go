@@ -2,21 +2,23 @@ package binance
 
 import (
   "context"
-  "gorm.io/gorm"
   "log"
   "sync"
 
   "github.com/go-redis/redis/v8"
+  "github.com/nats-io/nats.go"
   "github.com/urfave/cli/v2"
+  "gorm.io/gorm"
 
   "taoniu.local/cryptos/common"
   workers "taoniu.local/cryptos/queue/nats/workers/binance"
 )
 
 type FuturesHandler struct {
-  Db  *gorm.DB
-  Rdb *redis.Client
-  Ctx context.Context
+  Db   *gorm.DB
+  Rdb  *redis.Client
+  Ctx  context.Context
+  Nats *nats.Conn
 }
 
 func NewFuturesCommand() *cli.Command {
@@ -26,10 +28,18 @@ func NewFuturesCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = FuturesHandler{
-        Db:  common.NewDB(2),
-        Rdb: common.NewRedis(2),
-        Ctx: context.Background(),
+        Db:   common.NewDB(2),
+        Rdb:  common.NewRedis(2),
+        Ctx:  context.Background(),
+        Nats: common.NewNats(2),
       }
+      return nil
+    },
+    After: func(c *cli.Context) error {
+      sqlDB, _ := h.Db.DB()
+      sqlDB.Close()
+      h.Rdb.Close()
+      h.Nats.Close()
       return nil
     },
     Action: func(c *cli.Context) error {
@@ -47,14 +57,11 @@ func (h *FuturesHandler) Run() error {
   wg := &sync.WaitGroup{}
   wg.Add(1)
 
-  nc := common.NewNats()
-  defer nc.Close()
-
   natsContext := &common.NatsContext{
     Db:   h.Db,
     Rdb:  h.Rdb,
     Ctx:  h.Ctx,
-    Conn: nc,
+    Conn: h.Nats,
   }
   workers.NewFutures(natsContext).Subscribe()
 

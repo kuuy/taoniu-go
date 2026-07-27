@@ -34,14 +34,10 @@ func (h *AccountHandler) Balance(
   w http.ResponseWriter,
   r *http.Request,
 ) {
-  h.ApiContext.Mux.Lock()
-  defer h.ApiContext.Mux.Unlock()
-
   h.Response = &api.ResponseHandler{
-    Writer: w,
   }
 
   data, _ := h.Repository.Balance()
 
-  h.Response.Json(data)
+  h.Response.Json(w, data)
 }

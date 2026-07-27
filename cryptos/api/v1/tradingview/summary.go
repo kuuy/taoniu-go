@@ -32,11 +32,7 @@ func (h *SummaryHandler) Get(
   w http.ResponseWriter,
   r *http.Request,
 ) {
-  h.ApiContext.Mux.Lock()
-  defer h.ApiContext.Mux.Unlock()
-
   h.Response = &api.ResponseHandler{
-    Writer: w,
   }
 
   exchange := chi.URLParam(r, "exchange")
@@ -51,5 +47,5 @@ func (h *SummaryHandler) Get(
   w.Header().Set("Content-Type", "application/json")
   w.WriteHeader(http.StatusOK)
 
-  h.Response.Json(summary)
+  h.Response.Json(w, summary)
 }

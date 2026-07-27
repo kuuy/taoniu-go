@@ -71,11 +71,7 @@ func (h *PositionsHandler) Gets(
   w http.ResponseWriter,
   r *http.Request,
 ) {
-  h.ApiContext.Mux.Lock()
-  defer h.ApiContext.Mux.Unlock()
-
   h.Response = &api.ResponseHandler{
-    Writer: w,
   }
 
   q := r.URL.Query()
@@ -103,7 +99,7 @@ func (h *PositionsHandler) Gets(
     }
   }
 
-  h.Response.Json(data)
+  h.Response.Json(w, data)
 }
 
 func (h *PositionsHandler) Calc(
@@ -111,18 +107,17 @@ func (h *PositionsHandler) Calc(
   r *http.Request,
 ) {
   h.Response = &api.ResponseHandler{
-    Writer: w,
   }
 
   q := r.URL.Query()
 
   if q.Get("symbol") == "" {
-    h.Response.Error(http.StatusForbidden, 1004, "symbol is empty")
+    h.Response.Error(w, http.StatusForbidden, 1004, "symbol is empty")
     return
   }
 
   if q.Get("side") == "" {
-    h.Response.Error(http.StatusForbidden, 1004, "side is empty")
+    h.Response.Error(w, http.StatusForbidden, 1004, "side is empty")
     return
   }
 
@@ -130,13 +125,13 @@ func (h *PositionsHandler) Calc(
   side, _ := strconv.Atoi(q.Get("side"))
   position, err := h.Repository.Get(symbol)
   if err != nil {
-    h.Response.Error(http.StatusForbidden, 1004, "position not exists")
+    h.Response.Error(w, http.StatusForbidden, 1004, "position not exists")
     return
   }
 
   tickSize, stepSize, err := h.Repository.Filters(symbol)
   if err != nil {
-    h.Response.Error(http.StatusForbidden, 1004, "symbol filters not exists")
+    h.Response.Error(w, http.StatusForbidden, 1004, "symbol filters not exists")
     return
   }
 
@@ -232,5 +227,5 @@ func (h *PositionsHandler) Calc(
   result.TakePrice = takePrice
   result.StopPrice = stopPrice
 
-  h.Response.Json(result)
+  h.Response.Json(w, result)
 }

@@ -2,6 +2,7 @@ package streams
 
 import (
   "context"
+  "encoding/json"
   "errors"
   "fmt"
   "log"
@@ -17,6 +18,7 @@ import (
   "github.com/coder/websocket"
   "github.com/coder/websocket/wsjson"
   "github.com/go-redis/redis/v8"
+  "github.com/nats-io/nats.go"
   "github.com/urfave/cli/v2"
   "gorm.io/gorm"
 
@@ -28,6 +30,7 @@ import (
 type KlinesHandler struct {
   Db                 *gorm.DB
   Rdb                *redis.Client
+  Nats               *nats.Conn
   Ctx                context.Context
   cancel             context.CancelFunc
   Socket             *websocket.Conn
@@ -43,8 +46,9 @@ func NewKlinesCommand() *cli.Command {
     Before: func(c *cli.Context) error {
       ctx, cancel := context.WithCancel(context.Background())
       h = KlinesHandler{
-        Db:         common.NewDB(1),
-        Rdb:        common.NewRedis(1),
+        Db:  common.NewDB(1),
+        Rdb: common.NewRedis(1),
+        //Nats:       common.NewNats(),
         Ctx:        ctx,
         cancel:     cancel,
         workerChan: make(chan map[string]interface{}, 2048),
@@ -52,6 +56,10 @@ func NewKlinesCommand() *cli.Command {
       h.ScalpingRepository = &repositories.ScalpingRepository{
         Db: h.Db,
       }
+      return nil
+    },
+    After: func(c *cli.Context) error {
+      h.Rdb.Close()
       return nil
     },
     Action: func(c *cli.Context) error {
@@ -93,6 +101,9 @@ func NewKlinesCommand() *cli.Command {
 
 func (h *KlinesHandler) Start(interval string, current int) error {
   symbols := h.ScalpingRepository.Scan()
+  sqlDB, _ := h.Db.DB()
+  sqlDB.Close()
+
   pageSize := common.GetEnvInt("BINANCE_SPOT_SYMBOLS_SIZE")
   if pageSize <= 0 {
     pageSize = 50
@@ -108,7 +119,7 @@ func (h *KlinesHandler) Start(interval string, current int) error {
     endPos = len(symbols)
   }
 
-  var streams []string
+  streams := make([]string, 0, endPos-offset)
   for _, symbol := range symbols[offset:endPos] {
     streams = append(streams, fmt.Sprintf("%s@kline_%s", strings.ToLower(symbol), interval))
   }
@@ -122,7 +133,9 @@ func (h *KlinesHandler) Start(interval string, current int) error {
   var httpClient *http.Client
   proxy := common.GetEnvString(fmt.Sprintf("BINANCE_PROXY_%v", current))
   if proxy != "" {
-    tr := &http.Transport{}
+    tr := &http.Transport{
+      DisableKeepAlives: true,
+    }
     tr.DialContext = (&common.ProxySession{Proxy: proxy}).DialContext
     httpClient = &http.Client{Transport: tr}
   }
@@ -140,15 +153,16 @@ func (h *KlinesHandler) Start(interval string, current int) error {
   }
   defer h.Socket.Close(websocket.StatusNormalClosure, "")
 
-  go h.pingLoop()
+  connCtx, connCancel := context.WithCancel(h.Ctx)
+  defer connCancel()
+
+  go h.pingLoop(connCtx)
 
   log.Printf("klines stream [%s] started for index %d", interval, current)
 
   for {
     var message map[string]interface{}
-    readCtx, readCancel := context.WithTimeout(h.Ctx, 10*time.Second)
-    err = wsjson.Read(readCtx, h.Socket, &message)
-    readCancel()
+    err = wsjson.Read(connCtx, h.Socket, &message)
 
     if err != nil {
       if errors.Is(err, context.Canceled) {
@@ -219,6 +233,15 @@ func (h *KlinesHandler) processMessage(message map[string]interface{}) {
     "lasttime":  time.Now().UnixMilli(),
   })
 
+  if h.Nats != nil {
+    payload, _ := json.Marshal(map[string]interface{}{
+      "symbol":   symbol,
+      "interval": interval,
+    })
+    h.Nats.Publish(config.NATS_KLINES_UPDATE, payload)
+    h.Nats.Flush()
+  }
+
   ttl, _ := h.Rdb.TTL(h.Ctx, redisKey).Result()
   if -1 == ttl.Nanoseconds() {
     var expiration time.Duration
@@ -238,20 +261,20 @@ func (h *KlinesHandler) processMessage(message map[string]interface{}) {
   }
 }
 
-func (h *KlinesHandler) pingLoop() {
+func (h *KlinesHandler) pingLoop(ctx context.Context) {
   ticker := time.NewTicker(20 * time.Second)
   defer ticker.Stop()
   for {
     select {
-    case <-h.Ctx.Done():
+    case <-ctx.Done():
       return
     case <-ticker.C:
       if h.Socket == nil {
         return
       }
-      ctx, cancel := context.WithTimeout(h.Ctx, 5*time.Second)
-      _ = h.Socket.Ping(ctx)
-      cancel()
+      pingCtx, pingCancel := context.WithTimeout(ctx, 5*time.Second)
+      _ = h.Socket.Ping(pingCtx)
+      pingCancel()
     }
   }
 }

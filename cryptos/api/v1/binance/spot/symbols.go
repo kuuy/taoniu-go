@@ -7,13 +7,13 @@ import (
 
   "taoniu.local/cryptos/api"
   "taoniu.local/cryptos/common"
-  spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
+  repositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
 type SymbolsHandler struct {
   ApiContext *common.ApiContext
   Response   *api.ResponseHandler
-  Repository *spotRepositories.SymbolsRepository
+  Repository *repositories.SymbolsRepository
 }
 
 func NewSymbolsRouter(apiContext *common.ApiContext) http.Handler {
@@ -22,7 +22,7 @@ func NewSymbolsRouter(apiContext *common.ApiContext) http.Handler {
   }
   h.Response = &api.ResponseHandler{}
   h.Response.Jwe = &common.Jwe{}
-  h.Repository = &spotRepositories.SymbolsRepository{
+  h.Repository = &repositories.SymbolsRepository{
     Db: h.ApiContext.Db,
   }
 
@@ -35,11 +35,6 @@ func (h *SymbolsHandler) Get(
   w http.ResponseWriter,
   r *http.Request,
 ) {
-  h.ApiContext.Mux.Lock()
-  defer h.ApiContext.Mux.Unlock()
-
-  h.Response.Writer = w
-
   symbol := chi.URLParam(r, "symbol")
   entity, err := h.Repository.Get(symbol)
   if err != nil {
@@ -56,5 +51,5 @@ func (h *SymbolsHandler) Get(
     QuoteAsset: entity.QuoteAsset,
   }
 
-  h.Response.Json(result)
+  h.Response.Json(w, result)
 }
