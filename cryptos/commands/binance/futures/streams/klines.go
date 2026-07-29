@@ -36,6 +36,7 @@ type KlinesHandler struct {
   Socket             *websocket.Conn
   ScalpingRepository *repositories.ScalpingRepository
   workerChan         chan map[string]interface{}
+  Symbols            []string
 }
 
 func NewKlinesCommand() *cli.Command {
@@ -100,9 +101,16 @@ func NewKlinesCommand() *cli.Command {
 }
 
 func (h *KlinesHandler) Start(interval string, current int) error {
-  symbols := h.ScalpingRepository.Scan(2)
-  sqlDB, _ := h.Db.DB()
-  sqlDB.Close()
+  if len(h.Symbols) == 0 {
+    symbols := h.ScalpingRepository.Scan(2)
+    if len(symbols) == 0 {
+      return errors.New("no symbols found")
+    }
+    h.Symbols = symbols
+    if sqlDB, err := h.Db.DB(); err == nil {
+      sqlDB.Close()
+    }
+  }
 
   pageSize := common.GetEnvInt("BINANCE_FUTURES_SYMBOLS_SIZE")
   if pageSize <= 0 {
@@ -110,17 +118,17 @@ func (h *KlinesHandler) Start(interval string, current int) error {
   }
 
   offset := (current - 1) * pageSize
-  if offset >= len(symbols) {
+  if offset >= len(h.Symbols) {
     return errors.New("symbols out of range")
   }
 
   endPos := offset + pageSize
-  if endPos > len(symbols) {
-    endPos = len(symbols)
+  if endPos > len(h.Symbols) {
+    endPos = len(h.Symbols)
   }
 
   streams := make([]string, 0, endPos-offset)
-  for _, symbol := range symbols[offset:endPos] {
+  for _, symbol := range h.Symbols[offset:endPos] {
     streams = append(streams, fmt.Sprintf("%s@kline_%s", strings.ToLower(symbol), interval))
   }
 

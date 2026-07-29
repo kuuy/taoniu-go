@@ -35,6 +35,7 @@ type TickersHandler struct {
   Socket             *websocket.Conn
   ScalpingRepository *repositories.ScalpingRepository
   workerChan         chan map[string]interface{}
+  Symbols            []string
 }
 
 func NewTickersCommand() *cli.Command {
@@ -96,9 +97,16 @@ func NewTickersCommand() *cli.Command {
 }
 
 func (h *TickersHandler) Start(current int) error {
-  symbols := h.ScalpingRepository.Scan()
-  sqlDB, _ := h.Db.DB()
-  sqlDB.Close()
+  if len(h.Symbols) == 0 {
+    symbols := h.ScalpingRepository.Scan()
+    if len(symbols) == 0 {
+      return errors.New("no symbols found")
+    }
+    h.Symbols = symbols
+    if sqlDB, err := h.Db.DB(); err == nil {
+      sqlDB.Close()
+    }
+  }
 
   pageSize := common.GetEnvInt("BINANCE_SPOT_SYMBOLS_SIZE")
   if pageSize <= 0 {
@@ -106,17 +114,17 @@ func (h *TickersHandler) Start(current int) error {
   }
 
   offset := (current - 1) * pageSize
-  if offset >= len(symbols) {
+  if offset >= len(h.Symbols) {
     return errors.New("symbols out of range")
   }
 
   endPos := offset + pageSize
-  if endPos > len(symbols) {
-    endPos = len(symbols)
+  if endPos > len(h.Symbols) {
+    endPos = len(h.Symbols)
   }
 
   streams := make([]string, 0, endPos-offset)
-  for _, symbol := range symbols[offset:endPos] {
+  for _, symbol := range h.Symbols[offset:endPos] {
     streams = append(streams, fmt.Sprintf("%s@miniTicker", strings.ToLower(symbol)))
   }
 

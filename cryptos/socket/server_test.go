@@ -91,3 +91,26 @@ func TestAuthorizationHeaderParsing(t *testing.T) {
 		})
 	}
 }
+
+func TestClientQueueEviction(t *testing.T) {
+	hub := NewHub()
+	client := NewClient(hub, nil, "user1")
+
+	if cap(client.Send) != 2048 {
+		t.Fatalf("expected send channel capacity 2048, got %d", cap(client.Send))
+	}
+
+	// Fill channel to capacity
+	for i := 0; i < 2048; i++ {
+		client.Send <- []byte(strings.Repeat("a", 10))
+	}
+
+	// Broadcast when channel is full
+	topic := "binance:spot:tickers:BTCUSDT"
+	hub.Subscribe(client, topic)
+	hub.Broadcast(topic, []byte(`{"event":"ticker","symbol":"BTCUSDT"}`))
+
+	if len(client.Send) != 2048 {
+		t.Errorf("expected channel length to remain 2048 after eviction, got %d", len(client.Send))
+	}
+}

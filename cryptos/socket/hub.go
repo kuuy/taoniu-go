@@ -4,6 +4,7 @@ import (
   "context"
   "encoding/json"
   "log"
+  "strings"
   "sync"
   "time"
 
@@ -37,26 +38,35 @@ type Client struct {
 }
 
 func NewClient(hub *Hub, conn *websocket.Conn, uid string) *Client {
-  return &Client{
-    Hub:    hub,
-    Conn:   conn,
-    Send:   make(chan []byte, 256),
-    Topics: make(map[string]bool),
-    Uid:    uid,
-    Jwe:    &common.Jwe{},
-  }
+	return &Client{
+		Hub:    hub,
+		Conn:   conn,
+		Send:   make(chan []byte, 2048),
+		Topics: make(map[string]bool),
+		Uid:    uid,
+		Jwe:    &common.Jwe{},
+	}
 }
 
 func (c *Client) SendBytes(data []byte) {
-  jwe := &common.Jwe{}
-  jweCompact, err := jwe.Encrypt(data)
-  if err != nil {
-    return
-  }
-  select {
-  case c.Send <- []byte(jweCompact):
-  default:
-  }
+	jwe := &common.Jwe{}
+	jweCompact, err := jwe.Encrypt(data)
+	if err != nil {
+		return
+	}
+	msgBytes := []byte(jweCompact)
+	select {
+	case c.Send <- msgBytes:
+	default:
+		select {
+		case <-c.Send:
+		default:
+		}
+		select {
+		case c.Send <- msgBytes:
+		default:
+		}
+	}
 }
 
 func (c *Client) ReadLoop(ctx context.Context, onMessage func(c *Client, req *RequestMessage)) {
@@ -73,6 +83,17 @@ func (c *Client) ReadLoop(ctx context.Context, onMessage func(c *Client, req *Re
 
     payload, err := c.Jwe.Decrypt(string(data))
     if err != nil {
+      var rawReq RequestMessage
+      if jsonErr := json.Unmarshal(data, &rawReq); jsonErr == nil && rawReq.Action == "ping" {
+        pong, _ := json.Marshal(map[string]string{"event": "pong"})
+        c.SendBytes(pong)
+        continue
+      }
+      if strings.TrimSpace(string(data)) == "ping" {
+        pong, _ := json.Marshal(map[string]string{"event": "pong"})
+        c.SendBytes(pong)
+        continue
+      }
       continue
     }
 
@@ -94,7 +115,9 @@ func (c *Client) ReadLoop(ctx context.Context, onMessage func(c *Client, req *Re
 }
 
 func (c *Client) WriteLoop(ctx context.Context) {
+  ticker := time.NewTicker(25 * time.Second)
   defer func() {
+    ticker.Stop()
     c.Conn.Close(websocket.StatusNormalClosure, "")
   }()
 
@@ -107,6 +130,13 @@ func (c *Client) WriteLoop(ctx context.Context) {
       }
       writeCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
       err := c.Conn.Write(writeCtx, websocket.MessageText, message)
+      cancel()
+      if err != nil {
+        return
+      }
+    case <-ticker.C:
+      writeCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+      err := c.Conn.Ping(writeCtx)
       cancel()
       if err != nil {
         return
@@ -212,7 +242,15 @@ func (h *Hub) Broadcast(topic string, message []byte) {
     select {
     case client.Send <- encryptedMessage:
     default:
-      log.Printf("Client send queue full, dropping message for topic: %s", topic)
+      select {
+      case <-client.Send:
+      default:
+      }
+      select {
+      case client.Send <- encryptedMessage:
+      default:
+        log.Printf("Client send queue full, dropping message for topic: %s", topic)
+      }
     }
   }
 }
