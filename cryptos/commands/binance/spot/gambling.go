@@ -69,7 +69,9 @@ func (h *GamblingHandler) Calc(
 ) (err error) {
   log.Println("binance spot positions calc...")
 
-  entryAmount, _ := decimal.NewFromFloat(entryPrice).Mul(decimal.NewFromFloat(entryQuantity)).Float64()
+  entryPriceDec := decimal.NewFromFloat(entryPrice)
+  entryQuantityDec := decimal.NewFromFloat(entryQuantity)
+  entryAmountDec := entryPriceDec.Mul(entryQuantityDec)
 
   entity, err := h.SymbolsRepository.Get(symbol)
   if err != nil {
@@ -81,7 +83,17 @@ func (h *GamblingHandler) Calc(
     return
   }
 
-  entryQuantity, _ = decimal.NewFromFloat(entryAmount).Div(decimal.NewFromFloat(entryPrice)).Float64()
+  stepSizeDec := decimal.NewFromFloat(stepSize)
+  notionalDec := decimal.NewFromFloat(notional)
+
+  if stepSize > 0 {
+    entryQuantityDec = entryAmountDec.Div(entryPriceDec).Div(stepSizeDec).Floor().Mul(stepSizeDec)
+  } else {
+    entryQuantityDec = entryAmountDec.Div(entryPriceDec)
+  }
+  entryQuantity, _ = entryQuantityDec.Float64()
+  entryAmount, _ := entryAmountDec.Float64()
+
   log.Println(
     "entry",
     strconv.FormatFloat(entryPrice, 'f', -1, 64),
@@ -91,86 +103,107 @@ func (h *GamblingHandler) Calc(
 
   takePrice := h.GamblingRepository.TakePrice(entryPrice, side, tickSize)
   stopPrice := h.GamblingRepository.StopPrice(entryPrice, side, tickSize)
+  takePriceDec := decimal.NewFromFloat(takePrice)
 
   planPrice := entryPrice
-  planQuantity := entryQuantity
-  planAmount := 0.0
-  planProfit := 0.0
-  lastProfit := 0.0
-  takeProfit := 0.0
+  planQuantityDec := entryQuantityDec
+  planAmountDec := decimal.Zero
+  planProfitDec := decimal.Zero
+  lastProfitDec := decimal.Zero
 
   for {
-    plans := h.GamblingRepository.Calc(planPrice, planQuantity, side, tickSize, stepSize)
+    planPriceFloat, _ := decimal.NewFromFloat(planPrice).Float64()
+    planQuantityFloat, _ := planQuantityDec.Float64()
+    plans := h.GamblingRepository.Calc(planPriceFloat, planQuantityFloat, side, tickSize, stepSize)
     for _, plan := range plans {
-      if plan.TakeQuantity < stepSize {
+      planTakeQuantityDec := decimal.NewFromFloat(plan.TakeQuantity)
+      planTakePriceDec := decimal.NewFromFloat(plan.TakePrice)
+      planTakeAmountDec := decimal.NewFromFloat(plan.TakeAmount)
+
+      if planTakeQuantityDec.LessThan(stepSizeDec) {
         if side == 1 {
-          lastProfit, _ = decimal.NewFromFloat(takePrice).Sub(decimal.NewFromFloat(entryPrice)).Mul(decimal.NewFromFloat(planQuantity)).Float64()
+          lastProfitDec = takePriceDec.Sub(entryPriceDec).Mul(planQuantityDec)
         } else {
-          lastProfit, _ = decimal.NewFromFloat(entryPrice).Sub(decimal.NewFromFloat(takePrice)).Mul(decimal.NewFromFloat(planQuantity)).Float64()
+          lastProfitDec = entryPriceDec.Sub(takePriceDec).Mul(planQuantityDec)
         }
         break
       }
       if side == 1 && plan.TakePrice >= takePrice {
-        lastProfit, _ = decimal.NewFromFloat(takePrice).Sub(decimal.NewFromFloat(entryPrice)).Mul(decimal.NewFromFloat(planQuantity)).Float64()
+        lastProfitDec = takePriceDec.Sub(entryPriceDec).Mul(planQuantityDec)
         break
       }
       if side == 2 && plan.TakePrice <= takePrice {
-        lastProfit, _ = decimal.NewFromFloat(entryPrice).Sub(decimal.NewFromFloat(takePrice)).Mul(decimal.NewFromFloat(planQuantity)).Float64()
+        lastProfitDec = entryPriceDec.Sub(takePriceDec).Mul(planQuantityDec)
         break
       }
-      if side == 1 {
-        takeProfit, _ = decimal.NewFromFloat(plan.TakePrice).Sub(decimal.NewFromFloat(entryPrice)).Mul(decimal.NewFromFloat(plan.TakeQuantity)).Float64()
-      } else {
-        takeProfit, _ = decimal.NewFromFloat(entryPrice).Sub(decimal.NewFromFloat(plan.TakePrice)).Mul(decimal.NewFromFloat(plan.TakeQuantity)).Float64()
-      }
-      planPrice = plan.TakePrice
-      planQuantity, _ = decimal.NewFromFloat(planQuantity).Sub(decimal.NewFromFloat(plan.TakeQuantity)).Float64()
-      planAmount, _ = decimal.NewFromFloat(planAmount).Add(decimal.NewFromFloat(plan.TakeAmount)).Float64()
-      planProfit, _ = decimal.NewFromFloat(planProfit).Add(decimal.NewFromFloat(takeProfit)).Float64()
 
-      if plan.TakeAmount < notional {
+      var takeProfitDec decimal.Decimal
+      if side == 1 {
+        takeProfitDec = planTakePriceDec.Sub(entryPriceDec).Mul(planTakeQuantityDec)
+      } else {
+        takeProfitDec = entryPriceDec.Sub(planTakePriceDec).Mul(planTakeQuantityDec)
+      }
+
+      planPrice = plan.TakePrice
+      planQuantityDec = planQuantityDec.Sub(planTakeQuantityDec)
+      planAmountDec = planAmountDec.Add(planTakeAmountDec)
+      planProfitDec = planProfitDec.Add(takeProfitDec)
+
+      if planTakeAmountDec.LessThan(notionalDec) {
         return fmt.Errorf("plan amount less then %v", notional)
       }
+
+      takeProfitFloat, _ := takeProfitDec.Float64()
+      planAmountFloat, _ := planAmountDec.Float64()
+      planProfitFloat, _ := planProfitDec.Float64()
 
       log.Println(
         "plan",
         strconv.FormatFloat(plan.TakePrice, 'f', -1, 64),
         strconv.FormatFloat(plan.TakeQuantity, 'f', -1, 64),
-        takeProfit,
-        planAmount,
-        planProfit,
+        takeProfitFloat,
+        planAmountFloat,
+        planProfitFloat,
       )
     }
-    if len(plans) == 0 || lastProfit > 0 {
+    if len(plans) == 0 || lastProfitDec.GreaterThan(decimal.Zero) {
       break
     }
   }
 
-  if planQuantity > 0 {
+  if planQuantityDec.GreaterThan(decimal.Zero) {
+    var takeProfitDec decimal.Decimal
     if side == 1 {
-      takeProfit, _ = decimal.NewFromFloat(takePrice).Sub(decimal.NewFromFloat(entryPrice)).Mul(decimal.NewFromFloat(planQuantity)).Float64()
+      takeProfitDec = takePriceDec.Sub(entryPriceDec).Mul(planQuantityDec)
     } else {
-      takeProfit, _ = decimal.NewFromFloat(entryPrice).Sub(decimal.NewFromFloat(takePrice)).Mul(decimal.NewFromFloat(planQuantity)).Float64()
+      takeProfitDec = entryPriceDec.Sub(takePriceDec).Mul(planQuantityDec)
     }
-    takeAmount, _ := decimal.NewFromFloat(takePrice).Mul(decimal.NewFromFloat(planQuantity)).Float64()
-    planAmount, _ = decimal.NewFromFloat(planAmount).Add(decimal.NewFromFloat(takeAmount)).Float64()
-    planProfit, _ = decimal.NewFromFloat(planProfit).Add(decimal.NewFromFloat(takeProfit)).Float64()
+    takeAmountDec := takePriceDec.Mul(planQuantityDec)
+    planAmountDec = planAmountDec.Add(takeAmountDec)
+    planProfitDec = planProfitDec.Add(takeProfitDec)
 
-    if takeAmount < notional {
+    if takeAmountDec.LessThan(notionalDec) {
       return fmt.Errorf("plan amount less then %v", notional)
     }
+
+    planQuantityFloat, _ := planQuantityDec.Float64()
+    takeProfitFloat, _ := takeProfitDec.Float64()
+    planAmountFloat, _ := planAmountDec.Float64()
+    planProfitFloat, _ := planProfitDec.Float64()
 
     log.Println(
       "plan",
       strconv.FormatFloat(takePrice, 'f', -1, 64),
-      strconv.FormatFloat(planQuantity, 'f', -1, 64),
-      takeProfit,
-      planAmount,
-      planProfit,
+      strconv.FormatFloat(planQuantityFloat, 'f', -1, 64),
+      takeProfitFloat,
+      planAmountFloat,
+      planProfitFloat,
     )
   }
 
-  log.Println("planProfit", planProfit)
+  planProfitFloat, _ := planProfitDec.Float64()
+
+  log.Println("planProfit", planProfitFloat)
   log.Println("takePrice", strconv.FormatFloat(takePrice, 'f', -1, 64))
   log.Println("stopPrice", strconv.FormatFloat(stopPrice, 'f', -1, 64))
 

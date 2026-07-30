@@ -86,9 +86,17 @@ func (r *GamblingRepository) TakePrice(
   if side == 1 {
     takePrice, _ = decimal.NewFromFloat(entryPrice).Mul(decimal.NewFromFloat(1.0344)).Float64()
     takePrice, _ = decimal.NewFromFloat(takePrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
+    minTakePrice, _ := decimal.NewFromFloat(entryPrice).Add(decimal.NewFromFloat(tickSize)).Float64()
+    if takePrice < minTakePrice {
+      takePrice = minTakePrice
+    }
   } else {
     takePrice, _ = decimal.NewFromFloat(entryPrice).Mul(decimal.NewFromFloat(0.9656)).Float64()
     takePrice, _ = decimal.NewFromFloat(takePrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+    maxTakePrice, _ := decimal.NewFromFloat(entryPrice).Sub(decimal.NewFromFloat(tickSize)).Float64()
+    if takePrice > maxTakePrice {
+      takePrice = maxTakePrice
+    }
   }
   return takePrice
 }
@@ -102,9 +110,17 @@ func (r *GamblingRepository) StopPrice(
   if side == 1 {
     stopPrice, _ = decimal.NewFromFloat(entryPrice).Mul(decimal.NewFromFloat(0.9828)).Float64()
     stopPrice, _ = decimal.NewFromFloat(stopPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+    maxStopPrice, _ := decimal.NewFromFloat(entryPrice).Sub(decimal.NewFromFloat(tickSize)).Float64()
+    if stopPrice > maxStopPrice {
+      stopPrice = maxStopPrice
+    }
   } else {
     stopPrice, _ = decimal.NewFromFloat(entryPrice).Mul(decimal.NewFromFloat(1.0172)).Float64()
     stopPrice, _ = decimal.NewFromFloat(stopPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
+    minStopPrice, _ := decimal.NewFromFloat(entryPrice).Add(decimal.NewFromFloat(tickSize)).Float64()
+    if stopPrice < minStopPrice {
+      stopPrice = minStopPrice
+    }
   }
   return stopPrice
 }
@@ -123,12 +139,23 @@ func (r *GamblingRepository) Calc(
   for _, factor := range r.Factors(entryAmount, side) {
     takeQuantity, _ = decimal.NewFromFloat(entryQuantity).Mul(decimal.NewFromFloat(factor[1])).Float64()
     takeQuantity, _ = decimal.NewFromFloat(takeQuantity).Div(decimal.NewFromFloat(stepSize)).Ceil().Mul(decimal.NewFromFloat(stepSize)).Float64()
+    if takeQuantity < stepSize {
+      takeQuantity = stepSize
+    }
     if side == 1 {
       takePrice, _ = decimal.NewFromFloat(entryPrice).Mul(decimal.NewFromFloat(factor[0])).Float64()
       takePrice, _ = decimal.NewFromFloat(takePrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
+      minTakePrice, _ := decimal.NewFromFloat(entryPrice).Add(decimal.NewFromFloat(tickSize)).Float64()
+      if takePrice < minTakePrice {
+        takePrice = minTakePrice
+      }
     } else {
       takePrice, _ = decimal.NewFromFloat(entryPrice).Mul(decimal.NewFromFloat(factor[0])).Float64()
       takePrice, _ = decimal.NewFromFloat(takePrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+      maxTakePrice, _ := decimal.NewFromFloat(entryPrice).Sub(decimal.NewFromFloat(tickSize)).Float64()
+      if takePrice > maxTakePrice {
+        takePrice = maxTakePrice
+      }
     }
     if entryQuantity <= takeQuantity {
       break
