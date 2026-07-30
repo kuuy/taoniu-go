@@ -1,22 +1,23 @@
 package spot
 
 import (
-  "math"
-  "net/http"
+	"math"
+	"net/http"
+	"strconv"
 
-  "github.com/go-chi/chi/v5"
-  "github.com/shopspring/decimal"
+	"github.com/go-chi/chi/v5"
+	"github.com/shopspring/decimal"
 
-  "taoniu.local/cryptos/api"
-  "taoniu.local/cryptos/common"
-  spotRepositories "taoniu.local/cryptos/repositories/binance/spot"
+	"taoniu.local/cryptos/api"
+	"taoniu.local/cryptos/common"
+	repositories "taoniu.local/cryptos/repositories/binance/spot"
 )
 
 type PositionsHandler struct {
   ApiContext        *common.ApiContext
   Response          *api.ResponseHandler
-  Repository        *spotRepositories.PositionsRepository
-  SymbolsRepository *spotRepositories.SymbolsRepository
+  Repository        *repositories.PositionsRepository
+  SymbolsRepository *repositories.SymbolsRepository
 }
 
 func NewPositionsRouter(apiContext *common.ApiContext) http.Handler {
@@ -25,10 +26,10 @@ func NewPositionsRouter(apiContext *common.ApiContext) http.Handler {
   }
   h.Response = &api.ResponseHandler{}
   h.Response.Jwe = &common.Jwe{}
-  h.Repository = &spotRepositories.PositionsRepository{
+  h.Repository = &repositories.PositionsRepository{
     Db: h.ApiContext.Db,
   }
-  h.Repository.SymbolsRepository = &spotRepositories.SymbolsRepository{
+  h.Repository.SymbolsRepository = &repositories.SymbolsRepository{
     Db: h.ApiContext.Db,
   }
 
@@ -63,106 +64,131 @@ func (h *PositionsHandler) Gets(
 }
 
 func (h *PositionsHandler) Calc(
-  w http.ResponseWriter,
-  r *http.Request,
+	w http.ResponseWriter,
+	r *http.Request,
 ) {
-  q := r.URL.Query()
+	q := r.URL.Query()
 
-  if q.Get("symbol") == "" {
-    h.Response.Error(w, http.StatusForbidden, 1004, "symbol is empty")
-    return
-  }
+	if q.Get("symbol") == "" {
+		h.Response.Error(w, http.StatusForbidden, 1004, "symbol is empty")
+		return
+	}
 
-  if q.Get("side") == "" {
-    h.Response.Error(w, http.StatusForbidden, 1004, "side is empty")
-    return
-  }
+	if q.Get("margin") == "" {
+		h.Response.Error(w, http.StatusForbidden, 1004, "margin is empty")
+		return
+	}
 
-  symbol := q.Get("symbol")
-  position, err := h.Repository.Get(symbol)
-  if err != nil {
-    h.Response.Error(w, http.StatusForbidden, 1004, "position not exists")
-    return
-  }
+	if q.Get("leverage") == "" {
+		h.Response.Error(w, http.StatusForbidden, 1004, "leverage is empty")
+		return
+	}
 
-  tickSize, stepSize, err := h.Repository.Filters(symbol)
-  if err != nil {
-    h.Response.Error(w, http.StatusForbidden, 1004, "symbol filters not exists")
-    return
-  }
+	if q.Get("entry_price") == "" {
+		h.Response.Error(w, http.StatusForbidden, 1004, "entry_price is empty")
+		return
+	}
 
-  entryPrice := position.EntryPrice
-  entryQuantity := position.EntryQuantity
-  entryAmount, _ := decimal.NewFromFloat(entryPrice).Mul(decimal.NewFromFloat(entryQuantity)).Float64()
+	if q.Get("entry_quantity") == "" {
+		h.Response.Error(w, http.StatusForbidden, 1004, "entry_quantity is empty")
+		return
+	}
 
-  var buyPrice float64
-  var buyQuantity float64
-  var buyAmount float64
-  var sellPrice float64
-  var takePrice float64
+	symbol := q.Get("symbol")
+	margin, _ := strconv.ParseFloat(q.Get("margin"), 64)
+	leverage, _ := strconv.Atoi(q.Get("leverage"))
 
-  if entryAmount < 5 {
-    buyPrice = entryPrice
-    buyQuantity = 5 / buyPrice
-    buyQuantity, _ = decimal.NewFromFloat(buyQuantity).Div(decimal.NewFromFloat(stepSize)).Ceil().Mul(decimal.NewFromFloat(stepSize)).Float64()
-    buyAmount, _ = decimal.NewFromFloat(buyPrice).Mul(decimal.NewFromFloat(buyQuantity)).Float64()
-    entryQuantity = buyQuantity
-    entryAmount = buyAmount
-    sellPrice = h.Repository.SellPrice(entryPrice, entryAmount)
-    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
-    takePrice = h.Repository.TakePrice(entryPrice, tickSize)
-  } else {
-    takePrice = h.Repository.TakePrice(entryPrice, tickSize)
-  }
+	entryPrice, _ := strconv.ParseFloat(q.Get("entry_price"), 64)
+	entryQuantity, _ := strconv.ParseFloat(q.Get("entry_quantity"), 64)
 
-  ipart, _ := math.Modf(position.Notional)
-  places := 1
-  for ; ipart >= 10; ipart = ipart / 10 {
-    places++
-  }
+	maxCapital, _ := decimal.NewFromFloat(margin).Mul(decimal.NewFromInt32(int32(leverage))).Float64()
+	entryAmount, _ := decimal.NewFromFloat(entryPrice).Mul(decimal.NewFromFloat(entryQuantity)).Float64()
 
-  result := &PositionCalcResponse{}
+	tickSize, stepSize, err := h.Repository.Filters(symbol)
+	if err != nil {
+		h.Response.Error(w, http.StatusForbidden, 1004, "symbol filters not exists")
+		return
+	}
 
-  for {
-    var err error
-    capital, err := h.Repository.Capital(position.Notional, entryAmount, places, 1.0)
-    if err != nil {
-      break
-    }
-    ratio := h.Repository.Ratio(capital, entryAmount, 1.0)
-    buyAmount, _ = decimal.NewFromFloat(capital).Mul(decimal.NewFromFloat(ratio)).Float64()
-    if buyAmount < 5 {
-      buyAmount = 5
-    }
-    buyQuantity = h.Repository.BuyQuantity(buyAmount, entryPrice, entryAmount)
-    buyPrice, _ = decimal.NewFromFloat(buyAmount).Div(decimal.NewFromFloat(buyQuantity)).Float64()
-    buyPrice, _ = decimal.NewFromFloat(buyPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
-    buyQuantity, _ = decimal.NewFromFloat(buyQuantity).Div(decimal.NewFromFloat(stepSize)).Ceil().Mul(decimal.NewFromFloat(stepSize)).Float64()
-    buyAmount, _ = decimal.NewFromFloat(buyPrice).Mul(decimal.NewFromFloat(buyQuantity)).Float64()
-    entryQuantity, _ = decimal.NewFromFloat(entryQuantity).Add(decimal.NewFromFloat(buyQuantity)).Float64()
-    entryAmount, _ = decimal.NewFromFloat(entryAmount).Add(decimal.NewFromFloat(buyAmount)).Float64()
-    entryPrice, _ = decimal.NewFromFloat(entryAmount).Div(decimal.NewFromFloat(entryQuantity)).Float64()
-    sellPrice = h.Repository.SellPrice(entryPrice, entryAmount)
-    sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
-    result.Tradings = append(result.Tradings, &TradingInfo{
-      BuyPrice:      buyPrice,
-      SellPrice:     sellPrice,
-      Quantity:      buyQuantity,
-      EntryPrice:    entryPrice,
-      EntryQuantity: entryQuantity,
-    })
-  }
+	if stepSize > 0 {
+		entryQuantity, _ = decimal.NewFromFloat(entryAmount).Div(decimal.NewFromFloat(entryPrice)).Div(decimal.NewFromFloat(stepSize)).Floor().Mul(decimal.NewFromFloat(stepSize)).Float64()
+	} else {
+		entryQuantity, _ = decimal.NewFromFloat(entryAmount).Div(decimal.NewFromFloat(entryPrice)).Float64()
+	}
 
-  stopAmount, _ := decimal.NewFromFloat(entryAmount).Mul(decimal.NewFromFloat(0.1)).Float64()
+	var buyPrice float64
+	var buyQuantity float64
+	var buyAmount float64
+	var sellPrice float64
+	var takePrice float64
 
-  var stopPrice float64
-  stopPrice, _ = decimal.NewFromFloat(entryPrice).Sub(
-    decimal.NewFromFloat(stopAmount).Div(decimal.NewFromFloat(entryQuantity)),
-  ).Float64()
-  stopPrice, _ = decimal.NewFromFloat(stopPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+	if entryAmount < 5 {
+		buyPrice = entryPrice
+		buyQuantity = 5 / buyPrice
+		buyQuantity, _ = decimal.NewFromFloat(buyQuantity).Div(decimal.NewFromFloat(stepSize)).Ceil().Mul(decimal.NewFromFloat(stepSize)).Float64()
+		buyAmount, _ = decimal.NewFromFloat(buyPrice).Mul(decimal.NewFromFloat(buyQuantity)).Float64()
+		entryQuantity = buyQuantity
+		entryAmount = buyAmount
+		sellPrice = h.Repository.SellPrice(entryPrice, entryAmount)
+		sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
+		takePrice = h.Repository.TakePrice(entryPrice, tickSize)
+	} else {
+		takePrice = h.Repository.TakePrice(entryPrice, tickSize)
+	}
 
-  result.TakePrice = takePrice
-  result.StopPrice = stopPrice
+	ipart, _ := math.Modf(maxCapital)
+	places := 1
+	for ; ipart >= 10; ipart = ipart / 10 {
+		places++
+	}
 
-  h.Response.Json(w, result)
+	result := &PositionCalcResponse{}
+	priceRatio := 1.0
+
+	for {
+		if buyPrice > 0 && entryPrice > 0 {
+			priceRatio, _ = decimal.NewFromFloat(entryPrice).Div(decimal.NewFromFloat(buyPrice)).Float64()
+		}
+
+		var err error
+		capital, err := h.Repository.Capital(maxCapital, entryAmount, places, priceRatio)
+		if err != nil {
+			break
+		}
+		ratio := h.Repository.Ratio(capital, entryAmount, priceRatio)
+		buyAmount, _ = decimal.NewFromFloat(capital).Mul(decimal.NewFromFloat(ratio)).Float64()
+		if buyAmount < 5 {
+			buyAmount = 5
+		}
+		buyQuantity = h.Repository.BuyQuantity(buyAmount, entryPrice, entryAmount)
+		buyPrice, _ = decimal.NewFromFloat(buyAmount).Div(decimal.NewFromFloat(buyQuantity)).Float64()
+		buyPrice, _ = decimal.NewFromFloat(buyPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+		buyQuantity, _ = decimal.NewFromFloat(buyQuantity).Div(decimal.NewFromFloat(stepSize)).Ceil().Mul(decimal.NewFromFloat(stepSize)).Float64()
+		buyAmount, _ = decimal.NewFromFloat(buyPrice).Mul(decimal.NewFromFloat(buyQuantity)).Float64()
+		entryQuantity, _ = decimal.NewFromFloat(entryQuantity).Add(decimal.NewFromFloat(buyQuantity)).Float64()
+		entryAmount, _ = decimal.NewFromFloat(entryAmount).Add(decimal.NewFromFloat(buyAmount)).Float64()
+		entryPrice, _ = decimal.NewFromFloat(entryAmount).Div(decimal.NewFromFloat(entryQuantity)).Float64()
+		sellPrice = h.Repository.SellPrice(entryPrice, entryAmount)
+		sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Ceil().Mul(decimal.NewFromFloat(tickSize)).Float64()
+		result.Tradings = append(result.Tradings, &TradingInfo{
+			BuyPrice:      buyPrice,
+			SellPrice:     sellPrice,
+			Quantity:      buyQuantity,
+			EntryPrice:    entryPrice,
+			EntryQuantity: entryQuantity,
+		})
+	}
+
+	stopAmount, _ := decimal.NewFromFloat(entryAmount).Div(decimal.NewFromInt32(int32(leverage))).Mul(decimal.NewFromFloat(0.1)).Float64()
+
+	var stopPrice float64
+	stopPrice, _ = decimal.NewFromFloat(entryPrice).Sub(
+		decimal.NewFromFloat(stopAmount).Div(decimal.NewFromFloat(entryQuantity)),
+	).Float64()
+	stopPrice, _ = decimal.NewFromFloat(stopPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
+
+	result.TakePrice = takePrice
+	result.StopPrice = stopPrice
+
+	h.Response.Json(w, result)
 }

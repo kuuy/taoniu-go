@@ -71,16 +71,18 @@ type PositionCalcResponse struct {
 }
 
 type GamblingPlanInfo struct {
-  Price    float64 `json:"price"`
-  Quantity float64 `json:"quantity"`
-  Profit   string  `json:"profit"`
+  Price      float64 `json:"price"`
+  Quantity   float64 `json:"quantity"`
+  TakeProfit float64 `json:"take_profit"`
+  Amount     float64 `json:"amount"`
+  Profit     float64 `json:"profit"`
 }
 
-type CalcGamblingResponse struct {
-  TakePrice   float64             `json:"take_price"`
-  StopPrice   float64             `json:"stop_price"`
-  PlansProfit string              `json:"plans_profit"`
-  Plans       []*GamblingPlanInfo `json:"plans"`
+type GamblingCalcResponse struct {
+  TakePrice  float64             `json:"take_price"`
+  StopPrice  float64             `json:"stop_price"`
+  PlanProfit float64             `json:"plan_profit"`
+  Plans      []*GamblingPlanInfo `json:"plans"`
 }
 
 type ScalpingInfo struct {

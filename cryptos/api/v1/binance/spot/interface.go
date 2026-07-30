@@ -107,3 +107,18 @@ type TriggerInfo struct {
   ExpiredAt   int64   `json:"expired_at"`
   CreatedAt   int64   `json:"created_at"`
 }
+
+type GamblingPlanInfo struct {
+  Price      float64 `json:"price"`
+  Quantity   float64 `json:"quantity"`
+  TakeProfit float64 `json:"take_profit"`
+  Amount     float64 `json:"amount"`
+  Profit     float64 `json:"profit"`
+}
+
+type GamblingCalcResponse struct {
+  TakePrice  float64             `json:"take_price"`
+  StopPrice  float64             `json:"stop_price"`
+  PlanProfit float64             `json:"plan_profit"`
+  Plans      []*GamblingPlanInfo `json:"plans"`
+}
