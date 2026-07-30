@@ -10,14 +10,12 @@ import (
   "github.com/go-redis/redis/v8"
   "github.com/nats-io/nats.go"
   "github.com/urfave/cli/v2"
-  "gorm.io/gorm"
 
   "taoniu.local/cryptos/common"
   "taoniu.local/cryptos/socket"
 )
 
 type SpotHandler struct {
-  Db   *gorm.DB
   Rdb  *redis.Client
   Ctx  context.Context
   Nats *nats.Conn
@@ -30,7 +28,6 @@ func NewSpotCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = SpotHandler{
-        Db:   common.NewDB(1),
         Rdb:  common.NewRedis(1),
         Ctx:  context.Background(),
         Nats: common.NewNats(1),
@@ -38,8 +35,6 @@ func NewSpotCommand() *cli.Command {
       return nil
     },
     After: func(c *cli.Context) error {
-      sqlDB, _ := h.Db.DB()
-      sqlDB.Close()
       h.Rdb.Close()
       h.Nats.Close()
       return nil
@@ -57,7 +52,6 @@ func (h *SpotHandler) run() (err error) {
   log.Println("binance spot socket running...")
 
   socketContext := &common.SocketContext{
-    Db:   h.Db,
     Rdb:  h.Rdb,
     Ctx:  h.Ctx,
     Nats: h.Nats,

@@ -10,14 +10,12 @@ import (
   "github.com/go-redis/redis/v8"
   "github.com/nats-io/nats.go"
   "github.com/urfave/cli/v2"
-  "gorm.io/gorm"
 
   "taoniu.local/cryptos/common"
   "taoniu.local/cryptos/socket"
 )
 
 type FuturesHandler struct {
-  Db   *gorm.DB
   Rdb  *redis.Client
   Ctx  context.Context
   Nats *nats.Conn
@@ -30,7 +28,6 @@ func NewFuturesCommand() *cli.Command {
     Usage: "",
     Before: func(c *cli.Context) error {
       h = FuturesHandler{
-        Db:   common.NewDB(2),
         Rdb:  common.NewRedis(2),
         Ctx:  context.Background(),
         Nats: common.NewNats(2),
@@ -38,8 +35,6 @@ func NewFuturesCommand() *cli.Command {
       return nil
     },
     After: func(c *cli.Context) error {
-      sqlDB, _ := h.Db.DB()
-      sqlDB.Close()
       h.Rdb.Close()
       h.Nats.Close()
       return nil
@@ -57,7 +52,6 @@ func (h *FuturesHandler) run() (err error) {
   log.Println("binance futures socket running...")
 
   socketContext := &common.SocketContext{
-    Db:   h.Db,
     Rdb:  h.Rdb,
     Ctx:  h.Ctx,
     Nats: h.Nats,

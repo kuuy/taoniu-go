@@ -1,7 +1,6 @@
 package api
 
 import (
-  "log"
   "net/http"
   "strings"
 
@@ -16,18 +15,17 @@ func Authenticator(next http.Handler) http.Handler {
 
     bearer := r.Header.Get("Authorization")
     if len(bearer) <= 7 || (strings.ToUpper(bearer[0:6]) != "TAONIU" && strings.ToUpper(bearer[0:6]) != "BEARER") {
-      response.Error(w, http.StatusForbidden, 403, "access not allowed")
+      response.Error(w, http.StatusForbidden, 403, "authorization header missing or invalid")
       return
     }
 
     repository := &repositories.TokenRepository{}
     uid, err := repository.Uid(bearer[7:])
     if err != nil {
-      log.Println("token error", err.Error())
       if uid != "" {
-        response.Error(w, http.StatusUnauthorized, 401, err.Error())
+        response.Error(w, http.StatusUnauthorized, 401, "invalid token")
       } else {
-        response.Error(w, http.StatusForbidden, 403, "access not allowed")
+        response.Error(w, http.StatusForbidden, 403, "invalid token")
       }
       return
     }

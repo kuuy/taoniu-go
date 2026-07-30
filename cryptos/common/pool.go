@@ -62,7 +62,6 @@ type AnsqClientContext struct {
 }
 
 type SocketContext struct {
-  Db   *gorm.DB
   Rdb  *redis.Client
   Ctx  context.Context
   Nats *nats.Conn
