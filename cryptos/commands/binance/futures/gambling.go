@@ -49,8 +49,8 @@ func NewGamblingCommand() *cli.Command {
             return nil
           }
           side, _ := strconv.Atoi(c.Args().Get(1))
-          entryPrice, _ := strconv.ParseFloat(c.Args().Get(2), 16)
-          entryQuantity, _ := strconv.ParseFloat(c.Args().Get(3), 16)
+          entryPrice, _ := strconv.ParseFloat(c.Args().Get(2), 64)
+          entryQuantity, _ := strconv.ParseFloat(c.Args().Get(3), 64)
           if err := h.Calc(symbol, side, entryPrice, entryQuantity); err != nil {
             return cli.Exit(err.Error(), 1)
           }
@@ -110,11 +110,11 @@ func (h *GamblingHandler) Calc(
         }
         break
       }
-      if side == 1 && plan.TakePrice > takePrice {
+      if side == 1 && plan.TakePrice >= takePrice {
         lastProfit, _ = decimal.NewFromFloat(takePrice).Sub(decimal.NewFromFloat(entryPrice)).Mul(decimal.NewFromFloat(planQuantity)).Float64()
         break
       }
-      if side == 2 && plan.TakePrice < takePrice {
+      if side == 2 && plan.TakePrice <= takePrice {
         lastProfit, _ = decimal.NewFromFloat(entryPrice).Sub(decimal.NewFromFloat(takePrice)).Mul(decimal.NewFromFloat(planQuantity)).Float64()
         break
       }
