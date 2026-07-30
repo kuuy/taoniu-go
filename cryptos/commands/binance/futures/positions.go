@@ -48,12 +48,11 @@ func NewPositionsCommand() *cli.Command {
             log.Fatal("symbol can not be empty")
             return nil
           }
-          margin, _ := strconv.ParseFloat(c.Args().Get(1), 64)
-          leverage, _ := strconv.Atoi(c.Args().Get(2))
-          side, _ := strconv.Atoi(c.Args().Get(3))
-          entryPrice, _ := strconv.ParseFloat(c.Args().Get(4), 64)
-          entryQuantity, _ := strconv.ParseFloat(c.Args().Get(5), 64)
-          if err := h.Calc(symbol, margin, leverage, side, entryPrice, entryQuantity); err != nil {
+          maxCapital, _ := strconv.ParseFloat(c.Args().Get(1), 64)
+          side, _ := strconv.Atoi(c.Args().Get(2))
+          entryPrice, _ := strconv.ParseFloat(c.Args().Get(3), 64)
+          entryQuantity, _ := strconv.ParseFloat(c.Args().Get(4), 64)
+          if err := h.Calc(symbol, maxCapital, side, entryPrice, entryQuantity); err != nil {
             return cli.Exit(err.Error(), 1)
           }
           return nil
@@ -77,15 +76,13 @@ func NewPositionsCommand() *cli.Command {
 
 func (h *PositionsHandler) Calc(
   symbol string,
-  margin float64,
-  leverage int,
+  maxCapital float64,
   side int,
   entryPrice float64,
   entryQuantity float64,
 ) error {
   log.Println("binance futures positions calc...")
 
-  maxCapital, _ := decimal.NewFromFloat(margin).Mul(decimal.NewFromInt32(int32(leverage))).Float64()
   entryAmount, _ := decimal.NewFromFloat(entryPrice).Mul(decimal.NewFromFloat(entryQuantity)).Float64()
 
   entity, err := h.SymbolsRepository.Get(symbol)
@@ -176,10 +173,17 @@ func (h *PositionsHandler) Calc(
     } else {
       sellPrice, _ = decimal.NewFromFloat(sellPrice).Div(decimal.NewFromFloat(tickSize)).Floor().Mul(decimal.NewFromFloat(tickSize)).Float64()
     }
-    log.Println("buy", strconv.FormatFloat(buyPrice, 'f', -1, 64), strconv.FormatFloat(buyQuantity, 'f', -1, 64), strconv.FormatFloat(buyAmount, 'f', -1, 64), strconv.FormatFloat(sellPrice, 'f', -1, 64), strconv.FormatFloat(entryPrice, 'f', -1, 64))
+    log.Println(
+      "buy",
+      strconv.FormatFloat(buyPrice, 'f', -1, 64),
+      strconv.FormatFloat(buyQuantity, 'f', -1, 64),
+      strconv.FormatFloat(buyAmount, 'f', -1, 64),
+      strconv.FormatFloat(sellPrice, 'f', -1, 64),
+      strconv.FormatFloat(entryPrice, 'f', -1, 64),
+    )
   }
 
-  stopAmount, _ := decimal.NewFromFloat(entryAmount).Div(decimal.NewFromInt32(int32(leverage))).Mul(decimal.NewFromFloat(0.1)).Float64()
+  stopAmount, _ := decimal.NewFromFloat(entryAmount).Mul(decimal.NewFromFloat(0.1)).Float64()
 
   var stopPrice float64
   if side == 1 {

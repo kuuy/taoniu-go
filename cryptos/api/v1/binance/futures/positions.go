@@ -85,13 +85,8 @@ func (h *PositionsHandler) Calc(
 		return
 	}
 
-	if q.Get("margin") == "" {
-		h.Response.Error(w, http.StatusForbidden, 1004, "margin is empty")
-		return
-	}
-
-	if q.Get("leverage") == "" {
-		h.Response.Error(w, http.StatusForbidden, 1004, "leverage is empty")
+	if q.Get("max_capital") == "" {
+		h.Response.Error(w, http.StatusForbidden, 1004, "max_capital is empty")
 		return
 	}
 
@@ -108,13 +103,10 @@ func (h *PositionsHandler) Calc(
 	symbol := q.Get("symbol")
 	side, _ := strconv.Atoi(q.Get("side"))
 
-	margin, _ := strconv.ParseFloat(q.Get("margin"), 64)
-	leverage, _ := strconv.Atoi(q.Get("leverage"))
+	maxCapital, _ := strconv.ParseFloat(q.Get("max_capital"), 64)
 
 	entryPrice, _ := strconv.ParseFloat(q.Get("entry_price"), 64)
 	entryQuantity, _ := strconv.ParseFloat(q.Get("entry_quantity"), 64)
-
-	maxCapital, _ := decimal.NewFromFloat(margin).Mul(decimal.NewFromInt32(int32(leverage))).Float64()
 	entryAmount, _ := decimal.NewFromFloat(entryPrice).Mul(decimal.NewFromFloat(entryQuantity)).Float64()
 
 	tickSize, stepSize, err := h.Repository.Filters(symbol)
@@ -209,7 +201,7 @@ func (h *PositionsHandler) Calc(
 		})
 	}
 
-	stopAmount, _ := decimal.NewFromFloat(entryAmount).Div(decimal.NewFromInt32(int32(leverage))).Mul(decimal.NewFromFloat(0.1)).Float64()
+	stopAmount, _ := decimal.NewFromFloat(entryAmount).Mul(decimal.NewFromFloat(0.1)).Float64()
 
 	var stopPrice float64
 	if side == 1 {
