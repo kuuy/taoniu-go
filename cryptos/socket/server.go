@@ -29,6 +29,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
   if len(bearer) > 7 && strings.ToUpper(bearer[0:6]) == "TAONIU" {
     token = bearer[7:]
   }
+  if token == "" {
+    token = r.URL.Query().Get("access_token")
+  }
 
   uid, authErr := s.JwtHandler.Authenticate(token)
   if authErr != nil {

@@ -119,7 +119,7 @@ func (h *IndicatorsHandler) Ranking(
   } else {
     pageSize, _ = strconv.Atoi(q.Get("page_size"))
   }
-  if pageSize < 1 || pageSize > 100 {
+  if pageSize < 1 || pageSize > 200 {
     h.Response.Error(w, http.StatusForbidden, 1004, "page size not valid")
     return
   }
