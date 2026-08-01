@@ -6,7 +6,6 @@ import (
   "log"
   "math"
   "strconv"
-  "strings"
   "time"
 
   "github.com/go-redis/redis/v8"
@@ -128,17 +127,17 @@ func (h *PositionsHandler) Calc(
     return nil
   }
 
-  var filters []string
-  filters = strings.Split(entity.Filters["price"].(string), ",")
-  tickSize, _ := strconv.ParseFloat(filters[2], 64)
-  filters = strings.Split(entity.Filters["quote"].(string), ",")
-  stepSize, _ := strconv.ParseFloat(filters[2], 64)
+  tickSize, stepSize, _, err := h.SymbolsRepository.Filters(entity.Filters)
+  if err != nil {
+    return nil
+  }
 
   if stepSize > 0 {
     entryQuantity, _ = decimal.NewFromFloat(entryAmount).Div(decimal.NewFromFloat(entryPrice)).Div(decimal.NewFromFloat(stepSize)).Floor().Mul(decimal.NewFromFloat(stepSize)).Float64()
   } else {
     entryQuantity, _ = decimal.NewFromFloat(entryAmount).Div(decimal.NewFromFloat(entryPrice)).Float64()
   }
+  entryAmount, _ = decimal.NewFromFloat(entryPrice).Mul(decimal.NewFromFloat(entryQuantity)).Float64()
   log.Println("entry", strconv.FormatFloat(entryPrice, 'f', -1, 64), strconv.FormatFloat(entryQuantity, 'f', -1, 64), strconv.FormatFloat(entryAmount, 'f', -1, 64))
 
   var buyPrice float64

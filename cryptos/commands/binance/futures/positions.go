@@ -107,11 +107,12 @@ func (h *PositionsHandler) Calc(
     return nil
   }
 
-  if stepSize > 0 && entryQuantity >= stepSize {
+  if stepSize > 0 {
     entryQuantity, _ = decimal.NewFromFloat(entryAmount).Div(decimal.NewFromFloat(entryPrice)).Div(decimal.NewFromFloat(stepSize)).Floor().Mul(decimal.NewFromFloat(stepSize)).Float64()
   } else {
     entryQuantity, _ = decimal.NewFromFloat(entryAmount).Div(decimal.NewFromFloat(entryPrice)).Float64()
   }
+  entryAmount, _ = decimal.NewFromFloat(entryPrice).Mul(decimal.NewFromFloat(entryQuantity)).Float64()
   log.Println("entry", strconv.FormatFloat(entryPrice, 'f', -1, 64), strconv.FormatFloat(entryQuantity, 'f', -1, 64), strconv.FormatFloat(entryAmount, 'f', -1, 64))
 
   var buyPrice float64

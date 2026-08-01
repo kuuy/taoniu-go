@@ -107,6 +107,7 @@ func (h *PositionsHandler) Calc(
 	} else {
 		entryQuantity, _ = decimal.NewFromFloat(entryAmount).Div(decimal.NewFromFloat(entryPrice)).Float64()
 	}
+	entryAmount, _ = decimal.NewFromFloat(entryPrice).Mul(decimal.NewFromFloat(entryQuantity)).Float64()
 
 	var buyPrice float64
 	var buyQuantity float64
