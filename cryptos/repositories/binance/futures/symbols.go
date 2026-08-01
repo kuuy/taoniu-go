@@ -5,7 +5,6 @@ import (
   "encoding/json"
   "errors"
   "fmt"
-  "log"
   "math"
   "net"
   "net/http"
@@ -99,7 +98,6 @@ func (r *SymbolsRepository) Flush() (err error) {
   } else {
     tr.DialContext = (&net.Dialer{}).DialContext
   }
-  log.Println("proxy", proxy)
 
   httpClient := &http.Client{
     Transport: tr,

@@ -103,6 +103,11 @@ func (h *PositionsHandler) Calc(
 	symbol := q.Get("symbol")
 	side, _ := strconv.Atoi(q.Get("side"))
 
+	leverage, _ := strconv.Atoi(q.Get("leverage"))
+	if leverage == 0 {
+		leverage = 1
+	}
+
 	maxCapital, _ := strconv.ParseFloat(q.Get("max_capital"), 64)
 
 	entryPrice, _ := strconv.ParseFloat(q.Get("entry_price"), 64)
@@ -115,7 +120,7 @@ func (h *PositionsHandler) Calc(
 		return
 	}
 
-	if stepSize > 0 {
+	if stepSize > 0 && entryQuantity >= stepSize {
 		entryQuantity, _ = decimal.NewFromFloat(entryAmount).Div(decimal.NewFromFloat(entryPrice)).Div(decimal.NewFromFloat(stepSize)).Floor().Mul(decimal.NewFromFloat(stepSize)).Float64()
 	} else {
 		entryQuantity, _ = decimal.NewFromFloat(entryAmount).Div(decimal.NewFromFloat(entryPrice)).Float64()
@@ -201,7 +206,7 @@ func (h *PositionsHandler) Calc(
 		})
 	}
 
-	stopAmount, _ := decimal.NewFromFloat(entryAmount).Mul(decimal.NewFromFloat(0.1)).Float64()
+	stopAmount, _ := decimal.NewFromFloat(entryAmount).Div(decimal.NewFromInt32(int32(leverage))).Mul(decimal.NewFromFloat(0.1)).Float64()
 
 	var stopPrice float64
 	if side == 1 {

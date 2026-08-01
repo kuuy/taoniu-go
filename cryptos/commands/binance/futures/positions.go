@@ -4,7 +4,6 @@ import (
   "log"
   "math"
   "strconv"
-  "strings"
 
   "github.com/shopspring/decimal"
   "github.com/urfave/cli/v2"
@@ -49,10 +48,22 @@ func NewPositionsCommand() *cli.Command {
             return nil
           }
           maxCapital, _ := strconv.ParseFloat(c.Args().Get(1), 64)
-          side, _ := strconv.Atoi(c.Args().Get(2))
-          entryPrice, _ := strconv.ParseFloat(c.Args().Get(3), 64)
-          entryQuantity, _ := strconv.ParseFloat(c.Args().Get(4), 64)
-          if err := h.Calc(symbol, maxCapital, side, entryPrice, entryQuantity); err != nil {
+          var leverage int
+          var side int
+          var entryPrice float64
+          var entryQuantity float64
+          if c.Args().Len() >= 6 {
+            leverage, _ = strconv.Atoi(c.Args().Get(2))
+            side, _ = strconv.Atoi(c.Args().Get(3))
+            entryPrice, _ = strconv.ParseFloat(c.Args().Get(4), 64)
+            entryQuantity, _ = strconv.ParseFloat(c.Args().Get(5), 64)
+          } else {
+            leverage = 1
+            side, _ = strconv.Atoi(c.Args().Get(2))
+            entryPrice, _ = strconv.ParseFloat(c.Args().Get(3), 64)
+            entryQuantity, _ = strconv.ParseFloat(c.Args().Get(4), 64)
+          }
+          if err := h.Calc(symbol, maxCapital, leverage, side, entryPrice, entryQuantity); err != nil {
             return cli.Exit(err.Error(), 1)
           }
           return nil
@@ -77,6 +88,7 @@ func NewPositionsCommand() *cli.Command {
 func (h *PositionsHandler) Calc(
   symbol string,
   maxCapital float64,
+  leverage int,
   side int,
   entryPrice float64,
   entryQuantity float64,
@@ -90,13 +102,12 @@ func (h *PositionsHandler) Calc(
     return nil
   }
 
-  var filters []string
-  filters = strings.Split(entity.Filters["price"].(string), ",")
-  tickSize, _ := strconv.ParseFloat(filters[2], 64)
-  filters = strings.Split(entity.Filters["quote"].(string), ",")
-  stepSize, _ := strconv.ParseFloat(filters[2], 64)
+  tickSize, stepSize, _, err := h.SymbolsRepository.Filters(entity.Filters)
+  if err != nil {
+    return nil
+  }
 
-  if stepSize > 0 {
+  if stepSize > 0 && entryQuantity >= stepSize {
     entryQuantity, _ = decimal.NewFromFloat(entryAmount).Div(decimal.NewFromFloat(entryPrice)).Div(decimal.NewFromFloat(stepSize)).Floor().Mul(decimal.NewFromFloat(stepSize)).Float64()
   } else {
     entryQuantity, _ = decimal.NewFromFloat(entryAmount).Div(decimal.NewFromFloat(entryPrice)).Float64()
@@ -183,7 +194,7 @@ func (h *PositionsHandler) Calc(
     )
   }
 
-  stopAmount, _ := decimal.NewFromFloat(entryAmount).Mul(decimal.NewFromFloat(0.1)).Float64()
+  stopAmount, _ := decimal.NewFromFloat(entryAmount).Div(decimal.NewFromInt32(int32(leverage))).Mul(decimal.NewFromFloat(0.1)).Float64()
 
   var stopPrice float64
   if side == 1 {
