@@ -27,7 +27,7 @@ func main() {
       if c.Command.Action == nil {
         cli.ShowAppHelp(c)
       } else {
-        log.Fatalln("error", c.Err)
+        log.Fatalln("error", c.Err())
       }
       return nil
     },

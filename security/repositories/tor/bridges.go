@@ -143,7 +143,7 @@ func (r *BridgesRepository) Monitor(id int, bridges []string, isChecker bool) er
   score, _ := r.Rdb.ZScore(
     r.Ctx,
     "tor:proxies:pids",
-    string(id),
+    fmt.Sprintf("%v", id),
   ).Result()
   if score > 0 {
     syscall.Kill(int(score), syscall.SIGKILL)
