@@ -26,15 +26,12 @@ import (
   "github.com/google/uuid"
   "github.com/nats-io/nats.go"
   "github.com/urfave/cli/v2"
-  "gorm.io/gorm"
-
   "taoniu.local/cryptos/common"
   config "taoniu.local/cryptos/config/binance/futures"
   jobs "taoniu.local/cryptos/queue/asynq/jobs/binance/futures/streams"
 )
 
 type AccountHandler struct {
-  Db         *gorm.DB
   Rdb        *redis.Client
   Nats       *nats.Conn
   Ctx        context.Context
@@ -54,7 +51,6 @@ func NewAccountCommand() *cli.Command {
     Before: func(c *cli.Context) error {
       ctx, cancel := context.WithCancel(context.Background())
       h = AccountHandler{
-        Db:         common.NewDB(2),
         Rdb:        common.NewRedis(2),
         Nats:       common.NewNats(2),
         Ctx:        ctx,
