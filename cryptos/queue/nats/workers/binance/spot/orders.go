@@ -2,6 +2,8 @@ package spot
 
 import (
   "encoding/json"
+  "fmt"
+  "time"
 
   "github.com/nats-io/nats.go"
 
@@ -44,6 +46,16 @@ func (h *Orders) Update(m *nats.Msg) {
   if payload.Status == "NEW" || payload.Status == "PARTIALLY_FILLED" {
     return
   }
+
+  mutex := common.NewMutex(
+    h.NatsContext.Rdb,
+    h.NatsContext.Ctx,
+    fmt.Sprintf(config.LOCKS_ORDERS_FLUSH, payload.Symbol, payload.OrderId),
+  )
+  if !mutex.Lock(5 * time.Second) {
+    return
+  }
+  defer mutex.Unlock()
 
   h.Repository.Flush(payload.Symbol, payload.OrderId)
 }

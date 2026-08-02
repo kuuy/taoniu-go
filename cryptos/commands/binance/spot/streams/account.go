@@ -195,14 +195,6 @@ func (h *AccountHandler) processMessage(message map[string]interface{}) {
     orderId, _ := strconv.ParseInt(fmt.Sprintf("%.0f", data["i"]), 10, 64)
     status, _ := data["X"].(string)
 
-    if status != "NEW" && status != "PARTIALLY_FILLED" {
-      h.Rdb.SAdd(
-        h.Ctx,
-        "binance:spot:orders:flush",
-        fmt.Sprintf("%s,%d", symbol, orderId),
-      )
-    }
-
     if h.Nats != nil {
       payload, _ := json.Marshal(map[string]interface{}{
         "symbol":   symbol,
@@ -214,12 +206,12 @@ func (h *AccountHandler) processMessage(message map[string]interface{}) {
     }
   }
 
-  if event == "listStatus" {
-    symbol, _ := data["s"].(string)
-    orderListId, _ := strconv.ParseInt(fmt.Sprintf("%v", data["g"]), 10, 64)
-    listStatusType, _ := data["l"].(string)
-    log.Printf("list status event for symbol %s (listId %d): %s", symbol, orderListId, listStatusType)
-  }
+  //if event == "listStatus" {
+  //  symbol, _ := data["s"].(string)
+  //  orderListId, _ := strconv.ParseInt(fmt.Sprintf("%v", data["g"]), 10, 64)
+  //  listStatusType, _ := data["l"].(string)
+  //  log.Printf("list status event for symbol %s (listId %d): %s", symbol, orderListId, listStatusType)
+  //}
 }
 
 func parseEd25519PrivateKey(secret string) (ed25519.PrivateKey, error) {

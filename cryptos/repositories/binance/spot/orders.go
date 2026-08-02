@@ -153,7 +153,7 @@ func (r *OrdersRepository) Open(symbol string) (err error) {
   proxy := common.GetEnvString("BINANCE_PROXY")
   if proxy != "" {
     tr.DialContext = (&common.ProxySession{
-      Proxy: fmt.Sprintf("%v?timeout=5s", proxy),
+      Proxy: fmt.Sprintf("%v?timeout=8s", proxy),
     }).DialContext
   } else {
     tr.DialContext = (&net.Dialer{}).DialContext
@@ -161,12 +161,12 @@ func (r *OrdersRepository) Open(symbol string) (err error) {
 
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   5 * time.Second,
+    Timeout:   8 * time.Second,
   }
 
   params := url.Values{}
   params.Add("symbol", symbol)
-  params.Add("recvWindow", "60000")
+  params.Add("recvWindow", "8000")
 
   timestamp := time.Now().UnixMilli()
   params.Add("timestamp", fmt.Sprintf("%v", timestamp))
@@ -179,7 +179,7 @@ func (r *OrdersRepository) Open(symbol string) (err error) {
   signature := mac.Sum(nil)
   params.Add("signature", fmt.Sprintf("%x", signature))
 
-  ctx, cancel := context.WithTimeout(r.Ctx, 5*time.Second)
+  ctx, cancel := context.WithTimeout(r.Ctx, 8*time.Second)
   defer cancel()
 
   url := fmt.Sprintf("%s/api/v3/openOrders", os.Getenv("BINANCE_SPOT_API_ENDPOINT"))
@@ -206,6 +206,7 @@ func (r *OrdersRepository) Open(symbol string) (err error) {
   for _, order := range result {
     r.Save(order)
   }
+
   return
 }
 
@@ -217,7 +218,7 @@ func (r *OrdersRepository) Sync(symbol string, startTime int64, limit int) (err 
   proxy := common.GetEnvString("BINANCE_PROXY")
   if proxy != "" {
     tr.DialContext = (&common.ProxySession{
-      Proxy: fmt.Sprintf("%v?timeout=5s", proxy),
+      Proxy: fmt.Sprintf("%v?timeout=8s", proxy),
     }).DialContext
   } else {
     tr.DialContext = (&net.Dialer{}).DialContext
@@ -225,7 +226,7 @@ func (r *OrdersRepository) Sync(symbol string, startTime int64, limit int) (err 
 
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   15 * time.Second,
+    Timeout:   8 * time.Second,
   }
 
   params := url.Values{}
@@ -234,7 +235,7 @@ func (r *OrdersRepository) Sync(symbol string, startTime int64, limit int) (err 
     params.Add("startTime", fmt.Sprintf("%v", startTime))
   }
   params.Add("limit", fmt.Sprintf("%v", limit))
-  params.Add("recvWindow", "60000")
+  params.Add("recvWindow", "8000")
 
   timestamp := time.Now().UnixMilli()
   params.Add("timestamp", fmt.Sprintf("%v", timestamp))
@@ -322,7 +323,7 @@ func (r *OrdersRepository) Create(
 
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   8 * time.Second,
+    Timeout:   5 * time.Second,
   }
 
   params := url.Values{}
@@ -333,7 +334,6 @@ func (r *OrdersRepository) Create(
   params.Add("quantity", strconv.FormatFloat(quantity, 'f', -1, 64))
   params.Add("timeInForce", "GTC")
   params.Add("newOrderRespType", "RESULT")
-  params.Add("recvWindow", "60000")
 
   timestamp := time.Now().UnixMilli()
   payload := fmt.Sprintf("%s&timestamp=%v", params.Encode(), timestamp)
@@ -406,13 +406,12 @@ func (r *OrdersRepository) Cancel(symbol string, orderId int64) (err error) {
 
   httpClient := &http.Client{
     Transport: tr,
-    Timeout:   8 * time.Second,
+    Timeout:   5 * time.Second,
   }
 
   params := url.Values{}
   params.Add("symbol", symbol)
   params.Add("orderId", fmt.Sprintf("%v", orderId))
-  params.Add("recvWindow", "60000")
 
   timestamp := time.Now().UnixMilli()
   payload := fmt.Sprintf("%s&timestamp=%v", params.Encode(), timestamp)
@@ -494,7 +493,6 @@ func (r *OrdersRepository) Flush(symbol string, orderId int64) (err error) {
   params := url.Values{}
   params.Add("symbol", symbol)
   params.Add("orderId", fmt.Sprintf("%v", orderId))
-  params.Add("recvWindow", "60000")
 
   timestamp := time.Now().UnixMilli()
   params.Add("timestamp", fmt.Sprintf("%v", timestamp))
